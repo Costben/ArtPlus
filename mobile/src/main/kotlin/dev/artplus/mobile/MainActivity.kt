@@ -20,6 +20,7 @@ import android.os.Bundle
 import android.os.Process
 import android.provider.DocumentsContract
 import android.provider.Settings
+import android.util.LruCache
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -35,6 +36,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateBottomPadding
+import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,6 +49,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -77,18 +82,23 @@ import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
-import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import android.graphics.Color as AndroidColor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     private val apps = mutableStateListOf<AppEntry>()
     private var queryText by mutableStateOf("")
+    private var showAllApps by mutableStateOf(false)
     private var selectedPackageName by mutableStateOf<String?>(null)
     private var statusText by mutableStateOf("加载应用列表中...")
     private var packageListPermissionGranted by mutableStateOf(true)
@@ -162,102 +172,103 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        val previousPackageListPermission = packageListPermissionGranted
+        val previousUsageAccess = usageAccessGranted
         refreshPermissionState()
-        if (didRequestAppLoad) {
+        if (
+            didRequestAppLoad &&
+            (apps.isEmpty() ||
+                previousPackageListPermission != packageListPermissionGranted ||
+                previousUsageAccess != usageAccessGranted)
+        ) {
             loadApps()
         }
     }
 
     @Composable
     private fun ArtPlusScreen() {
+        val scrollBehavior = remember { MiuixScrollBehavior() }
         val selectedApp = apps.firstOrNull { it.packageName == selectedPackageName }
-        val filteredApps = apps.filter { entry ->
+        val visibleScopeApps = if (showAllApps) {
+            apps
+        } else {
+            apps.filter { it.launchable }
+        }
+        val filteredApps = visibleScopeApps.filter { entry ->
             val query = queryText.trim().lowercase(Locale.ROOT)
             query.isEmpty() ||
                 entry.label.lowercase(Locale.ROOT).contains(query) ||
                 entry.packageName.lowercase(Locale.ROOT).contains(query)
         }
+        val scopeCount = visibleScopeApps.size
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background),
-            contentPadding = PaddingValues(start = 18.dp, top = 28.dp, end = 18.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item {
-                PageHeader()
-            }
-            if (!packageListPermissionGranted || !usageAccessGranted) {
-                item {
-                    PermissionCard()
-                }
-            }
-            item {
-                StatusCard(
-                    selectedApp = selectedApp,
-                    totalApps = apps.size,
-                    filteredApps = filteredApps.size,
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = "ArtPlus",
+                    scrollBehavior = scrollBehavior,
                 )
-            }
-            item {
-                GenerationCard(selectedApp)
-            }
-            item {
-                GptSettingsCard()
-            }
-            item {
-                AppPickerHeader(filteredApps.size, apps.size)
-            }
-            if (filteredApps.isEmpty()) {
-                item {
-                    EmptyAppListCard()
+            },
+            popupHost = {},
+        ) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MiuixTheme.colorScheme.background)
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+                contentPadding = PaddingValues(
+                    start = 12.dp,
+                    top = innerPadding.calculateTopPadding() + 10.dp,
+                    end = 12.dp,
+                    bottom = innerPadding.calculateBottomPadding() + 20.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                if (!packageListPermissionGranted || !usageAccessGranted) {
+                    item {
+                        PermissionCard()
+                    }
                 }
-            } else {
-                items(filteredApps, key = { it.packageName }) { entry ->
-                    AppRow(
-                        entry = entry,
-                        selected = entry.packageName == selectedPackageName,
-                        onClick = {
-                            selectedPackageName = entry.packageName
-                            statusText = "已选择: ${entry.label} (${entry.packageName})"
-                        },
+                item {
+                    StatusCard(
+                        selectedApp = selectedApp,
+                        totalApps = apps.size,
+                        filteredApps = filteredApps.size,
                     )
                 }
+                item {
+                    GenerationCard(selectedApp)
+                }
+                item {
+                    AppPickerHeader(filteredApps.size, scopeCount)
+                }
+                if (filteredApps.isEmpty()) {
+                    item {
+                        EmptyAppListCard()
+                    }
+                } else {
+                    items(
+                        items = filteredApps,
+                        key = { it.packageName },
+                        contentType = { "app" },
+                    ) { entry ->
+                        AppRow(
+                            entry = entry,
+                            selected = entry.packageName == selectedPackageName,
+                            onClick = {
+                                selectedPackageName = entry.packageName
+                                statusText = "已选择: ${entry.label} (${entry.packageName})"
+                            },
+                        )
+                    }
+                }
+                item {
+                    OutputCard()
+                }
+                item {
+                    GptSettingsCard()
+                }
             }
-            item {
-                OutputCard()
-            }
-        }
-    }
-
-    @Composable
-    private fun PageHeader() {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                Text(
-                    text = "ArtPlus",
-                    style = MiuixTheme.textStyles.title1,
-                    color = MiuixTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "本地图标提取、GPT 分层与 UX Icons 写入",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            BrandMark(size = 44.dp, text = "A+")
         }
     }
 
@@ -544,6 +555,31 @@ class MainActivity : ComponentActivity() {
                     color = MiuixTheme.colorScheme.onBackgroundVariant,
                 )
             }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                SegmentOption(
+                    label = "启动器",
+                    selected = !showAllApps,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    showAllApps = false
+                    queryText = ""
+                }
+                SegmentOption(
+                    label = "全部",
+                    selected = showAllApps,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    showAllApps = true
+                    queryText = ""
+                }
+            }
             TextField(
                 value = queryText,
                 onValueChange = { queryText = it },
@@ -557,11 +593,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun AppRow(entry: AppEntry, selected: Boolean, onClick: () -> Unit) {
-        val color = if (selected) {
-            MiuixTheme.colorScheme.primaryVariant
-        } else {
-            MiuixTheme.colorScheme.surfaceContainer
-        }
+        val color = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.surfaceContainer
         val titleColor = if (selected) {
             MiuixTheme.colorScheme.onPrimaryVariant
         } else {
@@ -573,49 +605,67 @@ class MainActivity : ComponentActivity() {
             MiuixTheme.colorScheme.onSurfaceVariantSummary
         }
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(14.dp),
-            colors = CardDefaults.defaultColors(color = color),
-            pressFeedbackType = PressFeedbackType.Sink,
-            showIndication = true,
-            onClick = onClick,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .padding(start = 2.dp)
+                    .width(6.dp)
+                    .height(24.dp)
+                    .align(Alignment.CenterVertically)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(
+                        if (selected) {
+                            MiuixTheme.colorScheme.primaryVariant
+                        } else {
+                            MiuixTheme.colorScheme.secondaryContainer
+                        },
+                    ),
+            )
+            Card(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 6.dp),
+                insideMargin = PaddingValues(horizontal = 10.dp, vertical = 9.dp),
+                colors = CardDefaults.defaultColors(color = color),
+                showIndication = true,
+                onClick = onClick,
             ) {
-                AppIcon(entry, 44.dp)
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    AppIcon(entry, 42.dp)
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        Text(
+                            text = entry.label,
+                            style = MiuixTheme.textStyles.body1,
+                            color = titleColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = entry.packageName,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = summaryColor,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                     Text(
-                        text = entry.label,
-                        style = MiuixTheme.textStyles.body1,
-                        color = titleColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = entry.packageName,
+                        text = when {
+                            selected -> "已选"
+                            entry.launchable -> "启动器"
+                            else -> "应用"
+                        },
                         style = MiuixTheme.textStyles.footnote1,
                         color = summaryColor,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Text(
-                    text = when {
-                        selected -> "已选"
-                        entry.launchable -> "启动器"
-                        else -> "应用"
-                    },
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = summaryColor,
-                    maxLines = 1,
-                )
             }
         }
     }
@@ -741,12 +791,16 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun AppIcon(entry: AppEntry, size: Dp) {
-        val bitmap = remember(entry.packageName) {
-            runCatching {
-                drawDrawable(entry.applicationInfo.loadIcon(packageManager), 128, 128, transparent = true)
-                    .asImageBitmap()
-            }.getOrNull()
+        var bitmap by remember(entry.iconKey) {
+            mutableStateOf(getCachedAppIcon(entry.iconKey))
         }
+
+        LaunchedEffect(entry.iconKey) {
+            if (bitmap == null) {
+                bitmap = loadCachedAppIcon(entry)
+            }
+        }
+
         Box(
             modifier = Modifier
                 .size(size)
@@ -771,6 +825,29 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun getCachedAppIcon(key: String): Bitmap? =
+        synchronized(appIconCache) { appIconCache.get(key) }
+
+    private suspend fun loadCachedAppIcon(entry: AppEntry): Bitmap? =
+        withContext(Dispatchers.IO) {
+            val cached = synchronized(appIconCache) {
+                appIconCache.get(entry.iconKey)
+            }
+            if (cached != null) {
+                return@withContext cached
+            }
+
+            val bitmap = runCatching {
+                drawDrawable(entry.applicationInfo.loadIcon(packageManager), ICON_CACHE_SIZE, ICON_CACHE_SIZE, transparent = true)
+                    .also { it.prepareToDraw() }
+            }.getOrNull() ?: return@withContext null
+
+            synchronized(appIconCache) {
+                appIconCache.put(entry.iconKey, bitmap)
+            }
+            bitmap
+        }
 
     @Composable
     private fun BrandMark(size: Dp, text: String) {
@@ -843,6 +920,7 @@ class MainActivity : ComponentActivity() {
                     packageName = packageName,
                     applicationInfo = info,
                     launchable = packageName in launchablePackages,
+                    iconKey = "${packageName}:${info.uid}:${info.sourceDir}",
                 )
             }
                 .sortedWith(
@@ -1812,6 +1890,7 @@ class MainActivity : ComponentActivity() {
         val packageName: String,
         val applicationInfo: ApplicationInfo,
         val launchable: Boolean,
+        val iconKey: String,
     )
 
     private data class IconLayers(
@@ -1855,6 +1934,12 @@ class MainActivity : ComponentActivity() {
         private const val GPT_IMAGE_QUALITY = "low"
         private const val GPT_CONNECT_TIMEOUT_MS = 30_000
         private const val GPT_READ_TIMEOUT_MS = 360_000
+        private const val ICON_CACHE_SIZE = 96
+        private val appIconCache = object : LruCache<String, Bitmap>(
+            ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
+        ) {
+            override fun sizeOf(key: String, value: Bitmap): Int = value.allocationByteCount / 1024
+        }
         private val SIZE_1X2 = intArrayOf(240, 820)
         private val SIZE_2X1 = intArrayOf(820, 240)
         private const val MONO_ALPHA_MIN = 40
