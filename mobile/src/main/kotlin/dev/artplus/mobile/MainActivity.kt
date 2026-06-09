@@ -594,6 +594,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun AppRow(entry: AppEntry, selected: Boolean, onClick: () -> Unit) {
+        val shape = RoundedCornerShape(24.dp)
         val color = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.surfaceContainer
         val titleColor = if (selected) {
             MiuixTheme.colorScheme.onPrimaryVariant
@@ -606,7 +607,11 @@ class MainActivity : ComponentActivity() {
             MiuixTheme.colorScheme.onSurfaceVariantSummary
         }
 
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = !isBusy, onClick = onClick),
+        ) {
             Box(
                 modifier = Modifier
                     .padding(start = 2.dp)
@@ -622,46 +627,39 @@ class MainActivity : ComponentActivity() {
                         },
                     ),
             )
-            Card(
+            Row(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 6.dp),
-                insideMargin = PaddingValues(horizontal = 10.dp, vertical = 9.dp),
-                colors = CardDefaults.defaultColors(color = color),
-                showIndication = true,
-                onClick = onClick,
+                    .padding(start = 6.dp)
+                    .clip(shape)
+                    .background(color)
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                AppIcon(entry, 40.dp)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
-                    AppIcon(entry, 42.dp)
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(3.dp),
-                    ) {
-                        Text(
-                            text = entry.label,
-                            style = MiuixTheme.textStyles.body1,
-                            color = titleColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = entry.packageName,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = summaryColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
                     Text(
-                        text = when {
-                            selected -> "已选"
-                            entry.launchable -> "启动器"
-                            else -> "应用"
-                        },
+                        text = entry.label,
+                        style = MiuixTheme.textStyles.body1,
+                        color = titleColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = entry.packageName,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = summaryColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (selected || !entry.launchable) {
+                    Text(
+                        text = if (selected) "已选" else "应用",
                         style = MiuixTheme.textStyles.footnote1,
                         color = summaryColor,
                         maxLines = 1,
@@ -1959,7 +1957,7 @@ class MainActivity : ComponentActivity() {
         private const val GPT_CONNECT_TIMEOUT_MS = 30_000
         private const val GPT_READ_TIMEOUT_MS = 360_000
         private const val ICON_CACHE_SIZE = 96
-        private const val PRELOAD_ICON_COUNT = 64
+        private const val PRELOAD_ICON_COUNT = 16
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
         ) {
