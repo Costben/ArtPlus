@@ -57,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -187,6 +188,11 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun ArtPlusScreen() {
         val scrollBehavior = MiuixScrollBehavior()
+        val pageBackground = if (isSystemInDarkTheme()) {
+            MiuixTheme.colorScheme.background
+        } else {
+            Color(0xFFF7F7F7)
+        }
         val selectedApp by remember {
             derivedStateOf { apps.firstOrNull { it.packageName == selectedPackageName } }
         }
@@ -226,7 +232,7 @@ class MainActivity : ComponentActivity() {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MiuixTheme.colorScheme.background)
+                    .background(pageBackground)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(innerPadding)
                     .padding(horizontal = 12.dp),
