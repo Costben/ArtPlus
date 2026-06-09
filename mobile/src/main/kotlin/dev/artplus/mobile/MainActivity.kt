@@ -635,8 +635,7 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .weight(1f)
                     .padding(start = 6.dp)
-                    .clip(shape)
-                    .background(color)
+                    .background(color, shape)
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
