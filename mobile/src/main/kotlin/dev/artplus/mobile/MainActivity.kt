@@ -714,11 +714,21 @@ class MainActivity : ComponentActivity() {
                         style = MiuixTheme.textStyles.title4,
                         color = MiuixTheme.colorScheme.onSurface,
                     )
-                    TextButton(
-                        text = "返回",
-                        onClick = { showAppPickerPage = false },
-                        enabled = !isBusy,
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TextButton(
+                            text = "刷新",
+                            onClick = { refreshGeneratedPackages() },
+                            enabled = !isBusy && apps.isNotEmpty(),
+                        )
+                        TextButton(
+                            text = "返回",
+                            onClick = { showAppPickerPage = false },
+                            enabled = !isBusy,
+                        )
+                    }
                 }
                 Text(
                     text = buildString {
