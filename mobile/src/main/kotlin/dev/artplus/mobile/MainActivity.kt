@@ -36,8 +36,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.calculateBottomPadding
-import androidx.compose.foundation.layout.calculateTopPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,6 +48,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -187,20 +186,33 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun ArtPlusScreen() {
-        val scrollBehavior = remember { MiuixScrollBehavior() }
-        val selectedApp = apps.firstOrNull { it.packageName == selectedPackageName }
-        val visibleScopeApps = if (showAllApps) {
-            apps
-        } else {
-            apps.filter { it.launchable }
+        val scrollBehavior = MiuixScrollBehavior()
+        val selectedApp by remember {
+            derivedStateOf { apps.firstOrNull { it.packageName == selectedPackageName } }
         }
-        val filteredApps = visibleScopeApps.filter { entry ->
-            val query = queryText.trim().lowercase(Locale.ROOT)
-            query.isEmpty() ||
-                entry.label.lowercase(Locale.ROOT).contains(query) ||
-                entry.packageName.lowercase(Locale.ROOT).contains(query)
+        val filteredApps by remember {
+            derivedStateOf {
+                val query = queryText.trim().lowercase(Locale.ROOT)
+                val scopedApps = if (showAllApps) {
+                    apps.toList()
+                } else {
+                    apps.filter { it.launchable }
+                }
+                if (query.isEmpty()) {
+                    scopedApps
+                } else {
+                    scopedApps.filter { entry ->
+                        entry.label.lowercase(Locale.ROOT).contains(query) ||
+                            entry.packageName.lowercase(Locale.ROOT).contains(query)
+                    }
+                }
+            }
         }
-        val scopeCount = visibleScopeApps.size
+        val scopeCount by remember {
+            derivedStateOf {
+                if (showAllApps) apps.size else apps.count { it.launchable }
+            }
+        }
 
         Scaffold(
             topBar = {
@@ -215,13 +227,10 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MiuixTheme.colorScheme.background)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 12.dp,
-                    top = innerPadding.calculateTopPadding() + 10.dp,
-                    end = 12.dp,
-                    bottom = innerPadding.calculateBottomPadding() + 20.dp,
-                ),
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .padding(innerPadding)
+                    .padding(horizontal = 12.dp),
+                contentPadding = PaddingValues(top = 10.dp, bottom = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 if (!packageListPermissionGranted || !usageAccessGranted) {
@@ -794,6 +803,7 @@ class MainActivity : ComponentActivity() {
         var bitmap by remember(entry.iconKey) {
             mutableStateOf(getCachedAppIcon(entry.iconKey))
         }
+        val imageBitmap = remember(bitmap) { bitmap?.asImageBitmap() }
 
         LaunchedEffect(entry.iconKey) {
             if (bitmap == null) {
@@ -808,7 +818,7 @@ class MainActivity : ComponentActivity() {
                 .background(MiuixTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            if (bitmap == null) {
+            if (imageBitmap == null) {
                 Text(
                     text = entry.label.firstOrNull()?.uppercaseChar()?.toString() ?: "#",
                     style = MiuixTheme.textStyles.title4,
@@ -817,7 +827,7 @@ class MainActivity : ComponentActivity() {
                 )
             } else {
                 Image(
-                    bitmap = bitmap,
+                    bitmap = imageBitmap,
                     contentDescription = null,
                     modifier = Modifier.size(size),
                     contentScale = ContentScale.Fit,
