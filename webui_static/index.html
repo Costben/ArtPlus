@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ArtPlus WebUI</title>
+    <link rel="stylesheet" href="/static/app.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div>
+          <h1>ArtPlus WebUI</h1>
+          <p id="serverStatus">等待上传</p>
+        </div>
+        <div class="status-pill" id="jobStatus">Idle</div>
+      </section>
+
+      <section class="upload-band">
+        <form id="uploadForm" class="upload-zone">
+          <input id="fileInput" name="file" type="file" accept=".zip,.apk,application/zip,application/vnd.android.package-archive" />
+          <div class="upload-copy">
+            <strong>上传 ZIP / APK</strong>
+            <span id="fileName">拖入文件或点击选择</span>
+          </div>
+          <button type="submit" id="uploadButton">开始处理</button>
+        </form>
+      </section>
+
+      <section class="workspace">
+        <div class="results-panel">
+          <div class="panel-heading">
+            <h2 id="packageName">未选择任务</h2>
+            <div class="download-row">
+              <a id="downloadLocal" class="button-link disabled" href="#">下载本地版</a>
+              <a id="downloadGpt" class="button-link disabled" href="#">下载GPT版</a>
+            </div>
+          </div>
+          <div id="previewGrid" class="preview-grid">
+            <div class="empty-state">处理完成后显示预览</div>
+          </div>
+        </div>
+
+        <aside class="side-stack">
+          <section class="history-panel">
+            <div class="panel-heading compact">
+              <h2>生成历史</h2>
+              <button type="button" id="refreshHistory">刷新</button>
+            </div>
+            <div id="historyList" class="history-list">
+              <div class="history-empty">暂无历史</div>
+            </div>
+          </section>
+
+          <section class="log-panel">
+            <div class="panel-heading compact">
+              <h2>日志</h2>
+              <button type="button" id="clearLogs">清空</button>
+            </div>
+            <pre id="logOutput"></pre>
+          </section>
+        </aside>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

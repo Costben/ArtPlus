@@ -1,0 +1,19 @@
+# ART+图标缺失检测工具依赖
+# 本工具仅使用Python标准库，无需安装额外依赖
+
+# 图标整理工具依赖
+Pillow>=9.0.0
+
+# 图标前景背景分离工具依赖
+# 注意：numpy需要<2.0以避免与opencv-python的兼容性问题
+numpy<2.0.0,>=1.20.0  # 图像处理基础库（限制版本以兼容opencv）
+opencv-python>=4.5.0  # 用于GrabCut和SAM2算法
+rembg[cpu]>=2.0.0  # 用于深度学习背景移除（批量分离图标前景和背景），包含CPU支持
+scikit-learn>=1.0.0  # 用于颜色聚类，选择较亮且占据较大区域的颜色
+scipy>=1.0.0  # 用于形态学操作，保留小的前景区域
+
+# WebUI依赖
+fastapi>=0.110.0
+uvicorn>=0.27.0
+python-multipart>=0.0.9
+httpx>=0.27.0  # FastAPI TestClient依赖

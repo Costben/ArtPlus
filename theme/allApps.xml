@@ -1,0 +1,1101 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<iconinfo>
+    <icon name="ic_launcher_oppo_contacts.png" package="com.android.contacts" />
+    <icon name="ic_launcher_email.png" package="com.android.email" />
+    <icon name="ic_launcher_calcultor.png" package="com.android.calculator2" />
+    <icon name="ic_launcher_calcultor.png" package="com.coloros.calculator" />
+    <icon name="ic_launcher_dialer.png" package="com.android.dialer" />
+    <icon name="ic_launcher_browser.png" package="com.android.browser" />
+    <icon name="ic_launcher_browser.png" package="com.coloros.browser" />
+    <icon name="ic_launcher_browser.png" package="com.heytap.browser" />
+    <icon name="ic_launcher_recorder.png" package="com.android.soundrecorder" />
+    <icon name="ic_launcher_calender.png" package="com.android.calendar" />
+    <icon name="ic_launcher_calender.png" package="com.coloros.calendar" />
+    <icon name="ic_launcher_settings.png" package="com.android.settings" />
+    <icon name="ic_launcher_findphone_client.png" package="com.coloros.findphone.client" />
+    <icon name="ic_launcher_findphone_client.png" package="com.coloros.findphone.client2" />
+    <icon name="ic_launcher_smsmms.png" package="com.android.mms" />
+
+    <icon name="ic_launcher_music.png" package="com.oppo.music" />
+    <icon name="ic_launcher_clock.png" package="com.coloros.alarmclock" />
+    <icon name="ic_launcher_video.png" package="com.coloros.video" />
+    <icon name="ic_launcher_camera.png" package="com.oppo.camera" />
+    <icon name="ic_launcher_camera.png" package="com.oplus.camera" />
+    <icon name="ic_launcher_gallery3d.png" package="com.coloros.gallery3d" />
+    <icon name="ic_launcher_locknow.png" package="com.oppo.LockNow" />
+    <icon name="ic_launcher_locknow.png" package="com.android.systemui" />
+    <icon name="ic_launcher_filemanager.png" package="com.coloros.filemanager" />
+    <icon name="ic_launcher_recorder.png" package="com.coloros.soundrecorder" />
+    <icon name="ic_launcher_flash_light.png" package="com.coloros.flashlight" />
+    <icon name="ic_launcher_compass.png" package="com.coloros.compass" />
+    <icon name="ic_launcher_compass.png" package="com.coloros.compass2" />
+    <icon name="ic_launcher_dialer.png" package="com.android.phone" />
+    <icon name="ic_launcher_roam_color.png" package="com.android.phone" />
+    <icon name="ic_launcher_operation_manual.png" package="com.coloros.operationManual" />
+    <icon name="ic_launcher_nearme_ota.png" package="com.coloros.ota" />
+    
+    
+    
+    <icon name="ic_launcher_radio.png" package="com.caf.fmradio" />
+    <icon name="ic_launcher_radio.png" package="com.mediatek.FMRadio" />
+    <icon name="ic_launcher_radio.png" package="com.android.fmradio" />
+    <icon name="ic_launcher_book_store.png" package="com.oppo.book" />
+    <icon name="ic_launcher_book_store.png" package="com.heytap.book" />
+    <icon name="ic_launcher_weather.png" package="com.coloros.weather" />
+    <icon name="ic_launcher_weather.png" package="com.coloros.weather2" />
+    <icon name="ic_launcher_nearme_note.png" package="com.nearme.note" />
+    <icon name="ic_launcher_nearme_note.png" package="com.coloros.note" />
+    <icon name="ic_launcher_speechassist.png" package="com.coloros.speechassist" />
+    <icon name="ic_launcher_speechassist.png" package="com.coloros.speechassist.engine" />
+    <icon name="ic_launcher_speechassist.png" package="com.heytap.speechassist" />
+    <icon name="ic_launcher_speechassist.png" package="com.heytap.speechassist.engine" />
+
+    <icon name="ic_launcher_widget_moodalbum.png" package="com.oppo.widget.moodalbum" />
+    <icon name="ic_launcher_widget_musicpage.png" package="com.oppo.widget.musicpage" />
+    <icon name="ic_launcher_download.png" package="com.android.providers.downloads" />
+    <icon name="ic_launcher_home.png" package="com.android.launcher" />
+    <icon name="ic_launcher_im.png" package="com.oppo.im" />
+    <icon name="ic_launcher_standardar_service.png" package="com.standardar.service" />
+    <icon name="ic_launcher_familyguard.png" package="com.coloros.familyguard" />
+    <icon name="ic_launcher_aruler.png" package="com.coloros.aruler" />
+    <icon name="ic_launcher_wallet.png" package="com.coloros.wallet" />
+    <icon name="ic_launcher_wallet.png" package="com.finshell.wallet" />
+    <icon name="ic_launcher_yoli.png" package="com.coloros.yoli" />
+    <icon name="ic_launcher_yoli.png" package="com.heytap.yoli" />
+    <icon name="ic_launcher_ohome.png" package="com.oppo.ohome" />
+    <icon name="ic_launcher_ohome.png" package="com.heytap.smarthome" />
+
+    <icon name="ic_launcher_nearme_market.png" package="com.oppo.market" />
+    <icon name="ic_launcher_nearme_market.png" package="com.heytap.market" />
+    <icon name="ic_launcher_nearme_cloudservice.png" package="com.nearme.ocloud" />
+    <icon name="ic_launcher_nearme_ulikebeauty.png" package="com.oppo.ubeauty" />
+
+    <icon name="ic_launcher_nearme_reader.png" package="com.oppo.reader" />
+    <icon name="ic_launcher_nearme_reader.png" package="com.heytap.reader" />
+    <icon name="ic_launcher_nearme_usercenter.png" package="com.oppo.usercenter" />
+    <icon name="ic_launcher_nearme_usercenter.png" package="com.heytap.usercenter" />
+
+    <icon name="ic_launcher_nearme_gamecenter.png" package="com.nearme.gamecenter" />
+    <icon name="ic_launcher_nearme_gamecenter.png" package="com.heytap.gamecenter" />
+    <icon name="ic_launcher_nearme_play.png" package="com.nearme.play" />
+    <icon name="ic_launcher_nearme_play.png" package="com.heytap.play" />
+    <icon name="ic_launcher_themespace.png" package="com.nearme.themespace" />
+    <icon name="ic_launcher_themespace.png" package="com.nearme.themestore" />
+    <icon name="ic_launcher_themespace.png" package="com.heytap.themestore" />
+
+    <icon name="ic_launcher_feedback.png" package="com.coloros.feedback" />
+    <icon name="ic_launcher_nearme_oppotribune.png" package="com.oppo.community" />
+    <icon name="ic_launcher_tencent_mobileqq.png" package="com.tencent.mobileqq" />
+    <icon name="ic_launcher_netease_cloudmusic.png" package="com.netease.cloudmusic" />
+    <icon name="ic_launcher_sina_weibo.png" package="com.sina.weibo" />
+    <icon name="ic_launcher_xmgd_navigator.png" package="com.autonavi.xmgd.navigator.oppo" />
+    <icon name="ic_launcher_xmgd_navigator.png" package="com.autonavi.xmgd.navigator" />
+    <icon name="ic_launcher_xmgd_navigator.png" package="com.autonavi.xmgd.navigator.tob" />
+
+    
+    <icon name="ic_launcher_virusscan.png" package="com.oppo.virusdetect" />
+
+    <icon name="ic_launcher_privacyprotect.png" package="com.oppo.safe" />
+    <icon name="ic_launcher_purebackground.png" package="com.oppo.purebackground" />
+    <icon name="ic_launcher_pwrmgr.png" package="com.oppo.powermanager" />
+    <icon name="ic_launcher_visitormode.png" package="com.oppo.vistormode" />
+    <icon name="ic_launcher_holidaymode.png" package="com.oppo.holidaymode" />
+    <icon name="ic_launcher_traffic_monitor.png" package="com.oppo.trafficmonitor" />
+    <icon name="ic_launcher_permission.png" package="com.oppo.safe" />
+    <icon name="ic_launcher_app_forzen.png" package="com.oplus.safecenter" />
+    
+    <icon name="ic_launcher_securesafe.png" package="com.coloros.phonemanager" />
+    <icon name="ic_launcher_drivemode.png" package="com.oppo.drivemode" />
+    <icon name="ic_launcher_backuprestore.png" package="com.coloros.backuprestore" />
+    <icon name="ic_launcher_tips.png" package="com.coloros.operationtips" />
+    <icon name="ic_launcher_onekeylockscreen.png" package="com.coloros.onekeylockscreen" />
+    <icon name="ic_launcher_ocrscanner.png" package="com.coloros.ocrscanner" />
+    <icon name="ic_launcher_flowmarket.png" package="com.coloros.flowmarket" />
+    <icon name="ic_launcher_gamespace.png" package="com.oplus.cosa" />
+    <icon name="ic_launcher_gamespace.png" package="com.oplus.games" />
+    <icon name="ic_launcher_musiclink.png" package="com.coloros.musiclink" />
+    <icon name="ic_launcher_bbs.png" package="com.coloros.bbs" />
+
+    
+    <icon name="ic_launcher_videoeditor.png" package="com.coloros.videoeditor" />
+    <icon name="ic_launcher_health.png" package="com.heytap.health" />
+    <icon name="ic_launcher_shortcuts.png" package="com.coloros.shortcuts" />
+    <icon name="ic_launcher_findmyphone.png" package="com.coloros.findmyphone" />
+    <icon name="ic_launcher_encryptiont.png" package="com.coloros.encryptiont" />
+    <icon name="ic_launcher_store.png" package="com.oppo.store" />
+    
+    
+    
+    
+    <icon name="ic_launcher_hiscene_app_o_video.png" package="com.hiscene.app" />
+    
+    <icon name="ic_launcher_oppo_ble_accessory.png" package="oppo.wearable.oclick2" />
+    <icon name="ic_launcher_oppo_ble_accessory.png" package="com.oppo.wearable.oclick2" />
+
+    <icon name="ic_launcher_coloros_ve.png" package="com.coloros.ve" />
+    <icon name="ic_launcher_nfc_tag.png" package="com.coloros.tag" />
+    <icon name="ic_launcher_bt_share.png" package="com.android.bluetooth" />
+
+    <icon name="ic_launcher_splitscreen.png" package="com.coloros.SplitScreenIntelligence" />
+
+    
+    <icon name="ic_launcher_redteamobile_roaming.png" package="com.redteamobile.roaming" />
+    <icon name="ic_launcher_redteamobile_roaming.png" package="com.redteamobile.oppo.roaming" />
+
+   
+    <icon name="ic_launcher_notes.png" package="com.mediatek.notebook" />
+    <icon name="ic_launcher_task_manager.png" package="com.mediatek.taskmanager" />
+    <icon name="ic_launcher_cmcc_client.png" package="com.mediatek.cmcc" />
+    <icon name="ic_launcher_todo.png" package="com.mediatek.todos" />
+    <icon name="ic_launcher_my_favorite.png" package="com.mediatek.myfavorite" />
+    <icon name="ic_launcher_mobile_portal.png" package="com.mediatek.mobileportal" />
+    <icon name="ic_launcher_dp_elong.png" package="com.dp.android.elong" />
+
+    
+    
+    <icon name="ic_launcher_etao_kaka.png" package="com.etao.kaka" />
+    
+    <icon name="ic_launcher_netease_pris.png" package="com.netease.pris" />
+    
+    <icon name="ic_launcher_taobao.png" package="com.taobao.taobao" />
+    <icon name="ic_launcher_calender.png" package="com.oppo.widget.calendar" />
+    <icon name="ic_launcher_clock.png" package="com.coloros.widget.smallweather" />
+    <icon name="ic_launcher_clock.png" package="com.oppo.widget.digitalclock" />
+
+    <icon name="ic_launcher_locknow.png" package="com.oppo.LockScreenWeather" />
+    <icon name="ic_launcher_locknow.png" package="com.oppo.travel" />
+    <icon name="ic_launcher_locknow.png" package="com.oppo.LockScreenGlassBoard" />
+    <icon name="ic_launcher_locknow.png" package="com.oppo.card" />
+
+    <icon name="ic_launcher_locknow.png" package="com.oppo.orignalunlock.jbtwo" />
+
+    
+    <icon name="ic_launcher_cmb_pb.png" package="cmb.pb" />
+
+    
+    <icon name="ic_launcher_ctrip.png" package="ctrip.android.view" />
+
+    
+    <icon name="ic_launcher_im_yixin.png" package="im.yixin" />
+
+    
+    <icon name="ic_launcher_netease_vopen.png" package="com.netease.vopen" />
+
+    
+    <icon name="ic_launcher_baidulife.png" package="com.baidu.baidulife" />
+
+    
+    <icon name="ic_launcher_blacklist.png" package="com.oppo.blacklist" />
+     
+     <icon name="ic_launcher_blacklist.png" package="com.oppo.safecenter" />
+
+     
+    <icon name="ic_launcher_nxp_wallet_oppo.png" package="com.nxp.wallet.oppo" />
+
+    
+    <icon name="ic_launcher_sohu_ltevideo.png" package="com.sohu.ltevideo" />
+
+    
+    <icon name="ic_launcher_remote.png" package="com.oppo.remotectrl" />
+
+
+
+    
+    
+    
+    <icon name="ic_launcher_tencent_mm.png" package="com.tencent.mm" />
+
+    
+    <icon name="ic_launcher_kugou.png" package="com.kugou.android" />
+
+    
+    <icon name="ic_launcher_qiyi_video.png" package="com.qiyi.video" />
+
+    
+    <icon name="ic_launcher_inputmethod_sogou.png" package="com.sohu.inputmethod.sogou" />
+
+    
+    <icon name="ic_launcher_qq_qzone.png" package="com.qzone" />
+
+    
+    <icon name="ic_launcher_mt_mtxx.png" package="com.mt.mtxx.mtxx" />
+
+    
+    <icon name="ic_launcher_ucmobile.png" package="com.UCMobile" />
+
+    
+    <icon name="ic_launcher_iflytek_inputmethod.png" package="com.iflytek.inputmethod" />
+
+    
+    <icon name="ic_launcher_talkingtom2free.png" package="com.outfit7.talkingtom2free" />
+
+    
+    <icon name="ic_launcher_cocos2dx_fishgame.png" package="org.cocos2dx.FishGame" />
+
+    
+    <icon name="ic_launcher_pps_mobile.png" package="tv.pps.mobile" />
+
+    
+    <icon name="ic_launcher_kuwo_player.png" package="cn.kuwo.player" />
+
+    
+    <icon name="ic_launcher_fruitninjafree.png" package="com.halfbrick.fruitninjafree" />
+
+    
+    <icon name="ic_launcher_qqmusic.png" package="com.tencent.qqmusic" />
+
+    
+    <icon name="ic_launcher_fruitninja.png" package="com.halfbrick.fruitninja" />
+
+    
+    <icon name="ic_launcher_youku_phone.png" package="com.youku.phone" />
+    
+
+
+
+
+    
+    
+    
+    <icon name="ic_launcher_angrybirds.png" package="com.rovio.angrybirds" />
+
+    
+    <icon name="ic_launcher_popcap_pvz.png" package="com.popcap.pvz" />
+
+    
+    <icon name="ic_launcher_philzhu_www_ddz.png" package="com.philzhu.www.ddz" />
+
+    
+    <icon name="ic_launcher_kascend_video.png" package="com.kascend.video" />
+
+    
+    <icon name="ic_launcher_baidumap.png" package="com.baidu.BaiduMap" />
+
+    
+    <icon name="ic_launcher_ttpod.png" package="com.sds.android.ttpod" />
+
+    
+    <icon name="ic_launcher_sohuvideo.png" package="com.sohu.sohuvideo" />
+
+    
+    <icon name="ic_launcher_popstar.png" package="com.wpd.game.popstar" />
+
+    
+    <icon name="ic_launcher_lordland_nearme.png" package="com.boyaa.lordland.nearme.gamecenter" />
+
+    
+    <icon name="ic_launcher_game_ndk.png" package="Game.NDK" />
+
+    
+    <icon name="ic_launcher_netease_newsreader.png" package="com.netease.newsreader.activity" />
+
+    
+    <icon name="ic_launcher_my_beautycamera.png" package="my.beautyCamera" />
+
+    
+    <icon name="ic_launcher_youdao_dict.png" package="com.youdao.dict" />
+
+    
+    <icon name="ic_launcher_changba.png" package="com.changba" />
+
+    
+    <icon name="ic_launcher_qqpimsecure.png" package="com.tencent.qqpimsecure" />
+
+    
+    <icon name="ic_launcher_adobe_flashplayer.png" package="com.adobe.flashplayer" />
+
+    
+    <icon name="ic_launcher_storm_smart.png" package="com.storm.smart" />
+
+    
+    <icon name="ic_launcher_momo.png" package="com.immomo.momo" />
+    
+
+
+    
+    
+    
+    <icon name="ic_launcher_alipaygphone.png" package="com.eg.android.AlipayGphone" />
+
+    
+    <icon name="ic_launcher_supermario.png" package="com.flyfish.supermario" />
+
+    
+    <icon name="ic_launcher_rthunder2lite.png" package="com.polarbit.rthunder2lite" />
+
+    
+    <icon name="ic_launcher_angrybirdsspace_ads.png" package="com.rovio.angrybirdsspace.ads" />
+
+    
+    <icon name="ic_launcher_phonoalbumshoushou.png" package="cn.opda.a.phonoalbumshoushou" />
+
+    
+    <icon name="ic_launcher_fishingjoy2.png" package="org.cocos2dx.FishingJoy2" />
+
+    
+    <icon name="ic_launcher_loader.png" package="dopool.loader" />
+
+    
+    <icon name="ic_launcher_wps_moffice_eng.png" package="cn.wps.moffice_eng" />
+
+    
+    <icon name="ic_launcher_baidu_video.png" package="com.baidu.video" />
+
+    
+    <icon name="ic_launcher_tencent_qqlive.png" package="com.tencent.qqlive" />
+
+    
+    <icon name="ic_launcher_mapbarmap.png" package="com.mapbar.android.mapbarmap" />
+
+    
+    <icon name="ic_launcher_tencent_mtt.png" package="com.tencent.mtt" />
+
+    
+    <icon name="ic_launcher_dianping_v1.png" package="com.dianping.v1" />
+
+    
+    <icon name="ic_launcher_shuqi_controller.png" package="com.shuqi.controller" />
+
+    
+    <icon name="ic_launcher_camera360.png" package="vStudio.Android.Camera360" />
+
+    
+    <icon name="ic_launcher_findsomething_channel_91.png" package="org.funship.findsomething.channel_91" />
+
+    
+    <icon name="ic_launcher_shootbubble_bubbledexlue.png" package="com.shootbubble.bubbledexlue" />
+
+    
+    <icon name="ic_launcher_tmall_wireless.png" package="com.tmall.wireless" />
+
+    
+    <icon name="ic_launcher_feelingtouch_ninjarun.png" package="com.feelingtouch.NinjaRun" />
+
+    
+    <icon name="ic_launcher_bubei_tingshu.png" package="bubei.tingshu" />
+    
+
+
+    
+    
+    
+    <icon name="ic_launcher_disney_troz.png" package="com.disney.troz" />
+
+    
+    <icon name="ic_launcher_androidesk.png" package="com.androidesk" />
+
+    
+    <icon name="ic_launcher_growaway_nearme.png" package="com.growaway.nearme.gamecenter" />
+
+    
+    <icon name="ic_launcher_whu_iss_sric.png" package="whu.iss.sric.android" />
+
+    
+    <icon name="ic_launcher_cnvcs_xiangqi.png" package="com.cnvcs.xiangqi" />
+
+    
+    <icon name="ic_launcher_ecapycsw_onetouchdrawing.png" package="com.ecapycsw.onetouchdrawing" />
+
+    
+    <icon name="ic_launcher_com_fetion.png" package="cn.com.fetion" />
+
+    
+    <icon name="ic_launcher_duowan_mobile.png" package="com.duowan.mobile" />
+
+    
+    <icon name="ic_launcher_uuzu_mjhapk_gwan2.png" package="air.com.uuzu.mjhapk.gwan2" />
+
+    
+    <icon name="ic_launcher_tobiapps_100fl.png" package="com.tobiapps.android_100fl" />
+
+    
+    <icon name="ic_launcher_carrot_carrotfantasy.png" package="com.carrot.carrotfantasy" />
+
+    
+    <icon name="ic_launcher_letv_client.png" package="com.letv.android.client" />
+
+    
+    <icon name="ic_launcher_polarbit_ragingthunder.png" package="com.polarbit.ragingthunder" />
+
+    
+    <icon name="ic_launcher_enfeel_birzzle.png" package="com.enfeel.birzzle" />
+
+    
+    <icon name="ic_launcher_outfit7_tomslovelettersfree.png" package="com.outfit7.tomslovelettersfree" />
+
+    
+    <icon name="ic_launcher_htjyb_reader.png" package="cn.htjyb.reader" />
+
+    
+    <icon name="ic_launcher_taobao_wireless_wht_a180.png" package="com.taobao.wireless.wht.a180" />
+
+    
+    <icon name="ic_launcher_voice_assistant_main.png" package="com.voice.assistant.main" />
+
+    
+    <icon name="ic_launcher_anguanjia_safe.png" package="com.anguanjia.safe" />
+    
+
+
+    
+    
+    
+    <icon name="ic_launcher_zjh_cmge.png" package="com.zjh.cmge" />
+
+    
+    <icon name="ic_launcher_disney_chukong_wmw.png" package="com.disney.chukong.WMW" />
+
+    
+    <icon name="ic_launcher_kiloo_subwaysurf.png" package="com.kiloo.subwaysurf" />
+
+    
+    <icon name="ic_launcher_mobile_shaketoflashlight.png" package="com.xy.mobile.shaketoflashlight" />
+
+    
+    <icon name="ic_launcher_flyfish_goldminers.png" package="com.rao.flyfish.goldminers" />
+
+    
+    <icon name="ic_launcher_gamevil_ctr_paid.png" package="com.zeptolab.gamevil.ctr.paid" />
+
+    
+    <icon name="ic_launcher_rovio_angrybirdsseasons.png" package="com.rovio.angrybirdsseasons" />
+
+    
+    <icon name="ic_launcher_motu_photowonder.png" package="cn.jingling.motu.photowonder" />
+
+    
+    <icon name="ic_launcher_sqt001_ipcall.png" package="com.sqt001.ipcall" />
+
+    
+    <icon name="ic_launcher_my_pcamera.png" package="my.PCamera" />
+
+    
+    <icon name="ic_launcher_fgol_sharkfree.png" package="com.fgol.sharkfree" />
+
+    
+    <icon name="ic_launcher_yx_free_mobile.png" package="com.yx" />
+
+    
+    <icon name="ic_launcher_jetpackjoyridefree.png" package="com.halfbrick.jetpackjoyridefree" />
+
+    
+    <icon name="ic_launcher_kk_fruit_link.png" package="kk.fruit_link" />
+
+    
+    <icon name="ic_launcher_cnvcs_gomoku.png" package="com.cnvcs.gomoku" />
+
+    
+    <icon name="ic_launcher_lk_wzzj_nearme.png" package="com.lk.wzzj.nearme.gamecenter" />
+
+    
+    <icon name="ic_launcher_vectorunit_blueoppo.png" package="com.vectorunit.blueoppo" />
+
+    
+    <icon name="ic_launcher_wx_wan5g2.png" package="com.wx.wan5g2" />
+
+    
+    <icon name="ic_launcher_tencent_wblog.png" package="com.tencent.WBlog" />
+    
+
+
+
+    
+    
+    
+    <icon name="ic_launcher_mobi_livewallpaper_htys.png" package="com.mobi.livewallpaper.htys" />
+
+    
+    <icon name="ic_launcher_tencent_minihd_qq.png" package="com.tencent.minihd.qq" />
+
+    
+    <icon name="ic_launcher_mogujie.png" package="com.mogujie" />
+
+    
+    <icon name="ic_launcher_kk_xyj_p37wan02.png" package="cn.kk.xyj.p37wan02" />
+
+    
+
+
+    
+    <icon name="ic_launcher_anyisheng_doctoran.png" package="com.anyisheng.doctoran" />
+
+    
+    <icon name="ic_launcher_sim_gerard_kickme.png" package="com.sim.gerard.kickme" />
+
+    
+    <icon name="ic_launcher_chunyudoctorclassic.png" package="me.chunyu.ChunyuDoctorClassic" />
+
+    
+    <icon name="ic_launcher_dianxinos_powermanager.png" package="com.dianxinos.powermanager" />
+
+    
+
+
+    
+    <icon name="ic_launcher_dewmobile_kuaiya.png" package="com.dewmobile.kuaiya" />
+
+    
+    <icon name="ic_launcher_forthblue_pool.png" package="com.forthblue.pool" />
+
+    
+    <icon name="ic_launcher_osaris_turbofly.png" package="net.osaris.turbofly" />
+
+    
+    <icon name="ic_launcher_metek_zqweather.png" package="com.metek.zqWeather" />
+
+    
+    <icon name="ic_launcher_feelingtouch_racingcar.png" package="com.feelingtouch.racingcar" />
+
+    
+    <icon name="ic_launcher_lingdong_client_android.png" package="com.lingdong.client.android" />
+
+    
+    <icon name="ic_launcher_loong_fgwan1.png" package="com.joygame.loong.fgwan1" />
+
+    
+    <icon name="ic_launcher_android_pandahome2.png" package="com.nd.android.pandahome2" />
+
+    
+    <icon name="ic_launcher_digitalchocolate_rollnyfull.png" package="com.digitalchocolate.rollnyfull" />
+
+    
+
+    
+    
+    
+
+
+    
+    <icon name="ic_launcher_baidu_searchbox.png" package="com.baidu.searchbox_oppo" />
+    <icon name="ic_launcher_baidu_searchbox.png" package="com.baidu.searchbox" />
+
+    
+
+
+    
+    <icon name="ic_launcher_niting_app.png" package="com.niting.app" />
+
+    
+
+
+    
+    <icon name="ic_launcher_cld_navi_mainframe.png" package="cld.navi.mainframe" />
+
+    
+    <icon name="ic_launcher_appcup_bubble.png" package="com.appcup.bubble" />
+
+    
+
+
+    
+    <icon name="ic_launcher_yesiken_beyondtetris.png" package="com.yesiken.BeyondTetris" />
+
+    
+    <icon name="ic_launcher_qihoo360_mobilesafe_opti_powerctl.png" package="com.qihoo360.mobilesafe.opti.powerctl" />
+
+    
+    <icon name="ic_launcher_ezjoynetwork.marbleblast2.png" package="com.ezjoynetwork.marbleblast2" />
+
+    
+    <icon name="ic_launcher_com2us_hg.png" package="com.com2us.HG" />
+
+    
+    <icon name="ic_launcher_hongda_ccd.png" package="com.hongda.ccd" />
+
+    
+    <icon name="ic_launcher_mag3dlite_sf3d.png" package="Mag3DLite.SF3D" />
+
+    
+    <icon name="ic_launcher_gau_go_launcherex.png" package="com.gau.go.launcherex" />
+
+    
+    <icon name="ic_launcher_sogou_map_android.png" package="com.sogou.map.android.maps" />
+
+    
+    <icon name="ic_launcher_game_zhaocha1.png" package="com.xy.game.zhaocha1" />
+
+    
+    <icon name="ic_launcher_appy_facefighter.png" package="com.appy.facefighter" />
+
+    
+    <icon name="ic_launcher_moji_mjweather.png" package="com.moji.mjweather" />
+
+    
+    <icon name="ic_launcher_bobgame_chickenrun2.png" package="com.bobgame.chickenrun2" />
+    
+
+
+    
+    
+    
+    <icon name="ic_launcher_onion_reader.png" package="com.onion.reader" />
+
+    
+    <icon name="ic_launcher_roidgame_sniper.png" package="com.roidgame.sniper" />
+
+    
+    <icon name="ic_launcher_kingsoft_wordback.png" package="com.kingsoft.wordback" />
+
+    
+    <icon name="ic_launcher_qq_reader.png" package="com.qq.reader" />
+
+    
+    <icon name="ic_launcher_baidu_input.png" package="com.baidu.input" />
+
+    
+    <icon name="ic_launcher_meilishuo.png" package="com.meilishuo" />
+
+    
+    <icon name="ic_launcher_manle_makeup.png" package="com.manle.phone.android.makeup" />
+
+    
+    <icon name="ic_launcher_tiros_android_navidog.png" package="cn.com.tiros.android.navidog" />
+
+    
+    <icon name="ic_launcher_skyjetinter_chaoslite.png" package="com.skyjetinter.chaoslite" />
+
+    
+    <icon name="ic_launcher_birdjoy.png" package="com.birdjoy" />
+
+    
+    <icon name="ic_launcher_galapagossoft_trial.png" package="com.galapagossoft.trial" />
+
+    
+    <icon name="ic_launcher_wacai365.png" package="com.wacai365" />
+
+    
+    <icon name="ic_launcher_ledong_musicbox.png" package="com.ledong.musicbox" />
+
+    
+
+
+    
+    <icon name="ic_launcher_kinglau_mslug.png" package="com.kinglau.mslug" />
+
+    
+    <icon name="ic_launcher_devuni_flashlight.png" package="com.devuni.flashlight" />
+
+    
+    <icon name="ic_launcher_fishnoodle_koipond.png" package="fishnoodle.koipond" />
+
+    
+    <icon name="ic_launcher_mzyou_mzgame_douniu_nearme.png" package="cn.mzyou.mzgame.douniu.nearme.gamecenter" />
+
+    
+    <icon name="ic_launcher_tencent_mobileqq_old.png" package="com.tencent.mobileqq.old" />
+
+    
+    <icon name="ic_launcher_weimeishouhui146_appjoy.png" package="cn.bighead.livewallpaper.weimeishouhui146.appjoy" />
+
+    
+
+
+    
+
+    
+    <icon name="ic_launcher_og_danjiddz.png" package="com.og.danjiddz" />
+
+    
+    <icon name="ic_launcher_rockstar_gta3.png" package="com.rockstar.gta3" />
+
+    
+    <icon name="ic_launcher_thevoxelagents_tc2.png" package="com.thevoxelagents.tc2.oppo" />
+
+    
+    <icon name="ic_launcher_lying_maingamexinji.png" package="com.uqee.lying.maingamexinji" />
+
+    
+    <icon name="ic_launcher_droidhen_fruit.png" package="com.droidhen.fruit" />
+
+    
+    <icon name="ic_launcher_chinabus_8684.png" package="cn.chinabus.main" />
+
+    
+    <icon name="ic_launcher_digimobistudio_roadfighter.png" package="com.digimobistudio.roadfighter" />
+
+    
+    <icon name="ic_launcher_zhangdan.png" package="com.zhangdan.app" />
+
+    
+    <icon name="ic_launcher_gts8_td2_full_cn_nearme.png" package="com.gts8_td2_full_cn.nearme.gamecenter" />
+
+    
+
+
+    
+    <icon name="ic_launcher_mobi_livewallpaper_zwm5.png" package="com.mobi.livewallpaper.zwm5" />
+
+    
+    <icon name="ic_launcher_tpad_change_unlock_luo2li4.png" package="com.tpad.change.unlock.luo2li4" />
+
+    
+    <icon name="ic_launcher_yoloho_dayima.png" package="com.yoloho.dayima" />
+
+    
+    <icon name="ic_launcher_shylisr.png" package="com.shylisr" />
+
+    
+    <icon name="ic_launcher_hortor_pictoword.png" package="com.hortor.pictoword" />
+
+    
+    <icon name="ic_launcher_ijinshan_duba.png" package="com.ijinshan.duba" />
+
+    
+    <icon name="ic_launcher_gm_jumping.png" package="cn.gm.jumping" />
+
+    
+    <icon name="ic_launcher_tpad_change_unlock_jian3dan1ai4.png" package="com.tpad.change.unlock.jian3dan1ai4" />
+
+    
+    <icon name="ic_launcher_excel_sgs_nearme.png" package="excel.sgs.nearme" />
+
+    
+
+
+    
+
+    
+    <icon name="ic_launcher_tencent_qqpinyin.png" package="com.tencent.qqpinyin" />
+
+    
+    <icon name="ic_launcher_firemaplegames_thelostcity.png" package="com.firemaplegames.thelostcity" />
+
+    
+    <icon name="ic_launcher_boyaa_scmj_nearme.png" package="com.boyaa.scmj.nearme.gamecenter" />
+
+    
+    <icon name="ic_launcher_gametalkingcat3.png" package="com.android.gametalkingcat3" />
+
+    
+    <icon name="ic_launcher_tencent_token.png" package="com.tencent.token" />
+
+    
+    <icon name="ic_launcher_kb_carrom3dfull.png" package="com.kb.Carrom3DFull" />
+
+    
+    <icon name="ic_launcher_sankuai_meituan.png" package="com.sankuai.meituan" />
+
+    
+    <icon name="ic_launcher_nd_android_pandareade.png" package="com.nd.android.pandareader" />
+
+    
+    <icon name="ic_launcher_wallpaper_fengjing_summer.png" package="bighead.wallpaper.fengjing.summer" />
+
+    
+    <icon name="ic_launcher_firemaplegames_games_thesecretofgrislymanor.png" package="com.firemaplegames.games.thesecretofgrislymanor" />
+
+    
+    <icon name="ic_launcher_ophone_reader_ui.png" package="com.ophone.reader.ui" />
+
+    
+    <icon name="ic_launcher_pip_android_ss.png" package="com.pip.android.ss" />
+
+    
+    <icon name="ic_launcher_com2us_thirdblade_normal_freefull.png" package="com.com2us.thirdblade.normal.freefull.google.global.android.common" />
+
+    
+    <icon name="ic_launcher_bfs_kkgame_ninjump.png" package="com.bfs.kkgame.ninjump" />
+
+    
+    <icon name="ic_launcher_baidu_browser.png" package="com.baidu.browser.apps" />
+
+    
+    <icon name="ic_launcher_of3d_cf_activitied_noadser.png" package="com.of3d.cf.Activitied_noadser" />
+
+    
+    <icon name="ic_launcher_jingdong_app_mall.png" package="com.jingdong.app.mall" />
+
+    
+    <icon name="ic_launcher_manle_yaodian.png" package="com.manle.phone.android.yaodian" />
+
+    
+    <icon name="ic_launcher_zhang_game_papa.png" package="com.zhang.game.papa" />
+
+    
+    <icon name="ic_launcher_ratrodstudio_driftmania.png" package="com.ratrodstudio.driftmania" />
+
+    
+
+    
+    
+    <icon name="ic_launcher_qihoo_mobilesafe.png" package="com.qihoo360.mobilesafe" />
+
+    
+    <icon name="ic_launcher_change_unlock.png" package="com.change.unlock" />
+
+    
+    <icon name="ic_launcher_livewallpaper_love3.png" package="com.mobi.livewallpaper.love3" />
+
+    
+    <icon name="ic_launcher_qq_buy.png" package="com.qq.buy" />
+
+        
+    <icon name="ic_launcher_snda_wifilocating.png" package="com.snda.wifilocating" />
+
+    
+    <icon name="ic_launcher_lovebizhi_wallpaper.png" package="com.lovebizhi.wallpaper" />
+
+    
+    <icon name="ic_launcher_ting_mp3.png" package="com.ting.mp3.android" />
+
+    
+    <icon name="ic_launcher_hyperkani_sliceice.png" package="com.hyperkani.sliceice" />
+
+    
+    <icon name="ic_launcher_sg_android_fish.png" package="com.sg.android.fish" />
+
+    
+    <icon name="ic_launcher_ugly_meter.png" package="com.content.ugly.meter" />
+
+    
+    <icon name="ic_launcher_duomi.png" package="com.duomi.android" />
+
+    
+    <icon name="ic_launcher_rasoft_bubble.png" package="com.rasoft.bubble" />
+
+    
+    <icon name="ic_launcher_autonavi_minimap.png" package="com.autonavi.minimap" />
+
+    
+    <icon name="ic_launcher_yodo1tier1_skisafari.png" package="com.yodo1tier1.YY001.SkiSafari" />
+
+    
+    <icon name="ic_launcher_oooo3d_talkingtom.png" package="com.oooo3d.talkingtom" />
+
+    
+    <icon name="ic_launcher_droidhen_racingmoto.png" package="com.droidhen.game.racingmoto" />
+
+    
+    <icon name="ic_launcher_handsgo_jiakao.png" package="com.handsgo.jiakao.android" />
+
+    
+    <icon name="ic_launcher_monotype_font_mjngaiprcmedium.png" package="com.monotype.android.font.mjngaiprcmedium" />
+
+    
+    <icon name="ic_launcher_qlwx_xmsh_cmge_c1wan.png" package="air.com.qlwx.xmsh.cmge.c1wan" />
+
+    
+    <icon name="ic_launcher_leftover_coindozer.png" package="com.leftover.CoinDozer" />
+
+    
+
+    
+
+  
+  <icon name="ic_launcher_nearme_launcher.png" package="com.nearme.launcher" />
+
+    
+  <icon name="ic_launcher_qvod_player.png" package="com.qvod.player" />
+
+  
+  <icon name="ic_launcher_coolplay_dsddz_cmge.png" package="com.coolplay.dsddz.cmge" />
+
+    
+  <icon name="ic_launcher_a5game_leidian2.png" package="a5game.leidian2" />
+
+  
+  <icon name="ic_launcher_ruide_lzzh_cmge.png" package="com.ruide.lzzh.cmge" />
+
+    
+  <icon name="ic_launcher_lingan_seeyou.png" package="com.lingan.seeyou" />
+
+  
+  <icon name="ic_launcher_kuhakuworks_doors.png" package="com.kuhakuworks.DOOORS" />
+
+    
+  <icon name="ic_launcher_manboker_headportrait.png" package="com.manboker.headportrait" />
+
+  
+  <icon name="ic_launcher_yiche_price.png" package="com.yiche.price" />
+
+    
+  <icon name="ic_launcher_haowan123_nearme_gamecenter.png" package="com.haowan123.nearme.gamecenter" />
+
+  
+  <icon name="ic_launcher_fm_qingting_qtradio.png" package="fm.qingting.qtradio" />
+
+    
+  <icon name="ic_launcher_qsbk_app.png" package="qsbk.app" />
+
+  
+  <icon name="ic_launcher_sohu_newsclient.png" package="com.sohu.newsclient" />
+
+    
+  <icon name="ic_launcher_com_mymoney.png" package="com.mymoney" />
+
+  
+  <icon name="ic_launcher_tencent_game_rhythmmaster.png" package="com.tencent.game.rhythmmaster" />
+
+    
+  <icon name="ic_launcher_tencent_pao.png" package="com.tencent.pao" />
+
+  
+  <icon name="ic_launcher_tencent_lian.png" package="com.tencent.lian" />
+
+    
+  <icon name="ic_launcher_tudou_android.png" package="com.tudou.android" />
+
+  
+  <icon name="ic_launcher_alibaba_mobileim.png" package="com.alibaba.mobileim" />
+
+    
+  <icon name="ic_launcher_wochacha.png" package="com.wochacha" />
+
+    
+
+    
+
+    
+  <icon name="ic_launcher_wxol_nearme_gamecenter.png" package="com.wxol.nearme.gamecenter" />
+
+    
+  <icon name="ic_launcher_ydzs_cmge.png" package="com.ydzs.cmge" />
+
+    
+  <icon name="ic_launcher_camigomedia_mewantbamboo.png" package="com.camigomedia.mewantbamboo" />
+
+    
+  <icon name="ic_launcher_unlock_content_xunyicaozhi1lian4.png" package="com.tpad.change.unlock.content.xunyicaozhi1lian4" />
+
+    
+  <icon name="ic_launcher_xunlei_kankan.png" package="com.xunlei.kankan" />
+
+    
+  <icon name="ic_launcher_uu_uunavi.png" package="com.uu.uunavi" />
+
+    
+    <icon name="ic_launcher_huimao_bobo.png" package="com.huimao.bobo" />
+
+    
+    <icon name="ic_launcher_cleanmaster_mguard.png" package="com.cleanmaster.mguard_cn" />
+
+    
+    <icon name="ic_launcher_tencent_qqpim.png" package="com.tencent.qqpim" />
+
+    
+    <icon name="ic_launcher_tencent_peng.png" package="com.tencent.peng" />
+
+    
+    <icon name="ic_launcher_tencent_news.png" package="com.tencent.news" />
+
+    
+    <icon name="ic_launcher_qunar.png" package="com.Qunar" />
+
+    
+    <icon name="ic_launcher_funshion_video.png" package="com.funshion.video.mobile" />
+
+    
+    <icon name="ic_launcher_templerun2.png" package="com.imangi.templerun2" />
+
+    
+    <icon name="ic_launcher_baidu_tieba.png" package="com.baidu.tieba" />
+
+    
+    <icon name="ic_launcher_pplive_androidphone.png" package="com.pplive.androidphone" />
+
+    
+    <icon name="ic_launcher_sogoubus.png" package="com.sogou.map.android.sogoubus" />
+
+    
+    <icon name="ic_launcher_birdjoy.png" package="com.birdjoy" />
+
+    
+    <icon name="ic_launcher_qqgame_hlddz.png" package="com.qqgame.hlddz" />
+
+    
+    <icon name="ic_launcher_baidu_02.png" package="com.yodo1.ctr2.BAIDU_02" />
+
+    
+    <icon name="ic_launcher_pvz2bddk.png" package="com.popcap.pvz2bddk" />
+
+    
+    <icon name="ic_launcher_dreamoe_freewayjumper.png" package="com.dreamoe.freewayjumper.android.HUAWEI" />
+
+    
+    <icon name="ic_launcher_talkingtom.png" package="com.outfit7.talkingtom2" />
+
+    
+    <icon name="ic_launcher_rasoft_linker.png" package="com.rasoft.linker" />
+
+    
+    <icon name="ic_launcher_sgshd.png" package="com.sgshd.nearme.gamecenter" />
+
+    
+    <icon name="ic_launcher_im_cmb_ui.png" package="com.cmb.ui" />
+
+    
+    
+    <icon name="ic_launcher_wo116114" package="com.neusoft.td.android.wo116114" />
+
+    
+    <icon name="ic_launcher_sinovatech_unicom_ui.png" package="com.sinovatech.unicom.ui" />
+
+    
+    <icon name="ic_launcher_com_wo" package="cn.com.wo" />
+
+    
+    <icon name="ic_launcher_wostore_ui.png" package="com.infinit.wostore.ui" />
+
+    
+    
+    
+
+    
+    
+
+    
+    
+
+    
+    
+
+    
+    
+
+    
+    
+
+    
+    <icon name="ic_launcher_corp21cn_mail189.png" package="com.corp21cn.mail189" />
+
+    
+    
+
+    
+    <icon name="ic_launcher_oppo_wearable.png" package="com.oppo.wearable" />
+
+    
+    <icon name="ic_launcher_clock.png" package="com.oppo.alarmclock" />
+    <icon name="ic_launcher_video.png" package="com.oppo.video" />
+    <icon name="ic_launcher_gallery3d.png" package="com.oppo.gallery3d" />
+    <icon name="ic_launcher_filemanager.png" package="com.oppo.filemanager" />
+    <icon name="ic_launcher_recorder.png" package="oppo.multimedia.soundrecorder" />
+    <icon name="ic_launcher_flash_light.png" package="com.oppo.flashlight" />
+    <icon name="ic_launcher_compass.png" package="com.oppo.compass" />
+    <icon name="ic_launcher_operation_manual.png" package="com.oppo.operationManual" />
+    <icon name="ic_launcher_nearme_ota.png" package="com.oplus.ota" />
+    <icon name="ic_launcher_weather.png" package="com.oppo.weather" />
+    <icon name="ic_launcher_speechassist.png" package="com.oppo.speechassist" />
+    <icon name="ic_launcher_speechassist.png" package="com.oppo.speechassist.engine" />
+    <icon name="ic_launcher_feedback.png" package="com.nearme.feedback" />
+    <icon name="ic_launcher_backuprestore.png" package="com.oppo.backuprestore" />
+    <icon name="ic_launcher_nfc_tag.png" package="com.oppo.tag" />
+    <icon name="ic_launcher_weather.png" package="com.oppo.widget.smallweather" />
+    <icon name="ic_launcher_video.png" package="com.tencent.tvoem" />
+    <icon name="ic_launcher_news.png" package="com.oppo.news" />
+    <icon name="ic_launcher_music.png" package="com.heytap.music" />
+    <icon name="ic_launcher_videoeditor.png" package="com.oplus.videoeditor" />
+    <icon name="ic_launcher_camera.png" package="com.oneplus.camera" />
+    <icon name="ic_launcher_camera.png" package="com.oplus.camera" />
+	<icon name="ic_launcher_nearme_play.png" package="com.oplus.play" />
+    <icon name="ic_launcher_nearme_usercenter.png" package="com.oplus.vip" />
+    <icon name="ic_launcher_filemanager.png" package="com.oneplus.filemanager" />
+    <icon name="ic_launcher_nearme_note.png" package="com.oneplus.note" />
+    <icon name="ic_launcher_gallery3d.png" package="com.oneplus.gallery" />
+    <icon name="ic_launcher_recorder.png" package="com.oneplus.soundrecorder" />
+	<icon name="ic_launcher_clock.png" package="com.oneplus.deskclock" />
+    <icon name="ic_launcher_calender.png" package="com.oneplus.calendar" />
+    <icon name="ic_launcher_weather.png" package="net.oneplus.weather" />
+    <icon name="ic_launcher_calender.png" package="com.oplus.calendar" />
+    
+<icon name="app.alextran.immich.png" package="app.alextran.immich" /><icon name="bin.mt.plus.png" package="bin.mt.plus" /><icon name="cc.csxcl.fkcoloros.png" package="cc.csxcl.fkcoloros" /><icon name="cn.rayneo.mercury.png" package="cn.rayneo.mercury" /><icon name="com.aliucord.png" package="com.aliucord" /><icon name="com.anthropic.claude.png" package="com.anthropic.claude" /><icon name="com.box.app.png" package="com.box.app" /><icon name="com.bytedance.android.doubaoime.png" package="com.bytedance.android.doubaoime" /><icon name="com.carriez.flutter_hbb.png" package="com.carriez.flutter_hbb" /><icon name="com.catchingnow.icebox.png" package="com.catchingnow.icebox" /><icon name="com.catchingnow.np.png" package="com.catchingnow.np" /><icon name="com.didjdk.adbhelper.png" package="com.didjdk.adbhelper" /><icon name="com.eusoft.eudic.png" package="com.eusoft.eudic" /><icon name="com.github.catfriend1.syncthingandroid.png" package="com.github.catfriend1.syncthingandroid" /><icon name="com.google.android.inputmethod.latin.png" package="com.google.android.inputmethod.latin" /><icon name="com.hengye.share.png" package="com.hengye.share" /><icon name="com.hypergryph.skland.png" package="com.hypergryph.skland" /><icon name="com.kkrainbow.easytier.png" package="com.kkrainbow.easytier" /><icon name="com.kurogame.kjq.png" package="com.kurogame.kjq" /><icon name="com.lc.miniwatt.minicharge.png" package="com.lc.miniwatt.minicharge" /><icon name="com.luckyzyx.luckytool.png" package="com.luckyzyx.luckytool" /><icon name="com.mulin.zou.png" package="com.mulin.zou" /><icon name="com.oculus.twilight.png" package="com.oculus.twilight" /><icon name="com.radolyn.ayugram.png" package="com.radolyn.ayugram" /><icon name="com.rajmani7584.payloaddumper.png" package="com.rajmani7584.payloaddumper" /><icon name="com.ruanyikeji.vesal.vesal.png" package="com.ruanyikeji.vesal.vesal" /><icon name="com.sgmw.baojunplus.png" package="com.sgmw.baojunplus" /><icon name="com.sony.playmemories.mobile.png" package="com.sony.playmemories.mobile" /><icon name="com.sukisu.ultra.png" package="com.sukisu.ultra" /><icon name="com.suno.android.png" package="com.suno.android" /><icon name="com.trainnote.rn.png" package="com.trainnote.rn" /><icon name="com.treatangus.fkcoloros.png" package="com.treatangus.fkcoloros" /><icon name="com.trim.app.png" package="com.trim.app" /><icon name="com.unionpay.tsmservice.png" package="com.unionpay.tsmservice" /><icon name="com.wibo.bigbang.ocr.png" package="com.wibo.bigbang.ocr" /><icon name="de.moekadu.metronome.png" package="de.moekadu.metronome" /><icon name="erl.webdavtoon.png" package="erl.webdavtoon" /><icon name="info.muge.appshare.png" package="info.muge.appshare" /><icon name="io.github.chsbuffer.revancedxposed.png" package="io.github.chsbuffer.revancedxposed" /><icon name="io.homeassistant.companion.android.png" package="io.homeassistant.companion.android" /><icon name="io.legado.app.release.png" package="io.legado.app.release" /><icon name="io.zhuliang.pipphotos.png" package="io.zhuliang.pipphotos" /><icon name="li.songe.gkd.png" package="li.songe.gkd" /><icon name="moe.shizuku.privileged.api.png" package="moe.shizuku.privileged.api" /><icon name="moe.tarsin.ehviewer.png" package="moe.tarsin.ehviewer" /><icon name="o.dyoo.png" package="o.dyoo" /><icon name="opensource.jmtt2mic.png" package="opensource.jmtt2mic" /><icon name="opensource.pic2acg.png" package="opensource.pic2acg" /><icon name="opensource.wax.png" package="opensource.wax" /><icon name="org.localsend.localsend_app.png" package="org.localsend.localsend_app" /><icon name="org.nobody.multitts.png" package="org.nobody.multitts" /><icon name="org.swiftapps.swiftbackup.png" package="org.swiftapps.swiftbackup" /><icon name="org.zwanoo.android.speedtest.png" package="org.zwanoo.android.speedtest" /><icon name="rikka.appops.png" package="rikka.appops" /></iconinfo>

@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<OppoSmartPhoneThemeInfo>
+  <Author>OPPO</Author>
+  <Summary>默认版</Summary>
+  <Description>默认版</Description>
+  <disableLockPictorial>0</disableLockPictorial>
+  <enableLauncherApplyEffect>1</enableLauncherApplyEffect>
+  <Scale>1.00</Scale>
+  <XOffsetPCT>0.00</XOffsetPCT>
+  <YOffsetPCT>0.00</YOffsetPCT>
+  <LastModifyTime>2019-01-31-00-00-00</LastModifyTime>
+  <IsGlobalTheme>0</IsGlobalTheme>
+  <LanguageType>1</LanguageType>
+  <EditorName>2.0</EditorName>
+  <UUID>8442D75634A540A79C6B98294185D251</UUID>
+  <PackageName>8442D75634A540A79C6B98294185D251</PackageName>
+  <VersionName>6.0.0</VersionName>
+  <VersionCode>600</VersionCode>
+  <packageInfo>
+    <package name="icons" />
+    <package name="wallpaper" />
+    <package name="picture"/>
+  </packageInfo>
+  <resolutionInfo>
+    <resolution>1920*1080</resolution>
+  </resolutionInfo>
+</OppoSmartPhoneThemeInfo>
