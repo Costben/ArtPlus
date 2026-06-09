@@ -23,6 +23,7 @@ import android.provider.Settings
 import android.util.LruCache
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -109,6 +110,7 @@ class MainActivity : ComponentActivity() {
     private var gptImageMode by mutableStateOf(GptImageMode.Responses)
     private var gptBaseUrl by mutableStateOf(DEFAULT_GPT_BASE_URL)
     private var gptApiKey by mutableStateOf("")
+    private var showAppPickerPage by mutableStateOf(false)
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -187,7 +189,6 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun ArtPlusScreen() {
-        val scrollBehavior = MiuixScrollBehavior()
         val pageBackground = if (isSystemInDarkTheme()) {
             MiuixTheme.colorScheme.background
         } else {
@@ -219,6 +220,32 @@ class MainActivity : ComponentActivity() {
                 if (showAllApps) apps.size else apps.count { it.launchable }
             }
         }
+        val launcherCount by remember {
+            derivedStateOf { apps.count { it.launchable } }
+        }
+
+        BackHandler(enabled = showAppPickerPage) {
+            showAppPickerPage = false
+        }
+
+        if (showAppPickerPage) {
+            AppPickerPage(
+                pageBackground = pageBackground,
+                filteredApps = filteredApps,
+                scopeCount = scopeCount,
+            )
+        } else {
+            HomePage(
+                pageBackground = pageBackground,
+                selectedApp = selectedApp,
+                launcherCount = launcherCount,
+            )
+        }
+    }
+
+    @Composable
+    private fun HomePage(pageBackground: Color, selectedApp: AppEntry?, launcherCount: Int) {
+        val scrollBehavior = MiuixScrollBehavior()
 
         Scaffold(
             topBar = {
@@ -251,8 +278,51 @@ class MainActivity : ComponentActivity() {
                             selectedApp = selectedApp,
                         )
                         GenerationCard(selectedApp)
-                        AppPickerCard(filteredApps.size, scopeCount)
+                        AppPickerSummaryCard(
+                            selectedApp = selectedApp,
+                            launcherCount = launcherCount,
+                            totalCount = apps.size,
+                        )
                     }
+                }
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        OutputCard()
+                        GptSettingsCard()
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun AppPickerPage(pageBackground: Color, filteredApps: List<AppEntry>, scopeCount: Int) {
+        val scrollBehavior = MiuixScrollBehavior()
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = "选择 APK",
+                    scrollBehavior = scrollBehavior,
+                )
+            },
+            popupHost = {},
+        ) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(pageBackground)
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .padding(innerPadding)
+                    .padding(horizontal = 12.dp),
+                contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item {
+                    AppPickerControlsCard(filteredApps.size, scopeCount)
                 }
                 if (filteredApps.isEmpty()) {
                     item {
@@ -270,17 +340,9 @@ class MainActivity : ComponentActivity() {
                             onClick = {
                                 selectedPackageName = entry.packageName
                                 statusText = "已选择: ${entry.label} (${entry.packageName})"
+                                showAppPickerPage = false
                             },
                         )
-                    }
-                }
-                item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        OutputCard()
-                        GptSettingsCard()
                     }
                 }
             }
@@ -526,7 +588,65 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppPickerCard(filteredCount: Int, totalCount: Int) {
+    private fun AppPickerSummaryCard(selectedApp: AppEntry?, launcherCount: Int, totalCount: Int) {
+        SectionCard(
+            title = "APK",
+            summary = selectedApp?.packageName ?: "从手机已安装应用中选择一个 APK",
+        ) {
+            if (selectedApp != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    AppIcon(selectedApp, 40.dp)
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        Text(
+                            text = selectedApp.label,
+                            style = MiuixTheme.textStyles.body1,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = selectedApp.packageName,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    MetricPill(label = "已选")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            SettingLine(
+                title = "应用列表",
+                summary = "启动器 $launcherCount 个 / 全部 $totalCount 个",
+                value = if (apps.isEmpty()) "加载中" else "可选择",
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = { showAppPickerPage = true },
+                enabled = !isBusy && apps.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColorsPrimary(),
+            ) {
+                Text(
+                    text = if (selectedApp == null) "选择 APK" else "更换 APK",
+                    style = MiuixTheme.textStyles.button,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun AppPickerControlsCard(filteredCount: Int, totalCount: Int) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(16.dp),
@@ -541,16 +661,23 @@ class MainActivity : ComponentActivity() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "应用",
+                        text = "应用列表",
                         style = MiuixTheme.textStyles.title4,
                         color = MiuixTheme.colorScheme.onSurface,
                     )
-                    Text(
-                        text = "$filteredCount/$totalCount",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    TextButton(
+                        text = "返回",
+                        onClick = { showAppPickerPage = false },
+                        enabled = !isBusy,
                     )
                 }
+                Text(
+                    text = "$filteredCount/$totalCount",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
