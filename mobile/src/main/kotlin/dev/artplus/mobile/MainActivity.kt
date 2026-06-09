@@ -595,7 +595,11 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun AppRow(entry: AppEntry, selected: Boolean, onClick: () -> Unit) {
         val shape = RoundedCornerShape(24.dp)
-        val color = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.surfaceContainer
+        val color = if (selected) {
+            MiuixTheme.colorScheme.primaryVariant
+        } else {
+            MiuixTheme.colorScheme.surfaceContainerHigh
+        }
         val titleColor = if (selected) {
             MiuixTheme.colorScheme.onPrimaryVariant
         } else {
@@ -929,6 +933,7 @@ class MainActivity : ComponentActivity() {
                         .thenBy { it.label.lowercase(Locale.ROOT) }
                         .thenBy { it.packageName },
                 )
+            preloadAppIcons(entries)
             runOnUiThread {
                 refreshPermissionState()
                 apps.clear()
@@ -938,29 +943,26 @@ class MainActivity : ComponentActivity() {
                     !packageListPermissionGranted -> "读取到 ${apps.size} 个应用，但应用列表权限状态异常。"
                     else -> "共 ${apps.size} 个应用，其中 ${launchablePackages.size} 个有启动器入口。"
                 }
-                preloadAppIcons(entries)
             }
         }.start()
     }
 
     private fun preloadAppIcons(entries: List<AppEntry>) {
-        Thread {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-            entries.asSequence()
-                .filter { it.launchable }
-                .take(PRELOAD_ICON_COUNT)
-                .forEach { entry ->
-                    if (getCachedAppIcon(entry.iconKey) != null) {
-                        return@forEach
-                    }
-                    val bitmap = runCatching { loadAppIconBitmap(entry) }.getOrNull() ?: return@forEach
-                    synchronized(appIconCache) {
-                        if (appIconCache.get(entry.iconKey) == null) {
-                            appIconCache.put(entry.iconKey, bitmap)
-                        }
+        Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+        entries.asSequence()
+            .filter { it.launchable }
+            .take(PRELOAD_ICON_COUNT)
+            .forEach { entry ->
+                if (getCachedAppIcon(entry.iconKey) != null) {
+                    return@forEach
+                }
+                val bitmap = runCatching { loadAppIconBitmap(entry) }.getOrNull() ?: return@forEach
+                synchronized(appIconCache) {
+                    if (appIconCache.get(entry.iconKey) == null) {
+                        appIconCache.put(entry.iconKey, bitmap)
                     }
                 }
-        }.start()
+            }
     }
 
     private fun refreshPermissionState() {
@@ -1957,7 +1959,7 @@ class MainActivity : ComponentActivity() {
         private const val GPT_CONNECT_TIMEOUT_MS = 30_000
         private const val GPT_READ_TIMEOUT_MS = 360_000
         private const val ICON_CACHE_SIZE = 96
-        private const val PRELOAD_ICON_COUNT = 16
+        private const val PRELOAD_ICON_COUNT = 64
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
         ) {
