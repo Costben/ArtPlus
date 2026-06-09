@@ -23,6 +23,8 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android packages
         run: sdkmanager "platforms;android-36" "build-tools;36.1.0"
