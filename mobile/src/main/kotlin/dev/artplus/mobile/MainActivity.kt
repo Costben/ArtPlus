@@ -111,6 +111,10 @@ class MainActivity : ComponentActivity() {
     private var gptBaseUrl by mutableStateOf(DEFAULT_GPT_BASE_URL)
     private var gptApiKey by mutableStateOf("")
     private var showAppPickerPage by mutableStateOf(false)
+    private var generatedFilter by mutableStateOf(GeneratedFilter.All)
+    private var generatedPackageNames by mutableStateOf<Set<String>>(emptySet())
+    private var isScanningGeneratedPackages by mutableStateOf(false)
+    private var generatedScanFailed by mutableStateOf(false)
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -197,18 +201,33 @@ class MainActivity : ComponentActivity() {
         val selectedApp by remember {
             derivedStateOf { apps.firstOrNull { it.packageName == selectedPackageName } }
         }
-        val filteredApps by remember {
+        val scopedApps by remember {
             derivedStateOf {
-                val query = queryText.trim().lowercase(Locale.ROOT)
-                val scopedApps = if (showAllApps) {
+                if (showAllApps) {
                     apps.toList()
                 } else {
                     apps.filter { it.launchable }
                 }
+            }
+        }
+        val generatedCount by remember {
+            derivedStateOf { scopedApps.count { it.packageName in generatedPackageNames } }
+        }
+        val ungeneratedCount by remember {
+            derivedStateOf { scopedApps.size - generatedCount }
+        }
+        val filteredApps by remember {
+            derivedStateOf {
+                val query = queryText.trim().lowercase(Locale.ROOT)
+                val stateScopedApps = when (generatedFilter) {
+                    GeneratedFilter.All -> scopedApps
+                    GeneratedFilter.Generated -> scopedApps.filter { it.packageName in generatedPackageNames }
+                    GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in generatedPackageNames }
+                }
                 if (query.isEmpty()) {
-                    scopedApps
+                    stateScopedApps
                 } else {
-                    scopedApps.filter { entry ->
+                    stateScopedApps.filter { entry ->
                         entry.label.lowercase(Locale.ROOT).contains(query) ||
                             entry.packageName.lowercase(Locale.ROOT).contains(query)
                     }
@@ -217,7 +236,11 @@ class MainActivity : ComponentActivity() {
         }
         val scopeCount by remember {
             derivedStateOf {
-                if (showAllApps) apps.size else apps.count { it.launchable }
+                when (generatedFilter) {
+                    GeneratedFilter.All -> scopedApps.size
+                    GeneratedFilter.Generated -> generatedCount
+                    GeneratedFilter.Ungenerated -> ungeneratedCount
+                }
             }
         }
         val launcherCount by remember {
@@ -233,18 +256,21 @@ class MainActivity : ComponentActivity() {
                 pageBackground = pageBackground,
                 filteredApps = filteredApps,
                 scopeCount = scopeCount,
+                generatedCount = generatedCount,
+                ungeneratedCount = ungeneratedCount,
             )
         } else {
             HomePage(
                 pageBackground = pageBackground,
                 selectedApp = selectedApp,
                 launcherCount = launcherCount,
+                generatedCount = generatedCount,
             )
         }
     }
 
     @Composable
-    private fun HomePage(pageBackground: Color, selectedApp: AppEntry?, launcherCount: Int) {
+    private fun HomePage(pageBackground: Color, selectedApp: AppEntry?, launcherCount: Int, generatedCount: Int) {
         val scrollBehavior = MiuixScrollBehavior()
 
         Scaffold(
@@ -282,6 +308,7 @@ class MainActivity : ComponentActivity() {
                             selectedApp = selectedApp,
                             launcherCount = launcherCount,
                             totalCount = apps.size,
+                            generatedCount = generatedCount,
                         )
                     }
                 }
@@ -299,7 +326,13 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppPickerPage(pageBackground: Color, filteredApps: List<AppEntry>, scopeCount: Int) {
+    private fun AppPickerPage(
+        pageBackground: Color,
+        filteredApps: List<AppEntry>,
+        scopeCount: Int,
+        generatedCount: Int,
+        ungeneratedCount: Int,
+    ) {
         val scrollBehavior = MiuixScrollBehavior()
 
         Scaffold(
@@ -322,7 +355,12 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item {
-                    AppPickerControlsCard(filteredApps.size, scopeCount)
+                    AppPickerControlsCard(
+                        filteredCount = filteredApps.size,
+                        totalCount = scopeCount,
+                        generatedCount = generatedCount,
+                        ungeneratedCount = ungeneratedCount,
+                    )
                 }
                 if (filteredApps.isEmpty()) {
                     item {
@@ -337,6 +375,7 @@ class MainActivity : ComponentActivity() {
                         AppRow(
                             entry = entry,
                             selected = entry.packageName == selectedPackageName,
+                            generated = entry.packageName in generatedPackageNames,
                             onClick = {
                                 selectedPackageName = entry.packageName
                                 statusText = "已选择: ${entry.label} (${entry.packageName})"
@@ -588,7 +627,12 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppPickerSummaryCard(selectedApp: AppEntry?, launcherCount: Int, totalCount: Int) {
+    private fun AppPickerSummaryCard(
+        selectedApp: AppEntry?,
+        launcherCount: Int,
+        totalCount: Int,
+        generatedCount: Int,
+    ) {
         SectionCard(
             title = "APK",
             summary = selectedApp?.packageName ?: "从手机已安装应用中选择一个 APK",
@@ -625,7 +669,7 @@ class MainActivity : ComponentActivity() {
             }
             SettingLine(
                 title = "应用列表",
-                summary = "启动器 $launcherCount 个 / 全部 $totalCount 个",
+                summary = "启动器 $launcherCount 个 / 全部 $totalCount 个 / 已生成 $generatedCount 个",
                 value = if (apps.isEmpty()) "加载中" else "可选择",
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -646,7 +690,12 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppPickerControlsCard(filteredCount: Int, totalCount: Int) {
+    private fun AppPickerControlsCard(
+        filteredCount: Int,
+        totalCount: Int,
+        generatedCount: Int,
+        ungeneratedCount: Int,
+    ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(16.dp),
@@ -672,10 +721,19 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 Text(
-                    text = "$filteredCount/$totalCount",
+                    text = buildString {
+                        append("$filteredCount/$totalCount")
+                        append(" · 已生成 $generatedCount")
+                        append(" · 未生成 $ungeneratedCount")
+                        if (isScanningGeneratedPackages) {
+                            append(" · 扫描中")
+                        } else if (generatedScanFailed) {
+                            append(" · 无法读取 data 路径")
+                        }
+                    },
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(
@@ -703,6 +761,39 @@ class MainActivity : ComponentActivity() {
                         queryText = ""
                     }
                 }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    SegmentOption(
+                        label = "全部",
+                        selected = generatedFilter == GeneratedFilter.All,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        generatedFilter = GeneratedFilter.All
+                        queryText = ""
+                    }
+                    SegmentOption(
+                        label = "已生成",
+                        selected = generatedFilter == GeneratedFilter.Generated,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        generatedFilter = GeneratedFilter.Generated
+                        queryText = ""
+                    }
+                    SegmentOption(
+                        label = "未生成",
+                        selected = generatedFilter == GeneratedFilter.Ungenerated,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        generatedFilter = GeneratedFilter.Ungenerated
+                        queryText = ""
+                    }
+                }
                 TextField(
                     value = queryText,
                     onValueChange = { queryText = it },
@@ -716,7 +807,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppRow(entry: AppEntry, selected: Boolean, onClick: () -> Unit) {
+    private fun AppRow(entry: AppEntry, selected: Boolean, generated: Boolean, onClick: () -> Unit) {
         val titleColor = if (selected) {
             MiuixTheme.colorScheme.onPrimaryVariant
         } else {
@@ -738,6 +829,8 @@ class MainActivity : ComponentActivity() {
                     .clip(RoundedCornerShape(999.dp))
                     .background(
                         if (selected) {
+                            MiuixTheme.colorScheme.primaryVariant
+                        } else if (generated) {
                             MiuixTheme.colorScheme.primaryVariant
                         } else {
                             MiuixTheme.colorScheme.secondaryContainer
@@ -784,9 +877,13 @@ class MainActivity : ComponentActivity() {
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    if (selected || !entry.launchable) {
+                    if (selected || generated || !entry.launchable) {
                         Text(
-                            text = if (selected) "已选" else "应用",
+                            text = when {
+                                selected -> "已选"
+                                generated -> "已生成"
+                                else -> "应用"
+                            },
                             style = MiuixTheme.textStyles.footnote1,
                             color = summaryColor,
                             maxLines = 1,
@@ -1064,8 +1161,56 @@ class MainActivity : ComponentActivity() {
                     !packageListPermissionGranted -> "读取到 ${apps.size} 个应用，但应用列表权限状态异常。"
                     else -> "共 ${apps.size} 个应用，其中 ${launchablePackages.size} 个有启动器入口。"
                 }
+                refreshGeneratedPackages(entries)
             }
         }.start()
+    }
+
+    private fun refreshGeneratedPackages(entries: List<AppEntry> = apps.toList()) {
+        if (entries.isEmpty()) {
+            generatedPackageNames = emptySet()
+            generatedScanFailed = false
+            isScanningGeneratedPackages = false
+            return
+        }
+        isScanningGeneratedPackages = true
+        generatedScanFailed = false
+        Thread {
+            val packageNames = entries.map { it.packageName }.toSet()
+            val result = runCatching { scanRootGeneratedPackages(packageNames) }
+            runOnUiThread {
+                result
+                    .onSuccess { generated ->
+                        generatedPackageNames = generated
+                        generatedScanFailed = false
+                    }
+                    .onFailure {
+                        generatedPackageNames = emptySet()
+                        generatedScanFailed = true
+                    }
+                isScanningGeneratedPackages = false
+            }
+        }.start()
+    }
+
+    private fun scanRootGeneratedPackages(packageNames: Set<String>): Set<String> {
+        if (packageNames.isEmpty()) {
+            return emptySet()
+        }
+        val command = "if [ -d ${shQuote(ROOT_UXICONS_DIR)} ]; then ls -1 ${shQuote(ROOT_UXICONS_DIR)}; fi"
+        val process = ProcessBuilder("su", "-c", command)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().readText()
+        val code = process.waitFor()
+        if (code != 0) {
+            error("su 退出码: $code")
+        }
+        return output
+            .lineSequence()
+            .map { it.trim() }
+            .filter { it in packageNames }
+            .toSet()
     }
 
     private fun preloadAppIcons(entries: List<AppEntry>) {
@@ -1237,6 +1382,9 @@ class MainActivity : ComponentActivity() {
                 }
                 if (installWithRoot) {
                     installWithRoot(outDir, entry.packageName)
+                    runOnUiThread {
+                        generatedPackageNames = generatedPackageNames + entry.packageName
+                    }
                     status("已生成${if (useGpt) "GPT版" else "本地版"}并尝试 Root 写入: ${entry.packageName}")
                 } else {
                     status("已生成${if (useGpt) "GPT版" else "本地版"}: ${outDir.absolutePath}")
@@ -1990,7 +2138,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun installWithRoot(packageDir: File, packageName: String) {
-        val target = "/data/oplus/uxicons/$packageName"
+        val target = "$ROOT_UXICONS_DIR/$packageName"
         val source = packageDir.absolutePath
         val command = """
             set -e
@@ -2063,6 +2211,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private enum class GeneratedFilter(val label: String) {
+        All("全部"),
+        Generated("已生成"),
+        Ungenerated("未生成"),
+    }
+
     companion object {
         private const val PREFS_NAME = "artplus_mobile"
         private const val PREF_GPT_MODE = "gpt_mode"
@@ -2081,6 +2235,7 @@ class MainActivity : ComponentActivity() {
         private const val GPT_READ_TIMEOUT_MS = 360_000
         private const val ICON_CACHE_SIZE = 96
         private const val PRELOAD_ICON_COUNT = 64
+        private const val ROOT_UXICONS_DIR = "/data/oplus/uxicons"
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
         ) {
