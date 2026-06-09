@@ -230,8 +230,8 @@ class MainActivity : ComponentActivity() {
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(innerPadding)
                     .padding(horizontal = 12.dp),
-                contentPadding = PaddingValues(top = 10.dp, bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(top = 6.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (!packageListPermissionGranted || !usageAccessGranted) {
                     item {
@@ -323,7 +323,7 @@ class MainActivity : ComponentActivity() {
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(18.dp),
+            insideMargin = PaddingValues(14.dp),
             colors = CardDefaults.defaultColors(
                 color = MiuixTheme.colorScheme.surfaceContainerHigh,
             ),
@@ -331,16 +331,16 @@ class MainActivity : ComponentActivity() {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 if (selectedApp == null) {
-                    BrandMark(size = 58.dp, text = "UX")
+                    BrandMark(size = 50.dp, text = "UX")
                 } else {
-                    AppIcon(selectedApp, 58.dp)
+                    AppIcon(selectedApp, 50.dp)
                 }
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -366,12 +366,12 @@ class MainActivity : ComponentActivity() {
                         text = selectedApp?.packageName ?: statusText,
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -379,14 +379,6 @@ class MainActivity : ComponentActivity() {
                 MetricPill(label = outputLabel, modifier = Modifier.weight(1f))
                 MetricPill(label = "$filteredApps/$totalApps 应用", modifier = Modifier.weight(1f))
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = statusText,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
         }
     }
 
@@ -394,7 +386,7 @@ class MainActivity : ComponentActivity() {
     private fun EmptyAppListCard() {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(16.dp),
+            insideMargin = PaddingValues(14.dp),
             colors = CardDefaults.defaultColors(
                 color = MiuixTheme.colorScheme.surfaceContainer,
             ),
@@ -427,7 +419,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun GenerationCard(selectedApp: AppEntry?) {
         val canRun = selectedApp != null && !isBusy
-        SectionCard(title = "生成任务", summary = "输出 ART+ 图标包，可选直接写入 /data/oplus/uxicons") {
+        SectionCard(title = "生成任务", summary = "生成 ART+ 图标包，Root 写入固定 data 分区") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -464,13 +456,13 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 TextButton(
-                    text = "本地Root写入",
+                    text = "本地写入",
                     onClick = { generateSelected(installWithRoot = true, useGpt = false) },
                     enabled = canRun,
                     modifier = Modifier.weight(1f),
                 )
                 TextButton(
-                    text = "GPTRoot写入",
+                    text = "GPT写入",
                     onClick = { generateSelected(installWithRoot = true, useGpt = true) },
                     enabled = canRun,
                     modifier = Modifier.weight(1f),
@@ -546,7 +538,7 @@ class MainActivity : ComponentActivity() {
     private fun AppPickerHeader(filteredCount: Int, totalCount: Int) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -683,7 +675,7 @@ class MainActivity : ComponentActivity() {
     private fun SectionCard(title: String, summary: String, content: @Composable () -> Unit) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(16.dp),
+            insideMargin = PaddingValues(14.dp),
             colors = CardDefaults.defaultColors(
                 color = MiuixTheme.colorScheme.surfaceContainer,
             ),
@@ -703,7 +695,7 @@ class MainActivity : ComponentActivity() {
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             content()
         }
     }
@@ -814,7 +806,7 @@ class MainActivity : ComponentActivity() {
         Box(
             modifier = Modifier
                 .size(size)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(MiuixTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
@@ -848,16 +840,17 @@ class MainActivity : ComponentActivity() {
                 return@withContext cached
             }
 
-            val bitmap = runCatching {
-                drawDrawable(entry.applicationInfo.loadIcon(packageManager), ICON_CACHE_SIZE, ICON_CACHE_SIZE, transparent = true)
-                    .also { it.prepareToDraw() }
-            }.getOrNull() ?: return@withContext null
+            val bitmap = runCatching { loadAppIconBitmap(entry) }.getOrNull() ?: return@withContext null
 
             synchronized(appIconCache) {
                 appIconCache.put(entry.iconKey, bitmap)
             }
             bitmap
         }
+
+    private fun loadAppIconBitmap(entry: AppEntry): Bitmap =
+        drawDrawable(entry.applicationInfo.loadIcon(packageManager), ICON_CACHE_SIZE, ICON_CACHE_SIZE, transparent = true)
+            .also { it.prepareToDraw() }
 
     @Composable
     private fun BrandMark(size: Dp, text: String) {
@@ -883,7 +876,7 @@ class MainActivity : ComponentActivity() {
             modifier = modifier
                 .clip(RoundedCornerShape(999.dp))
                 .background(MiuixTheme.colorScheme.secondaryContainer)
-                .padding(horizontal = 10.dp, vertical = 7.dp),
+                .padding(horizontal = 10.dp, vertical = 5.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -947,7 +940,28 @@ class MainActivity : ComponentActivity() {
                     !packageListPermissionGranted -> "读取到 ${apps.size} 个应用，但应用列表权限状态异常。"
                     else -> "共 ${apps.size} 个应用，其中 ${launchablePackages.size} 个有启动器入口。"
                 }
+                preloadAppIcons(entries)
             }
+        }.start()
+    }
+
+    private fun preloadAppIcons(entries: List<AppEntry>) {
+        Thread {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+            entries.asSequence()
+                .filter { it.launchable }
+                .take(PRELOAD_ICON_COUNT)
+                .forEach { entry ->
+                    if (getCachedAppIcon(entry.iconKey) != null) {
+                        return@forEach
+                    }
+                    val bitmap = runCatching { loadAppIconBitmap(entry) }.getOrNull() ?: return@forEach
+                    synchronized(appIconCache) {
+                        if (appIconCache.get(entry.iconKey) == null) {
+                            appIconCache.put(entry.iconKey, bitmap)
+                        }
+                    }
+                }
         }.start()
     }
 
@@ -1945,6 +1959,7 @@ class MainActivity : ComponentActivity() {
         private const val GPT_CONNECT_TIMEOUT_MS = 30_000
         private const val GPT_READ_TIMEOUT_MS = 360_000
         private const val ICON_CACHE_SIZE = 96
+        private const val PRELOAD_ICON_COUNT = 64
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
         ) {
