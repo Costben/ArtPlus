@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "dev.artplus.mobile"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.artplus.mobile"
@@ -34,6 +34,6 @@ kotlin {
 }
 
 dependencies {
-    implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.2")
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("top.yukonga.miuix.kmp:miuix-android:0.8.8")
 }
