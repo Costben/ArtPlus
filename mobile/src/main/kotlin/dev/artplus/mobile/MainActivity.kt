@@ -21,7 +21,9 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,19 +36,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import android.util.Base64
 import java.io.ByteArrayOutputStream
@@ -147,213 +154,220 @@ class MainActivity : ComponentActivity() {
                 entry.packageName.lowercase(Locale.ROOT).contains(query)
         }
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
-                .padding(horizontal = 18.dp)
-                .padding(top = 28.dp, bottom = 18.dp),
+                .background(MiuixTheme.colorScheme.background),
+            contentPadding = PaddingValues(start = 18.dp, top = 28.dp, end = 18.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            item {
+                PageHeader()
+            }
+            item {
+                StatusCard(
+                    selectedApp = selectedApp,
+                    totalApps = apps.size,
+                    filteredApps = filteredApps.size,
+                )
+            }
+            item {
+                GenerationCard(selectedApp)
+            }
+            item {
+                GptSettingsCard()
+            }
+            item {
+                OutputCard()
+            }
+            item {
+                AppPickerHeader(filteredApps.size, apps.size)
+            }
+            items(filteredApps, key = { it.packageName }) { entry ->
+                AppRow(
+                    entry = entry,
+                    selected = entry.packageName == selectedPackageName,
+                    onClick = {
+                        selectedPackageName = entry.packageName
+                        statusText = "已选择: ${entry.label} (${entry.packageName})"
+                    },
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun PageHeader() {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Text(
+                    text = "ArtPlus",
+                    style = MiuixTheme.textStyles.title1,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "本地图标提取、GPT 分层与 UX Icons 写入",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            BrandMark(size = 44.dp, text = "A+")
+        }
+    }
+
+    @Composable
+    private fun StatusCard(selectedApp: AppEntry?, totalApps: Int, filteredApps: Int) {
+        val statusLabel = if (isBusy) "运行中" else "就绪"
+        val outputLabel = if (outputTreeUri == null) "私有目录" else "已选外部目录"
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(18.dp),
+            colors = CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.surfaceContainerHigh,
+            ),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                if (selectedApp == null) {
+                    BrandMark(size = 58.dp, text = "UX")
+                } else {
+                    AppIcon(selectedApp, 58.dp)
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        StatusDot(active = isBusy)
+                        Text(
+                            text = statusLabel,
+                            style = MiuixTheme.textStyles.title4,
+                            color = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(
+                        text = selectedApp?.label ?: "选择一个应用开始生成",
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceContainerHigh,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = selectedApp?.packageName ?: statusText,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MetricPill(label = outputLabel, modifier = Modifier.weight(1f))
+                MetricPill(label = "$filteredApps/$totalApps 应用", modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "ArtPlus Mobile",
-                style = MiuixTheme.textStyles.title1,
-                color = MiuixTheme.colorScheme.onBackground,
-                maxLines = 1,
+                text = statusText,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = "选择手机里的应用，生成 ART+ 图标资源。",
-                style = MiuixTheme.textStyles.paragraph,
-                color = MiuixTheme.colorScheme.onBackgroundVariant,
-            )
+        }
+    }
 
-            StatusCard(selectedApp)
-            GptSettingsCard()
-
+    @Composable
+    private fun GenerationCard(selectedApp: AppEntry?) {
+        val canRun = selectedApp != null && !isBusy
+        SectionCard(title = "生成任务", summary = "输出 ART+ 图标包，可选直接写入 /data/oplus/uxicons") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Button(
+                    onClick = { generateSelected(installWithRoot = false, useGpt = false) },
+                    enabled = canRun,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
+                    Text(
+                        text = "本地生成",
+                        style = MiuixTheme.textStyles.button,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Button(
+                    onClick = { generateSelected(installWithRoot = false, useGpt = true) },
+                    enabled = canRun,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = "GPT生成",
+                        style = MiuixTheme.textStyles.button,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 TextButton(
-                    text = "选择目录",
-                    onClick = { chooseTreeLauncher.launch(null) },
-                    enabled = !isBusy,
+                    text = "本地Root写入",
+                    onClick = { generateSelected(installWithRoot = true, useGpt = false) },
+                    enabled = canRun,
                     modifier = Modifier.weight(1f),
                 )
-                Button(
-                    onClick = { generateSelected(installWithRoot = false, useGpt = false) },
-                    enabled = selectedApp != null && !isBusy,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = "生成本地版",
-                        style = MiuixTheme.textStyles.button,
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Button(
-                    onClick = { generateSelected(installWithRoot = false, useGpt = true) },
-                    enabled = selectedApp != null && !isBusy,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(
-                        text = "生成GPT版",
-                        style = MiuixTheme.textStyles.button,
-                    )
-                }
-                Button(
+                TextButton(
+                    text = "GPTRoot写入",
                     onClick = { generateSelected(installWithRoot = true, useGpt = true) },
-                    enabled = selectedApp != null && !isBusy,
+                    enabled = canRun,
                     modifier = Modifier.weight(1f),
-                ) {
-                    Text(
-                        text = "GPT Root写入",
-                        style = MiuixTheme.textStyles.button,
-                    )
-                }
-            }
-
-            TextButton(
-                text = "本地生成并Root写入",
-                onClick = { generateSelected(installWithRoot = true, useGpt = false) },
-                enabled = selectedApp != null && !isBusy,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            TextField(
-                value = queryText,
-                onValueChange = { queryText = it },
-                label = "搜索应用或包名",
-                useLabelAsPlaceholder = true,
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "应用列表",
-                    style = MiuixTheme.textStyles.title4,
-                    color = MiuixTheme.colorScheme.onBackground,
-                )
-                Text(
-                    text = "${filteredApps.size}/${apps.size}",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onBackgroundVariant,
                 )
             }
-
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(bottom = 6.dp),
-            ) {
-                items(filteredApps, key = { it.packageName }) { entry ->
-                    AppRow(
-                        entry = entry,
-                        selected = entry.packageName == selectedPackageName,
-                        onClick = {
-                            selectedPackageName = entry.packageName
-                            statusText = "已选择: ${entry.label} (${entry.packageName})"
-                        },
-                    )
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun StatusCard(selectedApp: AppEntry?) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(16.dp),
-            colors = CardDefaults.defaultColors(
-                color = MiuixTheme.colorScheme.surfaceContainerHigh,
-            ),
-        ) {
-            Text(
-                text = statusText,
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceContainerHigh,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = selectedApp?.packageName ?: "尚未选择应用",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val outputText = if (outputTreeUri == null) {
-                "输出到应用私有目录；选择目录后会同步导出"
-            } else {
-                "已启用外部目录导出"
-            }
-            Text(
-                text = outputText,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
         }
     }
 
     @Composable
     private fun GptSettingsCard() {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(14.dp),
-            colors = CardDefaults.defaultColors(
-                color = MiuixTheme.colorScheme.surfaceContainer,
-            ),
-        ) {
+        SectionCard(title = "GPT Image 2", summary = "响应模式走 Codex 能力；接口模式直接调用 Base URL + API key") {
+            SegmentedModeControl()
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "GPT模式: ${gptImageMode.label}",
+                text = "当前: ${gptImageMode.label}",
                 style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(
-                    onClick = {
-                        gptImageMode = GptImageMode.Responses
-                        saveGptSettings()
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(
-                        text = "响应模式",
-                        style = MiuixTheme.textStyles.button,
-                    )
-                }
-                Button(
-                    onClick = {
-                        gptImageMode = GptImageMode.Images
-                        saveGptSettings()
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(
-                        text = "接口模式",
-                        style = MiuixTheme.textStyles.button,
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             TextField(
                 value = gptBaseUrl,
                 onValueChange = {
@@ -381,6 +395,63 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun OutputCard() {
+        SectionCard(title = "输出与写入", summary = "普通导出使用系统目录选择器，Root 写入只使用 data 分区路径") {
+            SettingLine(
+                title = "Root 目标",
+                summary = "/data/oplus/uxicons/{package}",
+                value = "data",
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            SettingLine(
+                title = "外部导出",
+                summary = if (outputTreeUri == null) "未选择时仅保存在应用私有目录" else "生成后同步复制到你选择的目录",
+                value = if (outputTreeUri == null) "未选择" else "已启用",
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(
+                text = "选择输出目录",
+                onClick = { chooseTreeLauncher.launch(null) },
+                enabled = !isBusy,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+
+    @Composable
+    private fun AppPickerHeader(filteredCount: Int, totalCount: Int) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "应用",
+                    style = MiuixTheme.textStyles.title4,
+                    color = MiuixTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = "$filteredCount/$totalCount",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onBackgroundVariant,
+                )
+            }
+            TextField(
+                value = queryText,
+                onValueChange = { queryText = it },
+                label = "搜索应用或包名",
+                useLabelAsPlaceholder = true,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+
+    @Composable
     private fun AppRow(entry: AppEntry, selected: Boolean, onClick: () -> Unit) {
         val color = if (selected) {
             MiuixTheme.colorScheme.primaryVariant
@@ -391,6 +462,11 @@ class MainActivity : ComponentActivity() {
             MiuixTheme.colorScheme.onPrimaryVariant
         } else {
             MiuixTheme.colorScheme.onSurfaceContainer
+        }
+        val summaryColor = if (selected) {
+            MiuixTheme.colorScheme.onPrimaryVariant
+        } else {
+            MiuixTheme.colorScheme.onSurfaceVariantSummary
         }
 
         Card(
@@ -406,19 +482,7 @@ class MainActivity : ComponentActivity() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(MiuixTheme.colorScheme.secondaryContainer),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = entry.label.firstOrNull()?.uppercaseChar()?.toString() ?: "#",
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onSecondaryContainer,
-                    )
-                }
+                AppIcon(entry, 44.dp)
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -433,13 +497,212 @@ class MainActivity : ComponentActivity() {
                     Text(
                         text = entry.packageName,
                         style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        color = summaryColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                Text(
+                    text = if (selected) "已选" else "选择",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = summaryColor,
+                    maxLines = 1,
+                )
             }
         }
+    }
+
+    @Composable
+    private fun SectionCard(title: String, summary: String, content: @Composable () -> Unit) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(16.dp),
+            colors = CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.surfaceContainer,
+            ),
+        ) {
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.title4,
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(
+                text = summary,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            content()
+        }
+    }
+
+    @Composable
+    private fun SegmentedModeControl() {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            SegmentOption(
+                label = "响应模式",
+                selected = gptImageMode == GptImageMode.Responses,
+                modifier = Modifier.weight(1f),
+            ) {
+                gptImageMode = GptImageMode.Responses
+                saveGptSettings()
+            }
+            SegmentOption(
+                label = "接口模式",
+                selected = gptImageMode == GptImageMode.Images,
+                modifier = Modifier.weight(1f),
+            ) {
+                gptImageMode = GptImageMode.Images
+                saveGptSettings()
+            }
+        }
+    }
+
+    @Composable
+    private fun SegmentOption(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+        val background = if (selected) {
+            MiuixTheme.colorScheme.primaryVariant
+        } else {
+            MiuixTheme.colorScheme.surfaceContainerHigh
+        }
+        val foreground = if (selected) {
+            MiuixTheme.colorScheme.onPrimaryVariant
+        } else {
+            MiuixTheme.colorScheme.onSurfaceVariantSummary
+        }
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(background)
+                .clickable(enabled = !isBusy, onClick = onClick)
+                .padding(vertical = 10.dp, horizontal = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                style = MiuixTheme.textStyles.button,
+                color = foreground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+
+    @Composable
+    private fun SettingLine(title: String, summary: String, value: String) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = summary,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            MetricPill(label = value)
+        }
+    }
+
+    @Composable
+    private fun AppIcon(entry: AppEntry, size: Dp) {
+        val bitmap = remember(entry.packageName) {
+            drawDrawable(entry.resolveInfo.loadIcon(packageManager), 128, 128, transparent = true).asImageBitmap()
+        }
+        Box(
+            modifier = Modifier
+                .size(size)
+                .clip(RoundedCornerShape(14.dp))
+                .background(MiuixTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = null,
+                modifier = Modifier.size(size),
+                contentScale = ContentScale.Fit,
+            )
+        }
+    }
+
+    @Composable
+    private fun BrandMark(size: Dp, text: String) {
+        Box(
+            modifier = Modifier
+                .size(size)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MiuixTheme.colorScheme.primaryVariant),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = text,
+                style = MiuixTheme.textStyles.title4,
+                color = MiuixTheme.colorScheme.onPrimaryVariant,
+                maxLines = 1,
+            )
+        }
+    }
+
+    @Composable
+    private fun MetricPill(label: String, modifier: Modifier = Modifier) {
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(MiuixTheme.colorScheme.secondaryContainer)
+                .padding(horizontal = 10.dp, vertical = 7.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSecondaryContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+
+    @Composable
+    private fun StatusDot(active: Boolean) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(
+                    if (active) {
+                        MiuixTheme.colorScheme.primaryVariant
+                    } else {
+                        MiuixTheme.colorScheme.secondaryContainer
+                    },
+                ),
+        )
     }
 
     private fun loadApps() {
