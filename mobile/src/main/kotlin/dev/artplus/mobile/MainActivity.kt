@@ -1,8 +1,10 @@
 package dev.artplus.mobile
 
+import android.Manifest
+import android.app.AppOpsManager
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.content.pm.ResolveInfo
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -15,7 +17,9 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
 import android.provider.DocumentsContract
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -87,11 +91,20 @@ class MainActivity : ComponentActivity() {
     private var queryText by mutableStateOf("")
     private var selectedPackageName by mutableStateOf<String?>(null)
     private var statusText by mutableStateOf("加载应用列表中...")
+    private var packageListPermissionGranted by mutableStateOf(true)
+    private var usageAccessGranted by mutableStateOf(false)
     private var outputTreeUri by mutableStateOf<Uri?>(null)
     private var isBusy by mutableStateOf(false)
+    private var didRequestAppLoad = false
     private var gptImageMode by mutableStateOf(GptImageMode.Responses)
     private var gptBaseUrl by mutableStateOf(DEFAULT_GPT_BASE_URL)
     private var gptApiKey by mutableStateOf("")
+
+    private val permissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+            refreshPermissionState()
+            loadApps()
+        }
 
     private val chooseTreeLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -113,6 +126,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         title = "ArtPlus Mobile"
         loadGptSettings()
+        refreshPermissionState()
 
         setContent {
             val darkMode = isSystemInDarkTheme()
@@ -141,7 +155,17 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        requestDeclaredPermissions()
+        requestSpecialPermissionsOnce()
         loadApps()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshPermissionState()
+        if (didRequestAppLoad) {
+            loadApps()
+        }
     }
 
     @Composable
@@ -164,6 +188,11 @@ class MainActivity : ComponentActivity() {
             item {
                 PageHeader()
             }
+            if (!packageListPermissionGranted || !usageAccessGranted) {
+                item {
+                    PermissionCard()
+                }
+            }
             item {
                 StatusCard(
                     selectedApp = selectedApp,
@@ -178,20 +207,26 @@ class MainActivity : ComponentActivity() {
                 GptSettingsCard()
             }
             item {
-                OutputCard()
-            }
-            item {
                 AppPickerHeader(filteredApps.size, apps.size)
             }
-            items(filteredApps, key = { it.packageName }) { entry ->
-                AppRow(
-                    entry = entry,
-                    selected = entry.packageName == selectedPackageName,
-                    onClick = {
-                        selectedPackageName = entry.packageName
-                        statusText = "已选择: ${entry.label} (${entry.packageName})"
-                    },
-                )
+            if (filteredApps.isEmpty()) {
+                item {
+                    EmptyAppListCard()
+                }
+            } else {
+                items(filteredApps, key = { it.packageName }) { entry ->
+                    AppRow(
+                        entry = entry,
+                        selected = entry.packageName == selectedPackageName,
+                        onClick = {
+                            selectedPackageName = entry.packageName
+                            statusText = "已选择: ${entry.label} (${entry.packageName})"
+                        },
+                    )
+                }
+            }
+            item {
+                OutputCard()
             }
         }
     }
@@ -223,6 +258,41 @@ class MainActivity : ComponentActivity() {
                 )
             }
             BrandMark(size = 44.dp, text = "A+")
+        }
+    }
+
+    @Composable
+    private fun PermissionCard() {
+        SectionCard(title = "权限", summary = "启动时会自动请求普通权限；特殊权限需要进入系统设置确认") {
+            SettingLine(
+                title = "应用列表",
+                summary = if (packageListPermissionGranted) "已声明并可读取已安装应用" else "需要允许读取应用列表",
+                value = if (packageListPermissionGranted) "已允许" else "待授权",
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            SettingLine(
+                title = "使用情况访问",
+                summary = if (usageAccessGranted) "已允许任务/使用情况访问" else "Android 只能在系统设置中授权",
+                value = if (usageAccessGranted) "已允许" else "待授权",
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                TextButton(
+                    text = "应用权限",
+                    onClick = { openAppPermissionSettings() },
+                    enabled = !isBusy,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    text = "使用情况访问",
+                    onClick = { openUsageAccessSettings() },
+                    enabled = !isBusy,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 
@@ -296,6 +366,40 @@ class MainActivity : ComponentActivity() {
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+
+    @Composable
+    private fun EmptyAppListCard() {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(16.dp),
+            colors = CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.surfaceContainer,
+            ),
+        ) {
+            Text(
+                text = "没有可显示的应用",
+                style = MiuixTheme.textStyles.body1,
+                color = MiuixTheme.colorScheme.onSurfaceContainer,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "清空搜索词，或在系统设置中允许 ArtPlus 读取应用列表后刷新。",
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(
+                text = "刷新应用列表",
+                onClick = { loadApps() },
+                enabled = !isBusy,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -503,7 +607,11 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 Text(
-                    text = if (selected) "已选" else "选择",
+                    text = when {
+                        selected -> "已选"
+                        entry.launchable -> "启动器"
+                        else -> "应用"
+                    },
                     style = MiuixTheme.textStyles.footnote1,
                     color = summaryColor,
                     maxLines = 1,
@@ -634,7 +742,10 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun AppIcon(entry: AppEntry, size: Dp) {
         val bitmap = remember(entry.packageName) {
-            drawDrawable(entry.resolveInfo.loadIcon(packageManager), 128, 128, transparent = true).asImageBitmap()
+            runCatching {
+                drawDrawable(entry.applicationInfo.loadIcon(packageManager), 128, 128, transparent = true)
+                    .asImageBitmap()
+            }.getOrNull()
         }
         Box(
             modifier = Modifier
@@ -643,12 +754,21 @@ class MainActivity : ComponentActivity() {
                 .background(MiuixTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            Image(
-                bitmap = bitmap,
-                contentDescription = null,
-                modifier = Modifier.size(size),
-                contentScale = ContentScale.Fit,
-            )
+            if (bitmap == null) {
+                Text(
+                    text = entry.label.firstOrNull()?.uppercaseChar()?.toString() ?: "#",
+                    style = MiuixTheme.textStyles.title4,
+                    color = MiuixTheme.colorScheme.onSecondaryContainer,
+                    maxLines = 1,
+                )
+            } else {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = null,
+                    modifier = Modifier.size(size),
+                    contentScale = ContentScale.Fit,
+                )
+            }
         }
     }
 
@@ -706,27 +826,145 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadApps() {
+        didRequestAppLoad = true
         Thread {
             val pm = packageManager
             val intent = Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER)
-            val resolveInfos = pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
-            val unique = linkedMapOf<String, AppEntry>()
-
-            for (info in resolveInfos) {
-                val activityInfo = info.activityInfo ?: continue
-                val packageName = activityInfo.packageName
-                val label = info.loadLabel(pm)?.toString() ?: packageName
-                unique[packageName] = AppEntry(label, packageName, info)
+            val launchablePackages = queryLaunchablePackages(pm, intent)
+            val installedApps = getInstalledApplications(pm)
+            val entries = installedApps.mapNotNull { info ->
+                val packageName = info.packageName ?: return@mapNotNull null
+                val label = runCatching { info.loadLabel(pm)?.toString() }
+                    .getOrNull()
+                    ?.takeIf { it.isNotBlank() }
+                    ?: packageName
+                AppEntry(
+                    label = label,
+                    packageName = packageName,
+                    applicationInfo = info,
+                    launchable = packageName in launchablePackages,
+                )
             }
-
-            val sorted = unique.values.sortedBy { it.label.lowercase(Locale.ROOT) }
+                .sortedWith(
+                    compareByDescending<AppEntry> { it.launchable }
+                        .thenBy { it.label.lowercase(Locale.ROOT) }
+                        .thenBy { it.packageName },
+                )
             runOnUiThread {
+                refreshPermissionState()
                 apps.clear()
-                apps.addAll(sorted)
-                statusText = "共 ${apps.size} 个启动器应用。选择一个后生成。"
+                apps.addAll(entries)
+                statusText = when {
+                    entries.isEmpty() -> "没有读取到应用。请确认已允许读取应用列表。"
+                    !packageListPermissionGranted -> "读取到 ${apps.size} 个应用，但应用列表权限状态异常。"
+                    else -> "共 ${apps.size} 个应用，其中 ${launchablePackages.size} 个有启动器入口。"
+                }
             }
         }.start()
     }
+
+    private fun refreshPermissionState() {
+        packageListPermissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            packageManager.checkPermission(Manifest.permission.QUERY_ALL_PACKAGES, packageName) ==
+                PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+        usageAccessGranted = hasUsageAccess()
+    }
+
+    private fun requestDeclaredPermissions() {
+        val permissions = mutableListOf<String>()
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+            packageManager.checkPermission(Manifest.permission.QUERY_ALL_PACKAGES, packageName) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            permissions += Manifest.permission.QUERY_ALL_PACKAGES
+        }
+        if (permissions.isNotEmpty()) {
+            permissionLauncher.launch(permissions.toTypedArray())
+        }
+    }
+
+    private fun requestSpecialPermissionsOnce() {
+        if (usageAccessGranted) {
+            return
+        }
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        if (prefs.getBoolean(PREF_USAGE_PERMISSION_PROMPTED, false)) {
+            return
+        }
+        prefs.edit().putBoolean(PREF_USAGE_PERMISSION_PROMPTED, true).apply()
+        window.decorView.post {
+            if (!hasUsageAccess()) {
+                openUsageAccessSettings()
+            }
+        }
+    }
+
+    private fun openAppPermissionSettings() {
+        runCatching {
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(Uri.fromParts("package", packageName, null)),
+            )
+        }.onFailure {
+            statusText = "无法打开应用权限设置: ${it.message ?: it.javaClass.simpleName}"
+        }
+    }
+
+    private fun openUsageAccessSettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        }.onFailure {
+            statusText = "无法打开使用情况访问设置: ${it.message ?: it.javaClass.simpleName}"
+        }
+    }
+
+    private fun hasUsageAccess(): Boolean {
+        val appOps = getSystemService(AppOpsManager::class.java) ?: return false
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                packageName,
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                packageName,
+            )
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
+    }
+
+    @Suppress("DEPRECATION")
+    private fun queryLaunchablePackages(pm: PackageManager, intent: Intent): Set<String> {
+        val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.queryIntentActivities(
+                intent,
+                PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()),
+            )
+        } else {
+            pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
+        }
+        return resolveInfos
+            .mapNotNull { it.activityInfo?.packageName }
+            .toSet()
+    }
+
+    @Suppress("DEPRECATION")
+    private fun getInstalledApplications(pm: PackageManager): List<ApplicationInfo> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getInstalledApplications(
+                PackageManager.ApplicationInfoFlags.of(PackageManager.MATCH_ALL.toLong()),
+            )
+        } else {
+            pm.getInstalledApplications(PackageManager.MATCH_ALL)
+        }
 
     private fun loadGptSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -793,7 +1031,7 @@ class MainActivity : ComponentActivity() {
         val outDir = File(base, app.packageName)
         ensureCleanDir(outDir)
 
-        val icon = app.resolveInfo.loadIcon(packageManager)
+        val icon = app.applicationInfo.loadIcon(packageManager)
         val localRecfg: Bitmap
         val localRecbg: Bitmap
         if (icon is AdaptiveIconDrawable) {
@@ -1572,7 +1810,8 @@ class MainActivity : ComponentActivity() {
     private data class AppEntry(
         val label: String,
         val packageName: String,
-        val resolveInfo: ResolveInfo,
+        val applicationInfo: ApplicationInfo,
+        val launchable: Boolean,
     )
 
     private data class IconLayers(
@@ -1605,6 +1844,7 @@ class MainActivity : ComponentActivity() {
         private const val PREF_GPT_MODE = "gpt_mode"
         private const val PREF_GPT_BASE_URL = "gpt_base_url"
         private const val PREF_GPT_API_KEY = "gpt_api_key"
+        private const val PREF_USAGE_PERMISSION_PROMPTED = "usage_permission_prompted"
         private const val SIZE_1X1 = 240
         private const val SIZE_2X2 = 704
         private const val GPT_SOURCE_SIZE = 1024
