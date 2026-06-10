@@ -1665,11 +1665,10 @@ class MainActivity : ComponentActivity() {
         savePng(recfg2x1, File(outDir, "recfg_2x1.png"))
         savePng(recfg2x2, File(outDir, "recfg_2x2.png"))
 
-        val bgColor = sampleColor(recbg)
-        savePng(recolorAlpha(recfg, bgColor), File(outDir, "rec_night.png"))
-        savePng(recolorAlpha(recfg1x2, bgColor), File(outDir, "rec_night_1x2.png"))
-        savePng(recolorAlpha(recfg2x1, bgColor), File(outDir, "rec_night_2x1.png"))
-        savePng(recolorAlpha(recfg2x2, bgColor), File(outDir, "rec_night_2x2.png"))
+        savePng(nightForeground(recfg), File(outDir, "rec_night.png"))
+        savePng(nightForeground(recfg1x2), File(outDir, "rec_night_1x2.png"))
+        savePng(nightForeground(recfg2x1), File(outDir, "rec_night_2x1.png"))
+        savePng(nightForeground(recfg2x2), File(outDir, "rec_night_2x2.png"))
 
         savePng(monochromeAlpha(recfg), File(outDir, "monochrome.png"))
         savePng(monochromeAlpha(recfg1x2), File(outDir, "monochrome_1x2.png"))
@@ -2158,17 +2157,33 @@ class MainActivity : ComponentActivity() {
         return kotlin.math.sqrt((dr * dr + dg * dg + db * db).toDouble())
     }
 
-    private fun recolorAlpha(source: Bitmap, color: Int): Bitmap {
+    private fun nightForeground(source: Bitmap): Bitmap {
         val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-        val rgb = color and 0x00ffffff
         for (y in 0 until source.height) {
             for (x in 0 until source.width) {
-                val alpha = AndroidColor.alpha(source.getPixel(x, y))
-                out.setPixel(x, y, (alpha shl 24) or rgb)
+                val pixel = source.getPixel(x, y)
+                val alpha = AndroidColor.alpha(pixel)
+                if (alpha == 0) {
+                    out.setPixel(x, y, AndroidColor.TRANSPARENT)
+                    continue
+                }
+                out.setPixel(
+                    x,
+                    y,
+                    AndroidColor.argb(
+                        alpha,
+                        liftDarkChannel(AndroidColor.red(pixel)),
+                        liftDarkChannel(AndroidColor.green(pixel)),
+                        liftDarkChannel(AndroidColor.blue(pixel)),
+                    ),
+                )
             }
         }
         return out
     }
+
+    private fun liftDarkChannel(value: Int): Int =
+        (48 + value * 0.82f).toInt().coerceIn(0, 255)
 
     private fun monochromeAlpha(source: Bitmap): Bitmap {
         val width = source.width
