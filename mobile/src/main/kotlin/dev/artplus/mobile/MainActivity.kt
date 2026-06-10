@@ -59,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
@@ -115,6 +116,9 @@ class MainActivity : ComponentActivity() {
     private var generatedPackageNames by mutableStateOf<Set<String>>(emptySet())
     private var isScanningGeneratedPackages by mutableStateOf(false)
     private var generatedScanFailed by mutableStateOf(false)
+    private var previewPackageName by mutableStateOf<String?>(null)
+    private var previewDirPath by mutableStateOf<String?>(null)
+    private var previewVersion by mutableStateOf(0)
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -424,6 +428,211 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun GeneratedPreviewSection() {
+        val dirPath = previewDirPath ?: return
+        val packageName = previewPackageName ?: return
+        var assets by remember(dirPath, previewVersion) {
+            mutableStateOf<PreviewAssets?>(null)
+        }
+
+        LaunchedEffect(dirPath, previewVersion) {
+            assets = withContext(Dispatchers.IO) {
+                loadPreviewAssets(File(dirPath))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = "预览",
+            style = MiuixTheme.textStyles.title4,
+            color = MiuixTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = packageName,
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        if (assets == null) {
+            Text(
+                text = "加载预览中",
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            return
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            PreviewTile(
+                label = "正常亮色",
+                assets = assets,
+                mode = PreviewMode.NormalLight,
+                modifier = Modifier.weight(1f),
+            )
+            PreviewTile(
+                label = "正常暗色",
+                assets = assets,
+                mode = PreviewMode.NormalDark,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            PreviewTile(
+                label = "单色亮色",
+                assets = assets,
+                mode = PreviewMode.MonochromeLight,
+                modifier = Modifier.weight(1f),
+            )
+            PreviewTile(
+                label = "单色暗色",
+                assets = assets,
+                mode = PreviewMode.MonochromeDark,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+
+    @Composable
+    private fun PreviewTile(label: String, assets: PreviewAssets?, mode: PreviewMode, modifier: Modifier) {
+        val missingMessage = assets?.missingMessage(mode)
+        Column(
+            modifier = modifier
+                .clip(RoundedCornerShape(18.dp))
+                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                .padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = label,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(84.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (missingMessage == null) {
+                    GeneratedIconPreview(assets, mode)
+                } else {
+                    Text(
+                        text = missingMessage,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun GeneratedIconPreview(assets: PreviewAssets?, mode: PreviewMode) {
+        val iconShape = RoundedCornerShape(20.dp)
+        val md3LightBackground = systemMaterialColor("system_accent1_100", Color(0xFFEADDFF))
+        val md3LightForeground = systemMaterialColor("system_accent1_700", Color(0xFF21005D))
+        val md3DarkBackground = systemMaterialColor("system_accent1_700", Color(0xFF4F378B))
+        val md3DarkForeground = systemMaterialColor("system_accent1_100", Color(0xFFEADDFF))
+        val background = when (mode) {
+            PreviewMode.NormalLight -> Color.White
+            PreviewMode.NormalDark -> Color(0xFF1C1B1F)
+            PreviewMode.MonochromeLight -> md3LightBackground
+            PreviewMode.MonochromeDark -> md3DarkBackground
+        }
+
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(iconShape)
+                .background(background),
+            contentAlignment = Alignment.Center,
+        ) {
+            when (mode) {
+                PreviewMode.NormalLight -> {
+                    assets?.recbg?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.FillBounds,
+                        )
+                    }
+                    assets?.recfg?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                }
+                PreviewMode.NormalDark -> {
+                    assets?.recNight?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                        )
+                    }
+                }
+                PreviewMode.MonochromeLight -> {
+                    assets?.monochrome?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                            colorFilter = ColorFilter.tint(md3LightForeground),
+                        )
+                    }
+                }
+                PreviewMode.MonochromeDark -> {
+                    assets?.monochrome?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit,
+                            colorFilter = ColorFilter.tint(md3DarkForeground),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun systemMaterialColor(resourceName: String, fallback: Color): Color {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            return fallback
+        }
+        val colorId = resources.getIdentifier(resourceName, "color", "android")
+        if (colorId == 0) {
+            return fallback
+        }
+        return runCatching { Color(getColor(colorId)) }.getOrDefault(fallback)
+    }
+
+    @Composable
     private fun StatusCard(selectedApp: AppEntry?) {
         val statusLabel = if (isBusy) "运行中" else "就绪"
 
@@ -560,6 +769,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.weight(1f),
                 )
             }
+            GeneratedPreviewSection()
         }
     }
 
@@ -1387,6 +1597,11 @@ class MainActivity : ComponentActivity() {
         Thread {
             try {
                 val outDir = generateArtPlusPackage(entry, useGpt)
+                runOnUiThread {
+                    previewPackageName = entry.packageName
+                    previewDirPath = outDir.absolutePath
+                    previewVersion += 1
+                }
                 if (outputTreeUri != null) {
                     exportToTree(outDir)
                 }
@@ -2188,6 +2403,17 @@ class MainActivity : ComponentActivity() {
         output.use { block(it) }
     }
 
+    private fun loadPreviewAssets(dir: File): PreviewAssets =
+        PreviewAssets(
+            recbg = decodePreviewBitmap(dir, "recbg.png"),
+            recfg = decodePreviewBitmap(dir, "recfg.png"),
+            recNight = decodePreviewBitmap(dir, "rec_night.png"),
+            monochrome = decodePreviewBitmap(dir, "monochrome.png"),
+        )
+
+    private fun decodePreviewBitmap(dir: File, name: String): Bitmap? =
+        BitmapFactory.decodeFile(File(dir, name).absolutePath)?.also { it.prepareToDraw() }
+
     private data class AppEntry(
         val label: String,
         val packageName: String,
@@ -2200,6 +2426,28 @@ class MainActivity : ComponentActivity() {
         val recfg: Bitmap,
         val recbg: Bitmap,
     )
+
+    private data class PreviewAssets(
+        val recbg: Bitmap?,
+        val recfg: Bitmap?,
+        val recNight: Bitmap?,
+        val monochrome: Bitmap?,
+    ) {
+        fun missingMessage(mode: PreviewMode): String? =
+            when (mode) {
+                PreviewMode.NormalLight -> if (recbg == null || recfg == null) "缺少 recbg/recfg" else null
+                PreviewMode.NormalDark -> if (recNight == null) "缺少 rec_night" else null
+                PreviewMode.MonochromeLight,
+                PreviewMode.MonochromeDark -> if (monochrome == null) "缺少 monochrome" else null
+            }
+    }
+
+    private enum class PreviewMode {
+        NormalLight,
+        NormalDark,
+        MonochromeLight,
+        MonochromeDark,
+    }
 
     private data class Bounds(
         val left: Int,
