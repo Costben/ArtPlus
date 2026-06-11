@@ -2381,14 +2381,27 @@ class MainActivity : ComponentActivity() {
         }
         val command = """
             if [ -d ${shQuote(ROOT_UXICONS_DIR)} ]; then
-                for dir in ${shQuote(ROOT_UXICONS_DIR)}/*; do
+                while IFS= read -r name; do
+                    [ -n "${'$'}name" ] || continue
+                    dir=${shQuote(ROOT_UXICONS_DIR)}/"${'$'}name"
                     [ -d "${'$'}dir" ] || continue
-                    name=${'$'}{dir##*/}
-                    printf '%s\n' "${'$'}name"
+                    if [ -f "${'$'}dir/recbg.png" ] ||
+                        [ -f "${'$'}dir/recfg.png" ] ||
+                        [ -f "${'$'}dir/rec_night.png" ] ||
+                        [ -f "${'$'}dir/monochrome.png" ] ||
+                        ls "${'$'}dir"/*.png >/dev/null 2>&1; then
+                        printf '%s\n' "${'$'}name"
+                    fi
                 done
             fi
         """.trimIndent()
-        val output = runRootCommand(command, ROOT_SCAN_TIMEOUT_MS)
+        val input = packageNames
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .sorted()
+            .joinToString(separator = "\n", postfix = "\n")
+        val output = runRootCommand(command, ROOT_SCAN_TIMEOUT_MS, input)
         return output
             .lineSequence()
             .map { it.trim() }
@@ -2396,16 +2409,38 @@ class MainActivity : ComponentActivity() {
             .toSet()
     }
 
-    private fun runRootCommand(command: String, timeoutMs: Long): String {
+    private fun runRootCommand(command: String, timeoutMs: Long, stdin: String? = null): String {
         val process = ProcessBuilder("su", "-c", command)
             .redirectErrorStream(true)
             .start()
+        val outputBuilder = StringBuilder()
+        val outputReader = Thread {
+            process.inputStream.bufferedReader().useLines { lines ->
+                lines.forEach { line ->
+                    outputBuilder
+                        .append(line)
+                        .append('\n')
+                }
+            }
+        }.apply {
+            isDaemon = true
+            start()
+        }
+        runCatching {
+            process.outputStream.bufferedWriter().use { writer ->
+                if (stdin != null) {
+                    writer.write(stdin)
+                }
+            }
+        }
         val finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
         if (!finished) {
             process.destroyForcibly()
+            outputReader.join(250)
             error("su 超时")
         }
-        val output = process.inputStream.bufferedReader().readText()
+        outputReader.join(1_000)
+        val output = outputBuilder.toString()
         val code = process.exitValue()
         if (code != 0) {
             val detail = output.lineSequence()
