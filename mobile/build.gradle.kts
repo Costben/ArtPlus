@@ -35,5 +35,6 @@ kotlin {
 
 dependencies {
     implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.compose.animation:animation:1.10.5")
     implementation("top.yukonga.miuix.kmp:miuix-android:0.8.8")
 }
