@@ -38,20 +38,31 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -64,16 +75,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -81,35 +96,47 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.core.view.WindowInsetsControllerCompat
 import android.util.Base64
-import dalvik.system.DexClassLoader
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -123,36 +150,60 @@ import java.net.URL
 import java.net.URLDecoder
 import java.nio.FloatBuffer
 import java.nio.charset.StandardCharsets
+import java.lang.reflect.InvocationTargetException
 import java.util.ArrayDeque
 import java.util.UUID
 import java.util.zip.ZipInputStream
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.pow
+import kotlin.math.sin
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.caverock.androidsvg.SVG
 
 class MainActivity : ComponentActivity() {
+    private val rmbgGenerationGate = AtomicBoolean(false)
+    private val previewWorkerDispatcher = Executors.newSingleThreadExecutor { task ->
+        Thread({
+            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+            task.run()
+        }, "ArtPlusPreviewWorker").apply {
+            priority = Thread.MIN_PRIORITY
+        }
+    }.asCoroutineDispatcher()
+    private val previewWorkerScope = CoroutineScope(SupervisorJob() + previewWorkerDispatcher)
     private val apps = mutableStateListOf<AppEntry>()
     private var queryText by mutableStateOf("")
     private var showAllApps by mutableStateOf(false)
@@ -166,8 +217,11 @@ class MainActivity : ComponentActivity() {
     private var gptImageMode by mutableStateOf(GptImageMode.Responses)
     private var gptBaseUrl by mutableStateOf("")
     private var gptApiKey by mutableStateOf("")
+    private var gptSettingsSaveStatus by mutableStateOf("")
     private var localSeparationMode by mutableStateOf(LocalSeparationMode.Auto)
     private var foregroundSubjectPercent by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT)
+    private var monochromeThemeScale by mutableStateOf(DEFAULT_MONOCHROME_THEME_SCALE)
+    private var draftMonochromeThemeScaleText by mutableStateOf((DEFAULT_MONOCHROME_THEME_SCALE * 100).roundToInt().toString())
     private var showAdvancedSeparationSettings by mutableStateOf(false)
     private var backgroundSeparationPercent by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT)
     private var draftBackgroundSeparationText by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT.toString())
@@ -175,6 +229,8 @@ class MainActivity : ComponentActivity() {
     private var draftPlateRemovalText by mutableStateOf(DEFAULT_PLATE_REMOVAL_PERCENT.toString())
     private var shadowRemovalPercent by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT)
     private var draftShadowRemovalText by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT.toString())
+    private var edgePolishPercent by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT)
+    private var draftEdgePolishText by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT.toString())
     private var adaptiveForegroundMode by mutableStateOf(AdaptiveForegroundMode.Auto)
     private var adaptiveDirectMaxCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT)
     private var adaptiveDirectMaxCoverageIncreasePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT)
@@ -193,12 +249,49 @@ class MainActivity : ComponentActivity() {
     private var activeGenerationSession by mutableStateOf<GenerationSession?>(null)
     private var previewSelections by mutableStateOf(PreviewSelections.default(PreviewChoice.Full))
     private var previewChoiceMode by mutableStateOf<PreviewMode?>(null)
+    private var isGptPreviewLoading by mutableStateOf(false)
     private var isGeneratingGptCandidate by mutableStateOf(false)
     private var isGeneratingRmbgCandidate by mutableStateOf(false)
+    private var isRefreshingArtPlusIcons by mutableStateOf(false)
+    private var isPreviewAssetsRefreshing by mutableStateOf(false)
+    private var isPreviewOutputRefreshing by mutableStateOf(false)
     private var lastRmbgCandidateError by mutableStateOf<String?>(null)
+    private var rmbgCandidatePackageName by mutableStateOf<String?>(null)
+    private var rmbgCandidateMode by mutableStateOf<PreviewMode?>(null)
+    private var rmbgCandidateStatusText by mutableStateOf("")
+    private var rmbgCandidateFailurePackageName by mutableStateOf<String?>(null)
+    private var rmbgCandidateFailureMode by mutableStateOf<PreviewMode?>(null)
+    private var skipNextHomeReturnAnimation by mutableStateOf(false)
+    private var pendingCustomImageMode by mutableStateOf<PreviewMode?>(null)
+    private var pendingCustomImageKind by mutableStateOf<CustomImageKind?>(null)
+    private var isInstallingRmbgComponent by mutableStateOf(false)
+    private var rmbgInstallStage by mutableStateOf("")
+    private var rmbgInstallProgress by mutableStateOf<Float?>(null)
+    private var rmbgComponentUrl by mutableStateOf("")
+    private var rmbgComponentSaveStatus by mutableStateOf("")
+    private var rmbgInputSize by mutableStateOf(DEFAULT_RMBG_INPUT_SIZE)
+    private var draftRmbgInputSizeText by mutableStateOf(DEFAULT_RMBG_INPUT_SIZE.toString())
+    private var choicePopupRequest by mutableStateOf<ChoicePopupRequest?>(null)
+    private var choicePopupVisible by mutableStateOf(false)
+    private var nextChoicePopupId = 0L
+    private var previewOutputJob: Job? = null
+    private var previewOutputRevision = 0
     private var debugHttpServer: DebugHttpServer? = null
     private var rmbgRuntime: DynamicRmbgRuntime? = null
     private var rmbgComponentStatus by mutableStateOf("")
+
+    private data class ChoicePopupRequest(
+        val id: Long,
+        val anchorBounds: Rect?,
+        val items: List<ChoicePopupItem>,
+    )
+
+    private data class ChoicePopupItem(
+        val label: String,
+        val summary: String,
+        val selected: Boolean,
+        val onSelected: () -> Unit,
+    )
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -231,12 +324,31 @@ class MainActivity : ComponentActivity() {
             installRmbgComponent(uri)
         }
 
+    private val chooseCustomImageLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            val mode = pendingCustomImageMode
+            val kind = pendingCustomImageKind
+            pendingCustomImageMode = null
+            pendingCustomImageKind = null
+            if (uri == null) {
+                statusText = "未选择自定义图片"
+                return@registerForActivityResult
+            }
+            if (mode == null || kind == null) {
+                statusText = "自定义槽位已失效"
+                return@registerForActivityResult
+            }
+            importCustomPreviewImage(mode, kind, uri)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         title = "ArtPlus Mobile"
         loadGptSettings()
         loadLocalSeparationSettings()
         loadImageSettings()
+        loadRmbgSettings()
+        loadGeneratedPackageCache()
         startDebugHttpServerIfNeeded()
         refreshPermissionState()
 
@@ -276,6 +388,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        previewOutputJob?.cancel()
+        previewWorkerScope.cancel()
+        previewWorkerDispatcher.close()
         debugHttpServer?.stop()
         debugHttpServer = null
         runCatching { rmbgRuntime?.close() }
@@ -295,8 +410,6 @@ class MainActivity : ComponentActivity() {
                 previousUsageAccess != usageAccessGranted)
         ) {
             loadApps()
-        } else if (didRequestAppLoad && apps.isNotEmpty() && !isScanningGeneratedPackages) {
-            refreshGeneratedPackages()
         }
     }
 
@@ -306,10 +419,37 @@ class MainActivity : ComponentActivity() {
         handleDebugGenerateIntent(intent)
     }
 
+    private fun openChoicePopup(anchorBounds: Rect?, items: List<ChoicePopupItem>): Long {
+        nextChoicePopupId += 1L
+        choicePopupVisible = false
+        choicePopupRequest = ChoicePopupRequest(
+            id = nextChoicePopupId,
+            anchorBounds = anchorBounds,
+            items = items,
+        )
+        return nextChoicePopupId
+    }
+
+    private fun closeChoicePopup() {
+        if (choicePopupRequest != null) {
+            choicePopupVisible = false
+        }
+    }
+
+    private fun startUiFriendlyThread(name: String, block: () -> Unit) {
+        Thread({
+            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+            block()
+        }, name).apply {
+            priority = Thread.MIN_PRIORITY
+            start()
+        }
+    }
+
     @Composable
     private fun ArtPlusScreen() {
         val pageBackground = if (isSystemInDarkTheme()) {
-            MiuixTheme.colorScheme.background
+            Color.Black
         } else {
             Color(0xFFF7F7F7)
         }
@@ -366,39 +506,121 @@ class MainActivity : ComponentActivity() {
         val commitBackDistancePx = with(density) { BACK_GESTURE_COMMIT_DISTANCE_DP.dp.toPx() }
         var systemBackProgress by remember { mutableStateOf(0f) }
         var dragBackProgress by remember { mutableStateOf(0f) }
-        val backProgress = maxOf(systemBackProgress, dragBackProgress)
+        val completingBackProgress = remember { Animatable(0f) }
+        val cancellingBackProgress = remember { Animatable(0f) }
+        val childEnterProgress = remember { Animatable(1f) }
+        var isCompletingBackGesture by remember { mutableStateOf(false) }
+        val screenScope = rememberCoroutineScope()
+        val backProgress = maxOf(
+            systemBackProgress,
+            dragBackProgress,
+            completingBackProgress.value,
+            cancellingBackProgress.value,
+        )
+        val activeChoicePopup = choicePopupRequest
 
-        LaunchedEffect(currentPage) {
-            systemBackProgress = 0f
-            dragBackProgress = 0f
+        LaunchedEffect(activeChoicePopup?.id) {
+            if (activeChoicePopup != null) {
+                delay(16)
+                if (choicePopupRequest?.id == activeChoicePopup.id) {
+                    choicePopupVisible = true
+                }
+            }
         }
 
-        PredictiveBackHandler(enabled = currentPage != AppPage.Home) { progress ->
-            try {
-                progress.collect { backEvent ->
-                    systemBackProgress = backEvent.progress
+        LaunchedEffect(activeChoicePopup?.id, choicePopupVisible) {
+            if (activeChoicePopup != null && !choicePopupVisible) {
+                delay(180)
+                if (choicePopupRequest?.id == activeChoicePopup.id && !choicePopupVisible) {
+                    choicePopupRequest = null
                 }
+            }
+        }
+
+        fun completeBackFrom(progress: Float) {
+            if (isCompletingBackGesture) {
+                return
+            }
+            val start = progress.coerceIn(0f, 1f)
+            isCompletingBackGesture = true
+            skipNextHomeReturnAnimation = true
+            screenScope.launch {
+                completingBackProgress.snapTo(start)
+                cancellingBackProgress.snapTo(0f)
+                completingBackProgress.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = ((1f - start) * 220f).roundToInt().coerceIn(90, 220)),
+                )
                 currentPage = AppPage.Home
-            } catch (_: CancellationException) {
+                delay(40)
                 systemBackProgress = 0f
+                dragBackProgress = 0f
+                completingBackProgress.snapTo(0f)
+                cancellingBackProgress.snapTo(0f)
+                isCompletingBackGesture = false
+                skipNextHomeReturnAnimation = false
+            }
+        }
+
+        LaunchedEffect(currentPage, skipNextHomeReturnAnimation, isCompletingBackGesture) {
+            if (currentPage != AppPage.Home) {
+                if (!isCompletingBackGesture) {
+                    systemBackProgress = 0f
+                    dragBackProgress = 0f
+                    completingBackProgress.snapTo(0f)
+                    cancellingBackProgress.snapTo(0f)
+                    childEnterProgress.snapTo(1f)
+                    childEnterProgress.animateTo(
+                        targetValue = 0f,
+                        animationSpec = tween(durationMillis = 300),
+                    )
+                }
+                skipNextHomeReturnAnimation = false
+            } else if (skipNextHomeReturnAnimation || isCompletingBackGesture) {
+                delay(90)
+                if (!isCompletingBackGesture) {
+                    systemBackProgress = 0f
+                    dragBackProgress = 0f
+                    completingBackProgress.snapTo(0f)
+                    cancellingBackProgress.snapTo(0f)
+                    skipNextHomeReturnAnimation = false
+                }
+            } else {
+                systemBackProgress = 0f
+                dragBackProgress = 0f
+                completingBackProgress.snapTo(0f)
+                cancellingBackProgress.snapTo(0f)
+                childEnterProgress.snapTo(1f)
+            }
+        }
+
+        PredictiveBackHandler(enabled = currentPage != AppPage.Home && !isCompletingBackGesture) { backEvents ->
+            var latestProgress = systemBackProgress
+            try {
+                backEvents.collect { backEvent ->
+                    latestProgress = backEvent.progress.coerceIn(0f, 1f)
+                    cancellingBackProgress.snapTo(0f)
+                    systemBackProgress = latestProgress
+                }
+                completeBackFrom(maxOf(latestProgress, systemBackProgress, BACK_GESTURE_COMMIT_PROGRESS))
+            } catch (_: CancellationException) {
+                val start = maxOf(latestProgress, systemBackProgress).coerceIn(0f, 1f)
+                systemBackProgress = 0f
+                if (start > 0f && currentPage != AppPage.Home && !isCompletingBackGesture) {
+                    cancellingBackProgress.snapTo(start)
+                    cancellingBackProgress.animateTo(
+                        targetValue = 0f,
+                        animationSpec = tween(durationMillis = (start * 180f).roundToInt().coerceIn(70, 180)),
+                    )
+                } else {
+                    cancellingBackProgress.snapTo(0f)
+                }
             }
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        if (currentPage != AppPage.Home) {
-                            val reveal = backProgress.coerceIn(0f, 1f)
-                            val scale = BACK_GESTURE_HOME_REST_SCALE +
-                                (1f - BACK_GESTURE_HOME_REST_SCALE) * reveal
-                            scaleX = scale
-                            scaleY = scale
-                            alpha = BACK_GESTURE_HOME_REST_ALPHA +
-                                (1f - BACK_GESTURE_HOME_REST_ALPHA) * reveal
-                        }
-                    },
+                modifier = Modifier.fillMaxSize(),
             ) {
                 HomePage(
                     pageBackground = pageBackground,
@@ -408,122 +630,96 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            AnimatedContent(
-                targetState = currentPage,
-                modifier = Modifier.fillMaxSize(),
-                transitionSpec = {
-                    val enteringChild = initialState == AppPage.Home && targetState != AppPage.Home
-                    val leavingChild = initialState != AppPage.Home && targetState == AppPage.Home
-                    val direction = if (targetState.order >= initialState.order) 1 else -1
-                    val enter = when {
-                        enteringChild -> slideInHorizontally(animationSpec = tween(300)) { fullWidth ->
-                            fullWidth
-                        } + fadeIn(animationSpec = tween(180))
-
-                        leavingChild -> fadeIn(animationSpec = tween(90))
-
-                        else -> slideInHorizontally(animationSpec = tween(260)) { fullWidth ->
-                            fullWidth * direction / 4
-                        } + fadeIn(animationSpec = tween(180))
-                    }
-                    val exit = when {
-                        enteringChild -> fadeOut(animationSpec = tween(90))
-
-                        leavingChild -> slideOutHorizontally(animationSpec = tween(260)) { fullWidth ->
-                            fullWidth
-                        } + fadeOut(animationSpec = tween(160))
-
-                        else -> slideOutHorizontally(animationSpec = tween(240)) { fullWidth ->
-                            -fullWidth * direction / 5
-                        } + fadeOut(animationSpec = tween(160))
-                    }
-                    enter.togetherWith(exit)
-                },
-                label = "ArtPlusChildPage",
-            ) { page ->
-                if (page != AppPage.Home) {
-                    val isActivePage = page == currentPage
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                if (isActivePage && backProgress > 0f) {
-                                    val reveal = backProgress.coerceIn(0f, 1f)
-                                    translationX = size.width * reveal * BACK_GESTURE_PAGE_TRANSLATION_RATIO
-                                    alpha = 1f - reveal * BACK_GESTURE_PAGE_ALPHA_DROP
-                                    val scale = 1f - reveal * BACK_GESTURE_PAGE_SCALE_DROP
-                                    scaleX = scale
-                                    scaleY = scale
-                                    shape = RoundedCornerShape((BACK_GESTURE_PAGE_CORNER_DP * reveal).dp)
-                                    clip = true
-                                }
-                            }
-                            .pointerInput(page, currentPage, isBusy, edgeBackWidthPx, commitBackDistancePx) {
-                                if (!isActivePage) {
-                                    return@pointerInput
-                                }
-                                var activeEdge = 0
-                                var dragDistance = 0f
-                                detectHorizontalDragGestures(
-                                    onDragStart = { offset ->
-                                        activeEdge = when {
-                                            isBusy -> 0
-                                            offset.x <= edgeBackWidthPx -> 1
-                                            offset.x >= size.width - edgeBackWidthPx -> -1
-                                            else -> 0
-                                        }
-                                        dragDistance = 0f
-                                        dragBackProgress = 0f
-                                    },
-                                    onHorizontalDrag = { _, dragAmount ->
-                                        if (activeEdge == 0) {
-                                            return@detectHorizontalDragGestures
-                                        }
-                                        dragDistance = (dragDistance + dragAmount * activeEdge).coerceAtLeast(0f)
-                                        dragBackProgress =
-                                            (dragDistance / (size.width * BACK_GESTURE_PROGRESS_DISTANCE_RATIO))
-                                                .coerceIn(0f, 1f)
-                                    },
-                                    onDragCancel = {
-                                        activeEdge = 0
-                                        dragDistance = 0f
-                                        dragBackProgress = 0f
-                                    },
-                                    onDragEnd = {
-                                        if (
-                                            activeEdge != 0 &&
-                                            (dragBackProgress >= BACK_GESTURE_COMMIT_PROGRESS ||
-                                                dragDistance >= commitBackDistancePx)
-                                        ) {
-                                            currentPage = AppPage.Home
-                                        }
-                                        activeEdge = 0
-                                        dragDistance = 0f
-                                        dragBackProgress = 0f
-                                    },
-                                )
-                            },
-                    ) {
-                        when (page) {
-                            AppPage.Settings -> SettingsPage(
-                                pageBackground = pageBackground,
-                                launcherCount = launcherCount,
-                                totalCount = apps.size,
-                                generatedCount = generatedCount,
-                            )
-
-                            AppPage.AppPicker -> AppPickerPage(
-                                pageBackground = pageBackground,
-                                filteredApps = filteredApps,
-                                scopeCount = scopeCount,
-                                generatedCount = generatedCount,
-                                ungeneratedCount = ungeneratedCount,
-                            )
-
-                            AppPage.Home -> Unit
+            val overlayPage = currentPage.takeIf { it != AppPage.Home }
+            if (overlayPage != null) {
+                val isActivePage = !isCompletingBackGesture
+                val isCompletingBack = skipNextHomeReturnAnimation || isCompletingBackGesture
+                val reveal = if (isCompletingBack || backProgress > 0f) {
+                    backProgress.coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val enteringOffset = size.width * childEnterProgress.value
+                            val leavingOffset = size.width * reveal * BACK_GESTURE_PAGE_TRANSLATION_RATIO
+                            translationX = enteringOffset + leavingOffset
                         }
+                        .pointerInput(overlayPage, currentPage, isBusy, edgeBackWidthPx, commitBackDistancePx) {
+                            if (!isActivePage) {
+                                return@pointerInput
+                            }
+                            var activeEdge = 0
+                            var dragDistance = 0f
+                            detectHorizontalDragGestures(
+                                onDragStart = { offset ->
+                                    activeEdge = when {
+                                        isBusy -> 0
+                                        offset.x <= edgeBackWidthPx -> 1
+                                        offset.x >= size.width - edgeBackWidthPx -> -1
+                                        else -> 0
+                                    }
+                                    dragDistance = 0f
+                                    dragBackProgress = 0f
+                                },
+                                onHorizontalDrag = { _, dragAmount ->
+                                    if (activeEdge == 0) {
+                                        return@detectHorizontalDragGestures
+                                    }
+                                    dragDistance = (dragDistance + dragAmount * activeEdge).coerceAtLeast(0f)
+                                    dragBackProgress =
+                                        (dragDistance / (size.width * BACK_GESTURE_PROGRESS_DISTANCE_RATIO))
+                                            .coerceIn(0f, 1f)
+                                },
+                                onDragCancel = {
+                                    activeEdge = 0
+                                    dragDistance = 0f
+                                    dragBackProgress = 0f
+                                },
+                                onDragEnd = {
+                                    if (
+                                        activeEdge != 0 &&
+                                        (dragBackProgress >= BACK_GESTURE_COMMIT_PROGRESS ||
+                                            dragDistance >= commitBackDistancePx)
+                                    ) {
+                                        completeBackFrom(dragBackProgress)
+                                    }
+                                    activeEdge = 0
+                                    dragDistance = 0f
+                                },
+                            )
+                        },
+                ) {
+                    when (overlayPage) {
+                        AppPage.Settings -> SettingsPage(
+                            pageBackground = pageBackground,
+                            launcherCount = launcherCount,
+                            totalCount = apps.size,
+                            generatedCount = generatedCount,
+                        )
+
+                        AppPage.AppPicker -> AppPickerPage(
+                            pageBackground = pageBackground,
+                            filteredApps = filteredApps,
+                            scopeCount = scopeCount,
+                            generatedCount = generatedCount,
+                            ungeneratedCount = ungeneratedCount,
+                        )
+
+                        AppPage.Home -> Unit
                     }
                 }
+            }
+
+            if (activeChoicePopup != null) {
+                ChoicePopupOverlay(
+                    request = activeChoicePopup,
+                    visible = choicePopupVisible,
+                    pageBackground = pageBackground,
+                    onDismiss = { closeChoicePopup() },
+                )
             }
         }
     }
@@ -564,9 +760,9 @@ class MainActivity : ComponentActivity() {
                     .background(pageBackground)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(innerPadding)
+                    .imePadding()
                     .padding(horizontal = 12.dp),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item {
                     Column(
@@ -612,6 +808,7 @@ class MainActivity : ComponentActivity() {
                     .background(pageBackground)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(innerPadding)
+                    .imePadding()
                     .padding(horizontal = 12.dp),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -660,17 +857,20 @@ class MainActivity : ComponentActivity() {
                     .background(pageBackground)
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(innerPadding)
+                    .imePadding()
                     .padding(horizontal = 12.dp),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item {
-                    AppPickerControlsCard(
-                        filteredCount = filteredApps.size,
-                        totalCount = scopeCount,
-                        generatedCount = generatedCount,
-                        ungeneratedCount = ungeneratedCount,
-                    )
+                    Column {
+                        AppPickerControlsCard(
+                            filteredCount = filteredApps.size,
+                            totalCount = scopeCount,
+                            generatedCount = generatedCount,
+                            ungeneratedCount = ungeneratedCount,
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
                 }
                 if (filteredApps.isEmpty()) {
                     item {
@@ -688,6 +888,7 @@ class MainActivity : ComponentActivity() {
                             generated = entry.packageName in generatedPackageNames,
                             onClick = {
                                 selectedPackageName = entry.packageName
+                                clearRmbgCandidateUiState()
                                 statusText = "已选择: ${entry.label} (${entry.packageName})"
                                 currentPage = AppPage.Home
                             },
@@ -749,6 +950,33 @@ class MainActivity : ComponentActivity() {
         val session = activeGenerationSession?.takeIf {
             it.packageName == packageName && it.outDir.absolutePath == dirPath
         }
+        var liveAssets by remember(session) { mutableStateOf<PreviewAssets?>(null) }
+        var liveAssetsLoading by remember(session) { mutableStateOf(false) }
+
+        LaunchedEffect(session, previewSelections, foregroundSubjectPercent, edgePolishPercent, previewVersion) {
+            if (session == null) {
+                liveAssets = null
+                liveAssetsLoading = false
+                return@LaunchedEffect
+            }
+            liveAssetsLoading = true
+            isPreviewAssetsRefreshing = true
+            try {
+                delay(PREVIEW_LIVE_ASSET_DEBOUNCE_MS)
+                liveAssets = withContext(previewWorkerDispatcher) {
+                    previewAssetsForSelections(session, previewSelections).preparedForDraw()
+                }
+            } catch (_: CancellationException) {
+                throw CancellationException()
+            } catch (_: Throwable) {
+                liveAssets = null
+            } finally {
+                liveAssetsLoading = false
+                isPreviewAssetsRefreshing = false
+            }
+        }
+        val displayAssets = liveAssets ?: assets
+        val previewLoading = isGptPreviewLoading || liveAssetsLoading || isPreviewOutputRefreshing
 
         Spacer(modifier = Modifier.height(14.dp))
         Text(
@@ -767,14 +995,21 @@ class MainActivity : ComponentActivity() {
             overflow = TextOverflow.Ellipsis,
         )
         Spacer(modifier = Modifier.height(10.dp))
-        if (assets == null) {
-            Text(
-                text = "加载预览中",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        if (displayAssets == null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AiIconLoadingPreview(modifier = Modifier.size(42.dp), overlay = true)
+                Text(
+                    text = "加载预览中",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             return
         }
 
@@ -784,16 +1019,18 @@ class MainActivity : ComponentActivity() {
         ) {
             PreviewTile(
                 label = "正常亮色",
-                assets = assets,
+                assets = displayAssets,
                 mode = PreviewMode.NormalLight,
+                loading = previewLoading,
                 choiceEnabled = session != null,
                 onClick = { previewChoiceMode = PreviewMode.NormalLight },
                 modifier = Modifier.weight(1f),
             )
             PreviewTile(
                 label = "正常暗色",
-                assets = assets,
+                assets = displayAssets,
                 mode = PreviewMode.NormalDark,
+                loading = previewLoading,
                 choiceEnabled = session != null,
                 onClick = { previewChoiceMode = PreviewMode.NormalDark },
                 modifier = Modifier.weight(1f),
@@ -806,16 +1043,18 @@ class MainActivity : ComponentActivity() {
         ) {
             PreviewTile(
                 label = "单色亮色",
-                assets = assets,
+                assets = displayAssets,
                 mode = PreviewMode.MonochromeLight,
+                loading = previewLoading,
                 choiceEnabled = session != null,
                 onClick = { previewChoiceMode = PreviewMode.MonochromeLight },
                 modifier = Modifier.weight(1f),
             )
             PreviewTile(
                 label = "单色暗色",
-                assets = assets,
+                assets = displayAssets,
                 mode = PreviewMode.MonochromeDark,
+                loading = previewLoading,
                 choiceEnabled = session != null,
                 onClick = { previewChoiceMode = PreviewMode.MonochromeDark },
                 modifier = Modifier.weight(1f),
@@ -832,11 +1071,17 @@ class MainActivity : ComponentActivity() {
         label: String,
         assets: PreviewAssets?,
         mode: PreviewMode,
+        loading: Boolean,
         choiceEnabled: Boolean,
         onClick: () -> Unit,
         modifier: Modifier,
     ) {
         val missingMessage = assets?.missingMessage(mode)
+        val loadingAlpha by animateFloatAsState(
+            targetValue = if (loading) 1f else 0f,
+            animationSpec = tween(durationMillis = if (loading) 260 else 360),
+            label = "PreviewLoadingAlpha",
+        )
         Column(
             modifier = modifier
                 .clip(RoundedCornerShape(18.dp))
@@ -862,12 +1107,14 @@ class MainActivity : ComponentActivity() {
                 if (missingMessage == null) {
                     GeneratedIconPreview(assets, mode)
                 } else {
-                    Text(
-                        text = missingMessage,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+                    MissingIconPreview(mode = mode)
+                }
+                if (loadingAlpha > 0.01f) {
+                    AiIconLoadingPreview(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .graphicsLayer { alpha = loadingAlpha },
+                        overlay = true,
                     )
                 }
             }
@@ -951,10 +1198,161 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun MissingIconPreview(
+        modifier: Modifier = Modifier.size(72.dp),
+        mode: PreviewMode? = null,
+        compact: Boolean = false,
+    ) {
+        val md3LightBackground = systemMaterialColor("system_accent1_100", Color(0xFFEADDFF))
+        val md3DarkBackground = systemMaterialColor("system_accent1_700", Color(0xFF4F378B))
+        val iconBackground = when (mode) {
+            PreviewMode.NormalDark -> Color(0xFF1C1B1F)
+            PreviewMode.MonochromeLight -> md3LightBackground
+            PreviewMode.MonochromeDark -> md3DarkBackground
+            PreviewMode.NormalLight,
+            null -> MiuixTheme.colorScheme.surfaceContainerHigh
+        }
+        val markColor = when (mode) {
+            PreviewMode.MonochromeDark -> Color.White
+            PreviewMode.NormalDark -> Color(0xFFE7E1E5)
+            else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+        }
+        val outerRadius = if (compact) 16.dp else 20.dp
+        val innerRadius = if (compact) 10.dp else 14.dp
+        val innerPadding = if (compact) 11.dp else 14.dp
+
+        Box(
+            modifier = modifier
+                .clip(RoundedCornerShape(outerRadius))
+                .background(iconBackground),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .clip(RoundedCornerShape(innerRadius))
+                    .background(markColor.copy(alpha = 0.10f)),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(if (compact) 0.38f else 0.40f)
+                    .clip(RoundedCornerShape(if (compact) 7.dp else 9.dp))
+                    .background(markColor.copy(alpha = 0.18f)),
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(if (compact) 9.dp else 11.dp)
+                    .size(if (compact) 9.dp else 11.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(markColor.copy(alpha = 0.28f)),
+            )
+        }
+    }
+
+    @Composable
+    private fun AiIconLoadingPreview(
+        modifier: Modifier = Modifier.size(72.dp),
+        overlay: Boolean = false,
+    ) {
+        val transition = rememberInfiniteTransition(label = "AiIconLoading")
+        val phase by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1800, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "AiIconLoadingPhase",
+        )
+        val pulse by transition.animateFloat(
+            initialValue = 0.35f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1400, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "AiIconLoadingPulse",
+        )
+        val shape = RoundedCornerShape(20.dp)
+        Box(
+            modifier = modifier
+                .clip(shape)
+                .background(if (overlay) Color.Transparent else Color(0xFF14131A)),
+            contentAlignment = Alignment.Center,
+        ) {
+            ComposeCanvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF15131D),
+                            Color(0xFF1D2136),
+                            Color(0xFF171522),
+                        ),
+                        start = Offset(0f, 0f),
+                        end = Offset(w, h),
+                    ),
+                    alpha = if (overlay) 0.22f else 1f,
+                )
+                val rows = 9
+                val cols = 11
+                for (row in 0 until rows) {
+                    for (col in 0 until cols) {
+                        val fx = (col + 0.5f) / cols
+                        val fy = (row + 0.5f) / rows
+                        val wave = sin((fx * 5.6f + phase * 6.28318f).toDouble()).toFloat()
+                        val ribbon = 1f - (abs(fy - (0.52f + wave * 0.18f)) / 0.34f).coerceIn(0f, 1f)
+                        val shimmer = 0.55f + 0.45f * sin((phase * 6.28318f + row * 0.74f + col * 0.39f).toDouble()).toFloat()
+                        val alphaBase = (0.12f + ribbon * 0.46f + pulse * 0.12f + shimmer * 0.08f).coerceIn(0.12f, 0.72f)
+                        val alpha = if (overlay) alphaBase * 0.58f else alphaBase
+                        val radius = w * (0.012f + ribbon * 0.012f)
+                        val color = when ((row + col) % 5) {
+                            0 -> Color(0xFF28F7D2)
+                            1 -> Color(0xFF4C83FF)
+                            2 -> Color(0xFFE044FF)
+                            3 -> Color(0xFFFFC857)
+                            else -> Color(0xFFFF4D9D)
+                        }
+                        val offsetX = sin((phase * 6.28318f + row).toDouble()).toFloat() * w * 0.018f
+                        val offsetY = cos((phase * 6.28318f + col).toDouble()).toFloat() * h * 0.014f
+                        drawCircle(
+                            color = color,
+                            radius = radius,
+                            center = Offset(w * fx + offsetX, h * fy + offsetY),
+                            alpha = alpha,
+                        )
+                    }
+                }
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.18f + pulse * 0.12f), Color.Transparent),
+                        center = Offset(w * (0.48f + 0.12f * sin((phase * 6.28318f).toDouble()).toFloat()), h * 0.5f),
+                        radius = w * 0.54f,
+                    ),
+                    radius = w * 0.54f,
+                    center = Offset(w * 0.5f, h * 0.5f),
+                    alpha = if (overlay) 0.16f else 0.35f,
+                )
+            }
+        }
+    }
+
+    @Composable
     private fun PreviewChoiceDialog(mode: PreviewMode, session: GenerationSession) {
-        val ruleChoices = listOf(PreviewChoice.Original, PreviewChoice.Plate, PreviewChoice.Full)
+        val ruleChoices = listOf(
+            PreviewChoice.Original,
+            PreviewChoice.TextSafe,
+            PreviewChoice.Plate,
+            PreviewChoice.Full,
+            PreviewChoice.ComponentSubject,
+            PreviewChoice.ComponentBackground,
+            PreviewChoice.TwoLayer,
+        )
         val selectedRule = previewSelections.choiceFor(mode).takeIf { it in ruleChoices }
-        var showRuleChoices by remember(mode) { mutableStateOf(false) }
+        var showRuleChoices by remember(mode) { mutableStateOf(true) }
         Dialog(onDismissRequest = { previewChoiceMode = null }) {
             Card(
                 modifier = Modifier
@@ -965,6 +1363,7 @@ class MainActivity : ComponentActivity() {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .imePadding()
                         .verticalScroll(rememberScrollState()),
                 ) {
                     Text(
@@ -976,10 +1375,10 @@ class MainActivity : ComponentActivity() {
                     )
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = "每个预览槽位可以独立选择算法；主体占比会实时重写当前输出",
+                        text = "每个槽位单独选择",
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -1003,7 +1402,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
-                        listOf(PreviewChoice.TwoLayer, PreviewChoice.Rmbg, PreviewChoice.Gpt).forEach { choice ->
+                        listOf(PreviewChoice.Rmbg, PreviewChoice.Gpt, PreviewChoice.CustomForeground, PreviewChoice.CustomBackground).forEach { choice ->
                             PreviewChoiceRow(
                                 mode = mode,
                                 choice = choice,
@@ -1072,7 +1471,7 @@ class MainActivity : ComponentActivity() {
                 )
                 Text(
                     text = selectedRule?.let { "当前使用: ${it.label}" }
-                        ?: "原始 / 去底板 / 全清理",
+                        ?: "原始 / 字标保全 / 去底板 / 全清理 / 底座当主体 / 底座当背景 / 二层",
                     style = MiuixTheme.textStyles.footnote1,
                     color = summaryColor,
                     maxLines = 1,
@@ -1086,14 +1485,37 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun PreviewChoiceRow(mode: PreviewMode, choice: PreviewChoice, session: GenerationSession) {
         val selected = previewSelections.choiceFor(mode) == choice
-        val candidate = session.candidates[choice]
+        val customKind = choice.customKind
+        val candidate = if (customKind == null) {
+            session.candidates[choice]
+        } else {
+            customCandidateForPreview(mode, customKind, session)
+        }
         val gptMissing = choice == PreviewChoice.Gpt && candidate == null
         val rmbgMissing = choice == PreviewChoice.Rmbg && candidate == null
-        val rmbgFailure = if (choice == PreviewChoice.Rmbg) lastRmbgCandidateError else null
+        val customMissing = customKind != null && candidate == null
+        val rmbgRunning = choice == PreviewChoice.Rmbg &&
+            isGeneratingRmbgCandidate &&
+            rmbgCandidatePackageName == session.packageName &&
+            (rmbgCandidateMode == null || rmbgCandidateMode == mode)
+        val rmbgFailure = if (
+            choice == PreviewChoice.Rmbg &&
+            rmbgCandidateFailurePackageName == session.packageName &&
+            (rmbgCandidateFailureMode == null || rmbgCandidateFailureMode == mode)
+        ) {
+            lastRmbgCandidateError
+        } else {
+            null
+        }
         val canGenerateGpt = gptBaseUrl.trim().isNotEmpty() && gptApiKey.trim().isNotEmpty()
         val canGenerateRmbg = rmbgMissing && findRmbgComponent() != null
-        val missingLocalCandidate = choice != PreviewChoice.Gpt && candidate == null && !canGenerateRmbg
-        val enabled = !isBusy && !isGeneratingGptCandidate && !isGeneratingRmbgCandidate && !missingLocalCandidate
+        val missingLocalCandidate = choice != PreviewChoice.Gpt &&
+            customKind == null &&
+            candidate == null &&
+            !canGenerateRmbg
+        val canImportCustom = customMissing
+        val missingCandidate = missingLocalCandidate && !canImportCustom
+        val enabled = !isBusy && !isGeneratingGptCandidate && !isGeneratingRmbgCandidate && !missingCandidate
         val background = if (selected) {
             MiuixTheme.colorScheme.primaryVariant
         } else {
@@ -1120,6 +1542,8 @@ class MainActivity : ComponentActivity() {
                         generateGptCandidateForMode(mode)
                     } else if (rmbgMissing) {
                         generateRmbgCandidateForMode(mode)
+                    } else if (customKind != null) {
+                        chooseCustomImageForMode(mode, customKind)
                     } else {
                         applyPreviewChoice(mode, choice)
                     }
@@ -1135,19 +1559,17 @@ class MainActivity : ComponentActivity() {
                     .background(MiuixTheme.colorScheme.secondaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
-                if (candidate != null) {
+                if (choice == PreviewChoice.Gpt && isGeneratingGptCandidate) {
+                    AiIconLoadingPreview(modifier = Modifier.fillMaxSize())
+                } else if (rmbgRunning) {
+                    AiIconLoadingPreview(modifier = Modifier.fillMaxSize(), overlay = true)
+                } else if (candidate != null) {
                     CandidateIconPreview(candidate, mode)
                 } else {
-                    Text(
-                        text = when {
-                            choice == PreviewChoice.Gpt && isGeneratingGptCandidate -> "..."
-                            choice == PreviewChoice.Rmbg && isGeneratingRmbgCandidate -> "..."
-                            choice == PreviewChoice.Gpt -> "GPT"
-                            else -> choice.label
-                        },
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSecondaryContainer,
-                        maxLines = 1,
+                    MissingIconPreview(
+                        modifier = Modifier.fillMaxSize(),
+                        mode = mode,
+                        compact = true,
                     )
                 }
             }
@@ -1165,39 +1587,77 @@ class MainActivity : ComponentActivity() {
                 Text(
                     text = when {
                         selected -> "当前使用"
-                        missingLocalCandidate && choice == PreviewChoice.TwoLayer -> "当前图标不符合二层结构"
-                        missingLocalCandidate && choice == PreviewChoice.Rmbg -> "未安装 RMBG 组件 ZIP"
+                        missingCandidate && choice == PreviewChoice.TwoLayer -> "当前图标不符合二层结构"
+                        missingCandidate && choice == PreviewChoice.Rmbg -> "未安装组件"
+                        rmbgRunning -> rmbgCandidateStatusText.ifBlank { "RMBG运行中" }
                         rmbgMissing && rmbgFailure != null -> rmbgFailure
-                        rmbgMissing -> "点击运行 RMBG-2.0；大模型，可能因内存失败"
-                        missingLocalCandidate -> "当前不可用"
-                        gptMissing && !canGenerateGpt -> "填写 Base URL 和 API key 后可生成"
-                        gptMissing -> "点击从 GPT Image 2 生成"
-                        else -> "点击应用到 ${mode.label}"
+                        rmbgMissing -> "点击运行"
+                        customMissing -> "选择 PNG/SVG"
+                        customKind != null -> "已导入"
+                        missingCandidate -> "不可用"
+                        gptMissing && !canGenerateGpt -> "先填 GPT 设置"
+                        gptMissing -> "点击生成"
+                        else -> choice.summary
                     },
                     style = MiuixTheme.textStyles.footnote1,
                     color = summaryColor,
-                    maxLines = 2,
+                    maxLines = if (choice == PreviewChoice.Rmbg && rmbgFailure != null) 4 else 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (selected) {
-                MetricPill(label = "已选")
+            PreviewChoiceActions(
+                showApplyAll = customKind == null,
+                applyEnabled = enabled && customKind == null,
+                onApplyAll = { applyPreviewChoiceToAll(choice) },
+            )
+        }
+    }
+
+    @Composable
+    private fun PreviewChoiceActions(
+        showApplyAll: Boolean,
+        applyEnabled: Boolean,
+        onApplyAll: () -> Unit,
+    ) {
+        Box(
+            modifier = Modifier.width(88.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (showApplyAll) {
+                CompactActionButton(
+                    text = "全部应用",
+                    onClick = onApplyAll,
+                    enabled = applyEnabled,
+                    modifier = Modifier.fillMaxWidth(),
+                    height = 56.dp,
+                )
             }
         }
     }
 
     @Composable
     private fun CandidateIconPreview(candidate: IconCandidate, mode: PreviewMode) {
-        val assets = remember(candidate, mode, foregroundSubjectPercent) {
-            previewAssetsForCandidate(candidate).also {
-                it.recbg?.prepareToDraw()
-                it.recfg?.prepareToDraw()
-                it.recNight?.prepareToDraw()
-                it.monochromeLight?.prepareToDraw()
-                it.monochromeDark?.prepareToDraw()
+        var assets by remember(candidate, mode, foregroundSubjectPercent, edgePolishPercent) {
+            mutableStateOf<PreviewAssets?>(null)
+        }
+        LaunchedEffect(candidate, mode, foregroundSubjectPercent, edgePolishPercent) {
+            assets = null
+            try {
+                assets = withContext(previewWorkerDispatcher) {
+                    previewAssetsForCandidate(candidate, mode).preparedForDraw()
+                }
+            } catch (_: CancellationException) {
+                throw CancellationException()
+            } catch (_: Throwable) {
+                assets = null
             }
         }
-        GeneratedIconPreview(assets, mode)
+        val readyAssets = assets
+        if (readyAssets == null) {
+            AiIconLoadingPreview(modifier = Modifier.fillMaxSize(), overlay = true)
+        } else {
+            GeneratedIconPreview(readyAssets, mode)
+        }
     }
     private fun systemMaterialColor(resourceName: String, fallback: Color): Color {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
@@ -1297,18 +1757,11 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun LocalSeparationSettingsCard() {
-        SectionCard(title = "背景分离", summary = localSeparationMode.summary) {
-            LocalSeparationModeControl()
-            Spacer(modifier = Modifier.height(12.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(16.dp),
+        ) {
             SubjectRatioControl()
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "当前: ${localSeparationMode.label} · 主体 $foregroundSubjectPercent%",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
             Spacer(modifier = Modifier.height(12.dp))
             TextButton(
                 text = if (showAdvancedSeparationSettings) "收起高级设置" else "展开高级设置",
@@ -1316,17 +1769,17 @@ class MainActivity : ComponentActivity() {
                 enabled = !isBusy,
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (showAdvancedSeparationSettings) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "高级设置",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                AdvancedSeparationSettings()
+            AnimatedVisibility(
+                visible = showAdvancedSeparationSettings,
+                enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                    expandVertically(animationSpec = tween(durationMillis = 220)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                    shrinkVertically(animationSpec = tween(durationMillis = 180)),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    AdvancedSeparationSettings()
+                }
             }
         }
     }
@@ -1337,6 +1790,7 @@ class MainActivity : ComponentActivity() {
         SegmentedControl(
             labels = modes.map { it.label },
             selectedIndex = modes.indexOf(localSeparationMode),
+            scrollable = true,
             onSelected = { index ->
                 updateLocalSeparationMode(modes[index])
             }
@@ -1350,30 +1804,16 @@ class MainActivity : ComponentActivity() {
             summary = "复杂游戏图标建议 100%，范围 20% 到 150%",
             value = "$foregroundSubjectPercent%",
         )
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            TextButton(
-                text = "-10%",
-                onClick = { updateForegroundSubjectPercent(foregroundSubjectPercent - 10) },
-                enabled = !isBusy && foregroundSubjectPercent > MIN_FOREGROUND_SUBJECT_PERCENT,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(
-                text = "100%",
-                onClick = { updateForegroundSubjectPercent(100) },
-                enabled = !isBusy,
-                modifier = Modifier.weight(1f),
-            )
-            TextButton(
-                text = "+10%",
-                onClick = { updateForegroundSubjectPercent(foregroundSubjectPercent + 10) },
-                enabled = !isBusy && foregroundSubjectPercent < MAX_FOREGROUND_SUBJECT_PERCENT,
-                modifier = Modifier.weight(1f),
-            )
-        }
+        Spacer(modifier = Modifier.height(12.dp))
+        SteppedPercentSlider(
+            value = foregroundSubjectPercent,
+            min = MIN_FOREGROUND_SUBJECT_PERCENT,
+            max = MAX_FOREGROUND_SUBJECT_PERCENT,
+            step = 10,
+            enabled = !isBusy,
+            showDots = false,
+            onValueChange = { updateForegroundSubjectPercent(it) },
+        )
     }
 
     @Composable
@@ -1384,7 +1824,7 @@ class MainActivity : ComponentActivity() {
         ) {
             NumberParameterControl(
                 title = "背景剔除阈值",
-                summary = "实际背景减法不透明距离，默认 $DEFAULT_BACKGROUND_SEPARATION_PERCENT",
+                summary = "默认 $DEFAULT_BACKGROUND_SEPARATION_PERCENT",
                 value = backgroundSeparationPercent,
                 draftText = draftBackgroundSeparationText,
                 min = MIN_BACKGROUND_SEPARATION_PERCENT,
@@ -1392,28 +1832,151 @@ class MainActivity : ComponentActivity() {
                 onDraftChange = { draftBackgroundSeparationText = it },
                 onSave = { updateBackgroundSeparationPercent(it) },
             )
-            if (localSeparationMode != LocalSeparationMode.Original) {
-                NumberParameterControl(
-                    title = "底板颜色阈值",
-                    summary = "实际边缘底板颜色距离，默认 $DEFAULT_PLATE_REMOVAL_PERCENT",
-                    value = plateRemovalPercent,
-                    draftText = draftPlateRemovalText,
-                    min = MIN_PLATE_REMOVAL_PERCENT,
-                    max = MAX_PLATE_REMOVAL_PERCENT,
-                    onDraftChange = { draftPlateRemovalText = it },
-                    onSave = { updatePlateRemovalPercent(it) },
-                )
+            NumberParameterControl(
+                title = "底板颜色阈值",
+                summary = "默认 $DEFAULT_PLATE_REMOVAL_PERCENT",
+                value = plateRemovalPercent,
+                draftText = draftPlateRemovalText,
+                min = MIN_PLATE_REMOVAL_PERCENT,
+                max = MAX_PLATE_REMOVAL_PERCENT,
+                onDraftChange = { draftPlateRemovalText = it },
+                onSave = { updatePlateRemovalPercent(it) },
+            )
+            NumberParameterControl(
+                title = "长阴影清理强度",
+                summary = "默认 $DEFAULT_SHADOW_REMOVAL_PERCENT",
+                value = shadowRemovalPercent,
+                draftText = draftShadowRemovalText,
+                min = MIN_SHADOW_REMOVAL_PERCENT,
+                max = MAX_SHADOW_REMOVAL_PERCENT,
+                onDraftChange = { draftShadowRemovalText = it },
+                onSave = { updateShadowRemovalPercent(it) },
+            )
+            NumberParameterControl(
+                title = "毛刺优化",
+                summary = "默认 $DEFAULT_EDGE_POLISH_PERCENT",
+                value = edgePolishPercent,
+                draftText = draftEdgePolishText,
+                min = MIN_EDGE_POLISH_PERCENT,
+                max = MAX_EDGE_POLISH_PERCENT,
+                onDraftChange = { draftEdgePolishText = it },
+                onSave = { updateEdgePolishPercent(it) },
+            )
+            NumberParameterControl(
+                title = "单色缩放",
+                summary = "默认 ${(DEFAULT_MONOCHROME_THEME_SCALE * 100).roundToInt()}%",
+                value = (monochromeThemeScale * 100).roundToInt(),
+                draftText = draftMonochromeThemeScaleText,
+                min = MIN_MONOCHROME_THEME_SCALE_PERCENT,
+                max = MAX_MONOCHROME_THEME_SCALE_PERCENT,
+                onDraftChange = { draftMonochromeThemeScaleText = it },
+                onSave = { updateMonochromeThemeScalePercent(it) },
+            )
+        }
+    }
+
+    @Composable
+    private fun SteppedPercentSlider(
+        value: Int,
+        min: Int,
+        max: Int,
+        step: Int,
+        enabled: Boolean,
+        showDots: Boolean = true,
+        onValueChange: (Int) -> Unit,
+    ) {
+        val density = LocalDensity.current
+        val inactiveColor = MiuixTheme.colorScheme.surfaceContainerHigh
+        val nodeColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.38f)
+        val activeColor = MiuixTheme.colorScheme.primaryVariant
+        val thumbColor = MiuixTheme.colorScheme.onPrimaryVariant
+        val disabledAlpha = if (enabled) 1f else 0.48f
+        val steps = ((max - min) / step).coerceAtLeast(1)
+        val safeIndex = (((value.coerceIn(min, max) - min).toFloat() / step.toFloat()).roundToInt())
+            .coerceIn(0, steps)
+        val currentValue by rememberUpdatedState(value)
+        val currentOnValueChange by rememberUpdatedState(onValueChange)
+        var widthPx by remember { mutableStateOf(0) }
+        val sideInsetPx = with(density) { 28.dp.toPx() }
+
+        fun updateFromX(x: Float) {
+            if (!enabled || widthPx <= 0) {
+                return
             }
-            if (localSeparationMode == LocalSeparationMode.Auto || localSeparationMode == LocalSeparationMode.Full) {
-                NumberParameterControl(
-                    title = "长阴影清理强度",
-                    summary = "实际阴影候选最大 Alpha；仅清理明显拖尾，默认 $DEFAULT_SHADOW_REMOVAL_PERCENT",
-                    value = shadowRemovalPercent,
-                    draftText = draftShadowRemovalText,
-                    min = MIN_SHADOW_REMOVAL_PERCENT,
-                    max = MAX_SHADOW_REMOVAL_PERCENT,
-                    onDraftChange = { draftShadowRemovalText = it },
-                    onSave = { updateShadowRemovalPercent(it) },
+            val trackStart = sideInsetPx
+            val trackEnd = (widthPx.toFloat() - sideInsetPx).coerceAtLeast(trackStart + 1f)
+            val ratio = ((x.coerceIn(trackStart, trackEnd) - trackStart) / (trackEnd - trackStart))
+                .coerceIn(0f, 1f)
+            val nextIndex = (ratio * steps).roundToInt().coerceIn(0, steps)
+            val nextValue = min + nextIndex * step
+            if (nextValue != currentValue) {
+                currentOnValueChange(nextValue)
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.58f))
+                .onGloballyPositioned { widthPx = it.size.width }
+                .pointerInput(enabled, widthPx, min, max, step) {
+                    detectTapGestures { offset -> updateFromX(offset.x) }
+                }
+                .pointerInput(enabled, widthPx, min, max, step) {
+                    detectDragGestures(
+                        onDragStart = { offset -> updateFromX(offset.x) },
+                        onDrag = { change, _ ->
+                            updateFromX(change.position.x)
+                            change.consume()
+                        },
+                    )
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            ComposeCanvas(modifier = Modifier.fillMaxSize()) {
+                val trackStart = sideInsetPx.coerceAtMost(size.width / 2f)
+                val trackEnd = (size.width - sideInsetPx).coerceAtLeast(trackStart + 1f)
+                val centerY = size.height / 2f
+                val trackWidth = trackEnd - trackStart
+                val selectedX = trackStart + trackWidth * (safeIndex.toFloat() / steps.toFloat())
+                val trackHeight = 34.dp.toPx()
+                val dotRadius = 3.4.dp.toPx()
+                val thumbRadius = 13.dp.toPx()
+
+                drawLine(
+                    color = inactiveColor.copy(alpha = disabledAlpha),
+                    start = Offset(trackStart, centerY),
+                    end = Offset(trackEnd, centerY),
+                    strokeWidth = trackHeight,
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = activeColor.copy(alpha = disabledAlpha),
+                    start = Offset(trackStart, centerY),
+                    end = Offset(selectedX, centerY),
+                    strokeWidth = trackHeight,
+                    cap = StrokeCap.Round,
+                )
+                if (showDots && steps <= 30) {
+                    for (index in 0..steps) {
+                        val x = trackStart + trackWidth * (index.toFloat() / steps.toFloat())
+                        drawCircle(
+                            color = if (index <= safeIndex) {
+                                thumbColor.copy(alpha = disabledAlpha * 0.42f)
+                            } else {
+                                nodeColor
+                            },
+                            radius = dotRadius,
+                            center = Offset(x, centerY),
+                        )
+                    }
+                }
+                drawCircle(
+                    color = thumbColor.copy(alpha = disabledAlpha),
+                    radius = thumbRadius,
+                    center = Offset(selectedX, centerY),
                 )
             }
         }
@@ -1429,9 +1992,119 @@ class MainActivity : ComponentActivity() {
         max: Int,
         onDraftChange: (String) -> Unit,
         onSave: (Int) -> Unit,
+        enabled: Boolean = true,
     ) {
         val parsedValue = draftText.toIntOrNull()?.coerceIn(min, max)
-        val canSave = !isBusy && parsedValue != null && parsedValue != value
+        val controlEnabled = enabled && !isBusy
+        val canSave = controlEnabled && parsedValue != null && parsedValue != value
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Text(
+                        text = title,
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "$summary · $min-$max",
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NumberInputBox(
+                        value = draftText,
+                        fallbackValue = value,
+                        enabled = controlEnabled,
+                        onValueChange = onDraftChange,
+                        onDone = { submitted ->
+                            submitted.toIntOrNull()
+                                ?.coerceIn(min, max)
+                                ?.let(onSave)
+                        },
+                    )
+                    CompactSaveButton(
+                        onClick = { parsedValue?.let(onSave) },
+                        enabled = canSave,
+                    )
+                }
+            }
+            SteppedPercentSlider(
+                value = value,
+                min = min,
+                max = max,
+                step = 1,
+                enabled = controlEnabled,
+                onValueChange = onSave,
+            )
+        }
+    }
+
+    @Composable
+    private fun CompactSaveButton(
+        onClick: () -> Unit,
+        enabled: Boolean,
+    ) {
+        val background = if (enabled) {
+            MiuixTheme.colorScheme.primaryVariant
+        } else {
+            MiuixTheme.colorScheme.surfaceContainerHigh
+        }
+        val foreground = if (enabled) {
+            MiuixTheme.colorScheme.onPrimaryVariant
+        } else {
+            MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.62f)
+        }
+        Box(
+            modifier = Modifier
+                .width(78.dp)
+                .height(46.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(background)
+                .clickable(enabled = enabled, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "保存",
+                style = MiuixTheme.textStyles.body2,
+                color = foreground,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+
+    @Composable
+    private fun DecimalParameterControl(
+        title: String,
+        summary: String,
+        value: Float,
+        draftText: String,
+        min: Float,
+        max: Float,
+        onDraftChange: (String) -> Unit,
+        onSave: (Float) -> Unit,
+    ) {
+        val parsedValue = draftText.toFloatOrNull()?.coerceIn(min, max)
+        val canSave = !isBusy && parsedValue != null && abs(parsedValue - value) > 0.0005f
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -1449,7 +2122,7 @@ class MainActivity : ComponentActivity() {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "$summary · 范围 $min-$max",
+                    text = "$summary · 范围 ${formatScale(min)}-${formatScale(max)}",
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 2,
@@ -1460,12 +2133,12 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                NumberInputBox(
+                DecimalInputBox(
                     value = draftText,
-                    fallbackValue = value,
+                    fallbackValue = formatScale(value),
                     onValueChange = onDraftChange,
                     onDone = { submitted ->
-                        submitted.toIntOrNull()
+                        submitted.toFloatOrNull()
                             ?.coerceIn(min, max)
                             ?.let(onSave)
                     },
@@ -1474,9 +2147,120 @@ class MainActivity : ComponentActivity() {
                     text = "保存",
                     onClick = { parsedValue?.let(onSave) },
                     enabled = canSave,
-                    modifier = Modifier.width(58.dp),
+                    modifier = Modifier.width(64.dp),
                 )
             }
+        }
+    }
+
+    @Composable
+    private fun DecimalInputBox(
+        value: String,
+        fallbackValue: String,
+        onValueChange: (String) -> Unit,
+        onDone: (String) -> Unit,
+    ) {
+        val textColor = MiuixTheme.colorScheme.onSurface.toArgb()
+        val cursorColor = MiuixTheme.colorScheme.primaryVariant.toArgb()
+        val enabled = !isBusy
+        val bringIntoViewRequester = remember { BringIntoViewRequester() }
+        var bringIntoViewRequest by remember { mutableStateOf(0) }
+
+        LaunchedEffect(bringIntoViewRequest) {
+            if (bringIntoViewRequest > 0) {
+                delay(260)
+                bringIntoViewRequester.bringIntoView()
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .width(78.dp)
+                .height(46.dp)
+                .bringIntoViewRequester(bringIntoViewRequester)
+                .clip(RoundedCornerShape(14.dp))
+                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { context ->
+                    EditText(context).apply {
+                        background = null
+                        gravity = Gravity.CENTER
+                        includeFontPadding = false
+                        isSingleLine = true
+                        filters = arrayOf(InputFilter.LengthFilter(4))
+                        inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                        imeOptions = EditorInfo.IME_ACTION_DONE or
+                            EditorInfo.IME_FLAG_NO_EXTRACT_UI or
+                            EditorInfo.IME_FLAG_NO_FULLSCREEN
+                        setSelectAllOnFocus(true)
+                        setPadding(0, 0, 0, 0)
+                        setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
+                        setOnClickListener {
+                            bringIntoViewRequest++
+                            requestFocus()
+                            post {
+                                selectAll()
+                                showKeyboardFor(this)
+                            }
+                        }
+                        setOnFocusChangeListener { _, hasFocus ->
+                            if (hasFocus) {
+                                bringIntoViewRequest++
+                                post {
+                                    selectAll()
+                                    showKeyboardFor(this)
+                                }
+                            } else if (text.isEmpty()) {
+                                setText(fallbackValue)
+                                onValueChange(fallbackValue)
+                            }
+                        }
+                        setOnEditorActionListener { _, actionId, _ ->
+                            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                                onDone(text.toString())
+                                clearFocus()
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                    }
+                },
+                update = { editText ->
+                    editText.isEnabled = enabled
+                    editText.setTextColor(textColor)
+                    editText.setHintTextColor(textColor)
+                    editText.textCursorDrawable?.setTint(cursorColor)
+                    editText.imeOptions = EditorInfo.IME_ACTION_DONE or
+                        EditorInfo.IME_FLAG_NO_EXTRACT_UI or
+                        EditorInfo.IME_FLAG_NO_FULLSCREEN
+                    (editText.tag as? TextWatcher)?.let { editText.removeTextChangedListener(it) }
+                    if (editText.text.toString() != value) {
+                        editText.setText(value)
+                        editText.setSelection(editText.text.length)
+                    }
+                    val watcher = object : TextWatcher {
+                        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                            val raw = s?.toString().orEmpty()
+                            val filtered = filterDecimalInput(raw)
+                            if (filtered != raw) {
+                                editText.setText(filtered)
+                                editText.setSelection(editText.text.length)
+                                return
+                            }
+                            onValueChange(filtered)
+                        }
+                        override fun afterTextChanged(s: Editable?) = Unit
+                    }
+                    editText.tag = watcher
+                    editText.addTextChangedListener(watcher)
+                }
+            )
         }
     }
 
@@ -1484,17 +2268,27 @@ class MainActivity : ComponentActivity() {
     private fun NumberInputBox(
         value: String,
         fallbackValue: Int,
+        enabled: Boolean,
         onValueChange: (String) -> Unit,
         onDone: (String) -> Unit,
     ) {
         val textColor = MiuixTheme.colorScheme.onSurface.toArgb()
         val cursorColor = MiuixTheme.colorScheme.primaryVariant.toArgb()
-        val enabled = !isBusy
+        val bringIntoViewRequester = remember { BringIntoViewRequester() }
+        var bringIntoViewRequest by remember { mutableStateOf(0) }
+
+        LaunchedEffect(bringIntoViewRequest) {
+            if (bringIntoViewRequest > 0) {
+                delay(260)
+                bringIntoViewRequester.bringIntoView()
+            }
+        }
 
         Box(
             modifier = Modifier
                 .width(78.dp)
                 .height(46.dp)
+                .bringIntoViewRequester(bringIntoViewRequester)
                 .clip(RoundedCornerShape(14.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainerHigh)
                 .padding(horizontal = 8.dp),
@@ -1517,6 +2311,7 @@ class MainActivity : ComponentActivity() {
                         setPadding(0, 0, 0, 0)
                         setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
                         setOnClickListener {
+                            bringIntoViewRequest++
                             requestFocus()
                             post {
                                 selectAll()
@@ -1525,6 +2320,7 @@ class MainActivity : ComponentActivity() {
                         }
                         setOnFocusChangeListener { _, hasFocus ->
                             if (hasFocus) {
+                                bringIntoViewRequest++
                                 post {
                                     selectAll()
                                     showKeyboardFor(this)
@@ -1617,41 +2413,103 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                TextButton(
-                    text = "本地写入",
-                    onClick = { generateSelected(installWithRoot = true, useGpt = false) },
+                CompactActionButton(
+                    text = "写入全部",
+                    onClick = {
+                        generateSelected(
+                            installWithRoot = true,
+                            useGpt = false,
+                            rootWriteMode = RootWriteMode.All,
+                        )
+                    },
                     enabled = canRun,
                     modifier = Modifier.weight(1f),
                 )
-                TextButton(
-                    text = "GPT写入",
-                    onClick = { generateSelected(installWithRoot = true, useGpt = true) },
+                CompactActionButton(
+                    text = "写入默认",
+                    onClick = {
+                        generateSelected(
+                            installWithRoot = true,
+                            useGpt = false,
+                            rootWriteMode = RootWriteMode.DefaultOnly,
+                        )
+                    },
+                    enabled = canRun,
+                    modifier = Modifier.weight(1f),
+                )
+                CompactActionButton(
+                    text = "写入单色",
+                    onClick = {
+                        generateSelected(
+                            installWithRoot = true,
+                            useGpt = false,
+                            rootWriteMode = RootWriteMode.MonochromeOnly,
+                        )
+                    },
                     enabled = canRun,
                     modifier = Modifier.weight(1f),
                 )
             }
+            Spacer(modifier = Modifier.height(10.dp))
+            TextButton(
+                text = if (isRefreshingArtPlusIcons) "刷新中" else "刷新图标",
+                onClick = { refreshArtPlusIcons() },
+                enabled = !isBusy && !isRefreshingArtPlusIcons,
+                modifier = Modifier.fillMaxWidth(),
+            )
             GeneratedPreviewSection()
         }
     }
 
     @Composable
-    private fun GptSettingsCard() {
-        SectionCard(title = "GPT Image 2", summary = "响应模式走 Codex 能力；接口模式直接调用 Base URL + API key") {
-            SegmentedModeControl()
-            Spacer(modifier = Modifier.height(12.dp))
+    private fun CompactActionButton(
+        text: String,
+        onClick: () -> Unit,
+        enabled: Boolean,
+        modifier: Modifier = Modifier,
+        height: Dp = 50.dp,
+    ) {
+        val darkTheme = isSystemInDarkTheme()
+        val background = if (darkTheme) {
+            Color(0xFF444444)
+        } else {
+            Color(0xFFEFEFEF)
+        }
+        val foreground = if (enabled) {
+            MiuixTheme.colorScheme.onSurface
+        } else {
+            MiuixTheme.colorScheme.onSurfaceVariantSummary
+        }
+        Box(
+            modifier = modifier
+                .height(height)
+                .clip(RoundedCornerShape(18.dp))
+                .background(background)
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
             Text(
-                text = "当前: ${gptImageMode.label}",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                text = text,
+                style = MiuixTheme.textStyles.button.copy(fontSize = 15.sp),
+                color = foreground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
             )
+        }
+    }
+
+    @Composable
+    private fun GptSettingsCard() {
+        SectionCard(title = "GPT Image 2", summary = "响应模式用 Codex image gen；接口模式直连 gpt-image-2") {
+            GptModeChoiceRow()
             Spacer(modifier = Modifier.height(12.dp))
             InlineInputField(
                 value = gptBaseUrl,
                 onValueChange = {
                     gptBaseUrl = it
-                    saveGptSettings()
+                    gptSettingsSaveStatus = ""
                 },
                 label = "Base URL",
             )
@@ -1660,11 +2518,40 @@ class MainActivity : ComponentActivity() {
                 value = gptApiKey,
                 onValueChange = {
                     gptApiKey = it
-                    saveGptSettings()
+                    gptSettingsSaveStatus = ""
                 },
                 label = "API key",
                 obscure = true,
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(
+                text = "保存 GPT 设置",
+                onClick = {
+                    val message = if (saveGptSettings()) {
+                        "GPT 设置已保存"
+                    } else {
+                        "GPT 设置保存失败"
+                    }
+                    gptSettingsSaveStatus = if (message.contains("已保存")) "已保存" else "保存失败"
+                    statusText = message
+                },
+                enabled = !isBusy,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (gptSettingsSaveStatus.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = gptSettingsSaveStatus,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = if (gptSettingsSaveStatus == "已保存") {
+                        MiuixTheme.colorScheme.primaryVariant
+                    } else {
+                        MiuixTheme.colorScheme.error
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 
@@ -1672,26 +2559,136 @@ class MainActivity : ComponentActivity() {
     private fun RmbgComponentCard() {
         val component = remember(rmbgComponentStatus) { findRmbgComponent() }
         SectionCard(
-            title = "RMBG 组件",
-            summary = "RMBG-2.0 不内置在 APK 中；安装组件 ZIP 后才启用",
+            title = "RMBG",
+            summary = "背景移除模型下载与安装",
         ) {
             SettingLine(
-                title = "组件状态",
-                summary = component?.let { "ABI ${it.abi} · 模型和 ONNX Runtime 已安装" }
-                    ?: "未安装组件；主安装包不包含 RMBG 模型和 ONNX Runtime",
+                title = "状态",
+                summary = component?.let { "ABI ${it.abi}" } ?: "未安装",
                 value = if (component == null) "未安装" else "已安装",
             )
             Spacer(modifier = Modifier.height(12.dp))
+            RmbgInputSizeChoiceRow(
+                enabled = !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            InlineInputField(
+                value = rmbgComponentUrl,
+                onValueChange = {
+                    rmbgComponentUrl = it
+                    rmbgComponentSaveStatus = ""
+                },
+                label = "组件 ZIP URL",
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                TextButton(
+                    text = "保存地址",
+                    onClick = {
+                        rmbgComponentSaveStatus = if (saveRmbgSettings()) "已保存" else "保存失败"
+                        statusText = "RMBG 地址$rmbgComponentSaveStatus"
+                    },
+                    enabled = !isBusy && !isInstallingRmbgComponent,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(
+                    text = if (isInstallingRmbgComponent) "安装中" else "一键安装",
+                    onClick = { installRmbgComponentFromUrl() },
+                    enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            if (isInstallingRmbgComponent || rmbgInstallStage.isNotBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                RmbgInstallProgressBar(
+                    text = rmbgInstallStage.ifBlank { if (isInstallingRmbgComponent) "安装中" else "" },
+                    progress = rmbgInstallProgress,
+                    active = isInstallingRmbgComponent,
+                )
+            }
+            if (rmbgComponentSaveStatus.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = rmbgComponentSaveStatus,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = if (rmbgComponentSaveStatus == "已保存") {
+                        MiuixTheme.colorScheme.primaryVariant
+                    } else {
+                        MiuixTheme.colorScheme.error
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
             TextButton(
-                text = if (component == null) "安装 RMBG 组件 ZIP" else "重新安装组件 ZIP",
+                text = "选择 ZIP",
                 onClick = {
                     chooseRmbgComponentLauncher.launch(
                         arrayOf("application/zip", "application/octet-stream", "*/*"),
                     )
                 },
-                enabled = !isBusy && !isGeneratingRmbgCandidate,
+                enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+    }
+
+    @Composable
+    private fun RmbgInstallProgressBar(text: String, progress: Float?, active: Boolean) {
+        val transition = rememberInfiniteTransition(label = "RmbgInstallProgress")
+        val phase by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1300, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "RmbgInstallProgressPhase",
+        )
+        val fraction = progress?.coerceIn(0f, 1f)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (text.isNotBlank()) {
+                Text(
+                    text = text,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+            ) {
+                if (fraction != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(fraction)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(MiuixTheme.colorScheme.primaryVariant),
+                    )
+                } else if (active) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(0.36f)
+                            .offset { IntOffset(((phase * 1.64f - 0.36f) * 1000).roundToInt(), 0) }
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(MiuixTheme.colorScheme.primaryVariant),
+                    )
+                }
+            }
         }
     }
 
@@ -1730,13 +2727,13 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.height(10.dp))
             SettingLine(
                 title = "已生成",
-                summary = "来自 Root 目标目录扫描结果",
+                summary = "来自本地缓存；手动刷新后才重新读取 data 路径",
                 value = "$generatedCount",
             )
             Spacer(modifier = Modifier.height(12.dp))
             TextButton(
                 text = "刷新应用与生成状态",
-                onClick = { loadApps() },
+                onClick = { loadApps(refreshGenerated = true) },
                 enabled = !isBusy,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -1891,90 +2888,135 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun AppRow(entry: AppEntry, selected: Boolean, generated: Boolean, onClick: () -> Unit) {
-        val titleColor = if (selected) {
-            MiuixTheme.colorScheme.onPrimaryVariant
-        } else {
-            MiuixTheme.colorScheme.onSurface
-        }
-        val summaryColor = if (selected) {
-            MiuixTheme.colorScheme.onPrimaryVariant
-        } else {
-            MiuixTheme.colorScheme.onSurfaceVariantSummary
-        }
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .padding(start = 2.dp)
-                    .width(6.dp)
-                    .height(24.dp)
-                    .align(Alignment.CenterVertically)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(
-                        if (selected) {
-                            MiuixTheme.colorScheme.primaryVariant
-                        } else if (generated) {
-                            MiuixTheme.colorScheme.primaryVariant
-                        } else {
-                            MiuixTheme.colorScheme.secondaryContainer
-                        },
-                    ),
-            )
-            Card(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 6.dp, bottom = 6.dp),
-                insideMargin = PaddingValues(start = 10.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                colors = CardDefaults.defaultColors(
-                    color = if (selected) {
-                        MiuixTheme.colorScheme.primaryVariant
-                    } else {
-                        MiuixTheme.colorScheme.surfaceContainer
-                    },
-                ),
-                showIndication = true,
-                onClick = onClick,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    AppIcon(entry, 40.dp)
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(3.dp),
-                    ) {
-                        Text(
-                            text = entry.label,
-                            style = MiuixTheme.textStyles.body1,
-                            color = titleColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = entry.packageName,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = summaryColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    if (selected || generated || !entry.launchable) {
-                        Text(
-                            text = when {
-                                selected -> "已选"
-                                generated -> "已生成"
-                                else -> "应用"
-                            },
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = summaryColor,
-                            maxLines = 1,
-                        )
-                    }
-                }
+        val selectedTagBg = MiuixTheme.colorScheme.primaryVariant
+        val selectedTagFg = MiuixTheme.colorScheme.onPrimaryVariant
+        val generatedTagBg = MiuixTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
+        val generatedTagFg = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+        val allTagBg = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+        val allTagFg = MiuixTheme.colorScheme.onSecondaryContainer
+        val tags = remember(
+            selected,
+            generated,
+            entry.launchable,
+            selectedTagBg,
+            selectedTagFg,
+            generatedTagBg,
+            generatedTagFg,
+            allTagBg,
+            allTagFg,
+        ) {
+            buildList {
+                if (selected) add(AppListTag("已选", selectedTagBg, selectedTagFg))
+                if (generated) add(AppListTag("已生成", generatedTagBg, generatedTagFg))
+                if (!entry.launchable) add(AppListTag("全部", allTagBg, allTagFg))
             }
         }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            insideMargin = PaddingValues(start = 10.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            showIndication = true,
+            onClick = onClick,
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppIcon(
+                    entry = entry,
+                    size = 48.dp,
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                ) {
+                    Text(
+                        text = entry.label,
+                        modifier = Modifier.basicMarquee(),
+                        style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight(550)),
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                    Text(
+                        text = entry.packageName,
+                        modifier = Modifier.basicMarquee(),
+                        style = MiuixTheme.textStyles.footnote1.copy(
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight(550),
+                        ),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
+                if (tags.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier.padding(start = 16.dp),
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        tags.forEach { tag ->
+                            AppStatusTag(tag = tag)
+                        }
+                    }
+                }
+                KernelStyleArrow()
+            }
+        }
+    }
+
+    private data class AppListTag(
+        val label: String,
+        val backgroundColor: Color,
+        val contentColor: Color,
+    )
+
+    @Composable
+    private fun AppStatusTag(tag: AppListTag) {
+        Box(
+            modifier = Modifier
+                .background(
+                    color = tag.backgroundColor,
+                    shape = RoundedCornerShape(6.dp),
+                ),
+        ) {
+            Text(
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                text = tag.label,
+                fontSize = 9.sp,
+                fontWeight = FontWeight(750),
+                color = tag.contentColor,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
+    }
+
+    @Composable
+    private fun KernelStyleArrow(modifier: Modifier = Modifier, expanded: Boolean = false) {
+        val layoutDirection = LocalLayoutDirection.current
+        val rotation by animateFloatAsState(
+            targetValue = if (expanded) 90f else 0f,
+            animationSpec = tween(durationMillis = 180),
+            label = "kernel-style-arrow-rotation",
+        )
+
+        Image(
+            modifier = modifier
+                .graphicsLayer {
+                    rotationZ = rotation
+                    if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                }
+                .padding(start = 8.dp)
+                .size(width = 10.dp, height = 16.dp),
+            imageVector = MiuixIcons.Basic.ArrowRight,
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantActions),
+        )
     }
 
     @Composable
@@ -2004,20 +3046,399 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun SegmentedModeControl() {
+    private fun GptModeChoiceRow() {
         val modes = GptImageMode.entries
-        SegmentedControl(
-            labels = modes.map { it.label },
-            selectedIndex = modes.indexOf(gptImageMode),
-            onSelected = { index ->
-                gptImageMode = modes[index]
-                saveGptSettings()
-            }
+        ChoicePopupRow(
+            title = "生成模式",
+            summary = gptImageMode.shortSummary(),
+            value = gptImageMode.label,
+            enabled = !isBusy,
+            options = modes,
+            selected = gptImageMode,
+            optionLabel = { it.label },
+            optionSummary = { it.shortSummary() },
+            onSelected = { mode ->
+                gptImageMode = mode
+                gptSettingsSaveStatus = ""
+            },
+        )
+    }
+
+    private fun GptImageMode.shortSummary(): String = when (this) {
+        GptImageMode.Responses -> "Codex image gen"
+        GptImageMode.Images -> "直连 gpt-image-2"
+    }
+
+    @Composable
+    private fun RmbgInputSizeChoiceRow(enabled: Boolean) {
+        val options = remember { listOf(128, 256, 512) }
+        ChoicePopupRow(
+            title = "推理分辨率",
+            summary = "默认 $DEFAULT_RMBG_INPUT_SIZE",
+            value = rmbgInputSize.toString(),
+            enabled = enabled && !isBusy,
+            options = options,
+            selected = rmbgInputSize,
+            optionLabel = { it.toString() },
+            optionSummary = { size ->
+                when (size) {
+                    128 -> "更省内存"
+                    256 -> "默认"
+                    else -> "更细"
+                }
+            },
+            onSelected = { updateRmbgInputSize(it) },
         )
     }
 
     @Composable
-    private fun SegmentedControl(labels: List<String>, selectedIndex: Int, onSelected: (Int) -> Unit) {
+    private fun <T> ChoicePopupRow(
+        title: String,
+        summary: String,
+        value: String,
+        enabled: Boolean,
+        options: List<T>,
+        selected: T,
+        optionLabel: (T) -> String,
+        optionSummary: (T) -> String,
+        onSelected: (T) -> Unit,
+    ) {
+        var anchorBounds by remember { mutableStateOf<Rect?>(null) }
+        val interactionSource = remember { MutableInteractionSource() }
+        val pressed by interactionSource.collectIsPressedAsState()
+        val rowOverlay = if (pressed) {
+            MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.74f)
+        } else {
+            Color.Transparent
+        }
+        val density = LocalDensity.current
+        val bleedPx = with(density) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
+
+        fun openDialog() {
+            openChoicePopup(
+                anchorBounds = anchorBounds,
+                items = options.map { option ->
+                    ChoicePopupItem(
+                        label = optionLabel(option),
+                        summary = optionSummary(option),
+                        selected = option == selected,
+                        onSelected = { onSelected(option) },
+                    )
+                },
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .layout { measurable, constraints ->
+                    val expandedWidth = constraints.maxWidth + bleedPx * 2
+                    val placeable = measurable.measure(
+                        constraints.copy(
+                            minWidth = expandedWidth,
+                            maxWidth = expandedWidth,
+                        ),
+                    )
+                    layout(constraints.maxWidth, placeable.height) {
+                        placeable.place(-bleedPx, 0)
+                    }
+                }
+                .onGloballyPositioned { anchorBounds = it.boundsInWindow() }
+                .clip(RoundedCornerShape(16.dp))
+                .background(rowOverlay)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = { openDialog() },
+                )
+                .padding(vertical = 10.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Text(
+                        text = title,
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = summary,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                MetricPill(label = value)
+                ChoicePopupChevron()
+            }
+        }
+    }
+
+    @Composable
+    private fun ChoicePopupChevron() {
+        val color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+        ComposeCanvas(
+            modifier = Modifier
+                .width(20.dp)
+                .height(28.dp),
+        ) {
+            val strokeWidth = 2.4.dp.toPx()
+            val left = 3.5.dp.toPx()
+            val right = size.width - left
+            val centerX = size.width / 2f
+            val upperTop = 7.dp.toPx()
+            val upperBottom = 12.dp.toPx()
+            val lowerTop = 16.dp.toPx()
+            val lowerBottom = 21.dp.toPx()
+
+            drawLine(
+                color = color,
+                start = Offset(left, upperBottom),
+                end = Offset(centerX, upperTop),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = color,
+                start = Offset(centerX, upperTop),
+                end = Offset(right, upperBottom),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = color,
+                start = Offset(left, lowerTop),
+                end = Offset(centerX, lowerBottom),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round,
+            )
+            drawLine(
+                color = color,
+                start = Offset(centerX, lowerBottom),
+                end = Offset(right, lowerTop),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round,
+            )
+        }
+    }
+
+    @Composable
+    private fun ChoicePopupOverlay(
+        request: ChoicePopupRequest,
+        visible: Boolean,
+        pageBackground: Color,
+        onDismiss: () -> Unit,
+    ) {
+        val density = LocalDensity.current
+        val popupWidth = 224.dp
+        val popupWidthPx = with(density) { popupWidth.roundToPx() }
+        val marginPx = with(density) { 16.dp.roundToPx() }
+        val overlapPx = with(density) { 32.dp.roundToPx() }
+        val estimatedHeightPx = with(density) {
+            (request.items.size * 68).dp.roundToPx() + 24.dp.roundToPx()
+        }
+        val screenWidthPx = resources.displayMetrics.widthPixels
+        val screenHeightPx = resources.displayMetrics.heightPixels
+        val anchor = request.anchorBounds
+        val popupX = if (anchor == null) {
+            ((screenWidthPx - popupWidthPx) / 2).coerceAtLeast(marginPx)
+        } else {
+            (anchor.right.roundToInt() - popupWidthPx)
+                .coerceIn(marginPx, screenWidthPx - popupWidthPx - marginPx)
+        }
+        val preferredY = anchor?.bottom?.roundToInt()?.minus(overlapPx)
+            ?: ((screenHeightPx - estimatedHeightPx) / 2)
+        val popupY = if (preferredY + estimatedHeightPx > screenHeightPx - marginPx) {
+            (anchor?.top?.roundToInt()?.minus(estimatedHeightPx)?.plus(overlapPx) ?: preferredY)
+                .coerceAtLeast(marginPx)
+        } else {
+            preferredY.coerceAtLeast(marginPx)
+        }
+        val overlayAlpha by animateFloatAsState(
+            targetValue = if (visible) 0.22f else 0f,
+            animationSpec = tween(durationMillis = 140),
+            label = "choice-popup-overlay-alpha",
+        )
+        val popupAlpha by animateFloatAsState(
+            targetValue = if (visible) 1f else 0f,
+            animationSpec = tween(durationMillis = 160),
+            label = "choice-popup-alpha",
+        )
+        val popupScale by animateFloatAsState(
+            targetValue = if (visible) 1f else 0.96f,
+            animationSpec = tween(durationMillis = 160),
+            label = "choice-popup-scale",
+        )
+        val popupTranslationY by animateFloatAsState(
+            targetValue = if (visible) 0f else 10f,
+            animationSpec = tween(durationMillis = 160),
+            label = "choice-popup-translation-y",
+        )
+
+        ChoicePopupSystemBars(
+            overlayAlpha = overlayAlpha,
+            pageBackground = pageBackground,
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = overlayAlpha))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss,
+                ),
+        ) {
+            Column(
+                modifier = Modifier
+                    .offset { IntOffset(popupX, popupY) }
+                    .graphicsLayer {
+                        alpha = popupAlpha
+                        scaleX = popupScale
+                        scaleY = popupScale
+                        translationY = popupTranslationY
+                    }
+                    .width(popupWidth)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MiuixTheme.colorScheme.surface)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                    )
+                    .padding(vertical = 12.dp),
+            ) {
+                request.items.forEach { item ->
+                    ChoicePopupOptionRow(
+                        item = item,
+                        onSelected = {
+                            item.onSelected()
+                            onDismiss()
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun ChoicePopupSystemBars(overlayAlpha: Float, pageBackground: Color) {
+        val darkTheme = isSystemInDarkTheme()
+        DisposableEffect(darkTheme) {
+            onDispose {
+                window.statusBarColor = AndroidColor.TRANSPARENT
+                window.navigationBarColor = AndroidColor.TRANSPARENT
+                WindowInsetsControllerCompat(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = !darkTheme
+                    isAppearanceLightNavigationBars = !darkTheme
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    window.isNavigationBarContrastEnforced = false
+                }
+            }
+        }
+        SideEffect {
+            val barColor = blackScrimOver(pageBackground, overlayAlpha)
+            window.statusBarColor = barColor
+            window.navigationBarColor = barColor
+            WindowInsetsControllerCompat(window, window.decorView).apply {
+                isAppearanceLightStatusBars = !darkTheme
+                isAppearanceLightNavigationBars = !darkTheme
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                window.isNavigationBarContrastEnforced = false
+            }
+        }
+    }
+
+    private fun blackScrimOver(base: Color, alpha: Float): Int {
+        val retain = 1f - alpha.coerceIn(0f, 1f)
+        return AndroidColor.rgb(
+            (base.red * 255f * retain).roundToInt().coerceIn(0, 255),
+            (base.green * 255f * retain).roundToInt().coerceIn(0, 255),
+            (base.blue * 255f * retain).roundToInt().coerceIn(0, 255),
+        )
+    }
+
+    @Composable
+    private fun ChoicePopupOptionRow(item: ChoicePopupItem, onSelected: () -> Unit) {
+        val interactionSource = remember { MutableInteractionSource() }
+        val pressed by interactionSource.collectIsPressedAsState()
+        val rowBackground = if (pressed) {
+            MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.74f)
+        } else {
+            Color.Transparent
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(rowBackground)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onSelected,
+                )
+                .padding(horizontal = 22.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Text(
+                    text = item.label,
+                    style = MiuixTheme.textStyles.body1,
+                    color = if (item.selected) {
+                        MiuixTheme.colorScheme.primaryVariant
+                    } else {
+                        MiuixTheme.colorScheme.onSurface
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (item.summary.isNotBlank()) {
+                    Text(
+                        text = item.summary,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (item.selected) {
+                Text(
+                    text = "✓",
+                    style = MiuixTheme.textStyles.title4,
+                    color = MiuixTheme.colorScheme.primaryVariant,
+                    maxLines = 1,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun SegmentedControl(
+        labels: List<String>,
+        selectedIndex: Int,
+        scrollable: Boolean = false,
+        onSelected: (Int) -> Unit,
+    ) {
         if (labels.isEmpty()) {
             return
         }
@@ -2025,65 +3446,126 @@ class MainActivity : ComponentActivity() {
         val safeSelectedIndex = selectedIndex.coerceIn(0, labels.lastIndex)
         val density = LocalDensity.current
         var widthPx by remember(labels.size) { mutableStateOf(0) }
-        val segmentWidthPx = if (widthPx == 0) 0f else widthPx.toFloat() / labels.size.toFloat()
+        val gap = 10.dp
+        val gapPx = with(density) { gap.toPx() }
+        val minSegmentWidth = if (scrollable) 86.dp else 0.dp
+        val minSegmentWidthPx = with(density) { minSegmentWidth.toPx() }
+        val segmentWidthPx = if (widthPx == 0) {
+            0f
+        } else if (scrollable) {
+            val availableWidth = (widthPx.toFloat() - gapPx * (labels.size - 1)).coerceAtLeast(1f)
+            maxOf(minSegmentWidthPx, availableWidth / labels.size.toFloat())
+        } else {
+            val availableWidth = (widthPx.toFloat() - gapPx * (labels.size - 1)).coerceAtLeast(1f)
+            availableWidth / labels.size.toFloat()
+        }
         val selectedOffsetPx by animateFloatAsState(
-            targetValue = segmentWidthPx * safeSelectedIndex,
+            targetValue = (segmentWidthPx + gapPx) * safeSelectedIndex,
             animationSpec = tween(durationMillis = 220),
             label = "SegmentedControlOffset",
         )
         val selectedWidth = with(density) { segmentWidthPx.toDp() }
+        val contentWidth = with(density) {
+            (segmentWidthPx * labels.size + gapPx * (labels.size - 1)).toDp()
+        }
+        val optionBackground = if (isSystemInDarkTheme()) {
+            Color(0xFF444444)
+        } else {
+            Color(0xFFEFEFEF)
+        }
+        val scrollState = rememberScrollState()
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
-                .clip(shape)
-                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                .height(42.dp)
                 .onGloballyPositioned { coordinates ->
                     widthPx = coordinates.size.width
                 },
         ) {
-            if (widthPx > 0) {
-                Box(
-                    modifier = Modifier
-                        .offset { IntOffset(selectedOffsetPx.roundToInt(), 0) }
-                        .width(selectedWidth)
-                        .fillMaxHeight()
-                        .clip(shape)
-                        .background(MiuixTheme.colorScheme.primaryVariant),
-                )
-            }
-            Row(modifier = Modifier.fillMaxSize()) {
-                labels.forEachIndexed { index, label ->
-                    val selected = index == safeSelectedIndex
-                    val interactionSource = remember { MutableInteractionSource() }
-                    val foreground = if (selected) {
-                        Color.White
-                    } else {
-                        MiuixTheme.colorScheme.onSurfaceVariantSummary
+            Box(
+                modifier = Modifier
+                    .then(
+                        if (widthPx > 0) {
+                            Modifier.width(contentWidth)
+                        } else {
+                            Modifier.fillMaxWidth()
+                        }
+                    )
+                    .fillMaxHeight()
+                    .then(if (scrollable) Modifier.horizontalScroll(scrollState) else Modifier),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(gap),
+                ) {
+                    labels.forEach {
+                        Box(
+                            modifier = Modifier
+                                .then(
+                                    if (widthPx > 0) {
+                                        Modifier.width(selectedWidth)
+                                    } else {
+                                        Modifier.weight(1f)
+                                    }
+                                )
+                                .fillMaxHeight()
+                                .clip(shape)
+                                .background(optionBackground),
+                        )
                     }
+                }
+                if (widthPx > 0) {
                     Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .offset { IntOffset(selectedOffsetPx.roundToInt(), 0) }
+                            .width(selectedWidth)
                             .fillMaxHeight()
                             .clip(shape)
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null,
-                                enabled = !isBusy && !selected,
-                            ) {
-                                onSelected(index)
-                            }
-                            .padding(horizontal = 2.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = label,
-                            style = MiuixTheme.textStyles.button,
-                            color = foreground,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                            .background(MiuixTheme.colorScheme.primaryVariant),
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(gap),
+                ) {
+                    labels.forEachIndexed { index, label ->
+                        val selected = index == safeSelectedIndex
+                        val interactionSource = remember { MutableInteractionSource() }
+                        val foreground = if (selected) {
+                            Color.White
+                        } else {
+                            MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        }
+                        Box(
+                            modifier = Modifier
+                                .then(
+                                    if (widthPx > 0) {
+                                        Modifier.width(selectedWidth)
+                                    } else {
+                                        Modifier.weight(1f)
+                                    }
+                                )
+                                .fillMaxHeight()
+                                .clip(shape)
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = null,
+                                    enabled = !isBusy && !selected,
+                                ) {
+                                    onSelected(index)
+                                }
+                                .padding(horizontal = 2.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = label,
+                                style = MiuixTheme.textStyles.button,
+                                color = foreground,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }
@@ -2127,6 +3609,16 @@ class MainActivity : ComponentActivity() {
         label: String,
         obscure: Boolean = false,
     ) {
+        val bringIntoViewRequester = remember { BringIntoViewRequester() }
+        var focused by remember { mutableStateOf(false) }
+
+        LaunchedEffect(focused) {
+            if (focused) {
+                delay(260)
+                bringIntoViewRequester.bringIntoView()
+            }
+        }
+
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
@@ -2137,7 +3629,10 @@ class MainActivity : ComponentActivity() {
             cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             visualTransformation = if (obscure) PasswordVisualTransformation() else VisualTransformation.None,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .bringIntoViewRequester(bringIntoViewRequester)
+                .onFocusChanged { focused = it.isFocused },
             decorationBox = { innerTextField ->
                 Box(
                     modifier = Modifier
@@ -2208,23 +3703,22 @@ class MainActivity : ComponentActivity() {
 
         Box(
             modifier = Modifier
-                .size(size)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MiuixTheme.colorScheme.secondaryContainer),
+                .size(size),
             contentAlignment = Alignment.Center,
         ) {
             if (imageBitmap == null) {
-                Text(
-                    text = entry.label.firstOrNull()?.uppercaseChar()?.toString() ?: "#",
-                    style = MiuixTheme.textStyles.title4,
-                    color = MiuixTheme.colorScheme.onSecondaryContainer,
-                    maxLines = 1,
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(4.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MiuixTheme.colorScheme.secondaryContainer),
                 )
             } else {
                 Image(
                     bitmap = imageBitmap,
                     contentDescription = null,
-                    modifier = Modifier.size(size),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
                 )
             }
@@ -2308,7 +3802,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun loadApps() {
+    private fun loadApps(refreshGenerated: Boolean = false) {
         didRequestAppLoad = true
         Thread {
             val pm = packageManager
@@ -2344,16 +3838,18 @@ class MainActivity : ComponentActivity() {
                     !packageListPermissionGranted -> "读取到 ${apps.size} 个应用，但应用列表权限状态异常。"
                     else -> "共 ${apps.size} 个应用，其中 ${launchablePackages.size} 个有启动器入口。"
                 }
-                refreshGeneratedPackages(entries)
+                if (refreshGenerated) {
+                    refreshGeneratedPackages(entries)
+                }
             }
         }.start()
     }
 
     private fun refreshGeneratedPackages(entries: List<AppEntry> = apps.toList()) {
         if (entries.isEmpty()) {
-            generatedPackageNames = emptySet()
             generatedScanFailed = false
             isScanningGeneratedPackages = false
+            statusText = "应用列表为空，保留已生成缓存"
             return
         }
         isScanningGeneratedPackages = true
@@ -2364,11 +3860,13 @@ class MainActivity : ComponentActivity() {
             runOnUiThread {
                 result
                     .onSuccess { generated ->
-                        generatedPackageNames = generated
+                        updateGeneratedPackageCache(generated)
                         generatedScanFailed = false
+                        statusText = "已刷新生成状态: ${generated.size} 个"
                     }
                     .onFailure {
                         generatedScanFailed = true
+                        statusText = "生成状态刷新失败，保留上次缓存: ${it.message ?: it.javaClass.simpleName}"
                     }
                 isScanningGeneratedPackages = false
             }
@@ -2407,6 +3905,37 @@ class MainActivity : ComponentActivity() {
             .map { it.trim() }
             .filter { it in packageNames }
             .toSet()
+    }
+
+    private fun loadGeneratedPackageCache() {
+        val cached = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getStringSet(PREF_GENERATED_PACKAGE_NAMES, emptySet())
+            .orEmpty()
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+        generatedPackageNames = cached
+        generatedScanFailed = false
+        isScanningGeneratedPackages = false
+    }
+
+    private fun updateGeneratedPackageCache(packages: Set<String>) {
+        val normalized = packages
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+        generatedPackageNames = normalized
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .edit()
+            .putStringSet(PREF_GENERATED_PACKAGE_NAMES, normalized)
+            .putLong(PREF_GENERATED_PACKAGE_NAMES_UPDATED_AT, System.currentTimeMillis())
+            .apply()
+    }
+
+    private fun markPackageGenerated(packageName: String) {
+        updateGeneratedPackageCache(generatedPackageNames + packageName)
     }
 
     private fun runRootCommand(command: String, timeoutMs: Long, stdin: String? = null): String {
@@ -2460,6 +3989,72 @@ class MainActivity : ComponentActivity() {
         }
         return output
     }
+
+    private fun refreshArtPlusIcons() {
+        if (isBusy || isRefreshingArtPlusIcons) {
+            return
+        }
+        isRefreshingArtPlusIcons = true
+        statusText = "正在刷新 ART+ 图标..."
+        Thread {
+            val result = runCatching { refreshArtPlusIconsBlocking() }
+            runOnUiThread {
+                result
+                    .onSuccess { summary ->
+                        statusText = if (summary.isBlank()) {
+                            "已刷新 ART+ 图标"
+                        } else {
+                            "已刷新 ART+ 图标: $summary"
+                        }
+                    }
+                    .onFailure { error ->
+                        statusText = "刷新 ART+ 图标失败: ${error.message ?: error.javaClass.simpleName}"
+                    }
+                isRefreshingArtPlusIcons = false
+            }
+        }.start()
+    }
+
+    private fun refreshArtPlusIconsBlocking(): String {
+        val currentConfig = Settings.System
+            .getString(contentResolver, COLOROS_UX_ICON_CONFIG_KEY)
+            ?.trim()
+            ?.toLongOrNull()
+            ?: FALLBACK_ARTPLUS_INSPIRATION_UXICON_CONFIG
+        val inspirationConfig = currentConfig
+            .withUxIconTheme(COLOROS_INSPIRATION_ICON_THEME)
+            .withUxIconArtPlusOn(COLOROS_ARTPLUS_ON)
+        val defaultConfig = inspirationConfig.withUxIconTheme(COLOROS_DEFAULT_ICON_THEME)
+        val apkPath = applicationInfo.sourceDir
+        val command = """
+            set -e
+            APP_APK=${shQuote(apkPath)}
+            apply_uxicon_config() {
+                value="${'$'}1"
+                app_process -Djava.class.path="${'$'}APP_APK" /system/bin ${UxIconConfigCli::class.java.name} "${'$'}value"
+                settings put system ${shQuote(COLOROS_UX_ICON_CONFIG_KEY)} "${'$'}value"
+                am broadcast -a oplus.intent.action.SKIN_CHANGED >/dev/null 2>&1 || true
+            }
+            apply_uxicon_config ${defaultConfig}
+            sleep 1
+            apply_uxicon_config ${inspirationConfig}
+            am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1 ||
+                input keyevent 3 >/dev/null 2>&1 || true
+        """.trimIndent()
+        return runRootCommand(command, ARTPLUS_ICON_REFRESH_TIMEOUT_MS)
+            .lineSequence()
+            .map { it.trim() }
+            .filter { it.startsWith("mUxIconConfig=") }
+            .joinToString(" -> ")
+    }
+
+    private fun Long.withUxIconTheme(theme: Int): Long =
+        (this and COLOROS_UXICON_THEME_MASK.inv()) or
+            (((theme.toLong()) and 0x0fL) shl COLOROS_UXICON_THEME_SHIFT)
+
+    private fun Long.withUxIconArtPlusOn(value: Int): Long =
+        (this and COLOROS_UXICON_ARTPLUS_MASK.inv()) or
+            (((value.toLong()) and 0x07L) shl COLOROS_UXICON_ARTPLUS_SHIFT)
 
     private fun preloadAppIcons(entries: List<AppEntry>) {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
@@ -2658,9 +4253,14 @@ class MainActivity : ComponentActivity() {
                     localModeOverride = debugMode,
                 )
                 if (installWithRoot) {
-                    installWithRoot(result.outDir, packageName)
+                    installWithRoot(result.outDir, packageName, RootWriteMode.All)
                     runOnMainSync {
-                        generatedPackageNames = generatedPackageNames + packageName
+                        markPackageGenerated(packageName)
+                        statusText = "调试生成完成并写入 Root，未刷新，请手动点刷新 ART+ 图标: ${result.outDir.absolutePath}"
+                    }
+                } else {
+                    runOnMainSync {
+                        statusText = "调试生成完成: ${result.outDir.absolutePath}"
                     }
                 }
                 runOnMainSync {
@@ -2670,7 +4270,6 @@ class MainActivity : ComponentActivity() {
                     previewPackageName = packageName
                     previewDirPath = result.outDir.absolutePath
                     previewVersion += 1
-                    statusText = "调试生成完成: ${result.outDir.absolutePath}"
                 }
             } catch (error: Exception) {
                 status("调试生成失败: ${error.message ?: error.javaClass.simpleName}")
@@ -2707,6 +4306,8 @@ class MainActivity : ComponentActivity() {
                     .put("background_separation_percent", backgroundSeparationPercent)
                     .put("plate_removal_percent", plateRemovalPercent)
                     .put("shadow_removal_percent", shadowRemovalPercent)
+                    .put("edge_polish_percent", edgePolishPercent)
+                    .put("rmbg_input_size", rmbgInputSize)
                     .put("adaptive_foreground_mode", adaptiveForegroundMode.value)
                     .put("original_foreground_cleanup_mode", originalForegroundCleanupMode.value),
             )
@@ -2718,6 +4319,10 @@ class MainActivity : ComponentActivity() {
         }
 
         val source240 = saveLayer("source_icon_240_opaque", drawDrawable(icon, SIZE_1X1, SIZE_1X1, transparent = false))
+        val candidateSource240 = saveLayer(
+            "source_icon_240_candidate",
+            drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1),
+        )
         saveLayer("source_icon_240_transparent", drawDrawable(icon, SIZE_1X1, SIZE_1X1, transparent = true))
 
         if (icon is AdaptiveIconDrawable) {
@@ -2728,10 +4333,11 @@ class MainActivity : ComponentActivity() {
                 renderSize,
                 transparent = false,
             )
-            val composed = drawDrawable(icon, renderSize, renderSize, transparent = false)
+            val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
             val subtracted = subtractBackground(composed, background)
             val direct = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
-            val chosen = chooseBetterAdaptiveForeground(subtracted, direct)
+            val selection = chooseBetterAdaptiveForeground(subtracted, direct, background)
+            val chosen = selection.bitmap
             val adaptiveJson = JSONObject()
             saveLayer("adaptive_background_240", resizeBitmap(background, SIZE_1X1, SIZE_1X1), adaptiveJson)
             saveLayer("adaptive_composed_240", resizeBitmap(composed, SIZE_1X1, SIZE_1X1), adaptiveJson)
@@ -2743,6 +4349,7 @@ class MainActivity : ComponentActivity() {
                 .put("direct_usable", isUsableDirectAdaptiveForeground(direct, alphaCoverage(subtracted)))
                 .put("subtracted_coverage", alphaCoverage(subtracted))
                 .put("direct_coverage", alphaCoverage(direct))
+                .put("chosen_preserve_geometry", selection.preserveGeometry)
             metadata.put("adaptive", adaptiveJson)
         }
 
@@ -2751,7 +4358,7 @@ class MainActivity : ComponentActivity() {
         saveLayer("local_base_recbg", localSource.recbg, localJson)
         saveLayer("local_base_recfg", localSource.recfg, localJson)
         localSource.monochrome?.let { saveLayer("local_base_monochrome", it, localJson) }
-        val candidateSet = buildLocalCandidates(localSource, source240)
+        val candidateSet = buildLocalCandidates(localSource, candidateSource240)
         localJson.put("auto_choice", candidateSet.autoChoice.name.lowercase(Locale.US))
         metadata.put("local", localJson)
 
@@ -2773,21 +4380,37 @@ class MainActivity : ComponentActivity() {
         if (includeRmbg) {
             val rmbgJson = JSONObject()
             try {
-                val rmbgResult = buildRmbgCandidate(source240, localSource.recbg)
-                val rmbgCandidate = rmbgResult?.candidate
-                if (rmbgResult == null || rmbgCandidate == null) {
+                val rmbgDebug = buildRmbgDebugCandidate(source240, localSource.recbg)
+                val rmbgCandidate = rmbgDebug.result?.candidate
+                rmbgJson
+                    .put("coverage", rmbgDebug.coverage)
+                    .put("manual_usable", rmbgDebug.manualUsable)
+                    .put("auto_usable", rmbgDebug.result?.autoUsable ?: false)
+                    .put("bounds", rmbgDebug.boundsText)
+                    .put("crop_risk", rmbgDebug.cropRisk)
+                saveLayer("candidate_rmbg_raw", rmbgDebug.foreground, rmbgJson)
+                val rendered = renderCandidateForeground(
+                    rmbgCandidate ?: IconCandidate(
+                        recfgRaw = rmbgDebug.foreground,
+                        recbg = localSource.recbg,
+                        monochromeRaw = rmbgDebug.foreground,
+                    ),
+                )
+                saveLayer("candidate_rmbg_rendered", rendered, rmbgJson)
+                saveLayer("candidate_rmbg_night", nightForeground(rendered, localSource.recbg), rmbgJson)
+                saveLayer("candidate_rmbg_monochrome_light", monochromeForCandidate(
+                    rmbgCandidate ?: IconCandidate(rmbgDebug.foreground, localSource.recbg, monochromeRaw = rmbgDebug.foreground),
+                    invertLuma = true,
+                ), rmbgJson)
+                saveLayer("candidate_rmbg_monochrome_dark", monochromeForCandidate(
+                    rmbgCandidate ?: IconCandidate(rmbgDebug.foreground, localSource.recbg, monochromeRaw = rmbgDebug.foreground),
+                    invertLuma = false,
+                ), rmbgJson)
+                if (rmbgCandidate == null) {
                     rmbgJson.put("ok", false).put("error", "RMBG候选未通过校验")
                 } else {
                     rmbgJson
                         .put("ok", true)
-                        .put("auto_usable", rmbgResult.autoUsable)
-                        .put("coverage", rmbgResult.coverage)
-                    saveLayer("candidate_rmbg_raw", rmbgCandidate.recfgRaw, rmbgJson)
-                    val rendered = renderCandidateForeground(rmbgCandidate)
-                    saveLayer("candidate_rmbg_rendered", rendered, rmbgJson)
-                    saveLayer("candidate_rmbg_night", nightForeground(rendered, rmbgCandidate.recbg), rmbgJson)
-                    saveLayer("candidate_rmbg_monochrome_light", monochromeForCandidate(rmbgCandidate, invertLuma = true), rmbgJson)
-                    saveLayer("candidate_rmbg_monochrome_dark", monochromeForCandidate(rmbgCandidate, invertLuma = false), rmbgJson)
                 }
             } catch (error: Throwable) {
                 rmbgJson
@@ -2804,6 +4427,15 @@ class MainActivity : ComponentActivity() {
         return metadata
     }
 
+    private data class RmbgDebugCandidate(
+        val foreground: Bitmap,
+        val result: CandidateBuildResult?,
+        val coverage: Double,
+        val boundsText: String,
+        val cropRisk: Boolean,
+        val manualUsable: Boolean,
+    )
+
     private fun loadGptSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         gptImageMode = GptImageMode.fromValue(prefs.getString(PREF_GPT_MODE, GptImageMode.Responses.value))
@@ -2811,18 +4443,34 @@ class MainActivity : ComponentActivity() {
         gptBaseUrl = if (storedBaseUrl == LEGACY_DEFAULT_GPT_BASE_URL) "" else storedBaseUrl
         gptApiKey = prefs.getString(PREF_GPT_API_KEY, "") ?: ""
         if (storedBaseUrl == LEGACY_DEFAULT_GPT_BASE_URL) {
-            prefs.edit().putString(PREF_GPT_BASE_URL, "").apply()
+            prefs.edit().putString(PREF_GPT_BASE_URL, "").commit()
         }
     }
 
-    private fun saveGptSettings() {
+    private fun saveGptSettings(): Boolean =
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putString(PREF_GPT_MODE, gptImageMode.value)
             .putString(PREF_GPT_BASE_URL, gptBaseUrl)
             .putString(PREF_GPT_API_KEY, gptApiKey)
-            .apply()
+            .commit()
+
+    private fun loadRmbgSettings() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        rmbgComponentUrl = prefs.getString(PREF_RMBG_COMPONENT_URL, DEFAULT_RMBG_COMPONENT_URL)
+            ?.takeIf { it.isNotBlank() }
+            ?: DEFAULT_RMBG_COMPONENT_URL
+        rmbgInputSize = prefs.getInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
+            .coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
+        draftRmbgInputSizeText = rmbgInputSize.toString()
     }
+
+    private fun saveRmbgSettings(): Boolean =
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .edit()
+            .putString(PREF_RMBG_COMPONENT_URL, rmbgComponentUrl.trim())
+            .putInt(PREF_RMBG_INPUT_SIZE, rmbgInputSize)
+            .commit()
 
     private fun loadLocalSeparationSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -2865,25 +4513,39 @@ class MainActivity : ComponentActivity() {
         } else {
             storedValue.coerceIn(MIN_FOREGROUND_SUBJECT_PERCENT, MAX_FOREGROUND_SUBJECT_PERCENT)
         }
+        monochromeThemeScale = prefs.getFloat(
+            PREF_MONOCHROME_THEME_SCALE,
+            DEFAULT_MONOCHROME_THEME_SCALE,
+        ).coerceIn(MIN_MONOCHROME_THEME_SCALE, MAX_MONOCHROME_THEME_SCALE)
+        draftMonochromeThemeScaleText = (monochromeThemeScale * 100).roundToInt().toString()
         val tuningVersion = prefs.getInt(PREF_IMAGE_TUNING_VERSION, 1)
         backgroundSeparationPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             DEFAULT_BACKGROUND_SEPARATION_PERCENT
         } else {
             prefs.getInt(PREF_BACKGROUND_SEPARATION_PERCENT, DEFAULT_BACKGROUND_SEPARATION_PERCENT)
+                .let { migrateLegacyPercent(it, DEFAULT_BACKGROUND_SEPARATION_PERCENT) }
         }.coerceIn(MIN_BACKGROUND_SEPARATION_PERCENT, MAX_BACKGROUND_SEPARATION_PERCENT)
         draftBackgroundSeparationText = backgroundSeparationPercent.toString()
         plateRemovalPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             DEFAULT_PLATE_REMOVAL_PERCENT
         } else {
             prefs.getInt(PREF_PLATE_REMOVAL_PERCENT, DEFAULT_PLATE_REMOVAL_PERCENT)
+                .let { migrateLegacyPercent(it, DEFAULT_PLATE_REMOVAL_PERCENT) }
         }.coerceIn(MIN_PLATE_REMOVAL_PERCENT, MAX_PLATE_REMOVAL_PERCENT)
         draftPlateRemovalText = plateRemovalPercent.toString()
         shadowRemovalPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             DEFAULT_SHADOW_REMOVAL_PERCENT
         } else {
             prefs.getInt(PREF_SHADOW_REMOVAL_PERCENT, DEFAULT_SHADOW_REMOVAL_PERCENT)
+                .let { migrateLegacyPercent(it, DEFAULT_SHADOW_REMOVAL_PERCENT) }
         }.coerceIn(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT)
         draftShadowRemovalText = shadowRemovalPercent.toString()
+        edgePolishPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
+            DEFAULT_EDGE_POLISH_PERCENT
+        } else {
+            prefs.getInt(PREF_EDGE_POLISH_PERCENT, DEFAULT_EDGE_POLISH_PERCENT)
+        }.coerceIn(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT)
+        draftEdgePolishText = edgePolishPercent.toString()
         adaptiveForegroundMode = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             AdaptiveForegroundMode.Auto
         } else {
@@ -2923,9 +4585,11 @@ class MainActivity : ComponentActivity() {
         }
         prefs.edit()
             .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, foregroundSubjectPercent)
+            .putFloat(PREF_MONOCHROME_THEME_SCALE, monochromeThemeScale)
             .putInt(PREF_BACKGROUND_SEPARATION_PERCENT, backgroundSeparationPercent)
             .putInt(PREF_PLATE_REMOVAL_PERCENT, plateRemovalPercent)
             .putInt(PREF_SHADOW_REMOVAL_PERCENT, shadowRemovalPercent)
+            .putInt(PREF_EDGE_POLISH_PERCENT, edgePolishPercent)
             .putString(PREF_ADAPTIVE_FOREGROUND_MODE, adaptiveForegroundMode.value)
             .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, adaptiveDirectMaxCoveragePercent)
             .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, adaptiveDirectMaxCoverageIncreasePercent)
@@ -2947,6 +4611,24 @@ class MainActivity : ComponentActivity() {
             .edit()
             .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, foregroundSubjectPercent)
             .apply()
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun migrateLegacyPercent(value: Int, fallback: Int): Int =
+        when {
+            value in 1..100 -> value
+            value <= 0 -> 1
+            else -> fallback
+        }
+
+    private fun updateMonochromeThemeScalePercent(value: Int) {
+        val percent = value.coerceIn(MIN_MONOCHROME_THEME_SCALE_PERCENT, MAX_MONOCHROME_THEME_SCALE_PERCENT)
+        monochromeThemeScale = (percent.toFloat() / 100f).coerceIn(
+            MIN_MONOCHROME_THEME_SCALE,
+            MAX_MONOCHROME_THEME_SCALE,
+        )
+        draftMonochromeThemeScaleText = percent.toString()
+        saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
@@ -2980,13 +4662,34 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = true)
     }
 
+    private fun updateEdgePolishPercent(value: Int) {
+        edgePolishPercent = value.coerceIn(
+            MIN_EDGE_POLISH_PERCENT,
+            MAX_EDGE_POLISH_PERCENT,
+        )
+        draftEdgePolishText = edgePolishPercent.toString()
+        saveImageTuningSettings()
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateRmbgInputSize(value: Int) {
+        rmbgInputSize = value.coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
+        draftRmbgInputSizeText = rmbgInputSize.toString()
+        rmbgComponentSaveStatus = if (saveRmbgSettings()) "已保存" else "保存失败"
+        runCatching { rmbgRuntime?.close() }
+        rmbgRuntime = null
+        statusText = "RMBG 分辨率$rmbgComponentSaveStatus"
+    }
+
     private fun saveImageTuningSettings() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, foregroundSubjectPercent)
+            .putFloat(PREF_MONOCHROME_THEME_SCALE, monochromeThemeScale)
             .putInt(PREF_BACKGROUND_SEPARATION_PERCENT, backgroundSeparationPercent)
             .putInt(PREF_PLATE_REMOVAL_PERCENT, plateRemovalPercent)
             .putInt(PREF_SHADOW_REMOVAL_PERCENT, shadowRemovalPercent)
+            .putInt(PREF_EDGE_POLISH_PERCENT, edgePolishPercent)
             .putString(PREF_ADAPTIVE_FOREGROUND_MODE, adaptiveForegroundMode.value)
             .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, adaptiveDirectMaxCoveragePercent)
             .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, adaptiveDirectMaxCoverageIncreasePercent)
@@ -2998,7 +4701,11 @@ class MainActivity : ComponentActivity() {
             .apply()
     }
 
-    private fun generateSelected(installWithRoot: Boolean, useGpt: Boolean) {
+    private fun generateSelected(
+        installWithRoot: Boolean,
+        useGpt: Boolean,
+        rootWriteMode: RootWriteMode = RootWriteMode.All,
+    ) {
         val entry = apps.firstOrNull { it.packageName == selectedPackageName }
         if (entry == null) {
             statusText = "先选择一个应用"
@@ -3017,12 +4724,15 @@ class MainActivity : ComponentActivity() {
         }
 
         isBusy = true
+        if (useGpt) {
+            isGptPreviewLoading = true
+        }
         statusText = if (useGpt) {
             "GPT处理中: ${entry.packageName}"
         } else {
-            "本地处理中(${localSeparationMode.label}): ${entry.packageName}"
+            "本地处理中(自动): ${entry.packageName}"
         }
-        Thread {
+        startUiFriendlyThread(if (useGpt) "ArtPlusGptGenerate" else "ArtPlusLocalGenerate") {
             try {
                 val result = generateArtPlusPackage(entry, useGpt)
                 runOnUiThread {
@@ -3037,20 +4747,35 @@ class MainActivity : ComponentActivity() {
                     exportToTree(result.outDir)
                 }
                 if (installWithRoot) {
-                    installWithRoot(result.outDir, entry.packageName)
-                    runOnUiThread {
-                        generatedPackageNames = generatedPackageNames + entry.packageName
+                    installWithRoot(result.outDir, entry.packageName, rootWriteMode)
+                    val refreshSummary = when (rootWriteMode) {
+                        RootWriteMode.All -> "，未刷新，请手动点刷新 ART+ 图标"
+                        RootWriteMode.DefaultOnly -> runCatching { refreshArtPlusIconsBlocking() }
+                            .fold(
+                                onSuccess = { "并刷新 ART+ 图标" },
+                                onFailure = { "，但刷新失败: ${it.message ?: it.javaClass.simpleName}" },
+                            )
+                        RootWriteMode.MonochromeOnly -> "，未刷新，请手动点刷新 ART+ 图标"
                     }
-                    status("已生成${if (useGpt) "GPT版" else "本地版"}并尝试 Root 写入: ${entry.packageName}")
+                    runOnUiThread {
+                        markPackageGenerated(entry.packageName)
+                    }
+                    val sourceLabel = if (useGpt) "GPT版" else "本地版"
+                    status("已生成${sourceLabel}并${rootWriteMode.label}写入$refreshSummary: ${entry.packageName}")
                 } else {
                     status("已生成${if (useGpt) "GPT版" else "本地版"}: ${result.outDir.absolutePath}")
                 }
             } catch (error: Exception) {
                 status("失败: ${error.message ?: error.javaClass.simpleName}")
             } finally {
-                runOnUiThread { isBusy = false }
+                runOnUiThread {
+                    isBusy = false
+                    if (useGpt) {
+                        isGptPreviewLoading = false
+                    }
+                }
             }
-        }.start()
+        }
     }
 
     private fun generateArtPlusPackage(
@@ -3063,7 +4788,7 @@ class MainActivity : ComponentActivity() {
         ensureCleanDir(outDir)
 
         val icon = app.applicationInfo.loadIcon(packageManager)
-        val localSourceIcon = drawDrawable(icon, SIZE_1X1, SIZE_1X1, transparent = false)
+        val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
         val gptSourceIcon = drawDrawable(icon, GPT_SOURCE_SIZE, GPT_SOURCE_SIZE, transparent = false)
         val localSource = buildLocalIconLayers(icon)
         val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon)
@@ -3074,7 +4799,7 @@ class MainActivity : ComponentActivity() {
         } else {
             localCandidates
         }
-        val selectedLocalMode = localModeOverride ?: localSeparationMode
+        val selectedLocalMode = localModeOverride ?: LocalSeparationMode.Auto
         val defaultChoice = if (useGpt) {
             PreviewChoice.Gpt
         } else {
@@ -3092,7 +4817,7 @@ class MainActivity : ComponentActivity() {
             autoLocalChoice = localCandidateSet.autoChoice,
         )
         writePackageOutputs(session, selections)
-        status("本地分离: ${selectedLocalMode.label}/${defaultChoice.label} · 背景阈值 $backgroundSeparationPercent · 底板阈值 $plateRemovalPercent · 长阴影强度 $shadowRemovalPercent")
+        status("本地分离: ${selectedLocalMode.label}/${defaultChoice.label} · 背景 $backgroundSeparationPercent · 底板 $plateRemovalPercent · 阴影 $shadowRemovalPercent · 毛刺 $edgePolishPercent")
         return GenerationResult(outDir = outDir, session = session, selections = selections)
     }
 
@@ -3102,18 +4827,24 @@ class MainActivity : ComponentActivity() {
             recfgRaw = originalForeground,
             recbg = localSource.recbg,
             monochromeRaw = localSource.monochrome,
+            monochromeIsNative = localSource.monochromeIsNative,
+            preserveGeometry = localSource.preserveGeometry,
         )
         val plateResult = separateLocalForeground(localSource.recfg, localSource.recbg, LocalSeparationMode.Plate)
         val plate = IconCandidate(
             recfgRaw = plateResult.bitmap,
             recbg = localSource.recbg,
             monochromeRaw = localSource.monochrome,
+            monochromeIsNative = localSource.monochromeIsNative,
+            preserveGeometry = localSource.preserveGeometry,
         )
         val fullResult = separateLocalForeground(localSource.recfg, localSource.recbg, LocalSeparationMode.Full)
         val full = IconCandidate(
             recfgRaw = fullResult.bitmap,
             recbg = localSource.recbg,
             monochromeRaw = localSource.monochrome,
+            monochromeIsNative = localSource.monochromeIsNative,
+            preserveGeometry = localSource.preserveGeometry,
         )
         val twoLayerResult = buildTwoLayerCandidate(sourceIcon)
         val candidates = linkedMapOf<PreviewChoice, IconCandidate>(
@@ -3121,6 +4852,15 @@ class MainActivity : ComponentActivity() {
             PreviewChoice.Plate to plate,
             PreviewChoice.Full to full,
         )
+        if (localSource.textSafe != null) {
+            candidates[PreviewChoice.TextSafe] = localSource.textSafe
+        }
+        if (localSource.componentSubject != null) {
+            candidates[PreviewChoice.ComponentSubject] = localSource.componentSubject
+        }
+        if (localSource.componentBackground != null) {
+            candidates[PreviewChoice.ComponentBackground] = localSource.componentBackground
+        }
         if (twoLayerResult?.candidate != null) {
             candidates[PreviewChoice.TwoLayer] = twoLayerResult.candidate
         }
@@ -3247,11 +4987,16 @@ class MainActivity : ComponentActivity() {
             val foreground = applyAlphaArrayToSource(sourceIcon, alpha)
             val coverage = meaningfulAlphaCoverage(foreground)
             val bounds = meaningfulAlphaBounds(foreground)
+            val cropRisk = bounds?.let { hasAutoCropRisk(it, foreground.width, foreground.height) } ?: true
             val manualUsable = coverage in RMBG_MIN_MANUAL_COVERAGE..RMBG_MAX_MANUAL_COVERAGE &&
                 bounds != null &&
-                !hasAutoCropRisk(bounds, foreground.width, foreground.height)
+                !cropRisk
             if (!manualUsable) {
-                return@runCatching null
+                val coverageText = (coverage * 100.0).roundToInt()
+                val boundsText = bounds?.let { "${it.width()}x${it.height()}@${it.left},${it.top}" } ?: "无"
+                error(
+                    "RMBG候选未通过校验: 覆盖率 ${coverageText}%，边界 $boundsText，贴边风险 ${if (cropRisk) "是" else "否"}",
+                )
             }
             CandidateBuildResult(
                 candidate = IconCandidate(
@@ -3265,68 +5010,259 @@ class MainActivity : ComponentActivity() {
         }.getOrElse { throw it }
     }
 
+    private fun buildRmbgDebugCandidate(sourceIcon: Bitmap, recbg: Bitmap): RmbgDebugCandidate {
+        val component = findRmbgComponent() ?: error("未安装 RMBG 组件 ZIP")
+        val alpha = runRmbgAlphaMask(sourceIcon, component)
+        val foreground = applyAlphaArrayToSource(sourceIcon, alpha)
+        val coverage = meaningfulAlphaCoverage(foreground)
+        val bounds = meaningfulAlphaBounds(foreground)
+        val cropRisk = bounds?.let { hasAutoCropRisk(it, foreground.width, foreground.height) } ?: true
+        val manualUsable = coverage in RMBG_MIN_MANUAL_COVERAGE..RMBG_MAX_MANUAL_COVERAGE &&
+            bounds != null &&
+            !cropRisk
+        val candidate = IconCandidate(
+            recfgRaw = foreground,
+            recbg = recbg,
+            monochromeRaw = foreground,
+        )
+        val result = if (manualUsable) {
+            CandidateBuildResult(
+                candidate = candidate,
+                autoUsable = coverage in RMBG_MIN_AUTO_COVERAGE..RMBG_MAX_AUTO_COVERAGE,
+                coverage = coverage,
+            )
+        } else {
+            null
+        }
+        return RmbgDebugCandidate(
+            foreground = foreground,
+            result = result,
+            coverage = coverage,
+            boundsText = bounds?.let { "${it.width()}x${it.height()}@${it.left},${it.top}" } ?: "无",
+            cropRisk = cropRisk,
+            manualUsable = manualUsable,
+        )
+    }
+
     private fun rmbgComponentDir(): File = File(filesDir, RMBG_COMPONENT_DIR)
 
     private fun findRmbgComponent(): RmbgComponent? {
         val dir = rmbgComponentDir()
-        val abi = Build.SUPPORTED_ABIS.firstOrNull { abi ->
-            File(dir, "lib/$abi/$RMBG_ONNXRUNTIME_LIB").isFile &&
-                File(dir, "lib/$abi/$RMBG_ONNXRUNTIME_JNI_LIB").isFile
-        } ?: return null
+        val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: return null
         val model = File(dir, RMBG_MODEL_NAME)
-        val classesJar = File(dir, RMBG_ONNXRUNTIME_CLASSES_JAR)
-        val runtimeLib = File(dir, "lib/$abi/$RMBG_ONNXRUNTIME_LIB")
-        val jniLib = File(dir, "lib/$abi/$RMBG_ONNXRUNTIME_JNI_LIB")
-        if (!model.isFile || model.length() < RMBG_MIN_MODEL_BYTES || !classesJar.isFile) {
+        if (!model.isFile || model.length() < RMBG_MIN_MODEL_BYTES) {
             return null
         }
-        classesJar.setWritable(false, false)
-        return RmbgComponent(dir, abi, model, classesJar, runtimeLib, jniLib)
+        return RmbgComponent(dir, abi, model)
     }
 
     private fun installRmbgComponent(uri: Uri) {
-        if (isBusy || isGeneratingRmbgCandidate) {
+        if (isBusy || isGeneratingRmbgCandidate || isInstallingRmbgComponent) {
             return
         }
-        statusText = "RMBG 组件安装中..."
+        isInstallingRmbgComponent = true
+        rmbgInstallStage = "读取组件"
+        rmbgInstallProgress = null
+        statusText = "RMBG组件安装中"
         Thread {
-            val targetDir = rmbgComponentDir()
-            val tmpDir = File(filesDir, "$RMBG_COMPONENT_DIR.tmp")
             try {
-                runCatching { rmbgRuntime?.close() }
-                rmbgRuntime = null
-                if (tmpDir.exists()) {
-                    tmpDir.deleteRecursively()
-                }
-                tmpDir.mkdirs()
-                contentResolver.openInputStream(uri)?.use { input ->
-                    unzipRmbgComponent(input, tmpDir)
+                val component = contentResolver.openInputStream(uri)?.use { input ->
+                    installRmbgComponentFromInput(input)
                 } ?: error("无法打开组件 ZIP")
-                validateRmbgComponentDir(tmpDir)
-                File(tmpDir, RMBG_ONNXRUNTIME_CLASSES_JAR).setWritable(false, false)
-                if (targetDir.exists()) {
-                    targetDir.deleteRecursively()
-                }
-                if (!tmpDir.renameTo(targetDir)) {
-                    copyDirectory(tmpDir, targetDir)
-                    tmpDir.deleteRecursively()
-                }
-                val component = findRmbgComponent()
-                    ?: error("组件缺少当前 ABI: ${Build.SUPPORTED_ABIS.joinToString()}")
                 runOnUiThread {
                     rmbgComponentStatus = "${System.currentTimeMillis()}"
                     lastRmbgCandidateError = null
-                    statusText = "RMBG 组件已安装: ${component.abi}"
+                    rmbgInstallStage = "安装完成"
+                    rmbgInstallProgress = 1f
+                    statusText = "RMBG已安装: ${component.abi}"
                 }
             } catch (error: Exception) {
                 runOnUiThread {
                     rmbgComponentStatus = "${System.currentTimeMillis()}"
-                    lastRmbgCandidateError = "RMBG 组件安装失败: ${error.message ?: error.javaClass.simpleName}"
-                    statusText = lastRmbgCandidateError ?: "RMBG 组件安装失败"
+                    lastRmbgCandidateError = "RMBG安装失败: ${error.message ?: error.javaClass.simpleName}"
+                    rmbgInstallStage = "安装失败"
+                    rmbgInstallProgress = null
+                    statusText = lastRmbgCandidateError ?: "RMBG安装失败"
                 }
-                tmpDir.deleteRecursively()
+            } finally {
+                runOnUiThread {
+                    isInstallingRmbgComponent = false
+                    rmbgInstallProgress = null
+                }
             }
         }.start()
+    }
+
+    private fun installRmbgComponentFromUrl() {
+        if (isBusy || isGeneratingRmbgCandidate || isInstallingRmbgComponent) {
+            return
+        }
+        val urlText = rmbgComponentUrl.trim()
+        if (urlText.isEmpty()) {
+            statusText = "先填 RMBG 组件 URL"
+            return
+        }
+        saveRmbgSettings()
+        isInstallingRmbgComponent = true
+        rmbgInstallStage = "准备下载"
+        rmbgInstallProgress = null
+        statusText = "RMBG组件下载中"
+        Thread {
+            val tmpDownload = File(cacheDir, "rmbg-download-${System.currentTimeMillis()}")
+            try {
+                val component = if (urlText.endsWith(".zip", ignoreCase = true)) {
+                    downloadRmbgFile(urlText, tmpDownload, RMBG_MIN_COMPONENT_ZIP_BYTES, "RMBG组件")
+                    FileInputStream(tmpDownload).use { input -> installRmbgComponentFromInput(input) }
+                } else {
+                    installRmbgComponentFromModelUrl(urlText, tmpDownload)
+                }
+                runOnUiThread {
+                    rmbgComponentStatus = "${System.currentTimeMillis()}"
+                    rmbgComponentSaveStatus = "已保存"
+                    lastRmbgCandidateError = null
+                    rmbgInstallStage = "安装完成"
+                    rmbgInstallProgress = 1f
+                    statusText = "RMBG已安装: ${component.abi}"
+                }
+            } catch (error: Exception) {
+                runOnUiThread {
+                    rmbgComponentStatus = "${System.currentTimeMillis()}"
+                    lastRmbgCandidateError = "RMBG安装失败: ${error.message ?: error.javaClass.simpleName}"
+                    rmbgInstallStage = "安装失败"
+                    rmbgInstallProgress = null
+                    statusText = lastRmbgCandidateError ?: "RMBG安装失败"
+                }
+            } finally {
+                tmpDownload.delete()
+                runOnUiThread { isInstallingRmbgComponent = false }
+            }
+        }.start()
+    }
+
+    private fun installRmbgComponentFromModelUrl(modelUrl: String, modelFile: File): RmbgComponent {
+        val targetDir = rmbgComponentDir()
+        val tmpDir = File(filesDir, "$RMBG_COMPONENT_DIR.tmp")
+        runCatching { rmbgRuntime?.close() }
+        rmbgRuntime = null
+        if (tmpDir.exists()) {
+            tmpDir.deleteRecursively()
+        }
+        tmpDir.mkdirs()
+        try {
+            downloadRmbgFile(modelUrl, modelFile, RMBG_MIN_MODEL_BYTES, "RMBG模型")
+            runOnUiThread {
+                rmbgInstallStage = "安装模型"
+                rmbgInstallProgress = null
+            }
+            modelFile.copyTo(File(tmpDir, RMBG_MODEL_NAME), overwrite = true)
+            validateRmbgComponentDir(tmpDir)
+            if (targetDir.exists()) {
+                targetDir.deleteRecursively()
+            }
+            if (!tmpDir.renameTo(targetDir)) {
+                copyDirectory(tmpDir, targetDir)
+                tmpDir.deleteRecursively()
+            }
+            return findRmbgComponent()
+                ?: error("缺少当前 ABI: ${Build.SUPPORTED_ABIS.joinToString()}")
+        } catch (error: Exception) {
+            tmpDir.deleteRecursively()
+            throw error
+        }
+    }
+
+    private fun installRmbgComponentFromInput(input: InputStream): RmbgComponent {
+        val targetDir = rmbgComponentDir()
+        val tmpDir = File(filesDir, "$RMBG_COMPONENT_DIR.tmp")
+        runCatching { rmbgRuntime?.close() }
+        rmbgRuntime = null
+        if (tmpDir.exists()) {
+            tmpDir.deleteRecursively()
+        }
+        tmpDir.mkdirs()
+        try {
+            unzipRmbgComponent(input, tmpDir)
+            normalizeRmbgModelFile(tmpDir)
+            validateRmbgComponentDir(tmpDir)
+            if (targetDir.exists()) {
+                targetDir.deleteRecursively()
+            }
+            if (!tmpDir.renameTo(targetDir)) {
+                copyDirectory(tmpDir, targetDir)
+                tmpDir.deleteRecursively()
+            }
+            return findRmbgComponent()
+                ?: error("缺少当前 ABI: ${Build.SUPPORTED_ABIS.joinToString()}")
+        } catch (error: Exception) {
+            tmpDir.deleteRecursively()
+            throw error
+        }
+    }
+
+    private fun downloadRmbgFile(urlText: String, target: File, minBytes: Long, label: String) {
+        val url = URL(urlText)
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = RMBG_DOWNLOAD_CONNECT_TIMEOUT_MS
+            readTimeout = RMBG_DOWNLOAD_READ_TIMEOUT_MS
+            url.userInfo?.takeIf { it.isNotBlank() }?.let { userInfo ->
+                setRequestProperty(
+                    "Authorization",
+                    "Basic ${Base64.encodeToString(userInfo.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)}",
+                )
+            }
+        }
+        try {
+            val stream = if (connection.responseCode in 200..299) {
+                connection.inputStream
+            } else {
+                connection.errorStream ?: connection.inputStream
+            }
+            if (connection.responseCode !in 200..299) {
+                val message = stream.bufferedReader().use { it.readText() }.take(160)
+                error("HTTP ${connection.responseCode}: $message")
+            }
+            val totalBytes = connection.contentLengthLong.takeIf { it > 0L }
+            var downloaded = 0L
+            var nextReportAt = 0L
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            target.parentFile?.mkdirs()
+            runOnUiThread {
+                rmbgInstallStage = "$label 下载中"
+                rmbgInstallProgress = totalBytes?.let { 0f }
+                statusText = "$label 下载中"
+            }
+            stream.use { input ->
+                FileOutputStream(target).use { output ->
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read < 0) {
+                            break
+                        }
+                        output.write(buffer, 0, read)
+                        downloaded += read.toLong()
+                        if (downloaded >= nextReportAt) {
+                            val progress = totalBytes?.let { downloaded.toFloat() / it.toFloat() }
+                            val text = totalBytes?.let { total ->
+                                val percent = ((progress ?: 0f) * 100f).roundToInt().coerceIn(0, 100)
+                                "$label $percent% · ${downloaded / 1024 / 1024}/${total / 1024 / 1024}MB"
+                            } ?: "$label ${downloaded / 1024 / 1024}MB"
+                            runOnUiThread {
+                                statusText = text
+                                rmbgInstallStage = text
+                                rmbgInstallProgress = progress?.coerceIn(0f, 1f)
+                            }
+                            nextReportAt = downloaded + 2L * 1024L * 1024L
+                        }
+                    }
+                }
+            }
+            if (target.length() < minBytes) {
+                error("$label 过小")
+            }
+        } finally {
+            connection.disconnect()
+        }
     }
 
     private fun unzipRmbgComponent(input: InputStream, targetDir: File) {
@@ -3350,21 +5286,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun normalizeRmbgModelFile(dir: File) {
+        val target = File(dir, RMBG_MODEL_NAME)
+        if (target.isFile) {
+            return
+        }
+        val candidate = listOf(
+            File(dir, "onnx/model.onnx"),
+            File(dir, "model.onnx"),
+        ).firstOrNull { it.isFile && it.length() >= RMBG_MIN_MODEL_BYTES }
+        candidate?.copyTo(target, overwrite = true)
+    }
+
     private fun validateRmbgComponentDir(dir: File) {
         val model = File(dir, RMBG_MODEL_NAME)
-        val classesJar = File(dir, RMBG_ONNXRUNTIME_CLASSES_JAR)
         if (!model.isFile || model.length() < RMBG_MIN_MODEL_BYTES) {
             error("缺少 $RMBG_MODEL_NAME")
-        }
-        if (!classesJar.isFile) {
-            error("缺少 $RMBG_ONNXRUNTIME_CLASSES_JAR")
-        }
-        val supported = Build.SUPPORTED_ABIS.firstOrNull { abi ->
-            File(dir, "lib/$abi/$RMBG_ONNXRUNTIME_LIB").isFile &&
-                File(dir, "lib/$abi/$RMBG_ONNXRUNTIME_JNI_LIB").isFile
-        }
-        if (supported == null) {
-            error("缺少当前设备 ABI 的 ONNX Runtime: ${Build.SUPPORTED_ABIS.joinToString()}")
         }
     }
 
@@ -3386,25 +5323,18 @@ class MainActivity : ComponentActivity() {
         val dir: File,
         val abi: String,
         val model: File,
-        val classesJar: File,
-        val runtimeLib: File,
-        val jniLib: File,
     ) {
         val key: String = listOf(
             dir.absolutePath,
             abi,
             model.length(),
             model.lastModified(),
-            classesJar.length(),
-            runtimeLib.length(),
-            jniLib.length(),
         ).joinToString("|")
     }
 
     private class DynamicRmbgRuntime(private val component: RmbgComponent) : AutoCloseable {
         val componentKey: String = component.key
 
-        private val classLoader: ClassLoader
         private val environmentClass: Class<*>
         private val environment: Any
         private val sessionOptions: Any
@@ -3414,15 +5344,7 @@ class MainActivity : ComponentActivity() {
         private val closeMethod = AutoCloseable::class.java.getMethod("close")
 
         init {
-            System.load(component.runtimeLib.absolutePath)
-            val optimizedDir = File(component.dir, "dex").also { it.mkdirs() }
-            component.classesJar.setWritable(false, false)
-            classLoader = DexClassLoader(
-                component.classesJar.absolutePath,
-                optimizedDir.absolutePath,
-                component.jniLib.parentFile?.absolutePath,
-                MainActivity::class.java.classLoader,
-            )
+            val classLoader = MainActivity::class.java.classLoader ?: ClassLoader.getSystemClassLoader()
             environmentClass = classLoader.loadClass("ai.onnxruntime.OrtEnvironment")
             val sessionOptionsClass = classLoader.loadClass("ai.onnxruntime.OrtSession\$SessionOptions")
             onnxTensorClass = classLoader.loadClass("ai.onnxruntime.OnnxTensor")
@@ -3430,6 +5352,10 @@ class MainActivity : ComponentActivity() {
             environment = environmentClass.getMethod("getEnvironment").invoke(null)
                 ?: error("无法初始化 ONNX Runtime 环境")
             sessionOptions = sessionOptionsClass.getConstructor().newInstance()
+            runCatching { sessionOptionsClass.getMethod("setMemoryPatternOptimization", Boolean::class.javaPrimitiveType).invoke(sessionOptions, false) }
+            runCatching { sessionOptionsClass.getMethod("setCPUArenaAllocator", Boolean::class.javaPrimitiveType).invoke(sessionOptions, false) }
+            runCatching { sessionOptionsClass.getMethod("setIntraOpNumThreads", Int::class.javaPrimitiveType).invoke(sessionOptions, 1) }
+            runCatching { sessionOptionsClass.getMethod("setInterOpNumThreads", Int::class.javaPrimitiveType).invoke(sessionOptions, 1) }
             session = environmentClass
                 .getMethod("createSession", String::class.java, sessionOptionsClass)
                 .invoke(environment, component.model.absolutePath, sessionOptions)
@@ -3445,7 +5371,11 @@ class MainActivity : ComponentActivity() {
                 val inputNames = session.javaClass.getMethod("getInputNames").invoke(session) as Set<String>
                 val feeds = mapOf(inputNames.first() to tensor)
                 val runMethod = session.javaClass.getMethod("run", Map::class.java)
-                val result = runMethod.invoke(session, feeds)
+                val result = try {
+                    runMethod.invoke(session, feeds)
+                } catch (error: InvocationTargetException) {
+                    throw error.targetException ?: error
+                }
                 try {
                     val outputTensor = result.javaClass.getMethod("get", Int::class.javaPrimitiveType).invoke(result, 0)
                     val buffer = onnxTensorClass.getMethod("getFloatBuffer").invoke(outputTensor) as FloatBuffer
@@ -3465,23 +5395,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun getRmbgRuntime(component: RmbgComponent): DynamicRmbgRuntime =
+    private fun <T> withRmbgRuntime(component: RmbgComponent, block: (DynamicRmbgRuntime) -> T): T =
         synchronized(this) {
-            val existing = rmbgRuntime
-            if (existing != null && existing.componentKey == component.key) {
-                return@synchronized existing
-            }
-            runCatching { existing?.close() }
-            DynamicRmbgRuntime(component).also { runtime ->
-                rmbgRuntime = runtime
+            runCatching { rmbgRuntime?.close() }
+            rmbgRuntime = null
+            DynamicRmbgRuntime(component).use { runtime ->
+                block(runtime)
             }
         }
 
     private fun runRmbgAlphaMask(sourceIcon: Bitmap, component: RmbgComponent): IntArray {
-        val modelInput = resizeBitmap(sourceIcon, RMBG_INPUT_SIZE, RMBG_INPUT_SIZE)
-        val inputPixels = IntArray(RMBG_INPUT_SIZE * RMBG_INPUT_SIZE)
-        modelInput.getPixels(inputPixels, 0, RMBG_INPUT_SIZE, 0, 0, RMBG_INPUT_SIZE, RMBG_INPUT_SIZE)
-        val input = FloatBuffer.allocate(RMBG_INPUT_SIZE * RMBG_INPUT_SIZE * 3)
+        val inputSize = rmbgInputSize.coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
+        val modelInput = resizeBitmap(sourceIcon, inputSize, inputSize)
+        val inputPixels = IntArray(inputSize * inputSize)
+        modelInput.getPixels(inputPixels, 0, inputSize, 0, 0, inputSize, inputSize)
+        val input = FloatBuffer.allocate(inputSize * inputSize * 3)
         for (channel in 0..2) {
             val mean = RMBG_NORMALIZE_MEAN[channel]
             val std = RMBG_NORMALIZE_STD[channel]
@@ -3496,9 +5424,15 @@ class MainActivity : ComponentActivity() {
         }
         input.rewind()
 
-        val output = getRmbgRuntime(component).run(input, longArrayOf(1L, 3L, RMBG_INPUT_SIZE.toLong(), RMBG_INPUT_SIZE.toLong()))
+        val output = withRmbgRuntime(component) { runtime ->
+            runtime.run(input, longArrayOf(1L, 3L, inputSize.toLong(), inputSize.toLong()))
+        }
         if (output.isEmpty()) {
             error("RMBG输出为空")
+        }
+        val outputSide = kotlin.math.sqrt(output.size.toDouble()).roundToInt()
+        if (outputSide <= 0 || outputSide * outputSide != output.size) {
+            error("RMBG输出尺寸异常: ${output.size}")
         }
         var min = Float.POSITIVE_INFINITY
         var max = Float.NEGATIVE_INFINITY
@@ -3510,19 +5444,21 @@ class MainActivity : ComponentActivity() {
         if (range <= 0.000001f) {
             error("RMBG输出无有效 Alpha 范围")
         }
-        val maskPixels = IntArray(output.size)
-        for (i in output.indices) {
-            val alpha = (((output[i] - min) / range) * 255.0f)
-                .roundToInt()
-                .coerceIn(0, 255)
-            maskPixels[i] = AndroidColor.rgb(alpha, alpha, alpha)
-        }
-        val mask = Bitmap.createBitmap(RMBG_INPUT_SIZE, RMBG_INPUT_SIZE, Bitmap.Config.ARGB_8888)
-        mask.setPixels(maskPixels, 0, RMBG_INPUT_SIZE, 0, 0, RMBG_INPUT_SIZE, RMBG_INPUT_SIZE)
-        val scaledMask = resizeBitmap(mask, sourceIcon.width, sourceIcon.height)
         val scaledPixels = IntArray(sourceIcon.width * sourceIcon.height)
-        scaledMask.getPixels(scaledPixels, 0, sourceIcon.width, 0, 0, sourceIcon.width, sourceIcon.height)
-        return IntArray(scaledPixels.size) { index -> AndroidColor.red(scaledPixels[index]) }
+        val scaleX = outputSide.toFloat() / sourceIcon.width.toFloat()
+        val scaleY = outputSide.toFloat() / sourceIcon.height.toFloat()
+        for (y in 0 until sourceIcon.height) {
+            val sourceY = ((y + 0.5f) * scaleY).toInt().coerceIn(0, outputSide - 1)
+            val rowOffset = sourceY * outputSide
+            val outOffset = y * sourceIcon.width
+            for (x in 0 until sourceIcon.width) {
+                val sourceX = ((x + 0.5f) * scaleX).toInt().coerceIn(0, outputSide - 1)
+                scaledPixels[outOffset + x] = (((output[rowOffset + sourceX] - min) / range) * 255.0f)
+                    .roundToInt()
+                    .coerceIn(0, 255)
+            }
+        }
+        return scaledPixels
     }
 
     private fun applyAlphaArrayToSource(source: Bitmap, alpha: IntArray): Bitmap {
@@ -3599,6 +5535,74 @@ class MainActivity : ComponentActivity() {
             }
         }
         return AndroidColor.rgb(median(reds), median(greens), median(blues))
+    }
+
+    private fun medianVisibleColor(source: Bitmap): Int {
+        val pixels = IntArray(source.width * source.height)
+        source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
+        val reds = mutableListOf<Int>()
+        val greens = mutableListOf<Int>()
+        val blues = mutableListOf<Int>()
+        for (pixel in pixels) {
+            if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                continue
+            }
+            reds += AndroidColor.red(pixel)
+            greens += AndroidColor.green(pixel)
+            blues += AndroidColor.blue(pixel)
+        }
+        if (reds.isEmpty()) {
+            return AndroidColor.WHITE
+        }
+        return AndroidColor.rgb(median(reds), median(greens), median(blues))
+    }
+
+    private fun medianVisibleColorInRect(source: Bitmap, left: Int, top: Int, right: Int, bottom: Int): Int {
+        val reds = mutableListOf<Int>()
+        val greens = mutableListOf<Int>()
+        val blues = mutableListOf<Int>()
+        val safeLeft = left.coerceIn(0, source.width)
+        val safeTop = top.coerceIn(0, source.height)
+        val safeRight = right.coerceIn(safeLeft, source.width)
+        val safeBottom = bottom.coerceIn(safeTop, source.height)
+        for (y in safeTop until safeBottom) {
+            for (x in safeLeft until safeRight) {
+                val pixel = source.getPixel(x, y)
+                if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                    continue
+                }
+                reds += AndroidColor.red(pixel)
+                greens += AndroidColor.green(pixel)
+                blues += AndroidColor.blue(pixel)
+            }
+        }
+        if (reds.isEmpty()) {
+            return medianVisibleColor(source)
+        }
+        return AndroidColor.rgb(median(reds), median(greens), median(blues))
+    }
+
+    private fun medianColor(colors: IntArray): Int {
+        val reds = mutableListOf<Int>()
+        val greens = mutableListOf<Int>()
+        val blues = mutableListOf<Int>()
+        colors.forEach { color ->
+            reds += AndroidColor.red(color)
+            greens += AndroidColor.green(color)
+            blues += AndroidColor.blue(color)
+        }
+        return AndroidColor.rgb(median(reds), median(greens), median(blues))
+    }
+
+    private fun lerpColor(start: Int, end: Int, amount: Double): Int {
+        val t = amount.coerceIn(0.0, 1.0)
+        fun channel(a: Int, b: Int): Int =
+            (a + (b - a) * t).roundToInt().coerceIn(0, 255)
+        return AndroidColor.rgb(
+            channel(AndroidColor.red(start), AndroidColor.red(end)),
+            channel(AndroidColor.green(start), AndroidColor.green(end)),
+            channel(AndroidColor.blue(start), AndroidColor.blue(end)),
+        )
     }
 
     private fun maskColorStd(pixels: IntArray, mask: BooleanArray): Double {
@@ -3828,11 +5832,15 @@ class MainActivity : ComponentActivity() {
             OriginalForegroundCleanupMode.Off -> source
             OriginalForegroundCleanupMode.Plate -> removeForegroundPlate(source).bitmap
             OriginalForegroundCleanupMode.Auto -> {
-                val cleaned = removeForegroundPlate(source)
-                if (cleaned.changed && shouldUseOriginalSafetyCleanup(source, cleaned.bitmap)) {
-                    cleaned.bitmap
-                } else {
+                if (hasLayeredLightForegroundPlate(source)) {
                     source
+                } else {
+                    val cleaned = removeForegroundPlate(source)
+                    if (cleaned.changed && shouldUseOriginalSafetyCleanup(source, cleaned.bitmap)) {
+                        cleaned.bitmap
+                    } else {
+                        source
+                    }
                 }
             }
         }
@@ -3858,13 +5866,44 @@ class MainActivity : ComponentActivity() {
         return cleanedMax / sourceMax >= ORIGINAL_CLEANUP_MIN_BOUNDS_RATIO
     }
 
+    private fun hasLayeredLightForegroundPlate(source: Bitmap): Boolean {
+        if (alphaCoverage(source) < ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE) {
+            return false
+        }
+        val pixels = IntArray(source.width * source.height)
+        source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
+        var visible = 0
+        var lightPlate = 0
+        var darkDetail = 0
+        for (pixel in pixels) {
+            if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                continue
+            }
+            visible++
+            val saturation = saturation(pixel)
+            val luma = luma(pixel)
+            if (luma >= ADAPTIVE_DIRECT_PLATE_MIN_LUMA && saturation <= ADAPTIVE_DIRECT_PLATE_MAX_SATURATION) {
+                lightPlate++
+            } else if (luma <= ADAPTIVE_DIRECT_DETAIL_MAX_LUMA) {
+                darkDetail++
+            }
+        }
+        if (visible == 0) {
+            return false
+        }
+        return lightPlate.toDouble() / visible.toDouble() >= ADAPTIVE_DIRECT_PLATE_MIN_RATIO &&
+            darkDetail.toDouble() / visible.toDouble() >= ADAPTIVE_DIRECT_DETAIL_MIN_RATIO
+    }
+
     private fun defaultLocalPreviewChoice(autoChoice: PreviewChoice): PreviewChoice =
-        defaultPreviewChoiceForMode(localSeparationMode, autoChoice)
+        defaultPreviewChoiceForMode(LocalSeparationMode.Auto, autoChoice)
 
     private fun defaultPreviewChoiceForMode(mode: LocalSeparationMode, autoChoice: PreviewChoice): PreviewChoice =
         when (mode) {
             LocalSeparationMode.Original -> PreviewChoice.Original
             LocalSeparationMode.Plate -> PreviewChoice.Plate
+            LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+            LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
             LocalSeparationMode.Auto -> autoChoice
             LocalSeparationMode.Full -> PreviewChoice.Full
         }
@@ -3931,7 +5970,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun writePackageOutputs(session: GenerationSession, selections: PreviewSelections) {
-        val light = candidateOrFallback(session, selections.normalLight)
+        val light = candidateWithCustomOverrides(session, PreviewMode.NormalLight, selections.normalLight)
         val lightRecfg = renderCandidateForeground(light)
         val lightRecbg = light.recbg
         savePng(lightRecbg, File(session.outDir, "recbg.png"))
@@ -3950,7 +5989,7 @@ class MainActivity : ComponentActivity() {
         savePng(recfg2x1, File(session.outDir, "recfg_2x1.png"))
         savePng(recfg2x2, File(session.outDir, "recfg_2x2.png"))
 
-        val night = candidateOrFallback(session, selections.normalDark)
+        val night = candidateWithCustomOverrides(session, PreviewMode.NormalDark, selections.normalDark)
         val nightRecfg = renderCandidateForeground(night)
         val nightRecbg = night.recbg
         val nightRecfg1x2 = centerOnCanvas(nightRecfg, SIZE_1X2[0], SIZE_1X2[1])
@@ -3970,20 +6009,22 @@ class MainActivity : ComponentActivity() {
             File(session.outDir, "rec_night_2x2.png"),
         )
 
-        val monochromeLight = monochromeForCandidate(
-            candidateOrFallback(session, selections.monochromeLight),
+        val rawMonochromeLight = monochromeForCandidate(
+            candidateWithCustomOverrides(session, PreviewMode.MonochromeLight, selections.monochromeLight),
             invertLuma = true,
         )
-        val monochromeDark = monochromeForCandidate(
-            candidateOrFallback(session, selections.monochromeDark),
+        val rawMonochromeDark = monochromeForCandidate(
+            candidateWithCustomOverrides(session, PreviewMode.MonochromeDark, selections.monochromeDark),
             invertLuma = false,
         )
+        val monochromeLight = scaleMonochromeForTheme(rawMonochromeLight)
+        val monochromeDark = scaleMonochromeForTheme(rawMonochromeDark)
         savePng(monochromeLight, File(session.outDir, "monochrome_light.png"))
         savePng(monochromeDark, File(session.outDir, "monochrome_dark.png"))
         savePng(monochromeDark, File(session.outDir, "monochrome.png"))
-        savePng(centerOnCanvas(monochromeDark, SIZE_1X2[0], SIZE_1X2[1]), File(session.outDir, "monochrome_1x2.png"))
-        savePng(centerOnCanvas(monochromeDark, SIZE_2X1[0], SIZE_2X1[1]), File(session.outDir, "monochrome_2x1.png"))
-        savePng(centerOnCanvas(monochromeDark, SIZE_2X2, SIZE_2X2), File(session.outDir, "monochrome_2x2.png"))
+        savePng(centerOnCanvas(rawMonochromeDark, SIZE_1X2[0], SIZE_1X2[1]), File(session.outDir, "monochrome_1x2.png"))
+        savePng(centerOnCanvas(rawMonochromeDark, SIZE_2X1[0], SIZE_2X1[1]), File(session.outDir, "monochrome_2x1.png"))
+        savePng(centerOnCanvas(rawMonochromeDark, SIZE_2X2, SIZE_2X2), File(session.outDir, "monochrome_2x2.png"))
 
         savePng(adjustColor(lightRecfg, 1.3f, 1.0f), File(session.outDir, "day.png"))
         savePng(adjustColor(lightRecfg, 0.9f, 0.9f), File(session.outDir, "nsd.png"))
@@ -3991,24 +6032,148 @@ class MainActivity : ComponentActivity() {
         savePng(adjustColor(lightRecfg, 0.7f, 0.95f), File(session.outDir, "peb.png"))
     }
 
-    private fun candidateOrFallback(session: GenerationSession, choice: PreviewChoice): IconCandidate =
+    private fun candidateOrFallback(
+        session: GenerationSession,
+        choice: PreviewChoice,
+    ): IconCandidate =
         session.candidates[choice]
             ?: session.candidates[PreviewChoice.Full]
             ?: session.candidates[PreviewChoice.Plate]
             ?: session.candidates.getValue(PreviewChoice.Original)
 
-    private fun monochromeForCandidate(candidate: IconCandidate, invertLuma: Boolean = false): Bitmap {
-        val foreground = renderCandidateForeground(candidate)
-        val source = candidate.monochromeRaw?.let { renderCandidateBitmap(candidate, it) }
-        val monochrome = if (source == null || hasForegroundTonalRange(foreground)) {
-            monochromeAlpha(foreground, invertLuma = invertLuma)
-        } else {
-            monochromeAlphaFromMask(source)
+    private fun candidateWithCustomOverrides(
+        session: GenerationSession,
+        mode: PreviewMode,
+        choice: PreviewChoice,
+    ): IconCandidate {
+        val base = candidateOrFallback(session, choice)
+        val customForeground = session.customForegrounds[mode]
+        val customBackground = session.customBackgrounds[mode]
+        if (customForeground == null && customBackground == null) {
+            return base
         }
-        return trimMonochromeEdge(monochrome)
+        return base.copy(
+            recfgRaw = customForeground ?: base.recfgRaw,
+            recbg = customBackground ?: base.recbg,
+            monochromeRaw = when {
+                customForeground != null -> customForeground
+                else -> base.monochromeRaw
+            },
+            preserveGeometry = if (customForeground != null) true else base.preserveGeometry,
+            customFinalBitmap = null,
+        )
     }
 
-    private fun previewAssetsForCandidate(candidate: IconCandidate): PreviewAssets {
+    private fun monochromeForCandidate(candidate: IconCandidate, invertLuma: Boolean = false): Bitmap {
+        val foreground = renderCandidateForeground(candidate)
+        val source = candidate.monochromeRaw?.let { renderCandidateBitmap(it) }
+        val monochrome = when {
+            source != null && candidate.monochromeIsNative -> {
+                cleanNativeMonochrome(source)
+            }
+            source == null || hasForegroundTonalRange(foreground) -> {
+                monochromeAlpha(foreground, invertLuma = invertLuma)
+            }
+            else -> {
+                monochromeAlphaFromMask(source)
+            }
+        }
+        return if (candidate.monochromeIsNative) {
+            sharpenMonochromeAlpha(monochrome, nativeSource = true)
+        } else {
+            trimMonochromeEdge(monochrome)
+        }
+    }
+
+    private fun scaleMonochromeForTheme(source: Bitmap): Bitmap =
+        scaleBitmapAroundAlphaCenter(source, monochromeThemeScale)
+
+    private fun filterDecimalInput(value: String): String {
+        val builder = StringBuilder()
+        var hasDot = false
+        value.forEach { char ->
+            when {
+                char.isDigit() -> builder.append(char)
+                char == '.' && !hasDot -> {
+                    builder.append(char)
+                    hasDot = true
+                }
+            }
+        }
+        val filtered = builder.toString()
+        val dotIndex = filtered.indexOf('.')
+        return if (dotIndex >= 0 && filtered.length > dotIndex + 3) {
+            filtered.take(dotIndex + 3)
+        } else {
+            filtered
+        }.take(4)
+    }
+
+    private fun formatScale(value: Float): String =
+        String.format(Locale.US, "%.2f", value)
+
+    private fun previewAssetsForSelections(
+        session: GenerationSession,
+        selections: PreviewSelections,
+    ): PreviewAssets {
+        val light = candidateWithCustomOverrides(session, PreviewMode.NormalLight, selections.normalLight)
+        val lightRecfg = renderCandidateForeground(light)
+        val lightRecbg = light.recbg
+
+        val night = candidateWithCustomOverrides(session, PreviewMode.NormalDark, selections.normalDark)
+        val nightPreview = run {
+            val nightRecfg = renderCandidateForeground(night)
+            nightForeground(nightRecfg, night.recbg)
+        }
+
+        val monochromeLight = monochromeForCandidate(
+            candidateWithCustomOverrides(session, PreviewMode.MonochromeLight, selections.monochromeLight),
+            invertLuma = true,
+        )
+        val monochromeDark = monochromeForCandidate(
+            candidateWithCustomOverrides(session, PreviewMode.MonochromeDark, selections.monochromeDark),
+            invertLuma = false,
+        )
+
+        return PreviewAssets(
+            recbg = lightRecbg,
+            recfg = lightRecfg,
+            recNight = nightPreview,
+            monochromeLight = monochromeLight,
+            monochromeDark = monochromeDark,
+        )
+    }
+
+    private fun previewAssetsForCandidate(candidate: IconCandidate, mode: PreviewMode? = null): PreviewAssets {
+        val customFinal = candidate.customFinalBitmap
+        if (customFinal != null) {
+            val transparent = solidBitmap(customFinal.width, customFinal.height, AndroidColor.TRANSPARENT)
+            return when (mode) {
+                PreviewMode.NormalLight -> PreviewAssets(
+                    recbg = transparent,
+                    recfg = customFinal,
+                    recNight = null,
+                    monochromeLight = null,
+                    monochromeDark = null,
+                )
+                PreviewMode.NormalDark -> PreviewAssets(
+                    recbg = null,
+                    recfg = null,
+                    recNight = customFinal,
+                    monochromeLight = null,
+                    monochromeDark = null,
+                )
+                PreviewMode.MonochromeLight,
+                PreviewMode.MonochromeDark,
+                null -> PreviewAssets(
+                    recbg = null,
+                    recfg = null,
+                    recNight = null,
+                    monochromeLight = monochromeForCandidate(candidate, invertLuma = true),
+                    monochromeDark = monochromeForCandidate(candidate, invertLuma = false),
+                )
+            }
+        }
         val recfg = renderCandidateForeground(candidate)
         return PreviewAssets(
             recbg = candidate.recbg,
@@ -4020,20 +6185,114 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun renderCandidateForeground(candidate: IconCandidate): Bitmap =
-        renderCandidateBitmap(candidate, candidate.recfgRaw)
+        polishForegroundEdges(renderCandidateBitmap(candidate.recfgRaw))
 
-    private fun renderCandidateBitmap(candidate: IconCandidate, bitmap: Bitmap): Bitmap =
-        if (candidate.preserveGeometry) bitmap else normalizeForegroundSubjectSize(bitmap)
+    private fun renderCandidateBitmap(bitmap: Bitmap): Bitmap =
+        normalizeForegroundSubjectSize(bitmap)
 
     private fun applyPreviewChoice(mode: PreviewMode, choice: PreviewChoice) {
         val session = activeGenerationSession ?: return
+        val customKind = choice.customKind
+        if (customKind != null) {
+            chooseCustomImageForMode(mode, customKind)
+            return
+        }
         if (choice == PreviewChoice.Gpt && session.candidates[PreviewChoice.Gpt] == null) {
             generateGptCandidateForMode(mode)
             return
         }
         val selections = previewSelections.withChoice(mode, choice)
         previewSelections = selections
+        writeActivePreviewOutputs(session, selections, closeDialog = false)
+    }
+
+    private fun applyPreviewChoiceToAll(choice: PreviewChoice) {
+        val session = activeGenerationSession ?: return
+        if (choice == PreviewChoice.Gpt && session.candidates[PreviewChoice.Gpt] == null) {
+            generateGptCandidateForAll()
+            return
+        }
+        if (choice == PreviewChoice.Rmbg && session.candidates[PreviewChoice.Rmbg] == null) {
+            generateRmbgCandidateForAll()
+            return
+        }
+        if (choice.isCustom) {
+            statusText = "自定义图片需要逐个槽位上传"
+            return
+        }
+        if (session.candidates[choice] == null) {
+            statusText = "${choice.label} 当前不可用"
+            return
+        }
+        val selections = PreviewSelections.default(choice)
+        previewSelections = selections
+        previewChoiceMode = null
         writeActivePreviewOutputs(session, selections, closeDialog = true)
+    }
+
+    private fun clearRmbgCandidateUiState() {
+        if (isGeneratingRmbgCandidate) {
+            return
+        }
+        lastRmbgCandidateError = null
+        rmbgCandidatePackageName = null
+        rmbgCandidateMode = null
+        rmbgCandidateStatusText = ""
+        rmbgCandidateFailurePackageName = null
+        rmbgCandidateFailureMode = null
+    }
+
+    private fun chooseCustomImageForMode(mode: PreviewMode, kind: CustomImageKind) {
+        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
+            return
+        }
+        pendingCustomImageMode = mode
+        pendingCustomImageKind = kind
+        chooseCustomImageLauncher.launch(
+            arrayOf(
+                "image/png",
+                "image/svg+xml",
+            ),
+        )
+    }
+
+    private fun importCustomPreviewImage(mode: PreviewMode, kind: CustomImageKind, uri: Uri) {
+        val session = activeGenerationSession
+        if (session == null) {
+            statusText = "先生成一次预览后再导入自定义图片"
+            return
+        }
+        statusText = "导入${kind.label}: ${mode.label}"
+        startUiFriendlyThread("ArtPlusCustomImageImport") {
+            try {
+                val bitmap = loadCustomImageBitmap(uri)
+                val updatedSession = session.copy(
+                    customForegrounds = if (kind == CustomImageKind.Foreground) {
+                        session.customForegrounds + (mode to bitmap)
+                    } else {
+                        session.customForegrounds
+                    },
+                    customBackgrounds = if (kind == CustomImageKind.Background) {
+                        session.customBackgrounds + (mode to bitmap)
+                    } else {
+                        session.customBackgrounds
+                    },
+                )
+                val selections = previewSelections
+                writePackageOutputs(updatedSession, selections)
+                if (outputTreeUri != null) {
+                    exportToTree(updatedSession.outDir)
+                }
+                runOnUiThread {
+                    activeGenerationSession = updatedSession
+                    previewSelections = selections
+                    previewVersion += 1
+                    statusText = "已导入${kind.label}: ${mode.label}"
+                }
+            } catch (error: Exception) {
+                status("${kind.label}导入失败: ${error.message ?: error.javaClass.simpleName}")
+            }
+        }
     }
 
     private fun generateGptCandidateForMode(mode: PreviewMode) {
@@ -4046,9 +6305,56 @@ class MainActivity : ComponentActivity() {
             return
         }
         isGeneratingGptCandidate = true
+        isGptPreviewLoading = true
         statusText = "GPT候选生成中: ${session.packageName}"
         val selections = previewSelections.withChoice(mode, PreviewChoice.Gpt)
-        Thread {
+        startUiFriendlyThread("ArtPlusGptCandidate") {
+            try {
+                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg)
+                val updatedSession = session.copy(
+                    candidates = session.candidates + (
+                        PreviewChoice.Gpt to IconCandidate(
+                            recfgRaw = gptLayers.recfg,
+                            recbg = gptLayers.recbg,
+                            monochromeRaw = null,
+                        )
+                        ),
+                )
+                writePackageOutputs(updatedSession, selections)
+                if (outputTreeUri != null) {
+                    exportToTree(updatedSession.outDir)
+                }
+                runOnUiThread {
+                    activeGenerationSession = updatedSession
+                    previewSelections = selections
+                    previewVersion += 1
+                    statusText = "GPT候选已生成并应用到 ${mode.label}"
+                }
+            } catch (error: Exception) {
+                status("GPT候选失败: ${error.message ?: error.javaClass.simpleName}")
+            } finally {
+                runOnUiThread {
+                    isGeneratingGptCandidate = false
+                    isGptPreviewLoading = false
+                }
+            }
+        }
+    }
+
+    private fun generateGptCandidateForAll() {
+        val session = activeGenerationSession ?: return
+        if (gptBaseUrl.trim().isEmpty() || gptApiKey.trim().isEmpty()) {
+            statusText = "先填写 GPT Base URL 和 API key"
+            return
+        }
+        if (isGeneratingGptCandidate || isBusy) {
+            return
+        }
+        isGeneratingGptCandidate = true
+        isGptPreviewLoading = true
+        statusText = "GPT候选生成中: ${session.packageName}"
+        val selections = PreviewSelections.default(PreviewChoice.Gpt)
+        startUiFriendlyThread("ArtPlusGptCandidateAll") {
             try {
                 val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg)
                 val updatedSession = session.copy(
@@ -4069,31 +6375,114 @@ class MainActivity : ComponentActivity() {
                     previewSelections = selections
                     previewChoiceMode = null
                     previewVersion += 1
-                    statusText = "GPT候选已生成并应用到 ${mode.label}"
+                    statusText = "GPT候选已生成并应用到全部"
                 }
             } catch (error: Exception) {
                 status("GPT候选失败: ${error.message ?: error.javaClass.simpleName}")
             } finally {
-                runOnUiThread { isGeneratingGptCandidate = false }
+                runOnUiThread {
+                    isGeneratingGptCandidate = false
+                    isGptPreviewLoading = false
+                }
             }
-        }.start()
+        }
     }
 
     private fun generateRmbgCandidateForMode(mode: PreviewMode) {
         val session = activeGenerationSession ?: return
+        if (session.candidates[PreviewChoice.Rmbg] != null) {
+            applyPreviewChoice(mode, PreviewChoice.Rmbg)
+            statusText = "已使用现有 RMBG 候选"
+            return
+        }
         if (findRmbgComponent() == null) {
             lastRmbgCandidateError = "未安装 RMBG 组件 ZIP"
+            rmbgCandidateFailurePackageName = session.packageName
+            rmbgCandidateFailureMode = mode
             statusText = lastRmbgCandidateError ?: "未安装 RMBG 组件"
             return
         }
-        if (isGeneratingRmbgCandidate || isGeneratingGptCandidate || isBusy) {
+        if (isGeneratingRmbgCandidate || isGeneratingGptCandidate || isBusy || !rmbgGenerationGate.compareAndSet(false, true)) {
             return
         }
         isGeneratingRmbgCandidate = true
         lastRmbgCandidateError = null
+        rmbgCandidatePackageName = session.packageName
+        rmbgCandidateMode = mode
+        rmbgCandidateStatusText = "RMBG运行中，请等待: ${mode.label}"
+        rmbgCandidateFailurePackageName = null
+        rmbgCandidateFailureMode = null
         statusText = "RMBG候选生成中: ${session.packageName}"
         val selections = previewSelections.withChoice(mode, PreviewChoice.Rmbg)
-        Thread {
+        startUiFriendlyThread("ArtPlusRmbgCandidate") {
+            try {
+                val source = resizeBitmap(session.sourceIcon, SIZE_1X1, SIZE_1X1)
+                val result = buildRmbgCandidate(source, session.baseRecbg)
+                    ?: error("RMBG候选未通过校验")
+                val candidate = result.candidate ?: error("RMBG候选为空")
+                val updatedSession = session.copy(
+                    candidates = session.candidates + (PreviewChoice.Rmbg to candidate),
+                )
+                writePackageOutputs(updatedSession, selections)
+                if (outputTreeUri != null) {
+                    exportToTree(updatedSession.outDir)
+                }
+                runOnUiThread {
+                    activeGenerationSession = updatedSession
+                    previewSelections = selections
+                    previewVersion += 1
+                    lastRmbgCandidateError = null
+                    rmbgCandidateFailurePackageName = null
+                    rmbgCandidateFailureMode = null
+                    statusText = "RMBG候选已生成并应用到 ${mode.label}"
+                }
+            } catch (error: Throwable) {
+                val message = describeRmbgFailure(error)
+                runOnUiThread {
+                    lastRmbgCandidateError = message
+                    rmbgCandidateFailurePackageName = session.packageName
+                    rmbgCandidateFailureMode = mode
+                    statusText = "RMBG候选失败: $message"
+                }
+            } finally {
+                rmbgGenerationGate.set(false)
+                runOnUiThread {
+                    isGeneratingRmbgCandidate = false
+                    rmbgCandidatePackageName = null
+                    rmbgCandidateMode = null
+                    rmbgCandidateStatusText = ""
+                }
+            }
+        }
+    }
+
+    private fun generateRmbgCandidateForAll() {
+        val session = activeGenerationSession ?: return
+        if (session.candidates[PreviewChoice.Rmbg] != null) {
+            applyPreviewChoiceToAll(PreviewChoice.Rmbg)
+            statusText = "已使用现有 RMBG 候选"
+            return
+        }
+        if (findRmbgComponent() == null) {
+            lastRmbgCandidateError = "未安装 RMBG 组件 ZIP"
+            rmbgCandidateFailurePackageName = session.packageName
+            rmbgCandidateFailureMode = null
+            statusText = lastRmbgCandidateError ?: "未安装 RMBG 组件"
+            return
+        }
+        if (isGeneratingRmbgCandidate || isGeneratingGptCandidate || isBusy || !rmbgGenerationGate.compareAndSet(false, true)) {
+            return
+        }
+        isGeneratingRmbgCandidate = true
+        lastRmbgCandidateError = null
+        rmbgCandidatePackageName = session.packageName
+        rmbgCandidateMode = null
+        rmbgCandidateStatusText = "RMBG运行中，请等待: 全部"
+        rmbgCandidateFailurePackageName = null
+        rmbgCandidateFailureMode = null
+        statusText = "RMBG候选生成中: ${session.packageName}"
+        val selections = PreviewSelections.default(PreviewChoice.Rmbg)
+        startUiFriendlyThread("ArtPlusRmbgCandidateAll") {
             try {
                 val source = resizeBitmap(session.sourceIcon, SIZE_1X1, SIZE_1X1)
                 val result = buildRmbgCandidate(source, session.baseRecbg)
@@ -4112,70 +6501,143 @@ class MainActivity : ComponentActivity() {
                     previewChoiceMode = null
                     previewVersion += 1
                     lastRmbgCandidateError = null
-                    statusText = "RMBG候选已生成并应用到 ${mode.label}"
+                    rmbgCandidateFailurePackageName = null
+                    rmbgCandidateFailureMode = null
+                    statusText = "RMBG候选已生成并应用到全部"
                 }
             } catch (error: Throwable) {
                 val message = describeRmbgFailure(error)
                 runOnUiThread {
                     lastRmbgCandidateError = message
+                    rmbgCandidateFailurePackageName = session.packageName
+                    rmbgCandidateFailureMode = null
                     statusText = "RMBG候选失败: $message"
                 }
             } finally {
-                runOnUiThread { isGeneratingRmbgCandidate = false }
+                rmbgGenerationGate.set(false)
+                runOnUiThread {
+                    isGeneratingRmbgCandidate = false
+                    rmbgCandidatePackageName = null
+                    rmbgCandidateMode = null
+                    rmbgCandidateStatusText = ""
+                }
             }
-        }.start()
+        }
     }
 
     private fun describeRmbgFailure(error: Throwable): String {
-        val raw = error.message ?: error.javaClass.simpleName
+        val root = unwrapInvocationError(error)
+        val raw = root.message ?: root.javaClass.simpleName
         val lower = raw.lowercase()
         return when {
-            error is OutOfMemoryError ||
+            root is OutOfMemoryError ||
                 "outofmemory" in lower ||
                 "failed to allocate" in lower ||
                 "memory" in lower -> {
-                "内存不足或 ONNX 分配失败；RMBG-2.0 需要 1024 输入"
+                "内存不足或 ONNX 分配失败；已释放会话但 RMBG-2.0 峰值仍较高"
             }
             "未通过校验" in raw -> {
-                "RMBG 已运行，但结果未通过覆盖率/边界校验"
+                raw
             }
             "reshape" in lower || "shape" in lower -> {
-                "模型输入尺寸不匹配；RMBG-2.0 当前必须使用 1024 输入"
+                "模型输入尺寸不匹配；请重新安装 RMBG-2.0 ONNX 组件"
             }
             else -> raw
         }
+    }
+
+    private fun unwrapInvocationError(error: Throwable): Throwable {
+        var current = error
+        while (current is InvocationTargetException && current.targetException != null) {
+            current = current.targetException
+        }
+        return current
     }
 
     private fun refreshActivePreviewOutputs(
         rebuildLocalCandidates: Boolean,
         retargetFrom: PreviewChoice? = null,
     ) {
-        val session = activeGenerationSession ?: return
-        val app = if (rebuildLocalCandidates) {
-            apps.firstOrNull { it.packageName == session.packageName }
-        } else {
-            null
+        val currentSession = activeGenerationSession
+        val packageName = currentSession?.packageName ?: previewPackageName ?: selectedPackageName ?: return
+        val app = apps.firstOrNull { it.packageName == packageName }
+        if (currentSession == null && app == null) {
+            return
         }
-        val updatedSession = if (app == null) {
-            session
-        } else {
-            rebuildLocalSession(session, app)
+        val outDir = currentSession?.outDir
+            ?: previewDirPath?.let(::File)
+            ?: File(getExternalFilesDir("ArtPlus") ?: File(filesDir, "ArtPlus"), packageName)
+        val currentSelections = previewSelections
+        val outputUri = outputTreeUri
+        val requestRevision = ++previewOutputRevision
+        previewOutputJob?.cancel()
+        isPreviewOutputRefreshing = true
+        previewOutputJob = previewWorkerScope.launch {
+            try {
+                delay(if (rebuildLocalCandidates) PREVIEW_REBUILD_DEBOUNCE_MS else PREVIEW_OUTPUT_DEBOUNCE_MS)
+                val updatedSession = when {
+                    currentSession == null -> buildLocalSessionForPreview(app ?: return@launch, outDir)
+                    rebuildLocalCandidates && app != null -> rebuildLocalSession(currentSession, app)
+                    else -> currentSession
+                }
+                val previousDefault = retargetFrom
+                    ?: if (rebuildLocalCandidates && currentSession != null) {
+                        defaultLocalPreviewChoice(currentSession.autoLocalChoice)
+                    } else {
+                        null
+                    }
+                val nextDefault = defaultLocalPreviewChoice(updatedSession.autoLocalChoice)
+                val selections = when {
+                    currentSession == null -> PreviewSelections.default(nextDefault)
+                    previousDefault == null -> currentSelections
+                    else -> currentSelections.retarget(previousDefault, nextDefault)
+                }
+                writePackageOutputs(updatedSession, selections)
+                if (outputUri != null) {
+                    exportToTree(updatedSession.outDir)
+                }
+                withContext(Dispatchers.Main) {
+                    if (requestRevision == previewOutputRevision) {
+                        activeGenerationSession = updatedSession
+                        previewSelections = selections
+                        previewVersion += 1
+                    }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                status("预览刷新失败: ${error.message ?: error.javaClass.simpleName}")
+            } finally {
+                withContext(Dispatchers.Main) {
+                    if (requestRevision == previewOutputRevision) {
+                        isPreviewOutputRefreshing = false
+                    }
+                }
+            }
         }
-        val previousDefault = retargetFrom
-            ?: if (rebuildLocalCandidates) defaultLocalPreviewChoice(session.autoLocalChoice) else null
-        val nextDefault = defaultLocalPreviewChoice(updatedSession.autoLocalChoice)
-        val selections = if (previousDefault == null) {
-            previewSelections
-        } else {
-            previewSelections.retarget(previousDefault, nextDefault)
-        }
-        activeGenerationSession = updatedSession
-        writeActivePreviewOutputs(updatedSession, selections, closeDialog = false)
+    }
+
+    private fun buildLocalSessionForPreview(app: AppEntry, outDir: File): GenerationSession {
+        val icon = app.applicationInfo.loadIcon(packageManager)
+        val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
+        val gptSourceIcon = drawDrawable(icon, GPT_SOURCE_SIZE, GPT_SOURCE_SIZE, transparent = false)
+        val localSource = buildLocalIconLayers(icon)
+        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon)
+        return GenerationSession(
+            packageName = app.packageName,
+            outDir = outDir,
+            sourceIcon = gptSourceIcon,
+            baseRecfg = localSource.recfg,
+            baseRecbg = localSource.recbg,
+            monochromeRaw = localSource.monochrome,
+            candidates = localCandidateSet.candidates,
+            autoLocalChoice = localCandidateSet.autoChoice,
+        )
     }
 
     private fun rebuildLocalSession(session: GenerationSession, app: AppEntry): GenerationSession {
         val icon = app.applicationInfo.loadIcon(packageManager)
-        val localSourceIcon = drawDrawable(icon, SIZE_1X1, SIZE_1X1, transparent = false)
+        val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
         val gptSourceIcon = drawDrawable(icon, GPT_SOURCE_SIZE, GPT_SOURCE_SIZE, transparent = false)
         val localSource = buildLocalIconLayers(icon)
         val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon)
@@ -4192,6 +6654,8 @@ class MainActivity : ComponentActivity() {
             baseRecbg = localSource.recbg,
             monochromeRaw = localSource.monochrome,
             candidates = candidates,
+            customForegrounds = session.customForegrounds,
+            customBackgrounds = session.customBackgrounds,
             autoLocalChoice = localCandidateSet.autoChoice,
         )
     }
@@ -4201,24 +6665,39 @@ class MainActivity : ComponentActivity() {
         selections: PreviewSelections,
         closeDialog: Boolean,
     ) {
-        Thread {
+        val outputUri = outputTreeUri
+        val requestRevision = ++previewOutputRevision
+        previewOutputJob?.cancel()
+        isPreviewOutputRefreshing = true
+        previewOutputJob = previewWorkerScope.launch {
             try {
+                delay(PREVIEW_OUTPUT_DEBOUNCE_MS)
                 writePackageOutputs(session, selections)
-                if (outputTreeUri != null) {
+                if (outputUri != null) {
                     exportToTree(session.outDir)
                 }
-                runOnUiThread {
-                    activeGenerationSession = session
-                    previewSelections = selections
-                    previewVersion += 1
-                    if (closeDialog) {
-                        previewChoiceMode = null
+                withContext(Dispatchers.Main) {
+                    if (requestRevision == previewOutputRevision) {
+                        activeGenerationSession = session
+                        previewSelections = selections
+                        previewVersion += 1
+                        if (closeDialog) {
+                            previewChoiceMode = null
+                        }
                     }
                 }
+            } catch (error: CancellationException) {
+                throw error
             } catch (error: Exception) {
                 status("预览刷新失败: ${error.message ?: error.javaClass.simpleName}")
+            } finally {
+                withContext(Dispatchers.Main) {
+                    if (requestRevision == previewOutputRevision) {
+                        isPreviewOutputRefreshing = false
+                    }
+                }
             }
-        }.start()
+        }
     }
 
     private fun generateGptLayers(sourceIcon: Bitmap, localRecfg: Bitmap, localRecbg: Bitmap): IconLayers {
@@ -4228,11 +6707,26 @@ class MainActivity : ComponentActivity() {
             AndroidColor.green(chromaKey),
             AndroidColor.blue(chromaKey),
         )
-        val foregroundPrompt = buildForegroundPrompt(chromaHex)
+        val transparentForegroundPrompt = buildTransparentForegroundPrompt()
+        val chromaForegroundPrompt = buildChromaForegroundPrompt(chromaHex)
         val backgroundPrompt = buildBackgroundPrompt()
 
         status("GPT生成前景...")
-        val rawForeground = gptEditImage(sourceIcon, foregroundPrompt, "opaque")
+        var usedChromaForeground = false
+        val rawForeground = try {
+            val transparentForeground = gptEditImage(sourceIcon, transparentForegroundPrompt, "transparent")
+            if (hasRealAlpha(transparentForeground)) {
+                transparentForeground
+            } else {
+                usedChromaForeground = true
+                status("GPT未返回透明前景，改用纯色抠底兜底")
+                gptEditImage(sourceIcon, chromaForegroundPrompt, "opaque")
+            }
+        } catch (error: Exception) {
+            usedChromaForeground = true
+            status("GPT透明前景失败，改用纯色抠底兜底: ${error.message ?: error.javaClass.simpleName}")
+            gptEditImage(sourceIcon, chromaForegroundPrompt, "opaque")
+        }
         status("GPT生成背景...")
         val rawBackground = gptEditImage(sourceIcon, backgroundPrompt, "opaque")
 
@@ -4241,7 +6735,7 @@ class MainActivity : ComponentActivity() {
             hasRealAlpha(rawForeground) -> {
                 Bitmap.createScaledBitmap(rawForeground, SIZE_1X1, SIZE_1X1, true)
             }
-            else -> {
+            usedChromaForeground -> {
                 val keyed = removeChromaKeyBackground(rawForeground, chromaKey)
                 if (alphaCoverage(keyed) in 0.002..0.95) {
                     Bitmap.createScaledBitmap(keyed, SIZE_1X1, SIZE_1X1, true)
@@ -4249,6 +6743,7 @@ class MainActivity : ComponentActivity() {
                     localRecfg
                 }
             }
+            else -> localRecfg
         }
         return IconLayers(recfg, recbg)
     }
@@ -4493,6 +6988,81 @@ class MainActivity : ComponentActivity() {
         return bitmap ?: error("GPT返回的图片无法解码")
     }
 
+    private fun loadCustomImageBitmap(uri: Uri): Bitmap {
+        val mime = contentResolver.getType(uri).orEmpty().lowercase(Locale.US)
+        val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: error("无法打开图片")
+        val bitmap = if (mime.contains("svg") || looksLikeSvg(bytes)) {
+            decodeSvgBitmap(bytes)
+        } else {
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                ?: error("图片无法解码；请选择 PNG 或 SVG")
+        }
+        return fitBitmapOnTransparentCanvas(bitmap, SIZE_1X1, SIZE_1X1)
+    }
+
+    private fun looksLikeSvg(bytes: ByteArray): Boolean {
+        val prefix = String(bytes, 0, minOf(bytes.size, 256), Charsets.UTF_8).trimStart()
+        return prefix.startsWith("<svg", ignoreCase = true) ||
+            prefix.startsWith("<?xml", ignoreCase = true) && "<svg" in prefix.lowercase(Locale.US)
+    }
+
+    private fun decodeSvgBitmap(bytes: ByteArray): Bitmap {
+        val svg = SVG.getFromInputStream(bytes.inputStream())
+        val width = svg.documentWidth.takeIf { it > 0f } ?: SIZE_1X1.toFloat()
+        val height = svg.documentHeight.takeIf { it > 0f } ?: SIZE_1X1.toFloat()
+        svg.setDocumentWidth(width)
+        svg.setDocumentHeight(height)
+        val bitmap = Bitmap.createBitmap(width.roundToInt().coerceAtLeast(1), height.roundToInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(AndroidColor.TRANSPARENT)
+        svg.renderToCanvas(canvas)
+        return bitmap
+    }
+
+    private fun fitBitmapOnTransparentCanvas(source: Bitmap, width: Int, height: Int): Bitmap {
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        canvas.drawColor(AndroidColor.TRANSPARENT)
+        val scale = minOf(
+            width.toFloat() / source.width.toFloat(),
+            height.toFloat() / source.height.toFloat(),
+        )
+        val targetWidth = (source.width * scale).roundToInt().coerceAtLeast(1)
+        val targetHeight = (source.height * scale).roundToInt().coerceAtLeast(1)
+        val resized = Bitmap.createScaledBitmap(source, targetWidth, targetHeight, true)
+        canvas.drawBitmap(resized, (width - targetWidth) / 2f, (height - targetHeight) / 2f, null)
+        return out
+    }
+
+    private fun customCandidateForPreview(
+        mode: PreviewMode,
+        kind: CustomImageKind,
+        session: GenerationSession,
+    ): IconCandidate? {
+        val foreground = session.customForegrounds[mode]
+        val background = session.customBackgrounds[mode]
+        val transparent = solidBitmap(SIZE_1X1, SIZE_1X1, AndroidColor.TRANSPARENT)
+        return when (kind) {
+            CustomImageKind.Foreground -> foreground?.let {
+                IconCandidate(
+                    recfgRaw = it,
+                    recbg = background ?: session.baseRecbg,
+                    monochromeRaw = it,
+                    preserveGeometry = true,
+                )
+            }
+            CustomImageKind.Background -> background?.let {
+                IconCandidate(
+                    recfgRaw = foreground ?: transparent,
+                    recbg = it,
+                    monochromeRaw = foreground,
+                    preserveGeometry = true,
+                )
+            }
+        }
+    }
+
     private fun bitmapToDataUrl(bitmap: Bitmap): String =
         "data:image/png;base64,${Base64.encodeToString(bitmapToPngBytes(bitmap), Base64.NO_WRAP)}"
 
@@ -4526,7 +7096,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun buildForegroundPrompt(chromaHex: String): String =
+    private fun buildTransparentForegroundPrompt(): String =
+        "Keep only the app icon main subject/logo. Remove the original background. " +
+            "Return the remaining subject/logo on a transparent background. " +
+            "Do not add any new circle, glow, outline, shadow, halo, plate, or filled backdrop behind the subject. " +
+            "Scale the subject/logo so its visible bounding box is about $foregroundSubjectPercent% of the final square canvas. " +
+            "Preserve the subject shape, position, colors, face details, highlights, and internal shading."
+
+    private fun buildChromaForegroundPrompt(chromaHex: String): String =
         "Keep only the app icon main subject/logo. Remove the original background. " +
             "Scale the subject/logo so its visible bounding box is about $foregroundSubjectPercent% of the final square canvas. " +
             "Place the remaining subject on a perfectly flat solid $chromaHex chroma-key background. " +
@@ -4550,9 +7127,57 @@ class MainActivity : ComponentActivity() {
             val copy = drawable.constantState?.newDrawable()?.mutate() ?: drawable.mutate()
             copy.setBounds(0, 0, width, height)
             copy.draw(canvas)
+            if (transparent && copy is AdaptiveIconDrawable) {
+                return clearOutsideAdaptiveIconMask(bitmap, copy)
+            }
         }
         return bitmap
     }
+
+    private fun clearOutsideAdaptiveIconMask(source: Bitmap, icon: AdaptiveIconDrawable): Bitmap {
+        val width = source.width
+        val height = source.height
+        val mask = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val maskCanvas = Canvas(mask)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color = AndroidColor.WHITE
+        maskCanvas.drawPath(icon.iconMask, paint)
+
+        val sourcePixels = IntArray(width * height)
+        val maskPixels = IntArray(width * height)
+        source.getPixels(sourcePixels, 0, width, 0, 0, width, height)
+        mask.getPixels(maskPixels, 0, width, 0, 0, width, height)
+        for (i in sourcePixels.indices) {
+            val maskAlpha = AndroidColor.alpha(maskPixels[i])
+            if (maskAlpha <= 0) {
+                sourcePixels[i] = AndroidColor.TRANSPARENT
+                continue
+            }
+            if (maskAlpha < 255) {
+                val pixel = sourcePixels[i]
+                val alpha = (AndroidColor.alpha(pixel) * maskAlpha / 255.0)
+                    .toInt()
+                    .coerceIn(0, 255)
+                sourcePixels[i] = AndroidColor.argb(
+                    alpha,
+                    AndroidColor.red(pixel),
+                    AndroidColor.green(pixel),
+                    AndroidColor.blue(pixel),
+                )
+            }
+        }
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(sourcePixels, 0, width, 0, 0, width, height)
+        return out
+    }
+
+    private fun drawLocalCandidateSourceIcon(icon: Drawable, width: Int, height: Int): Bitmap =
+        drawDrawable(
+            drawable = icon,
+            width = width,
+            height = height,
+            transparent = icon is AdaptiveIconDrawable,
+        )
 
     private fun buildLocalIconLayers(icon: Drawable): LocalIconLayers {
         val renderSize = SIZE_1X1 * LOCAL_ICON_RENDER_SCALE
@@ -4563,49 +7188,130 @@ class MainActivity : ComponentActivity() {
                 renderSize,
                 transparent = false,
             )
-            val composed = drawDrawable(icon, renderSize, renderSize, transparent = false)
+            val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
             val foreground = subtractBackground(composed, background)
             val directForeground = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
-            val recfg = resizeBitmap(
-                chooseBetterAdaptiveForeground(foreground, directForeground),
-                SIZE_1X1,
-                SIZE_1X1,
-            )
+            val recbg = resizeBitmap(background, SIZE_1X1, SIZE_1X1)
+            val foregroundSelection = chooseBetterAdaptiveForeground(foreground, directForeground, background)
             val monochrome = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 icon.monochrome?.let {
                     resizeBitmap(drawDrawable(it, renderSize, renderSize, transparent = true), SIZE_1X1, SIZE_1X1)
                 }
             } else {
                 null
-            }
+            }?.takeIf { alphaCoverage(it) >= MONOCHROME_MIN_COVERAGE }
+            val selectedForeground = resizeBitmap(
+                foregroundSelection.bitmap,
+                SIZE_1X1,
+                SIZE_1X1,
+            )
+            val recfg = removeCornerMaskResidue(selectedForeground, recbg)
+            val textSafeRecfg = removeCornerMaskResidue(
+                source = selectedForeground,
+                background = recbg,
+                removeNearWhite = false,
+            )
+            val componentCandidates = buildAdaptiveComponentCandidates(
+                background = background,
+                composed = composed,
+                directForeground = directForeground,
+                monochrome = monochrome,
+            )
             return LocalIconLayers(
                 recfg = recfg,
-                recbg = resizeBitmap(background, SIZE_1X1, SIZE_1X1),
-                monochrome = monochrome?.takeIf { alphaCoverage(it) >= MONOCHROME_MIN_COVERAGE },
+                recbg = recbg,
+                monochrome = monochrome,
+                monochromeIsNative = monochrome != null,
+                preserveGeometry = foregroundSelection.preserveGeometry,
+                textSafe = IconCandidate(
+                    recfgRaw = textSafeRecfg,
+                    recbg = recbg,
+                    monochromeRaw = monochrome,
+                    monochromeIsNative = monochrome != null,
+                    preserveGeometry = foregroundSelection.preserveGeometry,
+                ),
+                componentSubject = componentCandidates.subject,
+                componentBackground = componentCandidates.background,
             )
         }
 
+        val source = resizeBitmap(drawDrawable(icon, renderSize, renderSize, transparent = true), SIZE_1X1, SIZE_1X1)
+        val recbg = solidBitmap(SIZE_1X1, SIZE_1X1, estimatePlainIconBackground(source))
         return LocalIconLayers(
-            recfg = resizeBitmap(drawDrawable(icon, renderSize, renderSize, transparent = true), SIZE_1X1, SIZE_1X1),
-            recbg = solidBitmap(SIZE_1X1, SIZE_1X1, AndroidColor.WHITE),
+            recfg = subtractPlainIconBackground(source, recbg),
+            recbg = recbg,
             monochrome = null,
+            monochromeIsNative = false,
+            preserveGeometry = false,
+            textSafe = null,
+            componentSubject = null,
+            componentBackground = null,
         )
     }
 
-    private fun chooseBetterAdaptiveForeground(fromComposed: Bitmap, directForeground: Bitmap): Bitmap {
+    private fun buildAdaptiveComponentCandidates(
+        background: Bitmap,
+        composed: Bitmap,
+        directForeground: Bitmap,
+        monochrome: Bitmap?,
+    ): ComponentCandidates {
+        if (
+            !hasDetailedAdaptiveBackground(background) ||
+            !isUsableDirectAdaptiveForeground(
+                source = directForeground,
+                composedCoverage = alphaCoverage(subtractBackground(composed, background)),
+            )
+        ) {
+            return ComponentCandidates(subject = null, background = null)
+        }
+        val cleanBackground = estimateAdaptiveCleanBackground(background)
+        val subjectForeground = subtractPlainIconBackground(composed, cleanBackground)
+        val subjectCandidate = IconCandidate(
+            recfgRaw = resizeBitmap(subjectForeground, SIZE_1X1, SIZE_1X1),
+            recbg = resizeBitmap(cleanBackground, SIZE_1X1, SIZE_1X1),
+            monochromeRaw = null,
+            preserveGeometry = true,
+        )
+        val backgroundCandidate = IconCandidate(
+            recfgRaw = resizeBitmap(repairTransparentEdgeColors(directForeground), SIZE_1X1, SIZE_1X1),
+            recbg = resizeBitmap(background, SIZE_1X1, SIZE_1X1),
+            monochromeRaw = monochrome,
+            monochromeIsNative = monochrome != null,
+            preserveGeometry = true,
+        )
+        return ComponentCandidates(subject = subjectCandidate, background = backgroundCandidate)
+    }
+
+    private fun chooseBetterAdaptiveForeground(
+        fromComposed: Bitmap,
+        directForeground: Bitmap,
+        background: Bitmap,
+    ): AdaptiveForegroundSelection {
         val composedBounds = alphaBounds(fromComposed, LOCAL_ALPHA_VISIBLE_THRESHOLD)
         val directBounds = alphaBounds(directForeground, LOCAL_ALPHA_VISIBLE_THRESHOLD)
         if (composedBounds == null) {
-            return repairTransparentEdgeColors(directForeground)
+            return AdaptiveForegroundSelection(repairTransparentEdgeColors(directForeground), preserveGeometry = true)
         }
         if (directBounds == null) {
-            return fromComposed
+            return AdaptiveForegroundSelection(fromComposed, preserveGeometry = false)
         }
         if (adaptiveForegroundMode == AdaptiveForegroundMode.Composed) {
-            return fromComposed
+            return AdaptiveForegroundSelection(fromComposed, preserveGeometry = false)
         }
         if (adaptiveForegroundMode == AdaptiveForegroundMode.Direct) {
-            return repairTransparentEdgeColors(directForeground)
+            return AdaptiveForegroundSelection(repairTransparentEdgeColors(directForeground), preserveGeometry = true)
+        }
+        if (
+            hasDetailedAdaptiveBackground(background) &&
+            isUsableDirectAdaptiveForeground(
+                source = directForeground,
+                composedCoverage = alphaCoverage(fromComposed),
+            )
+        ) {
+            return AdaptiveForegroundSelection(repairTransparentEdgeColors(directForeground), preserveGeometry = true)
+        }
+        if (shouldPreferDirectAdaptiveForeground(fromComposed, directForeground, background)) {
+            return AdaptiveForegroundSelection(repairTransparentEdgeColors(directForeground), preserveGeometry = true)
         }
         val composedCenterOffset = centerOffsetRatio(composedBounds, fromComposed.width, fromComposed.height)
         val directCenterOffset = centerOffsetRatio(directBounds, directForeground.width, directForeground.height)
@@ -4616,16 +7322,231 @@ class MainActivity : ComponentActivity() {
                 composedCoverage = alphaCoverage(fromComposed),
             )
         ) {
-            return repairTransparentEdgeColors(directForeground)
+            return AdaptiveForegroundSelection(repairTransparentEdgeColors(directForeground), preserveGeometry = true)
         }
         if (alphaCoverage(directForeground) > ratioPercent(adaptiveDirectMaxCoveragePercent)) {
-            return fromComposed
+            return AdaptiveForegroundSelection(fromComposed, preserveGeometry = false)
         }
         return if (composedCenterOffset <= directCenterOffset + ratioPercent(adaptiveCenterEpsilonPercent)) {
-            fromComposed
+            AdaptiveForegroundSelection(fromComposed, preserveGeometry = false)
         } else {
-            repairTransparentEdgeColors(directForeground)
+            AdaptiveForegroundSelection(repairTransparentEdgeColors(directForeground), preserveGeometry = true)
         }
+    }
+
+    private fun hasDetailedAdaptiveBackground(background: Bitmap): Boolean {
+        val width = background.width
+        val height = background.height
+        if (width <= 0 || height <= 0) {
+            return false
+        }
+        val pixels = IntArray(width * height)
+        background.getPixels(pixels, 0, width, 0, 0, width, height)
+        val baseColor = medianVisibleColor(background)
+        var visible = 0
+        var detail = 0
+        for (pixel in pixels) {
+            if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                continue
+            }
+            visible++
+            if (colorDistance(pixel, baseColor) >= ADAPTIVE_BACKGROUND_DETAIL_DISTANCE) {
+                detail++
+            }
+        }
+        if (visible == 0) {
+            return false
+        }
+        val detailRatio = detail.toDouble() / visible.toDouble()
+        return detailRatio in ADAPTIVE_BACKGROUND_DETAIL_MIN_RATIO..ADAPTIVE_BACKGROUND_DETAIL_MAX_RATIO
+    }
+
+    private fun estimateAdaptiveCleanBackground(background: Bitmap): Bitmap {
+        val width = background.width
+        val height = background.height
+        if (width <= 0 || height <= 0) {
+            return background
+        }
+        val cornerSize = maxOf(4, (minOf(width, height) * ADAPTIVE_CLEAN_CORNER_RATIO + 0.5f).toInt())
+        val topLeft = medianVisibleColorInRect(background, 0, 0, cornerSize, cornerSize)
+        val topRight = medianVisibleColorInRect(background, width - cornerSize, 0, width, cornerSize)
+        val bottomLeft = medianVisibleColorInRect(background, 0, height - cornerSize, cornerSize, height)
+        val bottomRight = medianVisibleColorInRect(
+            background,
+            width - cornerSize,
+            height - cornerSize,
+            width,
+            height,
+        )
+        val colors = intArrayOf(topLeft, topRight, bottomLeft, bottomRight)
+        var maxDistance = 0.0
+        for (i in colors.indices) {
+            for (j in i + 1 until colors.size) {
+                maxDistance = maxOf(maxDistance, colorDistance(colors[i], colors[j]))
+            }
+        }
+        if (maxDistance <= ADAPTIVE_CLEAN_SOLID_DISTANCE) {
+            return solidBitmap(width, height, medianColor(colors))
+        }
+
+        val outPixels = IntArray(width * height)
+        for (y in 0 until height) {
+            val fy = if (height <= 1) 0.0 else y.toDouble() / (height - 1).toDouble()
+            for (x in 0 until width) {
+                val fx = if (width <= 1) 0.0 else x.toDouble() / (width - 1).toDouble()
+                val top = lerpColor(topLeft, topRight, fx)
+                val bottom = lerpColor(bottomLeft, bottomRight, fx)
+                outPixels[y * width + x] = lerpColor(top, bottom, fy)
+            }
+        }
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(outPixels, 0, width, 0, 0, width, height)
+        return out
+    }
+
+    private fun shouldPreferDirectAdaptiveForeground(
+        fromComposed: Bitmap,
+        directForeground: Bitmap,
+        background: Bitmap,
+    ): Boolean {
+        val directCoverage = alphaCoverage(directForeground)
+        val composedCoverage = alphaCoverage(fromComposed)
+        if (directCoverage < ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE) {
+            return false
+        }
+        if (composedCoverage >= directCoverage - ADAPTIVE_DIRECT_MIN_LOST_COVERAGE) {
+            return false
+        }
+        val directBounds = alphaBounds(directForeground, LOCAL_ALPHA_VISIBLE_THRESHOLD) ?: return false
+        if (!hasAutoCropRisk(directBounds, directForeground.width, directForeground.height)) {
+            return false
+        }
+        val backgroundColor = medianVisibleColor(background)
+        return hasLayeredAdaptiveForegroundPlate(directForeground, backgroundColor)
+    }
+
+    private fun hasLayeredAdaptiveForegroundPlate(source: Bitmap, backgroundColor: Int): Boolean {
+        val width = source.width
+        val height = source.height
+        val pixels = IntArray(width * height)
+        source.getPixels(pixels, 0, width, 0, 0, width, height)
+        var visible = 0
+        var plateLike = 0
+        var detailLike = 0
+        for (pixel in pixels) {
+            if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                continue
+            }
+            visible++
+            val saturation = saturation(pixel)
+            val luma = luma(pixel)
+            if (
+                luma >= ADAPTIVE_DIRECT_PLATE_MIN_LUMA &&
+                saturation <= ADAPTIVE_DIRECT_PLATE_MAX_SATURATION &&
+                colorDistance(pixel, backgroundColor) >= ADAPTIVE_DIRECT_PLATE_BACKGROUND_DISTANCE
+            ) {
+                plateLike++
+            } else if (colorDistance(pixel, backgroundColor) >= ADAPTIVE_DIRECT_DETAIL_BACKGROUND_DISTANCE) {
+                detailLike++
+            }
+        }
+        if (visible == 0) {
+            return false
+        }
+        val plateRatio = plateLike.toDouble() / visible.toDouble()
+        val detailRatio = detailLike.toDouble() / visible.toDouble()
+        return plateRatio >= ADAPTIVE_DIRECT_PLATE_MIN_RATIO &&
+            detailRatio >= ADAPTIVE_DIRECT_DETAIL_MIN_RATIO
+    }
+
+    private fun estimatePlainIconBackground(source: Bitmap): Int {
+        val width = source.width
+        val height = source.height
+        val pixels = IntArray(width * height)
+        source.getPixels(pixels, 0, width, 0, 0, width, height)
+        val bounds = alphaBounds(source, LOCAL_ALPHA_VISIBLE_THRESHOLD)
+        if (bounds == null) {
+            return AndroidColor.WHITE
+        }
+        val band = maxOf(2, (minOf(bounds.width(), bounds.height()) * PLAIN_ICON_EDGE_BAND_RATIO + 0.5f).toInt())
+        val reds = mutableListOf<Int>()
+        val greens = mutableListOf<Int>()
+        val blues = mutableListOf<Int>()
+        fun addColor(pixel: Int) {
+            reds += AndroidColor.red(pixel)
+            greens += AndroidColor.green(pixel)
+            blues += AndroidColor.blue(pixel)
+        }
+        for (y in bounds.top until bounds.bottom) {
+            for (x in bounds.left until bounds.right) {
+                if (!isInEdgeBand(x, y, bounds, band)) {
+                    continue
+                }
+                val pixel = pixels[y * width + x]
+                if (AndroidColor.alpha(pixel) > PLAIN_ICON_BACKGROUND_ALPHA_THRESHOLD) {
+                    addColor(pixel)
+                }
+            }
+        }
+        if (reds.size < PLAIN_ICON_MIN_BACKGROUND_SAMPLES) {
+            for (pixel in pixels) {
+                if (AndroidColor.alpha(pixel) > PLAIN_ICON_BACKGROUND_ALPHA_THRESHOLD) {
+                    addColor(pixel)
+                }
+            }
+        }
+        if (reds.isEmpty()) {
+            return AndroidColor.WHITE
+        }
+        return AndroidColor.rgb(median(reds), median(greens), median(blues))
+    }
+
+    private fun subtractPlainIconBackground(source: Bitmap, background: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val sourcePixels = IntArray(width * height)
+        val backgroundPixels = IntArray(width * height)
+        val outPixels = IntArray(width * height)
+        source.getPixels(sourcePixels, 0, width, 0, 0, width, height)
+        val bg = if (background.width == width && background.height == height) {
+            background
+        } else {
+            resizeBitmap(background, width, height)
+        }
+        bg.getPixels(backgroundPixels, 0, width, 0, 0, width, height)
+        val transparentDistance = ADAPTIVE_SUBTRACT_TRANSPARENT_DISTANCE
+        val opaqueDistance = effectiveBackgroundSeparationDistance()
+
+        for (i in sourcePixels.indices) {
+            val pixel = sourcePixels[i]
+            val sourceAlpha = AndroidColor.alpha(pixel)
+            if (sourceAlpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                outPixels[i] = AndroidColor.TRANSPARENT
+                continue
+            }
+            val distance = colorDistance(pixel, backgroundPixels[i])
+            if (distance <= transparentDistance) {
+                outPixels[i] = AndroidColor.TRANSPARENT
+                continue
+            }
+            val alpha = ((distance - transparentDistance) / (opaqueDistance - transparentDistance))
+                .coerceIn(0.0, 1.0)
+            val outAlpha = (sourceAlpha * alpha).toInt().coerceIn(0, 255)
+            outPixels[i] = if (outAlpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                AndroidColor.TRANSPARENT
+            } else {
+                AndroidColor.argb(
+                    outAlpha,
+                    AndroidColor.red(pixel),
+                    AndroidColor.green(pixel),
+                    AndroidColor.blue(pixel),
+                )
+            }
+        }
+
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(outPixels, 0, width, 0, 0, width, height)
+        return repairTransparentEdgeColors(out)
     }
 
     private fun hasAdaptiveMaskArtifact(source: Bitmap): Boolean {
@@ -4655,6 +7576,20 @@ class MainActivity : ComponentActivity() {
     private fun ratioPercent(percent: Int): Double =
         percent.coerceIn(0, 100).toDouble() / 100.0
 
+    private fun effectiveBackgroundSeparationDistance(): Double =
+        lerpDouble(LEGACY_BACKGROUND_SEPARATION_MIN, LEGACY_BACKGROUND_SEPARATION_MAX, ratioPercent(backgroundSeparationPercent))
+
+    private fun effectivePlateRemovalDistance(): Double =
+        lerpDouble(LEGACY_PLATE_REMOVAL_MIN, LEGACY_PLATE_REMOVAL_MAX, ratioPercent(plateRemovalPercent))
+
+    private fun effectiveShadowRemovalAlpha(): Int =
+        lerpDouble(LEGACY_SHADOW_REMOVAL_MIN, LEGACY_SHADOW_REMOVAL_MAX, ratioPercent(shadowRemovalPercent))
+            .toInt()
+            .coerceIn(0, 255)
+
+    private fun lerpDouble(start: Double, end: Double, ratio: Double): Double =
+        start + (end - start) * ratio.coerceIn(0.0, 1.0)
+
     private fun subtractBackground(composed: Bitmap, background: Bitmap): Bitmap {
         val width = composed.width
         val height = composed.height
@@ -4664,11 +7599,14 @@ class MainActivity : ComponentActivity() {
         composed.getPixels(composedPixels, 0, width, 0, 0, width, height)
         background.getPixels(backgroundPixels, 0, width, 0, 0, width, height)
         val transparentDistance = ADAPTIVE_SUBTRACT_TRANSPARENT_DISTANCE
-        val opaqueDistance = backgroundSeparationPercent
-            .toDouble()
-            .coerceIn(MIN_BACKGROUND_SEPARATION_PERCENT.toDouble(), MAX_BACKGROUND_SEPARATION_PERCENT.toDouble())
+        val opaqueDistance = effectiveBackgroundSeparationDistance()
 
         for (i in composedPixels.indices) {
+            val composedAlpha = AndroidColor.alpha(composedPixels[i])
+            if (composedAlpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                outPixels[i] = AndroidColor.TRANSPARENT
+                continue
+            }
             val distance = colorDistance(composedPixels[i], backgroundPixels[i])
             if (distance <= transparentDistance) {
                 outPixels[i] = AndroidColor.TRANSPARENT
@@ -4677,7 +7615,7 @@ class MainActivity : ComponentActivity() {
             val alpha = ((distance - transparentDistance) / (opaqueDistance - transparentDistance))
                 .coerceIn(0.0, 1.0)
             outPixels[i] = AndroidColor.argb(
-                (alpha * 255).toInt().coerceIn(0, 255),
+                (composedAlpha * alpha).toInt().coerceIn(0, 255),
                 AndroidColor.red(composedPixels[i]),
                 AndroidColor.green(composedPixels[i]),
                 AndroidColor.blue(composedPixels[i]),
@@ -4715,8 +7653,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun separateLocalForeground(source: Bitmap, background: Bitmap, mode: LocalSeparationMode): LocalSeparationResult {
-        if (mode == LocalSeparationMode.Original) {
-            return LocalSeparationResult(source, "原始: 不清理")
+        if (
+            mode == LocalSeparationMode.Original ||
+            mode == LocalSeparationMode.ComponentSubject ||
+            mode == LocalSeparationMode.ComponentBackground
+        ) {
+            return LocalSeparationResult(source, "${mode.label}: 不清理")
         }
 
         var current = source
@@ -4750,6 +7692,8 @@ class MainActivity : ComponentActivity() {
             LocalSeparationMode.Auto -> "自动"
             LocalSeparationMode.Original -> "原始"
             LocalSeparationMode.Plate -> "去底板"
+            LocalSeparationMode.ComponentSubject -> "组件主体"
+            LocalSeparationMode.ComponentBackground -> "组件背景"
             LocalSeparationMode.Full -> "全清理"
         }
         return LocalSeparationResult(
@@ -4767,9 +7711,7 @@ class MainActivity : ComponentActivity() {
             ?: return ForegroundCleanupResult(source, changed = false, removedRatio = 0.0, repairedRatio = 0.0)
         val edge = dominantEdgeColor(pixels, width, bounds)
         val borderCoverageThreshold = PLATE_BORDER_COVERAGE_THRESHOLD
-        val colorDistanceThreshold = plateRemovalPercent
-            .toDouble()
-            .coerceIn(MIN_PLATE_REMOVAL_PERCENT.toDouble(), MAX_PLATE_REMOVAL_PERCENT.toDouble())
+        val colorDistanceThreshold = effectivePlateRemovalDistance()
         val minRemovedRatio = PLATE_MIN_REMOVED_RATIO
         if (edge.coverage < borderCoverageThreshold) {
             return ForegroundCleanupResult(source, changed = false, removedRatio = 0.0, repairedRatio = 0.0)
@@ -4816,6 +7758,113 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun removeCornerMaskResidue(
+        source: Bitmap,
+        background: Bitmap,
+        removeNearWhite: Boolean = true,
+    ): Bitmap {
+        val width = source.width
+        val height = source.height
+        if (width <= 0 || height <= 0) {
+            return source
+        }
+
+        val pixels = IntArray(width * height)
+        val backgroundPixels = IntArray(width * height)
+        source.getPixels(pixels, 0, width, 0, 0, width, height)
+        val normalizedBackground = if (background.width == width && background.height == height) {
+            background
+        } else {
+            resizeBitmap(background, width, height)
+        }
+        normalizedBackground.getPixels(backgroundPixels, 0, width, 0, 0, width, height)
+
+        val candidate = BooleanArray(pixels.size)
+        for (i in pixels.indices) {
+            val pixel = pixels[i]
+            val alpha = AndroidColor.alpha(pixel)
+            if (alpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                continue
+            }
+            candidate[i] =
+                alpha < CORNER_MASK_OPAQUE_ALPHA ||
+                colorDistance(pixel, backgroundPixels[i]) <= CORNER_MASK_BACKGROUND_DISTANCE ||
+                (removeNearWhite && isNearWhite(pixel))
+        }
+
+        val remove = BooleanArray(pixels.size)
+        val queue = ArrayDeque<Int>()
+        fun enqueue(index: Int) {
+            if (candidate[index] && !remove[index]) {
+                remove[index] = true
+                queue.add(index)
+            }
+        }
+
+        val seed = minOf(CORNER_MASK_SEED_SIZE, width / 3, height / 3).coerceAtLeast(1)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val inCorner = (x < seed || x >= width - seed) && (y < seed || y >= height - seed)
+                val onBorder = x == 0 || y == 0 || x == width - 1 || y == height - 1
+                if (inCorner || onBorder) {
+                    enqueue(y * width + x)
+                }
+            }
+        }
+
+        while (!queue.isEmpty()) {
+            val index = queue.removeFirst()
+            val x = index % width
+            val y = index / width
+            for (dy in -1..1) {
+                for (dx in -1..1) {
+                    if (dx == 0 && dy == 0) {
+                        continue
+                    }
+                    val nx = x + dx
+                    val ny = y + dy
+                    if (nx !in 0 until width || ny !in 0 until height) {
+                        continue
+                    }
+                    if (!isInCornerMaskZone(nx, ny, width, height)) {
+                        continue
+                    }
+                    enqueue(ny * width + nx)
+                }
+            }
+        }
+
+        val removed = remove.count { it }
+        if (removed == 0) {
+            return source
+        }
+        val visible = pixels.count { AndroidColor.alpha(it) > LOCAL_ALPHA_VISIBLE_THRESHOLD }
+        if (visible == 0 || removed.toDouble() / visible.toDouble() > CORNER_MASK_MAX_REMOVED_RATIO) {
+            return source
+        }
+
+        val cleaned = pixels.copyOf()
+        for (i in cleaned.indices) {
+            if (remove[i]) {
+                cleaned[i] = AndroidColor.TRANSPARENT
+            }
+        }
+
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(cleaned, 0, width, 0, 0, width, height)
+        return repairTransparentEdgeColors(out)
+    }
+
+    private fun isNearWhite(pixel: Int): Boolean =
+        AndroidColor.red(pixel) >= CORNER_MASK_WHITE_THRESHOLD &&
+            AndroidColor.green(pixel) >= CORNER_MASK_WHITE_THRESHOLD &&
+            AndroidColor.blue(pixel) >= CORNER_MASK_WHITE_THRESHOLD
+
+    private fun isInCornerMaskZone(x: Int, y: Int, width: Int, height: Int): Boolean {
+        val zone = minOf(CORNER_MASK_ZONE_SIZE, width / 2, height / 2).coerceAtLeast(1)
+        return (x < zone || x >= width - zone) && (y < zone || y >= height - zone)
+    }
+
     private fun removeBackgroundColoredResidue(source: Bitmap, backgroundColor: Int): Bitmap {
         val width = source.width
         val height = source.height
@@ -4852,11 +7901,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun residueDistanceThreshold(): Double =
-        (plateRemovalPercent * RESIDUE_DISTANCE_SCALE)
+        (effectivePlateRemovalDistance() * RESIDUE_DISTANCE_SCALE)
             .coerceIn(RESIDUE_MIN_DISTANCE, RESIDUE_MAX_DISTANCE)
 
     private fun edgeConnectedResidueDistanceThreshold(): Double =
-        (plateRemovalPercent * RESIDUE_CONNECTED_DISTANCE_SCALE)
+        (effectivePlateRemovalDistance() * RESIDUE_CONNECTED_DISTANCE_SCALE)
             .coerceIn(RESIDUE_CONNECTED_MIN_DISTANCE, RESIDUE_CONNECTED_MAX_DISTANCE)
 
     private fun removeEdgeConnectedColorResidue(
@@ -5070,7 +8119,7 @@ class MainActivity : ComponentActivity() {
         var highY = 0.0
         val highAlpha = BooleanArray(pixels.size)
         val shadowCandidate = BooleanArray(pixels.size)
-        val alphaMax = shadowRemovalPercent.coerceIn(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT)
+        val alphaMax = effectiveShadowRemovalAlpha()
         if (alphaMax <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
             return ShadowCleanupResult(source, changed = false, removedRatio = 0.0)
         }
@@ -5399,6 +8448,26 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
+    private fun scaleBitmapAroundAlphaCenter(source: Bitmap, scale: Float): Bitmap {
+        val normalizedScale = scale.coerceIn(0.2f, 1.5f)
+        if (normalizedScale in 0.97f..1.03f) {
+            return source
+        }
+        val bounds = meaningfulAlphaBounds(source) ?: return source
+        val originalCenter = meaningfulAlphaCentroid(source)
+        val scaledWidth = (source.width * normalizedScale).toInt().coerceAtLeast(1)
+        val scaledHeight = (source.height * normalizedScale).toInt().coerceAtLeast(1)
+        val scaled = Bitmap.createScaledBitmap(source, scaledWidth, scaledHeight, true)
+        val scaledCenter = meaningfulAlphaCentroid(scaled) ?: return source
+        val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        canvas.drawColor(AndroidColor.TRANSPARENT)
+        val originalCenterX = originalCenter?.first ?: (bounds.left + bounds.width() / 2f)
+        val originalCenterY = originalCenter?.second ?: (bounds.top + bounds.height() / 2f)
+        canvas.drawBitmap(scaled, originalCenterX - scaledCenter.first, originalCenterY - scaledCenter.second, null)
+        return out
+    }
+
     private fun meaningfulAlphaBounds(source: Bitmap): Bounds? =
         alphaBounds(source, NORMALIZE_ALPHA_BOUNDS_THRESHOLD)
             ?: alphaBounds(source, LOCAL_ALPHA_VISIBLE_THRESHOLD)
@@ -5596,18 +8665,18 @@ class MainActivity : ComponentActivity() {
             } else {
                 bgColor
             }
-            recolorLocalNightEdgePixels(
-                sourcePixels = sourcePixels,
-                outPixels = outPixels,
-                width = width,
-                height = height,
-                target = nightWhiteTarget,
-            )
             val whiteRatio = whiteWeight / visibleWeight
             val darkRatio = darkWeight / visibleWeight
             val colorRatio = colorWeight / visibleWeight
+            val flatLightSubject = isFlatLightNightSubject(
+                sourcePixels = sourcePixels,
+                whiteRatio = whiteRatio,
+                darkRatio = darkRatio,
+                colorRatio = colorRatio,
+            )
             when {
-                whiteRatio >= NIGHT_COLORED_BACKGROUND_WHITE_RATIO_THRESHOLD &&
+                flatLightSubject &&
+                    whiteRatio >= NIGHT_COLORED_BACKGROUND_WHITE_RATIO_THRESHOLD &&
                     bgSaturation >= NIGHT_COLORED_BACKGROUND_MIN_SATURATION &&
                     bgLuma >= NIGHT_BACKGROUND_COLORED_LUMA_THRESHOLD &&
                     darkRatio <= NIGHT_COLORED_BACKGROUND_DARK_RATIO_MAX &&
@@ -5620,7 +8689,8 @@ class MainActivity : ComponentActivity() {
                         isNightWhiteSubjectPixel(pixel, includeSoftEdge = true)
                     }
                 }
-                whiteRatio >= NIGHT_WHITE_RATIO_THRESHOLD &&
+                flatLightSubject &&
+                    whiteRatio >= NIGHT_WHITE_RATIO_THRESHOLD &&
                     colorRatio <= NIGHT_COLOR_RATIO_MAX -> {
                     recolorNightPixels(
                         sourcePixels = sourcePixels,
@@ -5642,6 +8712,15 @@ class MainActivity : ComponentActivity() {
                         AndroidColor.alpha(pixel) > NIGHT_VISIBLE_ALPHA_THRESHOLD
                     }
                 }
+            }
+            if (flatLightSubject) {
+                recolorLocalNightEdgePixels(
+                    sourcePixels = sourcePixels,
+                    outPixels = outPixels,
+                    width = width,
+                    height = height,
+                    target = nightWhiteTarget,
+                )
             }
         }
 
@@ -5679,6 +8758,73 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun isFlatLightNightSubject(
+        sourcePixels: IntArray,
+        whiteRatio: Double,
+        darkRatio: Double,
+        colorRatio: Double,
+    ): Boolean {
+        if (
+            darkRatio > NIGHT_FLAT_LIGHT_DARK_RATIO_MAX ||
+            colorRatio > NIGHT_FLAT_LIGHT_COLOR_RATIO_MAX
+        ) {
+            return false
+        }
+
+        var strongWeight = 0.0
+        var lightWeight = 0.0
+        var veryLightWeight = 0.0
+        var saturatedWeight = 0.0
+        val lumas = mutableListOf<Int>()
+
+        for (pixel in sourcePixels) {
+            val alpha = AndroidColor.alpha(pixel)
+            if (alpha <= NIGHT_FLAT_LIGHT_ALPHA_THRESHOLD) {
+                continue
+            }
+            val weight = alpha / 255.0
+            val pixelLuma = luma(pixel)
+            val pixelSaturation = saturation(pixel)
+            strongWeight += weight
+            lumas += pixelLuma
+            if (
+                pixelLuma >= NIGHT_FLAT_LIGHT_LUMA_THRESHOLD &&
+                pixelSaturation <= NIGHT_FLAT_LIGHT_MAX_SATURATION
+            ) {
+                lightWeight += weight
+            }
+            if (
+                pixelLuma >= NIGHT_WHITE_LUMA_THRESHOLD &&
+                pixelSaturation <= NIGHT_WHITE_MAX_SATURATION
+            ) {
+                veryLightWeight += weight
+            }
+            if (pixelSaturation >= NIGHT_FLAT_LIGHT_SATURATED_THRESHOLD) {
+                saturatedWeight += weight
+            }
+        }
+
+        if (strongWeight <= 0.0 || lumas.size < NIGHT_FLAT_LIGHT_MIN_PIXELS) {
+            return false
+        }
+
+        val lightRatio = lightWeight / strongWeight
+        val veryLightRatio = veryLightWeight / strongWeight
+        val saturatedRatio = saturatedWeight / strongWeight
+        val lumaRange = percentile(lumas, 0.90) - percentile(lumas, 0.10)
+        val dominantWhiteMark =
+            whiteRatio >= NIGHT_WHITE_RATIO_THRESHOLD &&
+                lightRatio >= NIGHT_FLAT_LIGHT_RATIO_MIN &&
+                veryLightRatio >= NIGHT_FLAT_VERY_LIGHT_RATIO_MIN
+        val solidPaleMark =
+            lightRatio >= NIGHT_FLAT_PALE_RATIO_MIN &&
+                veryLightRatio >= NIGHT_FLAT_PALE_VERY_LIGHT_RATIO_MIN &&
+                lumaRange <= NIGHT_FLAT_LIGHT_LUMA_RANGE_MAX
+
+        return saturatedRatio <= NIGHT_FLAT_LIGHT_SATURATED_RATIO_MAX &&
+            (dominantWhiteMark || solidPaleMark)
     }
 
     private fun hasNearbyColoredOrTransparentContrast(
@@ -6093,6 +9239,55 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
+    private fun cleanNativeMonochrome(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val sourcePixels = IntArray(width * height)
+        val outPixels = IntArray(sourcePixels.size)
+        source.getPixels(sourcePixels, 0, width, 0, 0, width, height)
+        for (i in sourcePixels.indices) {
+            val alpha = AndroidColor.alpha(sourcePixels[i])
+            outPixels[i] = if (alpha <= MONO_EDGE_ALPHA_DROP_THRESHOLD) {
+                AndroidColor.TRANSPARENT
+            } else {
+                (alpha.coerceIn(0, MONO_ALPHA_MAX) shl 24) or 0x00ffffff
+            }
+        }
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(outPixels, 0, width, 0, 0, width, height)
+        return out
+    }
+
+    private fun sharpenMonochromeAlpha(source: Bitmap, nativeSource: Boolean = false): Bitmap {
+        val width = source.width
+        val height = source.height
+        val pixels = IntArray(width * height)
+        val outPixels = IntArray(width * height)
+        source.getPixels(pixels, 0, width, 0, 0, width, height)
+        val lowCut = if (nativeSource) MONO_NATIVE_EDGE_LOW_CUT else MONO_EDGE_SHARPEN_LOW_CUT
+        val highCut = if (nativeSource) MONO_NATIVE_EDGE_HIGH_CUT else MONO_EDGE_SHARPEN_HIGH_CUT
+        for (i in pixels.indices) {
+            val alpha = AndroidColor.alpha(pixels[i])
+            val outAlpha = when {
+                alpha <= lowCut -> 0
+                alpha >= highCut -> alpha.coerceAtMost(MONO_ALPHA_MAX)
+                else -> {
+                    val t = (alpha - lowCut).toDouble() / (highCut - lowCut).toDouble()
+                    val eased = t * t * (3.0 - 2.0 * t)
+                    (eased * MONO_ALPHA_MAX).toInt().coerceIn(0, MONO_ALPHA_MAX)
+                }
+            }
+            outPixels[i] = if (outAlpha <= 0) {
+                AndroidColor.TRANSPARENT
+            } else {
+                (outAlpha shl 24) or 0x00ffffff
+            }
+        }
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(outPixels, 0, width, 0, 0, width, height)
+        return out
+    }
+
     private fun trimMonochromeEdge(source: Bitmap): Bitmap {
         val width = source.width
         val height = source.height
@@ -6181,14 +9376,177 @@ class MainActivity : ComponentActivity() {
 
         val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         out.setPixels(outPixels, 0, width, 0, 0, width, height)
-        return smoothAlphaEdges(
-            featherVisibleEdges(out, MONO_EDGE_FEATHER_BLEND),
-            MONO_EDGE_SMOOTH_STRENGTH,
-            growTransparentEdges = true,
-            radius = MONO_EDGE_SMOOTH_RADIUS,
-            growStrength = MONO_EDGE_GROW_STRENGTH,
-        )
+        return polishMonochromeEdges(sharpenMonochromeAlpha(out))
     }
+
+    private fun polishForegroundEdges(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        if (width <= 2 || height <= 2) {
+            return source
+        }
+        val pixels = IntArray(width * height)
+        val outPixels = IntArray(width * height)
+        source.getPixels(pixels, 0, width, 0, 0, width, height)
+        val repairedPixels = repairTransparentEdgeColors(pixels, width, height)
+
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val index = y * width + x
+                val pixel = repairedPixels[index]
+                val alpha = AndroidColor.alpha(pixel)
+                if (alpha <= 0) {
+                    outPixels[index] = AndroidColor.TRANSPARENT
+                    continue
+                }
+                val edge = hasTransparentNeighbor(pixels, width, height, x, y, FOREGROUND_EDGE_POLISH_RADIUS)
+                if (!edge) {
+                    outPixels[index] = pixel
+                    continue
+                }
+                val coverage = visibleNeighborCoverage(
+                    pixels = pixels,
+                    width = width,
+                    height = height,
+                    x = x,
+                    y = y,
+                    radius = FOREGROUND_EDGE_POLISH_RADIUS,
+                    threshold = LOCAL_ALPHA_VISIBLE_THRESHOLD,
+                )
+                val targetAlpha = (coverage * 255.0).toInt().coerceIn(0, 255)
+                val strength = foregroundEdgePolishStrength()
+                val smoothedAlpha = (alpha * (1.0 - strength) + targetAlpha * strength)
+                    .toInt()
+                    .coerceIn(0, 255)
+                outPixels[index] = if (smoothedAlpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                    AndroidColor.TRANSPARENT
+                } else {
+                    AndroidColor.argb(
+                        smoothedAlpha,
+                        AndroidColor.red(pixel),
+                        AndroidColor.green(pixel),
+                        AndroidColor.blue(pixel),
+                    )
+                }
+            }
+        }
+
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(outPixels, 0, width, 0, 0, width, height)
+        return out
+    }
+
+    private fun polishMonochromeEdges(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        if (width <= 2 || height <= 2) {
+            return source
+        }
+        val pixels = IntArray(width * height)
+        val outPixels = IntArray(width * height)
+        source.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val index = y * width + x
+                val alpha = AndroidColor.alpha(pixels[index])
+                if (alpha <= 0) {
+                    outPixels[index] = AndroidColor.TRANSPARENT
+                    continue
+                }
+                val edge = hasTransparentNeighbor(pixels, width, height, x, y, MONO_EDGE_POLISH_RADIUS)
+                if (!edge) {
+                    outPixels[index] = (alpha.coerceAtMost(MONO_ALPHA_MAX) shl 24) or 0x00ffffff
+                    continue
+                }
+                val coverage = visibleNeighborCoverage(
+                    pixels = pixels,
+                    width = width,
+                    height = height,
+                    x = x,
+                    y = y,
+                    radius = MONO_EDGE_POLISH_RADIUS,
+                    threshold = MONO_EDGE_ALPHA_DROP_THRESHOLD,
+                )
+                val targetAlpha = (coverage * MONO_ALPHA_MAX).toInt().coerceIn(0, MONO_ALPHA_MAX)
+                val strength = monochromeEdgePolishStrength()
+                val smoothedAlpha = (alpha * (1.0 - strength) + targetAlpha * strength)
+                    .toInt()
+                    .coerceIn(0, MONO_ALPHA_MAX)
+                outPixels[index] = if (smoothedAlpha <= MONO_EDGE_ALPHA_DROP_THRESHOLD) {
+                    AndroidColor.TRANSPARENT
+                } else {
+                    (smoothedAlpha shl 24) or 0x00ffffff
+                }
+            }
+        }
+
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(outPixels, 0, width, 0, 0, width, height)
+        return out
+    }
+
+    private fun hasTransparentNeighbor(
+        pixels: IntArray,
+        width: Int,
+        height: Int,
+        x: Int,
+        y: Int,
+        radius: Int,
+    ): Boolean {
+        for (dy in -radius..radius) {
+            for (dx in -radius..radius) {
+                if (dx == 0 && dy == 0) {
+                    continue
+                }
+                val nx = x + dx
+                val ny = y + dy
+                if (nx !in 0 until width || ny !in 0 until height) {
+                    return true
+                }
+                if (AndroidColor.alpha(pixels[ny * width + nx]) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    private fun visibleNeighborCoverage(
+        pixels: IntArray,
+        width: Int,
+        height: Int,
+        x: Int,
+        y: Int,
+        radius: Int,
+        threshold: Int,
+    ): Double {
+        var total = 0
+        var visible = 0.0
+        for (dy in -radius..radius) {
+            for (dx in -radius..radius) {
+                val nx = x + dx
+                val ny = y + dy
+                total += 1
+                if (nx !in 0 until width || ny !in 0 until height) {
+                    continue
+                }
+                val alpha = AndroidColor.alpha(pixels[ny * width + nx])
+                if (alpha > threshold) {
+                    visible += alpha.toDouble() / 255.0
+                }
+            }
+        }
+        return if (total == 0) 0.0 else (visible / total.toDouble()).coerceIn(0.0, 1.0)
+    }
+
+    private fun foregroundEdgePolishStrength(): Double =
+        EDGE_POLISH_FOREGROUND_MIN_STRENGTH +
+            ratioPercent(edgePolishPercent) * (EDGE_POLISH_FOREGROUND_MAX_STRENGTH - EDGE_POLISH_FOREGROUND_MIN_STRENGTH)
+
+    private fun monochromeEdgePolishStrength(): Double =
+        EDGE_POLISH_MONO_MIN_STRENGTH +
+            ratioPercent(edgePolishPercent) * (EDGE_POLISH_MONO_MAX_STRENGTH - EDGE_POLISH_MONO_MIN_STRENGTH)
 
     private fun percentile(values: MutableList<Int>, ratio: Double): Int {
         if (values.isEmpty()) {
@@ -6393,14 +9751,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun installWithRoot(packageDir: File, packageName: String) {
+    private fun installWithRoot(packageDir: File, packageName: String, mode: RootWriteMode) {
         val target = "$ROOT_UXICONS_DIR/$packageName"
         val source = packageDir.absolutePath
+        val copyCommand = when (mode) {
+            RootWriteMode.All -> """
+                find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' -exec cp -f {} ${shQuote(target)}/ \;
+            """.trimIndent()
+            RootWriteMode.DefaultOnly -> """
+                find ${shQuote(target)} -maxdepth 1 -type f -name 'monochrome*.png' -delete
+                find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' ! -name 'monochrome*.png' -exec cp -f {} ${shQuote(target)}/ \;
+            """.trimIndent()
+            RootWriteMode.MonochromeOnly -> """
+                find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome*.png' -exec cp -f {} ${shQuote(target)}/ \;
+            """.trimIndent()
+        }
         val command = """
             set -e
             mkdir -p ${shQuote(target)}
-            cp -f ${shQuote(source)}/*.png ${shQuote(target)}/
-            chmod 0644 ${shQuote(target)}/*.png
+            $copyCommand
+            find ${shQuote(target)} -maxdepth 1 -type f -name '*.png' -exec chmod 0644 {} +
             restorecon -RF ${shQuote(target)} 2>/dev/null || true
         """.trimIndent()
         val process = ProcessBuilder("su", "-c", command)
@@ -6465,13 +9835,16 @@ class MainActivity : ComponentActivity() {
             .put("busy", isBusy)
             .put("status", statusText)
             .put("foreground_subject_percent", foregroundSubjectPercent)
+            .put("monochrome_theme_scale", (monochromeThemeScale * 100).roundToInt())
             .put("background_separation_percent", backgroundSeparationPercent)
             .put("plate_removal_percent", plateRemovalPercent)
             .put("shadow_removal_percent", shadowRemovalPercent)
+            .put("edge_polish_percent", edgePolishPercent)
             .put("rmbg_model_installed", findRmbgComponent() != null)
             .put("rmbg_component_installed", findRmbgComponent() != null)
             .put("rmbg_component_abi", findRmbgComponent()?.abi ?: "")
             .put("rmbg_model_name", RMBG_MODEL_NAME)
+            .put("rmbg_input_size", rmbgInputSize)
             .put("adaptive_foreground_mode", adaptiveForegroundMode.value)
             .put("adaptive_foreground_modes", JSONArray().also { array ->
                 AdaptiveForegroundMode.entries.forEach { mode ->
@@ -6493,9 +9866,15 @@ class MainActivity : ComponentActivity() {
                 "ranges",
                 JSONObject()
                     .put("foreground_subject_percent", intRangeJson(MIN_FOREGROUND_SUBJECT_PERCENT, MAX_FOREGROUND_SUBJECT_PERCENT))
+                    .put(
+                        "monochrome_theme_scale",
+                        intRangeJson(MIN_MONOCHROME_THEME_SCALE_PERCENT, MAX_MONOCHROME_THEME_SCALE_PERCENT),
+                    )
                     .put("background_separation_percent", intRangeJson(MIN_BACKGROUND_SEPARATION_PERCENT, MAX_BACKGROUND_SEPARATION_PERCENT))
                     .put("plate_removal_percent", intRangeJson(MIN_PLATE_REMOVAL_PERCENT, MAX_PLATE_REMOVAL_PERCENT))
                     .put("shadow_removal_percent", intRangeJson(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT))
+                    .put("edge_polish_percent", intRangeJson(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT))
+                    .put("rmbg_input_size", intRangeJson(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE))
                     .put(
                         "adaptive_direct_max_coverage_percent",
                         intRangeJson(MIN_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, MAX_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT),
@@ -6538,6 +9917,14 @@ class MainActivity : ComponentActivity() {
             params["foreground_subject_percent"]?.toIntOrNull()?.let {
                 foregroundSubjectPercent = it.coerceIn(MIN_FOREGROUND_SUBJECT_PERCENT, MAX_FOREGROUND_SUBJECT_PERCENT)
             }
+            params["monochrome_theme_scale"]?.toFloatOrNull()?.let {
+                val percent = if (it <= 2f) (it * 100f).roundToInt() else it.roundToInt()
+                monochromeThemeScale = (percent.coerceIn(
+                    MIN_MONOCHROME_THEME_SCALE_PERCENT,
+                    MAX_MONOCHROME_THEME_SCALE_PERCENT,
+                ).toFloat() / 100f).coerceIn(MIN_MONOCHROME_THEME_SCALE, MAX_MONOCHROME_THEME_SCALE)
+                draftMonochromeThemeScaleText = (monochromeThemeScale * 100).roundToInt().toString()
+            }
             params["background_separation_percent"]?.toIntOrNull()?.let {
                 backgroundSeparationPercent = it.coerceIn(MIN_BACKGROUND_SEPARATION_PERCENT, MAX_BACKGROUND_SEPARATION_PERCENT)
                 draftBackgroundSeparationText = backgroundSeparationPercent.toString()
@@ -6549,6 +9936,17 @@ class MainActivity : ComponentActivity() {
             params["shadow_removal_percent"]?.toIntOrNull()?.let {
                 shadowRemovalPercent = it.coerceIn(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT)
                 draftShadowRemovalText = shadowRemovalPercent.toString()
+            }
+            params["edge_polish_percent"]?.toIntOrNull()?.let {
+                edgePolishPercent = it.coerceIn(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT)
+                draftEdgePolishText = edgePolishPercent.toString()
+            }
+            params["rmbg_input_size"]?.toIntOrNull()?.let {
+                rmbgInputSize = it.coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
+                draftRmbgInputSizeText = rmbgInputSize.toString()
+                saveRmbgSettings()
+                runCatching { rmbgRuntime?.close() }
+                rmbgRuntime = null
             }
             params["adaptive_foreground_mode"]?.let {
                 adaptiveForegroundMode = AdaptiveForegroundMode.fromValue(it)
@@ -6638,7 +10036,7 @@ class MainActivity : ComponentActivity() {
         </main>
         <script>
         const numericKeys = [
-          'foreground_subject_percent','background_separation_percent','plate_removal_percent','shadow_removal_percent',
+          'foreground_subject_percent','background_separation_percent','plate_removal_percent','shadow_removal_percent','edge_polish_percent','rmbg_input_size',
           'adaptive_direct_max_coverage_percent','adaptive_direct_max_coverage_increase_percent',
           'adaptive_mask_edge_coverage_percent','adaptive_mask_min_coverage_percent','adaptive_center_epsilon_percent'
         ];
@@ -7070,13 +10468,30 @@ class MainActivity : ComponentActivity() {
         val recfg: Bitmap,
         val recbg: Bitmap,
         val monochrome: Bitmap?,
+        val monochromeIsNative: Boolean,
+        val preserveGeometry: Boolean,
+        val textSafe: IconCandidate?,
+        val componentSubject: IconCandidate?,
+        val componentBackground: IconCandidate?,
+    )
+
+    private data class AdaptiveForegroundSelection(
+        val bitmap: Bitmap,
+        val preserveGeometry: Boolean,
+    )
+
+    private data class ComponentCandidates(
+        val subject: IconCandidate?,
+        val background: IconCandidate?,
     )
 
     private data class IconCandidate(
         val recfgRaw: Bitmap,
         val recbg: Bitmap,
         val monochromeRaw: Bitmap?,
+        val monochromeIsNative: Boolean = false,
         val preserveGeometry: Boolean = false,
+        val customFinalBitmap: Bitmap? = null,
     )
 
     private data class GenerationSession(
@@ -7087,6 +10502,8 @@ class MainActivity : ComponentActivity() {
         val baseRecbg: Bitmap,
         val monochromeRaw: Bitmap?,
         val candidates: Map<PreviewChoice, IconCandidate>,
+        val customForegrounds: Map<PreviewMode, Bitmap> = emptyMap(),
+        val customBackgrounds: Map<PreviewMode, Bitmap> = emptyMap(),
         val autoLocalChoice: PreviewChoice,
     )
 
@@ -7155,6 +10572,15 @@ class MainActivity : ComponentActivity() {
             }
     }
 
+    private fun PreviewAssets.preparedForDraw(): PreviewAssets {
+        recbg?.prepareToDraw()
+        recfg?.prepareToDraw()
+        recNight?.prepareToDraw()
+        monochromeLight?.prepareToDraw()
+        monochromeDark?.prepareToDraw()
+        return this
+    }
+
     private enum class PreviewMode(val label: String) {
         NormalLight("正常亮色"),
         NormalDark("正常暗色"),
@@ -7162,13 +10588,30 @@ class MainActivity : ComponentActivity() {
         MonochromeDark("单色暗色"),
     }
 
-    private enum class PreviewChoice(val label: String) {
-        Original("原始"),
-        Plate("去底板"),
-        Full("全清理"),
-        TwoLayer("二层"),
-        Rmbg("RMBG"),
-        Gpt("GPT"),
+    private enum class PreviewChoice(
+        val label: String,
+        val summary: String,
+        val customKind: CustomImageKind? = null,
+    ) {
+        Original("原始", "保留原层"),
+        TextSafe("字标保全", "保护白字"),
+        Plate("去底板", "移除大底板"),
+        Full("全清理", "清理底板和阴影"),
+        ComponentSubject("底座当主体", "保留复杂底座"),
+        ComponentBackground("底座当背景", "底座作为背景"),
+        TwoLayer("二层", "底板和主体分层"),
+        Rmbg("RMBG", "模型抠图"),
+        Gpt("GPT", "GPT Image 2"),
+        CustomForeground("自定义主体", "导入主体", CustomImageKind.Foreground),
+        CustomBackground("自定义背景", "导入背景", CustomImageKind.Background);
+
+        val isCustom: Boolean
+            get() = customKind != null
+    }
+
+    private enum class CustomImageKind(val label: String) {
+        Foreground("自定义主体"),
+        Background("自定义背景"),
     }
 
     private data class PreviewSelections(
@@ -7253,7 +10696,9 @@ class MainActivity : ComponentActivity() {
         Auto("auto", "自动", "按图标特征自动选择底板清理、边缘修复或阴影清理"),
         Original("original", "原始", "完全保留系统绘制的前景层"),
         Plate("plate", "去底板", "只移除前景里接触边界的大面积伪底板"),
-        Full("full", "全清理", "移除伪底板并柔化明显拖尾的长阴影");
+        Full("full", "全清理", "移除伪底板并柔化明显拖尾的长阴影"),
+        ComponentSubject("component_subject", "底座当主体", "把 adaptive background 里的复杂底座合进主体，背景重建为纯色或渐变"),
+        ComponentBackground("component_background", "底座当背景", "保留 adaptive background 为背景，只取 foreground 当主体");
 
         companion object {
             fun fromValue(value: String?): LocalSeparationMode =
@@ -7289,16 +10734,28 @@ class MainActivity : ComponentActivity() {
         Ungenerated("未生成"),
     }
 
+    private enum class RootWriteMode(val label: String) {
+        All("全部"),
+        DefaultOnly("默认"),
+        MonochromeOnly("单色"),
+    }
+
     companion object {
         private const val PREFS_NAME = "artplus_mobile"
+        private const val PREF_GENERATED_PACKAGE_NAMES = "generated_package_names"
+        private const val PREF_GENERATED_PACKAGE_NAMES_UPDATED_AT = "generated_package_names_updated_at"
         private const val PREF_GPT_MODE = "gpt_mode"
         private const val PREF_GPT_BASE_URL = "gpt_base_url"
         private const val PREF_GPT_API_KEY = "gpt_api_key"
+        private const val PREF_RMBG_COMPONENT_URL = "rmbg_component_url"
+        private const val PREF_RMBG_INPUT_SIZE = "rmbg_input_size"
         private const val PREF_LOCAL_SEPARATION_MODE = "local_separation_mode"
         private const val PREF_FOREGROUND_SUBJECT_PERCENT = "foreground_subject_percent"
+        private const val PREF_MONOCHROME_THEME_SCALE = "monochrome_theme_scale"
         private const val PREF_BACKGROUND_SEPARATION_PERCENT = "background_separation_percent"
         private const val PREF_PLATE_REMOVAL_PERCENT = "plate_removal_percent"
         private const val PREF_SHADOW_REMOVAL_PERCENT = "shadow_removal_percent"
+        private const val PREF_EDGE_POLISH_PERCENT = "edge_polish_percent"
         private const val PREF_ADAPTIVE_FOREGROUND_MODE = "adaptive_foreground_mode"
         private const val PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT = "adaptive_direct_max_coverage_percent"
         private const val PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT = "adaptive_direct_max_coverage_increase_percent"
@@ -7313,18 +10770,22 @@ class MainActivity : ComponentActivity() {
         private const val EXTRA_DEBUG_GENERATE_USE_GPT = "dev.artplus.mobile.DEBUG_GENERATE_USE_GPT"
         private const val EXTRA_DEBUG_GENERATE_INSTALL_ROOT = "dev.artplus.mobile.DEBUG_GENERATE_INSTALL_ROOT"
         private const val EXTRA_DEBUG_GENERATE_MODE = "dev.artplus.mobile.DEBUG_GENERATE_MODE"
-        private const val CURRENT_IMAGE_TUNING_VERSION = 3
+        private const val CURRENT_IMAGE_TUNING_VERSION = 4
         private const val SIZE_1X1 = 240
         private const val SIZE_2X2 = 704
         private const val LOCAL_ICON_RENDER_SCALE = 3
         private const val GPT_SOURCE_SIZE = 1024
         private const val RMBG_COMPONENT_DIR = "rmbg_component"
         private const val RMBG_MODEL_NAME = "bria-rmbg.onnx"
-        private const val RMBG_ONNXRUNTIME_CLASSES_JAR = "onnxruntime-dex.jar"
-        private const val RMBG_ONNXRUNTIME_LIB = "libonnxruntime.so"
-        private const val RMBG_ONNXRUNTIME_JNI_LIB = "libonnxruntime4j_jni.so"
-        private const val RMBG_INPUT_SIZE = 1024
+        private const val DEFAULT_RMBG_INPUT_SIZE = 256
+        private const val MIN_RMBG_INPUT_SIZE = 128
+        private const val MAX_RMBG_INPUT_SIZE = 512
         private const val RMBG_MIN_MODEL_BYTES = 100_000_000L
+        private const val RMBG_MIN_COMPONENT_ZIP_BYTES = 100_000_000L
+        private const val RMBG_DOWNLOAD_CONNECT_TIMEOUT_MS = 30_000
+        private const val RMBG_DOWNLOAD_READ_TIMEOUT_MS = 1_800_000
+        private const val DEFAULT_RMBG_COMPONENT_URL =
+            "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model.onnx"
         private val RMBG_NORMALIZE_MEAN = floatArrayOf(0.485f, 0.456f, 0.406f)
         private val RMBG_NORMALIZE_STD = floatArrayOf(0.229f, 0.224f, 0.225f)
         private const val LEGACY_DEFAULT_GPT_BASE_URL = "http://192.168.31.179:3002/v1"
@@ -7339,20 +10800,29 @@ class MainActivity : ComponentActivity() {
         private const val DEBUG_HTTP_READ_TIMEOUT_MS = 4_000
         private const val DEBUG_HTTP_MAX_HEADER_BYTES = 16 * 1024
         private const val DEBUG_HTTP_MAX_BODY_BYTES = 64 * 1024
+        private const val PREVIEW_LIVE_ASSET_DEBOUNCE_MS = 70L
+        private const val PREVIEW_OUTPUT_DEBOUNCE_MS = 140L
+        private const val PREVIEW_REBUILD_DEBOUNCE_MS = 180L
+        private const val CHOICE_ROW_HORIZONTAL_BLEED_DP = 16
         private const val ICON_CACHE_SIZE = 96
         private const val PRELOAD_ICON_COUNT = 64
         private const val ROOT_UXICONS_DIR = "/data/oplus/uxicons"
         private const val ROOT_SCAN_TIMEOUT_MS = 8_000L
+        private const val ARTPLUS_ICON_REFRESH_TIMEOUT_MS = 12_000L
+        private const val COLOROS_UX_ICON_CONFIG_KEY = "key_ux_icon_config"
+        private const val COLOROS_DEFAULT_ICON_THEME = 2
+        private const val COLOROS_INSPIRATION_ICON_THEME = 3
+        private const val COLOROS_ARTPLUS_ON = 1
+        private const val COLOROS_UXICON_THEME_SHIFT = 4
+        private const val COLOROS_UXICON_ARTPLUS_SHIFT = 8
+        private const val COLOROS_UXICON_THEME_MASK = 0x0fL shl COLOROS_UXICON_THEME_SHIFT
+        private const val COLOROS_UXICON_ARTPLUS_MASK = 0x07L shl COLOROS_UXICON_ARTPLUS_SHIFT
+        private const val FALLBACK_ARTPLUS_INSPIRATION_UXICON_CONFIG = 2314313028685793584L
         private const val BACK_GESTURE_EDGE_WIDTH_DP = 88
         private const val BACK_GESTURE_COMMIT_DISTANCE_DP = 96
         private const val BACK_GESTURE_COMMIT_PROGRESS = 0.28f
         private const val BACK_GESTURE_PROGRESS_DISTANCE_RATIO = 1.0f
         private const val BACK_GESTURE_PAGE_TRANSLATION_RATIO = 1.0f
-        private const val BACK_GESTURE_PAGE_ALPHA_DROP = 0.08f
-        private const val BACK_GESTURE_PAGE_SCALE_DROP = 0.035f
-        private const val BACK_GESTURE_PAGE_CORNER_DP = 28
-        private const val BACK_GESTURE_HOME_REST_SCALE = 0.985f
-        private const val BACK_GESTURE_HOME_REST_ALPHA = 0.90f
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
         ) {
@@ -7375,6 +10845,19 @@ class MainActivity : ComponentActivity() {
         private const val NIGHT_COLORED_BACKGROUND_MIN_SATURATION = 0.18
         private const val NIGHT_COLORED_BACKGROUND_DARK_RATIO_MAX = 0.22
         private const val NIGHT_COLORED_BACKGROUND_COLOR_RATIO_MAX = 0.24
+        private const val NIGHT_FLAT_LIGHT_ALPHA_THRESHOLD = 96
+        private const val NIGHT_FLAT_LIGHT_MIN_PIXELS = 48
+        private const val NIGHT_FLAT_LIGHT_LUMA_THRESHOLD = 220
+        private const val NIGHT_FLAT_LIGHT_MAX_SATURATION = 0.16
+        private const val NIGHT_FLAT_LIGHT_DARK_RATIO_MAX = 0.10
+        private const val NIGHT_FLAT_LIGHT_COLOR_RATIO_MAX = 0.10
+        private const val NIGHT_FLAT_LIGHT_RATIO_MIN = 0.72
+        private const val NIGHT_FLAT_VERY_LIGHT_RATIO_MIN = 0.36
+        private const val NIGHT_FLAT_PALE_RATIO_MIN = 0.88
+        private const val NIGHT_FLAT_PALE_VERY_LIGHT_RATIO_MIN = 0.22
+        private const val NIGHT_FLAT_LIGHT_SATURATED_THRESHOLD = 0.20
+        private const val NIGHT_FLAT_LIGHT_SATURATED_RATIO_MAX = 0.08
+        private const val NIGHT_FLAT_LIGHT_LUMA_RANGE_MAX = 36
         private const val NIGHT_BACKGROUND_DARK_LUMA_THRESHOLD = 76
         private const val NIGHT_BACKGROUND_COLORED_LUMA_THRESHOLD = 72
         private const val NIGHT_BACKGROUND_LIGHT_LUMA_THRESHOLD = 210
@@ -7395,6 +10878,11 @@ class MainActivity : ComponentActivity() {
         private const val MONO_ALPHA_MAX = 230
         private const val MONO_ALPHA_GAMMA = 0.85
         private const val MONO_LIGHT_PREVIEW_SCALE = 0.90
+        private const val DEFAULT_MONOCHROME_THEME_SCALE = 0.80f
+        private const val MIN_MONOCHROME_THEME_SCALE = 0.20f
+        private const val MAX_MONOCHROME_THEME_SCALE = 1.50f
+        private const val MIN_MONOCHROME_THEME_SCALE_PERCENT = 20
+        private const val MAX_MONOCHROME_THEME_SCALE_PERCENT = 150
         private const val MONO_EDGE_ALPHA_DROP_THRESHOLD = 12
         private const val MONO_EDGE_ALPHA_IGNORE_THRESHOLD = 32
         private const val MONO_EDGE_ALPHA_REPAIR_THRESHOLD = 96
@@ -7402,23 +10890,37 @@ class MainActivity : ComponentActivity() {
         private const val MONO_TONAL_MIN_VISIBLE_PIXELS = 64
         private const val MONO_TONAL_RANGE_THRESHOLD = 12
         private const val MONO_EDGE_TRIM_FEATHER_SCALE = 0.26
+        private const val MONO_NATIVE_EDGE_LOW_CUT = 6
+        private const val MONO_NATIVE_EDGE_HIGH_CUT = 44
+        private const val MONO_EDGE_SHARPEN_LOW_CUT = 18
+        private const val MONO_EDGE_SHARPEN_HIGH_CUT = 96
         private const val MONO_EDGE_FEATHER_BLEND = 0.58
         private const val MONO_EDGE_SMOOTH_STRENGTH = 0.68
         private const val MONO_EDGE_SMOOTH_RADIUS = 2
         private const val MONO_EDGE_GROW_STRENGTH = 0.42
-        private const val MIN_FOREGROUND_SUBJECT_PERCENT = 5
-        private const val MAX_FOREGROUND_SUBJECT_PERCENT = 250
+        private const val MONO_EDGE_POLISH_RADIUS = 1
+        private const val MIN_FOREGROUND_SUBJECT_PERCENT = 20
+        private const val MAX_FOREGROUND_SUBJECT_PERCENT = 150
         private const val DEFAULT_FOREGROUND_SUBJECT_PERCENT = 100
         private const val LEGACY_FOREGROUND_SUBJECT_PERCENT = 70
-        private const val DEFAULT_BACKGROUND_SEPARATION_PERCENT = 96
-        private const val MIN_BACKGROUND_SEPARATION_PERCENT = 12
-        private const val MAX_BACKGROUND_SEPARATION_PERCENT = 420
+        private const val DEFAULT_BACKGROUND_SEPARATION_PERCENT = 60
+        private const val MIN_BACKGROUND_SEPARATION_PERCENT = 1
+        private const val MAX_BACKGROUND_SEPARATION_PERCENT = 100
         private const val DEFAULT_PLATE_REMOVAL_PERCENT = 58
-        private const val MIN_PLATE_REMOVAL_PERCENT = 0
-        private const val MAX_PLATE_REMOVAL_PERCENT = 420
-        private const val DEFAULT_SHADOW_REMOVAL_PERCENT = 96
-        private const val MIN_SHADOW_REMOVAL_PERCENT = 0
-        private const val MAX_SHADOW_REMOVAL_PERCENT = 255
+        private const val MIN_PLATE_REMOVAL_PERCENT = 1
+        private const val MAX_PLATE_REMOVAL_PERCENT = 100
+        private const val DEFAULT_SHADOW_REMOVAL_PERCENT = 60
+        private const val MIN_SHADOW_REMOVAL_PERCENT = 1
+        private const val MAX_SHADOW_REMOVAL_PERCENT = 100
+        private const val DEFAULT_EDGE_POLISH_PERCENT = 60
+        private const val MIN_EDGE_POLISH_PERCENT = 1
+        private const val MAX_EDGE_POLISH_PERCENT = 100
+        private const val LEGACY_BACKGROUND_SEPARATION_MIN = 12.0
+        private const val LEGACY_BACKGROUND_SEPARATION_MAX = 420.0
+        private const val LEGACY_PLATE_REMOVAL_MIN = 0.0
+        private const val LEGACY_PLATE_REMOVAL_MAX = 420.0
+        private const val LEGACY_SHADOW_REMOVAL_MIN = 0.0
+        private const val LEGACY_SHADOW_REMOVAL_MAX = 255.0
         private const val DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT = 68
         private const val MIN_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT = 0
         private const val MAX_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT = 100
@@ -7445,6 +10947,20 @@ class MainActivity : ComponentActivity() {
         private const val NORMALIZE_ALPHA_BOUNDS_THRESHOLD = 48
         private const val MONOCHROME_MIN_COVERAGE = 0.004
         private const val ADAPTIVE_DIRECT_MIN_COVERAGE = 0.02
+        private const val ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE = 0.72
+        private const val ADAPTIVE_DIRECT_MIN_LOST_COVERAGE = 0.18
+        private const val ADAPTIVE_DIRECT_PLATE_MIN_LUMA = 220
+        private const val ADAPTIVE_DIRECT_PLATE_MAX_SATURATION = 0.16
+        private const val ADAPTIVE_DIRECT_PLATE_MIN_RATIO = 0.24
+        private const val ADAPTIVE_DIRECT_DETAIL_MAX_LUMA = 112
+        private const val ADAPTIVE_DIRECT_DETAIL_MIN_RATIO = 0.01
+        private const val ADAPTIVE_DIRECT_PLATE_BACKGROUND_DISTANCE = 36.0
+        private const val ADAPTIVE_DIRECT_DETAIL_BACKGROUND_DISTANCE = 42.0
+        private const val ADAPTIVE_BACKGROUND_DETAIL_DISTANCE = 52.0
+        private const val ADAPTIVE_BACKGROUND_DETAIL_MIN_RATIO = 0.015
+        private const val ADAPTIVE_BACKGROUND_DETAIL_MAX_RATIO = 0.55
+        private const val ADAPTIVE_CLEAN_CORNER_RATIO = 0.18f
+        private const val ADAPTIVE_CLEAN_SOLID_DISTANCE = 24.0
         private const val ADAPTIVE_SUBTRACT_TRANSPARENT_DISTANCE = 10.0
         private const val RMBG_MIN_MANUAL_COVERAGE = 0.02
         private const val RMBG_MAX_MANUAL_COVERAGE = 0.62
@@ -7486,6 +11002,15 @@ class MainActivity : ComponentActivity() {
         private const val RESIDUE_CONNECTED_MIN_DISTANCE = 96.0
         private const val RESIDUE_CONNECTED_MAX_DISTANCE = 260.0
         private const val RESIDUE_CONNECTED_TRANSPARENT_RADIUS = 2
+        private const val PLAIN_ICON_EDGE_BAND_RATIO = 0.06f
+        private const val PLAIN_ICON_BACKGROUND_ALPHA_THRESHOLD = 32
+        private const val PLAIN_ICON_MIN_BACKGROUND_SAMPLES = 20
+        private const val CORNER_MASK_SEED_SIZE = 56
+        private const val CORNER_MASK_ZONE_SIZE = 68
+        private const val CORNER_MASK_OPAQUE_ALPHA = 250
+        private const val CORNER_MASK_BACKGROUND_DISTANCE = 90.0
+        private const val CORNER_MASK_WHITE_THRESHOLD = 220
+        private const val CORNER_MASK_MAX_REMOVED_RATIO = 0.45
         private const val SHADOW_HIGH_ALPHA_THRESHOLD = 160
         private const val SHADOW_MAX_SATURATION = 0.20
         private const val SHADOW_MAX_LUMINANCE = 220
@@ -7496,6 +11021,11 @@ class MainActivity : ComponentActivity() {
         private const val SHADOW_PRESERVE_EDGE_RADIUS = 3
         private const val SHADOW_FADE_RADIUS = 13
         private const val FOREGROUND_EDGE_FEATHER_ALPHA_SCALE = 0.18
+        private const val FOREGROUND_EDGE_POLISH_RADIUS = 1
+        private const val EDGE_POLISH_FOREGROUND_MIN_STRENGTH = 0.12
+        private const val EDGE_POLISH_FOREGROUND_MAX_STRENGTH = 0.82
+        private const val EDGE_POLISH_MONO_MIN_STRENGTH = 0.16
+        private const val EDGE_POLISH_MONO_MAX_STRENGTH = 0.92
         private const val CHROMA_TRANSPARENT_THRESHOLD = 36.0
         private const val CHROMA_OPAQUE_THRESHOLD = 170.0
         private val CHROMA_KEY_CANDIDATES = intArrayOf(
