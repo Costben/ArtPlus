@@ -1,9 +1,18 @@
-name: Android APK
+name: Android Release
 
 on:
   push:
-    branches: ["main"]
+    tags:
+      - "v*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, for example 1.0"
+        required: true
+        default: "1.0"
+
+permissions:
+  contents: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -37,8 +46,57 @@ jobs:
       - name: Build debug APK
         run: gradle :mobile:assembleDebug --no-daemon --stacktrace
 
+      - name: Prepare release asset
+        id: release_meta
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            raw_version="${GITHUB_REF_NAME}"
+          else
+            raw_version="${{ inputs.version }}"
+          fi
+
+          version="${raw_version#v}"
+          tag_name="v${version}"
+          apk_name="artplus-mobile-${version}-debug.apk"
+
+          mkdir -p release
+          cp mobile/build/outputs/apk/debug/mobile-debug.apk "release/${apk_name}"
+
+          {
+            echo "version=${version}"
+            echo "tag_name=${tag_name}"
+            echo "apk_path=release/${apk_name}"
+          } >> "${GITHUB_OUTPUT}"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: artplus-mobile-debug
-          path: mobile/build/outputs/apk/debug/*.apk
+          name: artplus-mobile-${{ steps.release_meta.outputs.version }}-debug
+          path: ${{ steps.release_meta.outputs.apk_path }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.release_meta.outputs.tag_name }}
+          VERSION: ${{ steps.release_meta.outputs.version }}
+          APK_PATH: ${{ steps.release_meta.outputs.apk_path }}
+        shell: bash
+        run: |
+          {
+            echo "ArtPlus Android ${VERSION}"
+            echo
+            echo "- Built by GitHub Actions."
+            echo "- Signed with the default Android debug signing key."
+            echo "- APK: $(basename "${APK_PATH}")"
+          } > release-notes.md
+
+          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            gh release upload "${TAG_NAME}" "${APK_PATH}" --clobber
+          else
+            gh release create "${TAG_NAME}" "${APK_PATH}" \
+              --target "${GITHUB_SHA}" \
+              --title "ArtPlus Android ${VERSION}" \
+              --notes-file release-notes.md \
+              --latest
+          fi
