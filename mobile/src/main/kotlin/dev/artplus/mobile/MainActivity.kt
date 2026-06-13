@@ -10,7 +10,10 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
+import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -240,6 +243,9 @@ class MainActivity : ComponentActivity() {
     private var draftShadowRemovalText by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT.toString())
     private var edgePolishPercent by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT)
     private var draftEdgePolishText by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT.toString())
+    private var liquidGlassEnabled by mutableStateOf(false)
+    private var liquidGlassRadius by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS)
+    private var draftLiquidGlassRadiusText by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS.toString())
     private var adaptiveForegroundMode by mutableStateOf(AdaptiveForegroundMode.Auto)
     private var adaptiveDirectMaxCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT)
     private var adaptiveDirectMaxCoverageIncreasePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT)
@@ -359,6 +365,7 @@ class MainActivity : ComponentActivity() {
         loadGptSettings()
         loadLocalSeparationSettings()
         loadImageSettings()
+        loadLiquidGlassSettings()
         loadRmbgSettings()
         loadGeneratedPackageCache()
         startDebugHttpServerIfNeeded()
@@ -836,6 +843,7 @@ class MainActivity : ComponentActivity() {
                             generatedCount = generatedCount,
                         )
                         OutputCard()
+                        LiquidGlassSettingsCard()
                         GptSettingsCard()
                         RmbgComponentCard()
                     }
@@ -965,7 +973,15 @@ class MainActivity : ComponentActivity() {
         var liveAssets by remember(session) { mutableStateOf<PreviewAssets?>(null) }
         var liveAssetsLoading by remember(session) { mutableStateOf(false) }
 
-        LaunchedEffect(session, previewSelections, foregroundSubjectPercent, edgePolishPercent, previewVersion) {
+        LaunchedEffect(
+            session,
+            previewSelections,
+            foregroundSubjectPercent,
+            edgePolishPercent,
+            liquidGlassEnabled,
+            liquidGlassRadius,
+            previewVersion,
+        ) {
             if (session == null) {
                 liveAssets = null
                 liveAssetsLoading = false
@@ -1649,10 +1665,10 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun CandidateIconPreview(candidate: IconCandidate, mode: PreviewMode) {
-        var assets by remember(candidate, mode, foregroundSubjectPercent, edgePolishPercent) {
+        var assets by remember(candidate, mode, foregroundSubjectPercent, edgePolishPercent, liquidGlassEnabled, liquidGlassRadius) {
             mutableStateOf<PreviewAssets?>(null)
         }
-        LaunchedEffect(candidate, mode, foregroundSubjectPercent, edgePolishPercent) {
+        LaunchedEffect(candidate, mode, foregroundSubjectPercent, edgePolishPercent, liquidGlassEnabled, liquidGlassRadius) {
             assets = null
             try {
                 assets = withContext(previewWorkerDispatcher) {
@@ -2750,6 +2766,97 @@ class MainActivity : ComponentActivity() {
                 onClick = { chooseTreeLauncher.launch(null) },
                 enabled = !isBusy,
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+
+    @Composable
+    private fun LiquidGlassSettingsCard() {
+        SectionCard(title = "液态玻璃风格", summary = "本地绘制边缘高光，不改主体颜色") {
+            LiquidGlassToggleRow()
+            Spacer(modifier = Modifier.height(12.dp))
+            NumberParameterControl(
+                title = "圆角半径",
+                summary = "0 方形，120 圆形，默认 $DEFAULT_LIQUID_GLASS_RADIUS",
+                value = liquidGlassRadius,
+                draftText = draftLiquidGlassRadiusText,
+                min = MIN_LIQUID_GLASS_RADIUS,
+                max = MAX_LIQUID_GLASS_RADIUS,
+                onDraftChange = { draftLiquidGlassRadiusText = it },
+                onSave = { updateLiquidGlassRadius(it) },
+            )
+        }
+    }
+
+    @Composable
+    private fun LiquidGlassToggleRow() {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .clickable(enabled = !isBusy) { updateLiquidGlassEnabled(!liquidGlassEnabled) }
+                .padding(vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Text(
+                    text = "启用",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "只叠加圆角边缘高光和近边缘暗部",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Text(
+                text = if (liquidGlassEnabled) "开启" else "关闭",
+                style = MiuixTheme.textStyles.body2,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            LiquidGlassSwitch(checked = liquidGlassEnabled, enabled = !isBusy)
+        }
+    }
+
+    @Composable
+    private fun LiquidGlassSwitch(checked: Boolean, enabled: Boolean) {
+        val trackColor = when {
+            checked && enabled -> MiuixTheme.colorScheme.primaryVariant
+            checked -> MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.46f)
+            enabled -> MiuixTheme.colorScheme.surfaceContainerHigh
+            else -> MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.52f)
+        }
+        val thumbColor = if (enabled) {
+            MiuixTheme.colorScheme.onPrimaryVariant
+        } else {
+            MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.54f)
+        }
+        Box(
+            modifier = Modifier
+                .width(56.dp)
+                .height(32.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(trackColor)
+                .padding(3.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .offset(x = if (checked) 24.dp else 0.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(thumbColor),
             )
         }
     }
@@ -4910,6 +5017,43 @@ class MainActivity : ComponentActivity() {
             .apply()
     }
 
+    private fun loadLiquidGlassSettings() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        liquidGlassEnabled = prefs.getBoolean(PREF_LIQUID_GLASS_ENABLED, false)
+        liquidGlassRadius = prefs.getInt(
+            PREF_LIQUID_GLASS_RADIUS,
+            DEFAULT_LIQUID_GLASS_RADIUS,
+        ).coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)
+        draftLiquidGlassRadiusText = liquidGlassRadius.toString()
+    }
+
+    private fun saveLiquidGlassSettings() {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .edit()
+            .putBoolean(PREF_LIQUID_GLASS_ENABLED, liquidGlassEnabled)
+            .putInt(PREF_LIQUID_GLASS_RADIUS, liquidGlassRadius)
+            .apply()
+    }
+
+    private fun updateLiquidGlassEnabled(enabled: Boolean) {
+        if (liquidGlassEnabled == enabled) {
+            return
+        }
+        liquidGlassEnabled = enabled
+        saveLiquidGlassSettings()
+        statusText = if (enabled) "液态玻璃风格已开启" else "液态玻璃风格已关闭"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassRadius(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)
+        liquidGlassRadius = next
+        draftLiquidGlassRadiusText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃圆角半径 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
     private fun generateSelected(
         installWithRoot: Boolean,
         useGpt: Boolean,
@@ -6413,12 +6557,13 @@ class MainActivity : ComponentActivity() {
     private fun writePackageOutputs(session: GenerationSession, selections: PreviewSelections) {
         val light = candidateWithCustomOverrides(session, PreviewMode.NormalLight, selections.normalLight)
         val lightRecfg = renderCandidateForeground(light)
-        val lightRecbg = light.recbg
+        val lightBaseRecbg = light.recbg
+        val lightRecbg = liquidGlassBackgroundForSize(lightBaseRecbg, SIZE_1X1, SIZE_1X1)
         savePng(lightRecbg, File(session.outDir, "recbg.png"))
         savePng(lightRecfg, File(session.outDir, "recfg.png"))
-        val recbg1x2 = resizeBitmap(lightRecbg, SIZE_1X2[0], SIZE_1X2[1])
-        val recbg2x1 = resizeBitmap(lightRecbg, SIZE_2X1[0], SIZE_2X1[1])
-        val recbg2x2 = resizeBitmap(lightRecbg, SIZE_2X2, SIZE_2X2)
+        val recbg1x2 = liquidGlassBackgroundForSize(lightBaseRecbg, SIZE_1X2[0], SIZE_1X2[1])
+        val recbg2x1 = liquidGlassBackgroundForSize(lightBaseRecbg, SIZE_2X1[0], SIZE_2X1[1])
+        val recbg2x2 = liquidGlassBackgroundForSize(lightBaseRecbg, SIZE_2X2, SIZE_2X2)
         savePng(recbg1x2, File(session.outDir, "recbg_1x2.png"))
         savePng(recbg2x1, File(session.outDir, "recbg_2x1.png"))
         savePng(recbg2x2, File(session.outDir, "recbg_2x2.png"))
@@ -6432,21 +6577,22 @@ class MainActivity : ComponentActivity() {
 
         val night = candidateWithCustomOverrides(session, PreviewMode.NormalDark, selections.normalDark)
         val nightRecfg = renderCandidateForeground(night)
-        val nightRecbg = night.recbg
+        val nightBaseRecbg = night.recbg
+        val nightRecbg = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_1X1, SIZE_1X1)
         val nightRecfg1x2 = centerOnCanvas(nightRecfg, SIZE_1X2[0], SIZE_1X2[1])
         val nightRecfg2x1 = centerOnCanvas(nightRecfg, SIZE_2X1[0], SIZE_2X1[1])
         val nightRecfg2x2 = centerOnCanvas(nightRecfg, SIZE_2X2, SIZE_2X2)
         savePng(nightForeground(nightRecfg, nightRecbg), File(session.outDir, "rec_night.png"))
         savePng(
-            nightForeground(nightRecfg1x2, resizeBitmap(nightRecbg, SIZE_1X2[0], SIZE_1X2[1])),
+            nightForeground(nightRecfg1x2, liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_1X2[0], SIZE_1X2[1])),
             File(session.outDir, "rec_night_1x2.png"),
         )
         savePng(
-            nightForeground(nightRecfg2x1, resizeBitmap(nightRecbg, SIZE_2X1[0], SIZE_2X1[1])),
+            nightForeground(nightRecfg2x1, liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X1[0], SIZE_2X1[1])),
             File(session.outDir, "rec_night_2x1.png"),
         )
         savePng(
-            nightForeground(nightRecfg2x2, resizeBitmap(nightRecbg, SIZE_2X2, SIZE_2X2)),
+            nightForeground(nightRecfg2x2, liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X2, SIZE_2X2)),
             File(session.outDir, "rec_night_2x2.png"),
         )
 
@@ -6471,6 +6617,137 @@ class MainActivity : ComponentActivity() {
         savePng(adjustColor(lightRecfg, 0.9f, 0.9f), File(session.outDir, "nsd.png"))
         savePng(adjustColor(lightRecfg, 0.9f, 1.05f), File(session.outDir, "mat.png"))
         savePng(adjustColor(lightRecfg, 0.7f, 0.95f), File(session.outDir, "peb.png"))
+    }
+
+    private fun liquidGlassBackgroundForSize(source: Bitmap, width: Int, height: Int): Bitmap {
+        val resized = if (source.width == width && source.height == height) {
+            source
+        } else {
+            resizeBitmap(source, width, height)
+        }
+        return if (liquidGlassEnabled) {
+            renderLiquidGlassBackground(resized, liquidGlassRadius)
+        } else {
+            resized
+        }
+    }
+
+    private fun renderLiquidGlassBackground(source: Bitmap, radius: Int): Bitmap {
+        val width = source.width
+        val height = source.height
+        val minSide = minOf(width, height).toFloat().coerceAtLeast(1f)
+        val scale = minSide / SIZE_1X1.toFloat()
+        val requestedRadius = radius.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS) * scale
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        canvas.drawBitmap(source, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+
+        val outerStroke = (minSide * 0.015f).coerceIn(1.5f, 6.5f)
+        val inset = outerStroke / 2f + 0.5f
+        val rect = RectF(inset, inset, width - inset, height - inset)
+        val cornerRadius = requestedRadius.coerceIn(0f, minOf(rect.width(), rect.height()) / 2f)
+        val fillRadius = requestedRadius.coerceIn(0f, minSide / 2f)
+
+        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            shader = LinearGradient(
+                0f,
+                0f,
+                0f,
+                height.toFloat(),
+                intArrayOf(
+                    AndroidColor.argb(14, 255, 255, 255),
+                    AndroidColor.argb(0, 255, 255, 255),
+                    AndroidColor.argb(0, 0, 0, 0),
+                    AndroidColor.argb(12, 0, 0, 0),
+                ),
+                floatArrayOf(0f, 0.34f, 0.68f, 1f),
+                Shader.TileMode.CLAMP,
+            )
+        }
+        canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), fillRadius, fillRadius, fillPaint)
+
+        val innerShadowStroke = (minSide * 0.020f).coerceIn(3f, 10f)
+        val innerShadowInset = innerShadowStroke * 0.72f + 1f
+        val innerShadowRect = RectF(
+            innerShadowInset,
+            innerShadowInset,
+            width - innerShadowInset,
+            height - innerShadowInset,
+        )
+        val innerShadowRadius = (requestedRadius - innerShadowInset / 2f)
+            .coerceIn(0f, minOf(innerShadowRect.width(), innerShadowRect.height()) / 2f)
+        val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = innerShadowStroke
+            shader = LinearGradient(
+                0f,
+                innerShadowRect.top,
+                0f,
+                innerShadowRect.bottom,
+                intArrayOf(
+                    AndroidColor.argb(0, 0, 0, 0),
+                    AndroidColor.argb(0, 0, 0, 0),
+                    AndroidColor.argb(38, 0, 0, 0),
+                    AndroidColor.argb(22, 0, 0, 0),
+                ),
+                floatArrayOf(0f, 0.62f, 0.92f, 1f),
+                Shader.TileMode.CLAMP,
+            )
+        }
+        canvas.drawRoundRect(innerShadowRect, innerShadowRadius, innerShadowRadius, shadowPaint)
+
+        val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = outerStroke
+            shader = LinearGradient(
+                0f,
+                rect.top,
+                0f,
+                rect.bottom,
+                intArrayOf(
+                    AndroidColor.argb(186, 255, 255, 255),
+                    AndroidColor.argb(102, 255, 255, 255),
+                    AndroidColor.argb(10, 255, 255, 255),
+                    AndroidColor.argb(0, 255, 255, 255),
+                    AndroidColor.argb(130, 255, 255, 255),
+                ),
+                floatArrayOf(0f, 0.12f, 0.34f, 0.70f, 1f),
+                Shader.TileMode.CLAMP,
+            )
+        }
+        canvas.drawRoundRect(rect, cornerRadius, cornerRadius, rimPaint)
+
+        val hairlineStroke = (minSide * 0.0035f).coerceIn(0.8f, 1.7f)
+        val hairlineInset = outerStroke + hairlineStroke
+        val hairlineRect = RectF(
+            hairlineInset,
+            hairlineInset,
+            width - hairlineInset,
+            height - hairlineInset,
+        )
+        val hairlineRadius = (requestedRadius - hairlineInset / 2f)
+            .coerceIn(0f, minOf(hairlineRect.width(), hairlineRect.height()) / 2f)
+        val hairlinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = hairlineStroke
+            shader = LinearGradient(
+                0f,
+                hairlineRect.top,
+                0f,
+                hairlineRect.bottom,
+                intArrayOf(
+                    AndroidColor.argb(112, 255, 255, 255),
+                    AndroidColor.argb(28, 255, 255, 255),
+                    AndroidColor.argb(76, 255, 255, 255),
+                ),
+                floatArrayOf(0f, 0.50f, 1f),
+                Shader.TileMode.CLAMP,
+            )
+        }
+        canvas.drawRoundRect(hairlineRect, hairlineRadius, hairlineRadius, hairlinePaint)
+
+        return out
     }
 
     private fun candidateOrFallback(
@@ -6559,12 +6836,12 @@ class MainActivity : ComponentActivity() {
     ): PreviewAssets {
         val light = candidateWithCustomOverrides(session, PreviewMode.NormalLight, selections.normalLight)
         val lightRecfg = renderCandidateForeground(light)
-        val lightRecbg = light.recbg
+        val lightRecbg = liquidGlassBackgroundForSize(light.recbg, SIZE_1X1, SIZE_1X1)
 
         val night = candidateWithCustomOverrides(session, PreviewMode.NormalDark, selections.normalDark)
         val nightPreview = run {
             val nightRecfg = renderCandidateForeground(night)
-            nightForeground(nightRecfg, night.recbg)
+            nightForeground(nightRecfg, liquidGlassBackgroundForSize(night.recbg, SIZE_1X1, SIZE_1X1))
         }
 
         val monochromeLight = monochromeForCandidate(
@@ -6616,10 +6893,11 @@ class MainActivity : ComponentActivity() {
             }
         }
         val recfg = renderCandidateForeground(candidate)
+        val recbg = liquidGlassBackgroundForSize(candidate.recbg, SIZE_1X1, SIZE_1X1)
         return PreviewAssets(
-            recbg = candidate.recbg,
+            recbg = recbg,
             recfg = recfg,
-            recNight = nightForeground(recfg, candidate.recbg),
+            recNight = nightForeground(recfg, recbg),
             monochromeLight = monochromeForCandidate(candidate, invertLuma = true),
             monochromeDark = monochromeForCandidate(candidate, invertLuma = false),
         )
@@ -8711,7 +8989,6 @@ class MainActivity : ComponentActivity() {
             if (!selected[i]) {
                 continue
             }
-            selectedCount++
             val x = i % width
             val y = i / width
             val distance = distanceToNearbyMaskPixel(
@@ -8720,23 +8997,23 @@ class MainActivity : ComponentActivity() {
                 height = height,
                 x = x,
                 y = y,
-                maxRadius = SHADOW_PRESERVE_EDGE_RADIUS + SHADOW_FADE_RADIUS,
-            ) ?: (SHADOW_PRESERVE_EDGE_RADIUS + SHADOW_FADE_RADIUS + 1).toDouble()
-            val fade = ((distance - SHADOW_PRESERVE_EDGE_RADIUS) / SHADOW_FADE_RADIUS)
-                .coerceIn(0.0, 1.0)
-            val alphaScale = (1.0 - fade).coerceIn(0.0, 1.0)
-            val pixel = cleaned[i]
-            val alpha = (AndroidColor.alpha(pixel) * alphaScale).toInt().coerceIn(0, 255)
-            cleaned[i] = if (alpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                AndroidColor.TRANSPARENT
-            } else {
-                AndroidColor.argb(
-                    alpha,
-                    AndroidColor.red(pixel),
-                    AndroidColor.green(pixel),
-                    AndroidColor.blue(pixel),
-                )
+                maxRadius = SHADOW_EDGE_ANTIALIAS_RADIUS,
+            )
+            if (distance != null && distance <= SHADOW_EDGE_ANTIALIAS_RADIUS.toDouble()) {
+                nearestOpaqueNeighborColor(pixels, width, height, x, y)?.let { edgeColor ->
+                    val alpha = AndroidColor.alpha(cleaned[i])
+                        .coerceIn(LOCAL_ALPHA_VISIBLE_THRESHOLD + 1, SHADOW_EDGE_REPAIR_MAX_ALPHA)
+                    cleaned[i] = AndroidColor.argb(
+                        alpha,
+                        AndroidColor.red(edgeColor),
+                        AndroidColor.green(edgeColor),
+                        AndroidColor.blue(edgeColor),
+                    )
+                }
+                continue
             }
+            selectedCount++
+            cleaned[i] = AndroidColor.TRANSPARENT
         }
         if (selectedCount == 0) {
             return ShadowCleanupResult(source, changed = false, removedRatio = 0.0)
@@ -10376,6 +10653,8 @@ class MainActivity : ComponentActivity() {
             .put("plate_removal_percent", plateRemovalPercent)
             .put("shadow_removal_percent", shadowRemovalPercent)
             .put("edge_polish_percent", edgePolishPercent)
+            .put("liquid_glass_enabled", liquidGlassEnabled)
+            .put("liquid_glass_radius", liquidGlassRadius)
             .put("rmbg_model_installed", findRmbgComponent() != null)
             .put("rmbg_component_installed", findRmbgComponent() != null)
             .put("rmbg_component_abi", findRmbgComponent()?.abi ?: "")
@@ -10428,6 +10707,7 @@ class MainActivity : ComponentActivity() {
                     .put("plate_removal_percent", intRangeJson(MIN_PLATE_REMOVAL_PERCENT, MAX_PLATE_REMOVAL_PERCENT))
                     .put("shadow_removal_percent", intRangeJson(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT))
                     .put("edge_polish_percent", intRangeJson(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT))
+                    .put("liquid_glass_radius", intRangeJson(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS))
                     .put("rmbg_input_size", intRangeJson(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE))
                     .put(
                         "adaptive_direct_max_coverage_percent",
@@ -10495,6 +10775,13 @@ class MainActivity : ComponentActivity() {
                 edgePolishPercent = it.coerceIn(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT)
                 draftEdgePolishText = edgePolishPercent.toString()
             }
+            params["liquid_glass_enabled"]?.toBooleanStrictOrNull()?.let {
+                liquidGlassEnabled = it
+            }
+            params["liquid_glass_radius"]?.toIntOrNull()?.let {
+                liquidGlassRadius = it.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)
+                draftLiquidGlassRadiusText = liquidGlassRadius.toString()
+            }
             params["gpt_mode"]?.let {
                 gptImageMode = GptImageMode.fromValue(it)
             }
@@ -10557,6 +10844,7 @@ class MainActivity : ComponentActivity() {
                     MAX_ADAPTIVE_CENTER_EPSILON_PERCENT,
                 )
             }
+            saveLiquidGlassSettings()
             saveImageTuningSettings()
             if (!isBusy && activeGenerationSession != null) {
                 refreshActivePreviewOutputs(rebuildLocalCandidates = true)
@@ -10611,6 +10899,7 @@ class MainActivity : ComponentActivity() {
         <script>
         const numericKeys = [
           'foreground_subject_percent','background_separation_percent','plate_removal_percent','shadow_removal_percent','edge_polish_percent','rmbg_input_size',
+          'liquid_glass_radius',
           'adaptive_direct_max_coverage_percent','adaptive_direct_max_coverage_increase_percent',
           'adaptive_mask_edge_coverage_percent','adaptive_mask_min_coverage_percent','adaptive_center_epsilon_percent'
         ];
@@ -11393,6 +11682,8 @@ class MainActivity : ComponentActivity() {
         private const val PREF_PLATE_REMOVAL_PERCENT = "plate_removal_percent"
         private const val PREF_SHADOW_REMOVAL_PERCENT = "shadow_removal_percent"
         private const val PREF_EDGE_POLISH_PERCENT = "edge_polish_percent"
+        private const val PREF_LIQUID_GLASS_ENABLED = "liquid_glass_enabled"
+        private const val PREF_LIQUID_GLASS_RADIUS = "liquid_glass_radius"
         private const val PREF_ADAPTIVE_FOREGROUND_MODE = "adaptive_foreground_mode"
         private const val PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT = "adaptive_direct_max_coverage_percent"
         private const val PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT = "adaptive_direct_max_coverage_increase_percent"
@@ -11565,6 +11856,9 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_EDGE_POLISH_PERCENT = 60
         private const val MIN_EDGE_POLISH_PERCENT = 1
         private const val MAX_EDGE_POLISH_PERCENT = 100
+        private const val DEFAULT_LIQUID_GLASS_RADIUS = 34
+        private const val MIN_LIQUID_GLASS_RADIUS = 0
+        private const val MAX_LIQUID_GLASS_RADIUS = 120
         private const val LEGACY_BACKGROUND_SEPARATION_MIN = 12.0
         private const val LEGACY_BACKGROUND_SEPARATION_MAX = 420.0
         private const val LEGACY_PLATE_REMOVAL_MIN = 0.0
@@ -11668,6 +11962,8 @@ class MainActivity : ComponentActivity() {
         private const val SHADOW_MIN_OFFSET = 8.0
         private const val SHADOW_MIN_DOWN_OFFSET = 2.0
         private const val SHADOW_MIN_LUMA_DROP = 9
+        private const val SHADOW_EDGE_ANTIALIAS_RADIUS = 2
+        private const val SHADOW_EDGE_REPAIR_MAX_ALPHA = 96
         private const val SHADOW_PRESERVE_EDGE_RADIUS = 3
         private const val SHADOW_FADE_RADIUS = 13
         private const val FOREGROUND_EDGE_FEATHER_ALPHA_SCALE = 0.18
