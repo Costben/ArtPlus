@@ -108,10 +108,11 @@ jobs:
             echo "- APK: $(basename "${APK_PATH}")"
           } > release-notes.md
 
-          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
-            gh release upload "${TAG_NAME}" "${APK_PATH}" --clobber
+          if gh release view "${TAG_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${TAG_NAME}" "${APK_PATH}" --repo "${GITHUB_REPOSITORY}" --clobber
           else
             gh release create "${TAG_NAME}" "${APK_PATH}" \
+              --repo "${GITHUB_REPOSITORY}" \
               --target "${GITHUB_SHA}" \
               --title "ArtPlus Android ${VERSION}" \
               --notes-file release-notes.md \
