@@ -20,6 +20,19 @@ android {
         }
     }
 
+    buildTypes {
+        debug {
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+        }
+
+        release {
+            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+            isDebuggable = false
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
+        }
+    }
+
     buildFeatures {
         compose = true
     }
