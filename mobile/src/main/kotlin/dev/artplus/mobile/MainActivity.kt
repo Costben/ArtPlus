@@ -278,9 +278,6 @@ class MainActivity : ComponentActivity() {
     private var rmbgInstallProgress by mutableStateOf<Float?>(null)
     private var rmbgComponentUrl by mutableStateOf("")
     private var rmbgComponentSaveStatus by mutableStateOf("")
-    private var rmbgInputSize by mutableStateOf(DEFAULT_RMBG_INPUT_SIZE)
-    private var draftRmbgInputSizeText by mutableStateOf(DEFAULT_RMBG_INPUT_SIZE.toString())
-    private var rmbgBackend by mutableStateOf(RmbgInferenceBackend.Cpu)
     private var lastRmbgInferenceReport by mutableStateOf<RmbgInferenceReport?>(null)
     private var choicePopupRequest by mutableStateOf<ChoicePopupRequest?>(null)
     private var choicePopupVisible by mutableStateOf(false)
@@ -290,7 +287,6 @@ class MainActivity : ComponentActivity() {
     private var debugHttpServer: DebugHttpServer? = null
     private var rmbgRuntime: DynamicRmbgRuntime? = null
     private var rmbgComponentStatus by mutableStateOf("")
-    private val rmbgQnnCapabilityText: String by lazy { probeRmbgQnnCapability() }
 
     private data class ChoicePopupRequest(
         val id: Long,
@@ -787,7 +783,6 @@ class MainActivity : ComponentActivity() {
                         StatusCard(
                             selectedApp = selectedApp,
                         )
-                        LocalSeparationSettingsCard()
                         GenerationCard(selectedApp)
                         AppPickerSummaryCard(
                             selectedApp = selectedApp,
@@ -1394,7 +1389,21 @@ class MainActivity : ComponentActivity() {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    SubjectRatioControl()
+                    SettingLine(
+                        title = "主体占比",
+                        summary = "复杂游戏图标建议 100%，范围 20% 到 150%",
+                        value = "$foregroundSubjectPercent%",
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SteppedPercentSlider(
+                        value = foregroundSubjectPercent,
+                        min = MIN_FOREGROUND_SUBJECT_PERCENT,
+                        max = MAX_FOREGROUND_SUBJECT_PERCENT,
+                        step = 10,
+                        enabled = !isBusy,
+                        showDots = false,
+                        onValueChange = { updateForegroundSubjectPercent(it) },
+                    )
                     Spacer(modifier = Modifier.height(14.dp))
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -1607,6 +1616,7 @@ class MainActivity : ComponentActivity() {
                         customMissing -> "选择 PNG/SVG"
                         customKind != null -> "已导入"
                         missingCandidate -> "不可用"
+                        choice == PreviewChoice.Gpt && isGeneratingGptCandidate -> "正在生成"
                         gptMissing && !canGenerateGpt -> "先填 GPT 设置"
                         gptMissing -> "点击生成"
                         else -> choice.summary
@@ -1768,35 +1778,6 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LocalSeparationSettingsCard() {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(16.dp),
-        ) {
-            SubjectRatioControl()
-            Spacer(modifier = Modifier.height(12.dp))
-            TextButton(
-                text = if (showAdvancedSeparationSettings) "收起高级设置" else "展开高级设置",
-                onClick = { showAdvancedSeparationSettings = !showAdvancedSeparationSettings },
-                enabled = !isBusy,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            AnimatedVisibility(
-                visible = showAdvancedSeparationSettings,
-                enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                    expandVertically(animationSpec = tween(durationMillis = 220)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                    shrinkVertically(animationSpec = tween(durationMillis = 180)),
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    AdvancedSeparationSettings()
-                }
-            }
-        }
-    }
-
-    @Composable
     private fun LocalSeparationModeControl() {
         val modes = LocalSeparationMode.entries
         SegmentedControl(
@@ -1806,25 +1787,6 @@ class MainActivity : ComponentActivity() {
             onSelected = { index ->
                 updateLocalSeparationMode(modes[index])
             }
-        )
-    }
-
-    @Composable
-    private fun SubjectRatioControl() {
-        SettingLine(
-            title = "主体占比",
-            summary = "复杂游戏图标建议 100%，范围 20% 到 150%",
-            value = "$foregroundSubjectPercent%",
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        SteppedPercentSlider(
-            value = foregroundSubjectPercent,
-            min = MIN_FOREGROUND_SUBJECT_PERCENT,
-            max = MAX_FOREGROUND_SUBJECT_PERCENT,
-            step = 10,
-            enabled = !isBusy,
-            showDots = false,
-            onValueChange = { updateForegroundSubjectPercent(it) },
         )
     }
 
@@ -2469,7 +2431,42 @@ class MainActivity : ComponentActivity() {
                 enabled = !isBusy && !isRefreshingArtPlusIcons,
                 modifier = Modifier.fillMaxWidth(),
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            SettingLine(
+                title = "主体占比",
+                summary = "复杂游戏图标建议 100%，范围 20% 到 150%",
+                value = "$foregroundSubjectPercent%",
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            SteppedPercentSlider(
+                value = foregroundSubjectPercent,
+                min = MIN_FOREGROUND_SUBJECT_PERCENT,
+                max = MAX_FOREGROUND_SUBJECT_PERCENT,
+                step = 10,
+                enabled = !isBusy,
+                showDots = false,
+                onValueChange = { updateForegroundSubjectPercent(it) },
+            )
             GeneratedPreviewSection()
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(
+                text = if (showAdvancedSeparationSettings) "收起高级设置" else "展开高级设置",
+                onClick = { showAdvancedSeparationSettings = !showAdvancedSeparationSettings },
+                enabled = !isBusy,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            AnimatedVisibility(
+                visible = showAdvancedSeparationSettings,
+                enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                    expandVertically(animationSpec = tween(durationMillis = 220)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                    shrinkVertically(animationSpec = tween(durationMillis = 180)),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    AdvancedSeparationSettings()
+                }
+            }
         }
     }
 
@@ -2580,14 +2577,8 @@ class MainActivity : ComponentActivity() {
                 value = if (component == null) "未安装" else "已安装",
             )
             Spacer(modifier = Modifier.height(12.dp))
-            RmbgBackendChoiceRow(
+            RmbgModelPresetChoiceRow(
                 enabled = !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            SettingLine(
-                title = "推理状态",
-                summary = rmbgInferenceStatusSummary(),
-                value = rmbgInferenceStatusValue(),
             )
             if (lastRmbgCandidateError != null) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -2600,23 +2591,13 @@ class MainActivity : ComponentActivity() {
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
-            SettingLine(
-                title = "QNN",
-                summary = rmbgQnnCapabilityText,
-                value = "占位",
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            RmbgInputSizeChoiceRow(
-                enabled = !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
             InlineInputField(
                 value = rmbgComponentUrl,
                 onValueChange = {
                     rmbgComponentUrl = it
                     rmbgComponentSaveStatus = ""
                 },
-                label = "组件 ZIP URL",
+                label = "模型或组件 ZIP URL",
             )
             Spacer(modifier = Modifier.height(10.dp))
             Row(
@@ -2670,6 +2651,13 @@ class MainActivity : ComponentActivity() {
                     )
                 },
                 enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            TextButton(
+                text = "清除已安装 RMBG",
+                onClick = { clearInstalledRmbgComponent() },
+                enabled = component != null && !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -3108,40 +3096,19 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun RmbgInputSizeChoiceRow(enabled: Boolean) {
-        val options = remember { RMBG_INPUT_SIZE_OPTIONS }
+    private fun RmbgModelPresetChoiceRow(enabled: Boolean) {
+        val options = remember { RMBG_MODEL_PRESETS }
+        val selected = currentRmbgModelPreset()
         ChoicePopupRow(
-            title = "推理分辨率",
-            summary = "默认 $DEFAULT_RMBG_INPUT_SIZE",
-            value = rmbgInputSize.toString(),
+            title = "模型版本",
+            summary = selected.summary,
+            value = selected.label,
             enabled = enabled && !isBusy,
             options = options,
-            selected = rmbgInputSize,
-            optionLabel = { it.toString() },
-            optionSummary = { size ->
-                when (size) {
-                    DEFAULT_RMBG_INPUT_SIZE -> "RMBG-2.0"
-                    128, 256, 512 -> "低分辨率模型"
-                    else -> "自定义"
-                }
-            },
-            onSelected = { updateRmbgInputSize(it) },
-        )
-    }
-
-    @Composable
-    private fun RmbgBackendChoiceRow(enabled: Boolean) {
-        val options = remember { RmbgInferenceBackend.runnableEntries }
-        ChoicePopupRow(
-            title = "推理后端",
-            summary = "CPU / NNAPI / 严格 NNAPI",
-            value = rmbgBackend.label,
-            enabled = enabled && !isBusy,
-            options = options,
-            selected = rmbgBackend,
+            selected = selected,
             optionLabel = { it.label },
             optionSummary = { it.summary },
-            onSelected = { updateRmbgBackend(it) },
+            onSelected = { updateRmbgModelPreset(it) },
         )
     }
 
@@ -4370,8 +4337,6 @@ class MainActivity : ComponentActivity() {
                     .put("plate_removal_percent", plateRemovalPercent)
                     .put("shadow_removal_percent", shadowRemovalPercent)
                     .put("edge_polish_percent", edgePolishPercent)
-                    .put("rmbg_input_size", rmbgInputSize)
-                    .put("rmbg_backend", rmbgBackend.value)
                     .put("adaptive_foreground_mode", adaptiveForegroundMode.value)
                     .put("original_foreground_cleanup_mode", originalForegroundCleanupMode.value),
             )
@@ -4453,9 +4418,7 @@ class MainActivity : ComponentActivity() {
                     .put("bounds", rmbgDebug.boundsText)
                     .put("crop_risk", rmbgDebug.cropRisk)
                     .put("backend", rmbgDebug.inference.actualBackend.value)
-                    .put("requested_backend", rmbgDebug.inference.requestedBackend.value)
                     .put("elapsed_ms", rmbgDebug.inference.elapsedMs)
-                    .put("fallback_reason", rmbgDebug.inference.fallbackReason ?: "")
                 saveLayer("candidate_rmbg_raw", rmbgDebug.foreground, rmbgJson)
                 val rendered = renderCandidateForeground(
                     rmbgCandidate ?: IconCandidate(
@@ -4490,7 +4453,6 @@ class MainActivity : ComponentActivity() {
                 rmbgJson
                     .put("ok", false)
                     .put("error", message)
-                    .put("requested_backend", rmbgBackend.value)
                 runOnMainSync {
                     lastRmbgCandidateError = message
                     lastRmbgInferenceReport = null
@@ -4613,24 +4575,12 @@ class MainActivity : ComponentActivity() {
             ?.takeIf { it.isNotBlank() }
             ?: DEFAULT_RMBG_COMPONENT_URL
         val storedInputSize = prefs.getInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
-        val migratedInputSize = if (
-            !prefs.getBoolean(PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024, false) &&
-            storedInputSize == 256 &&
-            rmbgComponentUrl == DEFAULT_RMBG_COMPONENT_URL
+        if (
+            !prefs.getBoolean(PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024, false) ||
+            storedInputSize != DEFAULT_RMBG_INPUT_SIZE
         ) {
-            DEFAULT_RMBG_INPUT_SIZE
-        } else {
-            storedInputSize
-        }
-        rmbgInputSize = migratedInputSize
-            .coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
-        draftRmbgInputSizeText = rmbgInputSize.toString()
-        rmbgBackend = RmbgInferenceBackend.fromValue(
-            prefs.getString(PREF_RMBG_INFERENCE_BACKEND, RmbgInferenceBackend.Cpu.value),
-        )
-        if (!prefs.getBoolean(PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024, false)) {
             prefs.edit()
-                .putInt(PREF_RMBG_INPUT_SIZE, rmbgInputSize)
+                .putInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
                 .putBoolean(PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024, true)
                 .apply()
         }
@@ -4640,8 +4590,7 @@ class MainActivity : ComponentActivity() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putString(PREF_RMBG_COMPONENT_URL, rmbgComponentUrl.trim())
-            .putInt(PREF_RMBG_INPUT_SIZE, rmbgInputSize)
-            .putString(PREF_RMBG_INFERENCE_BACKEND, rmbgBackend.value)
+            .putInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
             .commit()
 
     private fun loadLocalSeparationSettings() {
@@ -4844,50 +4793,38 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateRmbgInputSize(value: Int) {
-        rmbgInputSize = value.coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
-        draftRmbgInputSizeText = rmbgInputSize.toString()
-        rmbgComponentSaveStatus = if (saveRmbgSettings()) "已保存" else "保存失败"
-        runCatching { rmbgRuntime?.close() }
-        rmbgRuntime = null
-        statusText = "RMBG 分辨率$rmbgComponentSaveStatus"
+    private fun currentRmbgModelPreset(): RmbgModelPreset {
+        val url = rmbgComponentUrl.trim()
+        return RMBG_MODEL_PRESETS.firstOrNull { preset ->
+            preset.url.isNotBlank() && preset.url == url
+        } ?: RMBG_MODEL_PRESET_CUSTOM
     }
 
-    private fun updateRmbgBackend(backend: RmbgInferenceBackend) {
-        if (rmbgBackend == backend) {
+    private fun updateRmbgModelPreset(preset: RmbgModelPreset) {
+        if (preset == RMBG_MODEL_PRESET_CUSTOM) {
+            rmbgComponentSaveStatus = ""
+            statusText = "RMBG 使用自定义 URL"
             return
         }
-        rmbgBackend = backend
-        lastRmbgInferenceReport = null
-        rmbgComponentSaveStatus = if (saveRmbgSettings()) "已保存" else "保存失败"
-        runCatching { rmbgRuntime?.close() }
-        rmbgRuntime = null
-        statusText = "RMBG 后端${backend.label}$rmbgComponentSaveStatus"
-    }
-
-    private fun rmbgInferenceStatusValue(): String =
-        if (isGeneratingRmbgCandidate) {
-            "运行中"
-        } else {
-            lastRmbgInferenceReport?.actualBackend?.label ?: rmbgBackend.label
+        if (preset.url.isBlank()) {
+            rmbgComponentSaveStatus = "该预设缺少 URL"
+            statusText = "RMBG ${preset.label} 还没有下载地址"
+            return
         }
+        rmbgComponentUrl = preset.url
+        rmbgComponentSaveStatus = ""
+        statusText = "RMBG 预设已选择: ${preset.label}"
+    }
 
     private fun rmbgInferenceStatusSummary(): String {
         if (isGeneratingRmbgCandidate) {
-            return rmbgCandidateStatusText.ifBlank { "RMBG运行中: ${rmbgBackend.label}" }
+            return rmbgCandidateStatusText.ifBlank { "RMBG运行中" }
         }
         val report = lastRmbgInferenceReport
         if (report != null) {
-            return buildString {
-                append("请求 ${report.requestedBackend.label}，实际 ${report.actualBackend.label}")
-                append("，耗时 ${report.elapsedMs}ms")
-                report.fallbackReason?.takeIf { it.isNotBlank() }?.let {
-                    append("，fallback: ")
-                    append(it)
-                }
-            }
+            return "${report.actualBackend.label}，耗时 ${report.elapsedMs}ms"
         }
-        return "尚未运行；当前请求 ${rmbgBackend.label}"
+        return "尚未运行"
     }
 
     private fun saveImageTuningSettings() {
@@ -5267,6 +5204,27 @@ class MainActivity : ComponentActivity() {
         return RmbgComponent(dir, abi, model)
     }
 
+    private fun clearInstalledRmbgComponent() {
+        if (isBusy || isGeneratingRmbgCandidate || isInstallingRmbgComponent) {
+            return
+        }
+        runCatching { rmbgRuntime?.close() }
+        rmbgRuntime = null
+        val targetDir = rmbgComponentDir()
+        val tmpDir = File(filesDir, "$RMBG_COMPONENT_DIR.tmp")
+        val deleted = targetDir.exists() && targetDir.deleteRecursively()
+        if (tmpDir.exists()) {
+            tmpDir.deleteRecursively()
+        }
+        clearRmbgCandidateUiState()
+        lastRmbgInferenceReport = null
+        rmbgComponentStatus = "${System.currentTimeMillis()}"
+        rmbgInstallStage = ""
+        rmbgInstallProgress = null
+        rmbgComponentSaveStatus = ""
+        statusText = if (deleted) "已清除 RMBG" else "没有已安装 RMBG"
+    }
+
     private fun installRmbgComponent(uri: Uri) {
         if (isBusy || isGeneratingRmbgCandidate || isInstallingRmbgComponent) {
             return
@@ -5574,10 +5532,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private data class RmbgInferenceReport(
-        val requestedBackend: RmbgInferenceBackend,
         val actualBackend: RmbgInferenceBackend,
         val elapsedMs: Long,
-        val fallbackReason: String? = null,
     )
 
     private data class RmbgModelOutput(
@@ -5590,16 +5546,10 @@ class MainActivity : ComponentActivity() {
         val report: RmbgInferenceReport,
     )
 
-    private class RmbgBackendException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
-
     private inner class DynamicRmbgRuntime(
         private val component: RmbgComponent,
-        private val requestedBackend: RmbgInferenceBackend,
     ) : AutoCloseable {
-        val componentKey: String = "${component.key}|${requestedBackend.value}"
-        var activeBackend: RmbgInferenceBackend = requestedBackend
-            private set
-        var fallbackReason: String? = null
+        var activeBackend: RmbgInferenceBackend = RmbgInferenceBackend.Cpu
             private set
 
         private val environmentClass: Class<*>
@@ -5618,56 +5568,16 @@ class MainActivity : ComponentActivity() {
             tensorClass = onnxTensorClass
             environment = environmentClass.getMethod("getEnvironment").invoke(null)
                 ?: error("无法初始化 ONNX Runtime 环境")
-            if (requestedBackend == RmbgInferenceBackend.Cpu) {
-                val created = createSessionPair(sessionOptionsClass) { }
-                sessionOptions = created.first
-                session = created.second
-                activeBackend = RmbgInferenceBackend.Cpu
-            } else {
-                val nnapiAttempt = runCatching {
-                    createSessionPair(sessionOptionsClass) { options ->
-                        configureNnapiProvider(classLoader, sessionOptionsClass, options, requestedBackend)
-                    }
-                }
-                nnapiAttempt
-                    .onSuccess { created ->
-                        sessionOptions = created.first
-                        session = created.second
-                        activeBackend = requestedBackend
-                    }
-                    .onFailure { nnapiError ->
-                        if (!requestedBackend.allowCpuFallback) {
-                            throw RmbgBackendException(
-                                "NNAPI严格模式创建失败: ${describeRmbgFailure(nnapiError)}",
-                                nnapiError,
-                            )
-                        }
-                        val cpuAttempt = runCatching { createSessionPair(sessionOptionsClass) { } }
-                        cpuAttempt
-                            .onSuccess { created ->
-                                sessionOptions = created.first
-                                session = created.second
-                                activeBackend = RmbgInferenceBackend.Cpu
-                                fallbackReason = "NNAPI创建失败，已回退CPU: ${describeRmbgFailure(nnapiError)}"
-                            }
-                            .onFailure { cpuError ->
-                                throw RmbgBackendException(
-                                    "NNAPI创建失败，CPU回退也失败: NNAPI ${describeRmbgFailure(nnapiError)}；CPU ${describeRmbgFailure(cpuError)}",
-                                    cpuError,
-                                )
-                            }
-                    }
-            }
+            val created = createSessionPair(sessionOptionsClass)
+            sessionOptions = created.first
+            session = created.second
+            activeBackend = RmbgInferenceBackend.Cpu
         }
 
-        private fun createSessionPair(
-            sessionOptionsClass: Class<*>,
-            configure: (Any) -> Unit,
-        ): Pair<Any, Any> {
+        private fun createSessionPair(sessionOptionsClass: Class<*>): Pair<Any, Any> {
             val options = sessionOptionsClass.getConstructor().newInstance()
             try {
                 configureBaseOptions(sessionOptionsClass, options)
-                configure(options)
                 val createdSession = environmentClass
                     .getMethod("createSession", String::class.java, sessionOptionsClass)
                     .invoke(environment, component.model.absolutePath, options)
@@ -5687,59 +5597,6 @@ class MainActivity : ComponentActivity() {
             runCatching { sessionOptionsClass.getMethod("setCPUArenaAllocator", Boolean::class.javaPrimitiveType).invoke(options, false) }
             runCatching { sessionOptionsClass.getMethod("setIntraOpNumThreads", Int::class.javaPrimitiveType).invoke(options, 1) }
             runCatching { sessionOptionsClass.getMethod("setInterOpNumThreads", Int::class.javaPrimitiveType).invoke(options, 1) }
-        }
-
-        private fun configureNnapiProvider(
-            classLoader: ClassLoader,
-            sessionOptionsClass: Class<*>,
-            options: Any,
-            backend: RmbgInferenceBackend,
-        ) {
-            if (backend == RmbgInferenceBackend.NnapiStrict) {
-                val flags = createNnapiFlags(classLoader, disableCpu = true)
-                invokeSessionOption(
-                    sessionOptionsClass.getMethod("addNnapi", java.util.EnumSet::class.java),
-                    options,
-                    flags,
-                )
-                return
-            }
-            val noArgAddNnapi = sessionOptionsClass.methods.firstOrNull {
-                it.name == "addNnapi" && it.parameterTypes.isEmpty()
-            }
-            if (noArgAddNnapi != null) {
-                invokeSessionOption(noArgAddNnapi, options)
-            } else {
-                val flags = createNnapiFlags(classLoader, disableCpu = false)
-                invokeSessionOption(
-                    sessionOptionsClass.getMethod("addNnapi", java.util.EnumSet::class.java),
-                    options,
-                    flags,
-                )
-            }
-        }
-
-        private fun createNnapiFlags(classLoader: ClassLoader, disableCpu: Boolean): Any {
-            val flagsClass = classLoader.loadClass("ai.onnxruntime.providers.NNAPIFlags")
-            @Suppress("UNCHECKED_CAST")
-            val flags = java.util.EnumSet::class.java
-                .getMethod("noneOf", Class::class.java)
-                .invoke(null, flagsClass) as MutableSet<Any>
-            if (disableCpu) {
-                val cpuDisabled = flagsClass.getMethod("valueOf", String::class.java)
-                    .invoke(null, "CPU_DISABLED")
-                    ?: error("无法加载 NNAPI CPU_DISABLED flag")
-                flags.add(cpuDisabled)
-            }
-            return flags
-        }
-
-        private fun invokeSessionOption(method: java.lang.reflect.Method, target: Any, vararg args: Any) {
-            try {
-                method.invoke(target, *args)
-            } catch (error: InvocationTargetException) {
-                throw error.targetException ?: error
-            }
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -5782,64 +5639,24 @@ class MainActivity : ComponentActivity() {
         synchronized(this) {
             runCatching { rmbgRuntime?.close() }
             rmbgRuntime = null
-            val requestedBackend = rmbgBackend
             val startedAt = System.nanoTime()
             var runtime: DynamicRmbgRuntime? = null
-            var activeBackendAtFailure: RmbgInferenceBackend? = null
             try {
                 input.rewind()
-                runtime = DynamicRmbgRuntime(component, requestedBackend)
+                runtime = DynamicRmbgRuntime(component)
                 rmbgRuntime = runtime
-                activeBackendAtFailure = runtime.activeBackend
                 val output = runtime.run(input, shape)
                 RmbgModelOutput(
                     output = output,
                     report = RmbgInferenceReport(
-                        requestedBackend = requestedBackend,
                         actualBackend = runtime.activeBackend,
                         elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt),
-                        fallbackReason = runtime.fallbackReason,
                     ),
                 )
             } catch (error: Throwable) {
-                val firstFailure = describeRmbgFailure(error)
                 runCatching { runtime?.close() }
                 rmbgRuntime = null
-                if (
-                    requestedBackend.allowCpuFallback &&
-                    activeBackendAtFailure != null &&
-                    activeBackendAtFailure != RmbgInferenceBackend.Cpu
-                ) {
-                    runtime = try {
-                        DynamicRmbgRuntime(component, RmbgInferenceBackend.Cpu)
-                    } catch (cpuCreateError: Throwable) {
-                        throw RmbgBackendException(
-                            "NNAPI推理失败，CPU回退创建也失败: NNAPI $firstFailure；CPU ${describeRmbgFailure(cpuCreateError)}",
-                            cpuCreateError,
-                        )
-                    }
-                    rmbgRuntime = runtime
-                    try {
-                        input.rewind()
-                        val output = runtime.run(input, shape)
-                        RmbgModelOutput(
-                            output = output,
-                            report = RmbgInferenceReport(
-                                requestedBackend = requestedBackend,
-                                actualBackend = RmbgInferenceBackend.Cpu,
-                                elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt),
-                                fallbackReason = "NNAPI推理失败，已回退CPU: $firstFailure",
-                            ),
-                        )
-                    } catch (cpuRunError: Throwable) {
-                        throw RmbgBackendException(
-                            "NNAPI推理失败，CPU回退也失败: NNAPI $firstFailure；CPU ${describeRmbgFailure(cpuRunError)}",
-                            cpuRunError,
-                        )
-                    }
-                } else {
-                    throw error
-                }
+                throw error
             } finally {
                 runCatching { runtime?.close() }
                 rmbgRuntime = null
@@ -5847,7 +5664,7 @@ class MainActivity : ComponentActivity() {
         }
 
     private fun runRmbgAlphaMask(sourceIcon: Bitmap, component: RmbgComponent): RmbgMaskResult {
-        val inputSize = rmbgInputSize.coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
+        val inputSize = DEFAULT_RMBG_INPUT_SIZE
         val modelInput = resizeBitmap(sourceIcon, inputSize, inputSize)
         val inputPixels = IntArray(inputSize * inputSize)
         modelInput.getPixels(inputPixels, 0, inputSize, 0, 0, inputSize, inputSize)
@@ -6855,10 +6672,10 @@ class MainActivity : ComponentActivity() {
         lastRmbgCandidateError = null
         rmbgCandidatePackageName = session.packageName
         rmbgCandidateMode = mode
-        rmbgCandidateStatusText = "RMBG运行中(${rmbgBackend.label})，请等待: ${mode.label}"
+        rmbgCandidateStatusText = "RMBG运行中(${RmbgInferenceBackend.Cpu.label})，请等待: ${mode.label}"
         rmbgCandidateFailurePackageName = null
         rmbgCandidateFailureMode = null
-        statusText = "RMBG候选生成中(${rmbgBackend.label}): ${session.packageName}"
+        statusText = "RMBG候选生成中(${RmbgInferenceBackend.Cpu.label}): ${session.packageName}"
         val selections = previewSelections.withChoice(mode, PreviewChoice.Rmbg)
         startUiFriendlyThread("ArtPlusRmbgCandidate") {
             try {
@@ -6890,7 +6707,7 @@ class MainActivity : ComponentActivity() {
                     lastRmbgCandidateError = message
                     rmbgCandidateFailurePackageName = session.packageName
                     rmbgCandidateFailureMode = mode
-                    statusText = "RMBG候选失败(${rmbgBackend.label}): $message"
+                    statusText = "RMBG候选失败(${RmbgInferenceBackend.Cpu.label}): $message"
                 }
             } finally {
                 rmbgGenerationGate.set(false)
@@ -6930,10 +6747,10 @@ class MainActivity : ComponentActivity() {
         lastRmbgCandidateError = null
         rmbgCandidatePackageName = session.packageName
         rmbgCandidateMode = null
-        rmbgCandidateStatusText = "RMBG运行中(${rmbgBackend.label})，请等待: 全部"
+        rmbgCandidateStatusText = "RMBG运行中(${RmbgInferenceBackend.Cpu.label})，请等待: 全部"
         rmbgCandidateFailurePackageName = null
         rmbgCandidateFailureMode = null
-        statusText = "RMBG候选生成中(${rmbgBackend.label}): ${session.packageName}"
+        statusText = "RMBG候选生成中(${RmbgInferenceBackend.Cpu.label}): ${session.packageName}"
         val selections = PreviewSelections.default(PreviewChoice.Rmbg)
         startUiFriendlyThread("ArtPlusRmbgCandidateAll") {
             try {
@@ -6966,7 +6783,7 @@ class MainActivity : ComponentActivity() {
                     lastRmbgCandidateError = message
                     rmbgCandidateFailurePackageName = session.packageName
                     rmbgCandidateFailureMode = null
-                    statusText = "RMBG候选失败(${rmbgBackend.label}): $message"
+                    statusText = "RMBG候选失败(${RmbgInferenceBackend.Cpu.label}): $message"
                 }
             } finally {
                 rmbgGenerationGate.set(false)
@@ -6985,9 +6802,6 @@ class MainActivity : ComponentActivity() {
         val raw = root.message ?: root.javaClass.simpleName
         val lower = raw.lowercase()
         return when {
-            root is RmbgBackendException -> {
-                raw
-            }
             root is OutOfMemoryError ||
                 "outofmemory" in lower ||
                 "failed to allocate" in lower ||
@@ -7000,49 +6814,21 @@ class MainActivity : ComponentActivity() {
             "reshape" in lower || "shape" in lower || "invalid dimensions" in lower -> {
                 "模型输入尺寸不匹配；当前 RMBG-2.0 ONNX 组件需要 1024 推理分辨率"
             }
-            "nnapi" in lower -> {
-                "NNAPI后端失败: $raw"
-            }
             else -> raw
         }
     }
 
     private fun formatRmbgInferenceReport(report: RmbgInferenceReport?): String {
         if (report == null) {
-            return rmbgBackend.label
+            return RmbgInferenceBackend.Cpu.label
         }
         return buildString {
             append(report.actualBackend.label)
             append(" ")
             append(report.elapsedMs)
             append("ms")
-            report.fallbackReason?.takeIf { it.isNotBlank() }?.let {
-                append("，fallback: ")
-                append(it)
-            }
         }
     }
-
-    private fun probeRmbgQnnCapability(): String =
-        runCatching {
-            val classLoader = MainActivity::class.java.classLoader ?: ClassLoader.getSystemClassLoader()
-            val sessionOptionsClass = classLoader.loadClass("ai.onnxruntime.OrtSession\$SessionOptions")
-            val hasAddQnn = sessionOptionsClass.methods.any { method ->
-                method.name == "addQnn" && method.parameterTypes.size == 1 && method.parameterTypes[0] == Map::class.java
-            }
-            val environmentClass = classLoader.loadClass("ai.onnxruntime.OrtEnvironment")
-            val providers = environmentClass.getMethod("getAvailableProviders").invoke(null) as? Set<*>
-            val hasQnnProvider = providers.orEmpty().any { provider ->
-                (provider as? Enum<*>)?.name == "QNN"
-            }
-            when {
-                !hasAddQnn -> "QNN API 不存在"
-                hasQnnProvider -> "QNN Provider 可见；未配置 QNN native 库，保持占位不启用"
-                else -> "QNN API 存在；当前 ORT native 未启用 QNN Provider"
-            }
-        }.getOrElse { error ->
-            "QNN 探测失败: ${error.message ?: error.javaClass.simpleName}"
-        }
 
     private fun unwrapInvocationError(error: Throwable): Throwable {
         var current = error
@@ -10380,25 +10166,10 @@ class MainActivity : ComponentActivity() {
             .put("rmbg_component_installed", findRmbgComponent() != null)
             .put("rmbg_component_abi", findRmbgComponent()?.abi ?: "")
             .put("rmbg_model_name", RMBG_MODEL_NAME)
-            .put("rmbg_input_size", rmbgInputSize)
-            .put("rmbg_backend", rmbgBackend.value)
-            .put("rmbg_backend_label", rmbgBackend.label)
-            .put("rmbg_backend_status", rmbgInferenceStatusSummary())
+            .put("rmbg_status", rmbgInferenceStatusSummary())
             .put("rmbg_actual_backend", lastRmbgInferenceReport?.actualBackend?.value ?: "")
             .put("rmbg_inference_elapsed_ms", lastRmbgInferenceReport?.elapsedMs ?: JSONObject.NULL)
-            .put("rmbg_inference_fallback_reason", lastRmbgInferenceReport?.fallbackReason ?: "")
             .put("rmbg_last_error", lastRmbgCandidateError ?: "")
-            .put("rmbg_qnn_status", rmbgQnnCapabilityText)
-            .put("rmbg_backends", JSONArray().also { array ->
-                RmbgInferenceBackend.runnableEntries.forEach { backend ->
-                    array.put(
-                        JSONObject()
-                            .put("value", backend.value)
-                            .put("label", backend.label)
-                            .put("summary", backend.summary),
-                    )
-                }
-            })
             .put("adaptive_foreground_mode", adaptiveForegroundMode.value)
             .put("adaptive_foreground_modes", JSONArray().also { array ->
                 AdaptiveForegroundMode.entries.forEach { mode ->
@@ -10428,7 +10199,6 @@ class MainActivity : ComponentActivity() {
                     .put("plate_removal_percent", intRangeJson(MIN_PLATE_REMOVAL_PERCENT, MAX_PLATE_REMOVAL_PERCENT))
                     .put("shadow_removal_percent", intRangeJson(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT))
                     .put("edge_polish_percent", intRangeJson(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT))
-                    .put("rmbg_input_size", intRangeJson(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE))
                     .put(
                         "adaptive_direct_max_coverage_percent",
                         intRangeJson(MIN_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, MAX_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT),
@@ -10510,16 +10280,6 @@ class MainActivity : ComponentActivity() {
                 params.containsKey("gpt_api_key")
             ) {
                 saveGptSettings()
-            }
-            params["rmbg_input_size"]?.toIntOrNull()?.let {
-                rmbgInputSize = it.coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
-                draftRmbgInputSizeText = rmbgInputSize.toString()
-                saveRmbgSettings()
-                runCatching { rmbgRuntime?.close() }
-                rmbgRuntime = null
-            }
-            params["rmbg_backend"]?.let {
-                updateRmbgBackend(RmbgInferenceBackend.fromValue(it))
             }
             params["adaptive_foreground_mode"]?.let {
                 adaptiveForegroundMode = AdaptiveForegroundMode.fromValue(it)
@@ -10610,7 +10370,7 @@ class MainActivity : ComponentActivity() {
         </main>
         <script>
         const numericKeys = [
-          'foreground_subject_percent','background_separation_percent','plate_removal_percent','shadow_removal_percent','edge_polish_percent','rmbg_input_size',
+          'foreground_subject_percent','background_separation_percent','plate_removal_percent','shadow_removal_percent','edge_polish_percent',
           'adaptive_direct_max_coverage_percent','adaptive_direct_max_coverage_increase_percent',
           'adaptive_mask_edge_coverage_percent','adaptive_mask_min_coverage_percent','adaptive_center_epsilon_percent'
         ];
@@ -10618,15 +10378,6 @@ class MainActivity : ComponentActivity() {
           const data = await fetch('/debug/params').then(r=>r.json());
 	          const form = document.getElementById('params');
 	          form.innerHTML = '';
-	          const rmbgBackend = document.createElement('select');
-	          data.rmbg_backends.forEach(m => {
-	            const option = document.createElement('option');
-	            option.value = m.value; option.textContent = m.value + ' - ' + m.label;
-	            option.selected = m.value === data.rmbg_backend;
-	            rmbgBackend.appendChild(option);
-	          });
-	          rmbgBackend.name = 'rmbg_backend';
-	          form.appendChild(row('rmbg_backend', rmbgBackend));
 	          const select = document.createElement('select');
 	          data.adaptive_foreground_modes.forEach(m => {
 	            const option = document.createElement('option');
@@ -10932,8 +10683,7 @@ class MainActivity : ComponentActivity() {
                                     .put("ok", accepted)
                                     .put("package", packageName)
                                     .put("mode", mode.value)
-                                    .put("rmbg_backend", snapshot.optString("rmbg_backend"))
-                                    .put("rmbg_backend_status", snapshot.optString("rmbg_backend_status"))
+                                    .put("rmbg_status", snapshot.optString("rmbg_status"))
                                     .put("status", snapshot.optString("status")),
                                 if (accepted) 202 else 409,
                             )
@@ -11303,22 +11053,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private data class RmbgModelPreset(
+        val id: String,
+        val label: String,
+        val summary: String,
+        val url: String,
+    )
+
     private enum class RmbgInferenceBackend(
         val value: String,
         val label: String,
-        val summary: String,
-        val allowCpuFallback: Boolean,
     ) {
-        Cpu("cpu", "CPU", "ONNX Runtime CPU 默认路径", false),
-        Nnapi("nnapi", "NNAPI", "注册 NNAPI EP；创建或推理失败时回退 CPU", true),
-        NnapiStrict("nnapi_strict", "NNAPI严格", "注册 NNAPI EP 并禁用 NNAPI CPU fallback；失败直接报错", false);
-
-        companion object {
-            val runnableEntries: List<RmbgInferenceBackend> = listOf(Cpu, Nnapi, NnapiStrict)
-
-            fun fromValue(value: String?): RmbgInferenceBackend =
-                entries.firstOrNull { it.value == value } ?: Cpu
-        }
+        Cpu("cpu", "CPU"),
     }
 
     private enum class LocalSeparationMode(val value: String, val label: String, val summary: String) {
@@ -11384,7 +11130,6 @@ class MainActivity : ComponentActivity() {
         private const val PREF_GPT_API_KEY_ENCRYPTED = "gpt_api_key_encrypted"
         private const val PREF_RMBG_COMPONENT_URL = "rmbg_component_url"
         private const val PREF_RMBG_INPUT_SIZE = "rmbg_input_size"
-        private const val PREF_RMBG_INFERENCE_BACKEND = "rmbg_inference_backend"
         private const val PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024 = "rmbg_input_size_migrated_to_1024"
         private const val PREF_LOCAL_SEPARATION_MODE = "local_separation_mode"
         private const val PREF_FOREGROUND_SUBJECT_PERCENT = "foreground_subject_percent"
@@ -11418,8 +11163,6 @@ class MainActivity : ComponentActivity() {
         private const val RMBG_COMPONENT_DIR = "rmbg_component"
         private const val RMBG_MODEL_NAME = "bria-rmbg.onnx"
         private const val DEFAULT_RMBG_INPUT_SIZE = 1024
-        private const val MIN_RMBG_INPUT_SIZE = 128
-        private const val MAX_RMBG_INPUT_SIZE = 1024
         private const val RMBG_MIN_MODEL_BYTES = 100_000_000L
         private const val RMBG_MIN_COMPONENT_ZIP_BYTES = 100_000_000L
         private const val RMBG_MAX_DOWNLOAD_BYTES = 2L * 1024L * 1024L * 1024L
@@ -11427,9 +11170,81 @@ class MainActivity : ComponentActivity() {
         private const val RMBG_MAX_COMPONENT_ZIP_UNPACK_BYTES = 800L * 1024L * 1024L
         private const val RMBG_DOWNLOAD_CONNECT_TIMEOUT_MS = 30_000
         private const val RMBG_DOWNLOAD_READ_TIMEOUT_MS = 1_800_000
-        private const val DEFAULT_RMBG_COMPONENT_URL =
+        private const val RMBG_MODEL_URL_ORIGINAL =
             "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model.onnx"
-        private val RMBG_INPUT_SIZE_OPTIONS = listOf(128, 256, 512, 1024)
+        private const val RMBG_MODEL_URL_QUANTIZED =
+            "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_quantized.onnx"
+        private const val RMBG_MODEL_URL_UINT8 =
+            "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_uint8.onnx"
+        private const val RMBG_MODEL_URL_INT8 =
+            "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_int8.onnx"
+        private const val RMBG_MODEL_URL_FP16 =
+            "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_fp16.onnx"
+        private const val RMBG_MODEL_URL_Q4 =
+            "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_q4.onnx"
+        private const val RMBG_MODEL_URL_BNB4 =
+            "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_bnb4.onnx"
+        private const val RMBG_MODEL_URL_Q4F16 =
+            "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_q4f16.onnx"
+        private val DEFAULT_RMBG_COMPONENT_URL =
+            RMBG_MODEL_URL_QUANTIZED.ifBlank { RMBG_MODEL_URL_ORIGINAL }
+        private val RMBG_MODEL_PRESET_CUSTOM = RmbgModelPreset(
+            id = "custom",
+            label = "自定义 URL",
+            summary = "手动填写模型或组件 ZIP 地址",
+            url = "",
+        )
+        private val RMBG_MODEL_PRESETS = listOf(
+            RmbgModelPreset(
+                id = "rmbg20_quantized",
+                label = "量化推荐",
+                summary = "model_quantized.onnx · 349MB · 默认候选",
+                url = RMBG_MODEL_URL_QUANTIZED,
+            ),
+            RmbgModelPreset(
+                id = "rmbg20_uint8",
+                label = "UINT8",
+                summary = "model_uint8.onnx · 349MB · 备选",
+                url = RMBG_MODEL_URL_UINT8,
+            ),
+            RmbgModelPreset(
+                id = "rmbg20_int8",
+                label = "INT8",
+                summary = "model_int8.onnx · 349MB · 备选",
+                url = RMBG_MODEL_URL_INT8,
+            ),
+            RmbgModelPreset(
+                id = "rmbg20_original",
+                label = "原版",
+                summary = "model.onnx · 官方 ONNX",
+                url = RMBG_MODEL_URL_ORIGINAL,
+            ),
+            RmbgModelPreset(
+                id = "rmbg20_fp16",
+                label = "FP16",
+                summary = "model_fp16.onnx · 490MB · 基线",
+                url = RMBG_MODEL_URL_FP16,
+            ),
+            RmbgModelPreset(
+                id = "rmbg20_q4",
+                label = "Q4",
+                summary = "model_q4.onnx · 350MB",
+                url = RMBG_MODEL_URL_Q4,
+            ),
+            RmbgModelPreset(
+                id = "rmbg20_bnb4",
+                label = "BNB4",
+                summary = "model_bnb4.onnx · 339MB",
+                url = RMBG_MODEL_URL_BNB4,
+            ),
+            RmbgModelPreset(
+                id = "rmbg20_q4f16",
+                label = "Q4F16",
+                summary = "model_q4f16.onnx · 223MB",
+                url = RMBG_MODEL_URL_Q4F16,
+            ),
+            RMBG_MODEL_PRESET_CUSTOM,
+        )
         private val RMBG_NORMALIZE_MEAN = floatArrayOf(0.485f, 0.456f, 0.406f)
         private val RMBG_NORMALIZE_STD = floatArrayOf(0.229f, 0.224f, 0.225f)
         private const val LEGACY_DEFAULT_GPT_BASE_URL = "http://192.168.31.179:3002/v1"
