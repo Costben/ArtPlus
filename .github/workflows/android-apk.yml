@@ -100,13 +100,37 @@ jobs:
           APK_PATH: release/${{ needs.build.outputs.apk_name }}
         shell: bash
         run: |
-          {
-            echo "ArtPlus Android ${VERSION}"
-            echo
-            echo "- Built by GitHub Actions."
-            echo "- Release build signed with the default Android debug signing key."
-            echo "- APK: $(basename "${APK_PATH}")"
-          } > release-notes.md
+          if [[ "${VERSION}" == "1.1" ]]; then
+            cat > release-notes.md <<EOF
+          ArtPlus Android 1.1
+
+          从 1.0 到 1.1 的主要变化：
+
+          - 新增液态玻璃风格设置，支持调整高光半径，并应用到预览和生成的 1x1、1x2、2x1、2x2 资源。
+          - 首页制作卡片会持久化上次选择的应用、预览规则和相关输入，重新打开后保留当前工作状态。
+          - 预览规则简化为默认显示原始、拼合背景、RMBG、GPT，字标保全、清理、底座、二层和自定义规则收进更多规则。
+          - 拼合背景支持在 GPT 或 RMBG 主体之后继续使用原图背景，减少 adaptive icon 背景丢失。
+          - 合并去底板和全清理为统一的清理规则，旧设置会自动兼容迁移。
+          - 单色图标改为只定向处理外缘，保留内部连续 Alpha，改善渐变分层和笔画末端被切的问题。
+          - RMBG 即使未通过自动可用性校验也会保留在候选里，方便手动选择和对比。
+          - 写入默认、写入全部、写入当前预览不再自动刷新桌面图标，刷新改为用户手动触发。
+          - 设置页和选择 APK 页面整理了顶部图标、保存入口、返回入口和输出目录选择方式。
+
+          构建信息：
+
+          - Built by GitHub Actions.
+          - Release build signed with the default Android debug signing key.
+          - APK: $(basename "${APK_PATH}")
+          EOF
+          else
+            {
+              echo "ArtPlus Android ${VERSION}"
+              echo
+              echo "- Built by GitHub Actions."
+              echo "- Release build signed with the default Android debug signing key."
+              echo "- APK: $(basename "${APK_PATH}")"
+            } > release-notes.md
+          fi
 
           if gh release view "${TAG_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             gh release upload "${TAG_NAME}" "${APK_PATH}" --repo "${GITHUB_REPOSITORY}" --clobber

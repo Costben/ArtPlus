@@ -1465,24 +1465,29 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun PreviewChoiceDialog(mode: PreviewMode, session: GenerationSession) {
-        val ruleChoices = listOf(
+        val defaultChoices = listOf(
             PreviewChoice.Original,
-            PreviewChoice.TextSafe,
-            PreviewChoice.Plate,
-            PreviewChoice.Full,
             PreviewChoice.ComposedBackground,
+            PreviewChoice.Rmbg,
+            PreviewChoice.Gpt,
+        )
+        val moreChoices = listOf(
+            PreviewChoice.TextSafe,
+            PreviewChoice.Full,
             PreviewChoice.ComponentSubject,
             PreviewChoice.ComponentBackground,
             PreviewChoice.TwoLayer,
+            PreviewChoice.CustomForeground,
+            PreviewChoice.CustomBackground,
         )
-        val selectedRule = previewSelections.choiceFor(mode).let { choice ->
+        val selectedMoreRule = previewSelections.choiceFor(mode).let { choice ->
             when {
-                choice.isComposedBackgroundCombination -> PreviewChoice.ComposedBackground
-                choice in ruleChoices -> choice
+                choice == PreviewChoice.Plate -> PreviewChoice.Full
+                choice in moreChoices -> choice
                 else -> null
             }
         }
-        var showRuleChoices by remember(mode) { mutableStateOf(true) }
+        var showMoreRules by remember(mode) { mutableStateOf(false) }
         Dialog(onDismissRequest = { previewChoiceMode = null }) {
             Card(
                 modifier = Modifier
@@ -1532,26 +1537,39 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        RuleCleanupGroupRow(
-                            selectedRule = selectedRule,
-                            expanded = showRuleChoices,
-                            onToggle = { showRuleChoices = !showRuleChoices },
-                        )
-                        if (showRuleChoices) {
-                            ruleChoices.forEach { choice ->
-                                PreviewChoiceRow(
-                                    mode = mode,
-                                    choice = choice,
-                                    session = session,
-                                )
-                            }
-                        }
-                        listOf(PreviewChoice.Rmbg, PreviewChoice.Gpt, PreviewChoice.CustomForeground, PreviewChoice.CustomBackground).forEach { choice ->
+                        defaultChoices.forEach { choice ->
                             PreviewChoiceRow(
                                 mode = mode,
                                 choice = choice,
                                 session = session,
                             )
+                        }
+                        MoreRulesGroupRow(
+                            selectedRule = selectedMoreRule,
+                            expanded = showMoreRules,
+                            onToggle = { showMoreRules = !showMoreRules },
+                        )
+                        if (showMoreRules) {
+                            moreChoices.forEach { choice ->
+                                if (shouldShowPreviewChoiceRow(choice, session)) {
+                                    PreviewChoiceRow(
+                                        mode = mode,
+                                        choice = choice,
+                                        session = session,
+                                    )
+                                }
+                            }
+                        }
+                        if (!showMoreRules && selectedMoreRule != null) {
+                            moreChoices
+                                .firstOrNull { it == selectedMoreRule && shouldShowPreviewChoiceRow(it, session) }
+                                ?.let { choice ->
+                                    PreviewChoiceRow(
+                                        mode = mode,
+                                        choice = choice,
+                                        session = session,
+                                    )
+                                }
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
@@ -1566,8 +1584,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun shouldShowPreviewChoiceRow(choice: PreviewChoice, session: GenerationSession): Boolean =
+        when {
+            choice.isCustom -> true
+            choice == PreviewChoice.Full -> session.candidates[PreviewChoice.Full] != null ||
+                session.candidates[PreviewChoice.Plate] != null
+            else -> candidateForChoice(session, choice) != null
+        }
+
     @Composable
-    private fun RuleCleanupGroupRow(
+    private fun MoreRulesGroupRow(
         selectedRule: PreviewChoice?,
         expanded: Boolean,
         onToggle: () -> Unit,
@@ -1607,7 +1633,7 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
-                    text = "规则清理",
+                    text = "更多规则",
                     style = MiuixTheme.textStyles.body1,
                     color = titleColor,
                     maxLines = 1,
@@ -1615,7 +1641,7 @@ class MainActivity : ComponentActivity() {
                 )
                 Text(
                     text = selectedRule?.let { "当前使用: ${it.label}" }
-                        ?: "原始 / 字标保全 / 去底板 / 全清理 / 拼合背景 / 底座 / 二层",
+                        ?: "字标保全 / 清理 / 底座 / 二层 / 自定义",
                     style = MiuixTheme.textStyles.footnote1,
                     color = summaryColor,
                     maxLines = 1,
@@ -1906,10 +1932,15 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun LocalSeparationModeControl() {
-        val modes = LocalSeparationMode.entries
+        val modes = LocalSeparationMode.entries.filterNot { it == LocalSeparationMode.Plate }
+        val selectedMode = if (localSeparationMode == LocalSeparationMode.Plate) {
+            LocalSeparationMode.Full
+        } else {
+            localSeparationMode
+        }
         SegmentedControl(
             labels = modes.map { it.label },
-            selectedIndex = modes.indexOf(localSeparationMode),
+            selectedIndex = modes.indexOf(selectedMode).coerceAtLeast(0),
             scrollable = true,
             onSelected = { index ->
                 updateLocalSeparationMode(modes[index])
@@ -5369,16 +5400,14 @@ class MainActivity : ComponentActivity() {
             preserveGeometry = localSource.preserveGeometry,
         )
         val plateResult = separateLocalForeground(localSource.recfg, localSource.recbg, LocalSeparationMode.Plate)
-        val plate = IconCandidate(
-            recfgRaw = plateResult.bitmap,
-            recbg = localSource.recbg,
-            monochromeRaw = localSource.monochrome,
-            monochromeIsNative = localSource.monochromeIsNative,
-            preserveGeometry = localSource.preserveGeometry,
-        )
         val fullResult = separateLocalForeground(localSource.recfg, localSource.recbg, LocalSeparationMode.Full)
-        val full = IconCandidate(
-            recfgRaw = fullResult.bitmap,
+        val cleanupResult = chooseMergedCleanupResult(
+            original = originalForeground,
+            plate = plateResult,
+            full = fullResult,
+        )
+        val cleanup = IconCandidate(
+            recfgRaw = cleanupResult.bitmap,
             recbg = localSource.recbg,
             monochromeRaw = localSource.monochrome,
             monochromeIsNative = localSource.monochromeIsNative,
@@ -5392,8 +5421,7 @@ class MainActivity : ComponentActivity() {
         val twoLayerResult = buildTwoLayerCandidate(sourceIcon)
         val candidates = linkedMapOf<PreviewChoice, IconCandidate>(
             PreviewChoice.Original to original,
-            PreviewChoice.Plate to plate,
-            PreviewChoice.Full to full,
+            PreviewChoice.Full to cleanup,
             PreviewChoice.ComposedBackground to composedBackground,
         )
         if (localSource.textSafe != null) {
@@ -5410,12 +5438,36 @@ class MainActivity : ComponentActivity() {
         }
         val autoChoice = chooseAutoLocalChoice(
             original = originalForeground,
-            plate = plateResult.bitmap,
-            full = fullResult.bitmap,
+            cleanup = cleanupResult.bitmap,
             twoLayer = twoLayerResult,
             rmbg = null,
         )
         return LocalCandidateSet(candidates = candidates, autoChoice = autoChoice)
+    }
+
+    private fun chooseMergedCleanupResult(
+        original: Bitmap,
+        plate: LocalSeparationResult,
+        full: LocalSeparationResult,
+    ): LocalSeparationResult {
+        val originalCoverage = meaningfulAlphaCoverage(original)
+        val plateCoverage = meaningfulAlphaCoverage(plate.bitmap)
+        val fullCoverage = meaningfulAlphaCoverage(full.bitmap)
+        val plateUsable = isAutoLocalCandidateUsable(
+            candidate = plate.bitmap,
+            originalCoverage = originalCoverage,
+            candidateCoverage = plateCoverage,
+        )
+        val fullUsable = isAutoLocalCandidateUsable(
+            candidate = full.bitmap,
+            originalCoverage = originalCoverage,
+            candidateCoverage = fullCoverage,
+        )
+        return when {
+            fullUsable && (!plateUsable || fullCoverage <= plateCoverage + AUTO_COVERAGE_CHANGE_THRESHOLD) -> full
+            plateUsable -> plate.copy(summary = plate.summary.replace("去底板", "清理"))
+            else -> full
+        }
     }
 
     private fun buildComposedBackgroundCandidate(
@@ -6633,7 +6685,7 @@ class MainActivity : ComponentActivity() {
     private fun defaultPreviewChoiceForMode(mode: LocalSeparationMode, autoChoice: PreviewChoice): PreviewChoice =
         when (mode) {
             LocalSeparationMode.Original -> PreviewChoice.Original
-            LocalSeparationMode.Plate -> PreviewChoice.Plate
+            LocalSeparationMode.Plate -> PreviewChoice.Full
             LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
             LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
             LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
@@ -6643,37 +6695,28 @@ class MainActivity : ComponentActivity() {
 
     private fun chooseAutoLocalChoice(
         original: Bitmap,
-        plate: Bitmap,
-        full: Bitmap,
+        cleanup: Bitmap,
         twoLayer: CandidateBuildResult?,
         rmbg: CandidateBuildResult?,
     ): PreviewChoice {
         val originalCoverage = meaningfulAlphaCoverage(original)
-        val plateCoverage = meaningfulAlphaCoverage(plate)
-        val fullCoverage = meaningfulAlphaCoverage(full)
-        val plateUsable = isAutoLocalCandidateUsable(
-            candidate = plate,
+        val cleanupCoverage = meaningfulAlphaCoverage(cleanup)
+        val cleanupUsable = isAutoLocalCandidateUsable(
+            candidate = cleanup,
             originalCoverage = originalCoverage,
-            candidateCoverage = plateCoverage,
-        )
-        val fullUsable = isAutoLocalCandidateUsable(
-            candidate = full,
-            originalCoverage = originalCoverage,
-            candidateCoverage = fullCoverage,
+            candidateCoverage = cleanupCoverage,
         )
         if (twoLayer?.autoUsable == true) {
             return PreviewChoice.TwoLayer
         }
         if (
             rmbg?.autoUsable == true &&
-            rmbg.coverage < minOf(plateCoverage, fullCoverage) - AUTO_COVERAGE_CHANGE_THRESHOLD
+            rmbg.coverage < cleanupCoverage - AUTO_COVERAGE_CHANGE_THRESHOLD
         ) {
             return PreviewChoice.Rmbg
         }
         return when {
-            fullUsable &&
-                (!plateUsable || fullCoverage < plateCoverage - AUTO_COVERAGE_CHANGE_THRESHOLD) -> PreviewChoice.Full
-            plateUsable -> PreviewChoice.Plate
+            cleanupUsable -> PreviewChoice.Full
             else -> PreviewChoice.Original
         }
     }
@@ -6992,11 +7035,7 @@ class MainActivity : ComponentActivity() {
                 monochromeAlphaFromMask(source)
             }
         }
-        return if (candidate.monochromeIsNative) {
-            sharpenMonochromeAlpha(monochrome, nativeSource = true)
-        } else {
-            trimMonochromeEdge(monochrome)
-        }
+        return trimMonochromeEdge(monochrome)
     }
 
     private fun scaleMonochromeForTheme(source: Bitmap): Bitmap =
@@ -8690,11 +8729,11 @@ class MainActivity : ComponentActivity() {
         val prefix = when (mode) {
             LocalSeparationMode.Auto -> "自动"
             LocalSeparationMode.Original -> "原始"
-            LocalSeparationMode.Plate -> "去底板"
+            LocalSeparationMode.Plate -> "清理"
             LocalSeparationMode.ComposedBackground -> "拼合背景"
             LocalSeparationMode.ComponentSubject -> "组件主体"
             LocalSeparationMode.ComponentBackground -> "组件背景"
-            LocalSeparationMode.Full -> "全清理"
+            LocalSeparationMode.Full -> "清理"
         }
         return LocalSeparationResult(
             bitmap = current,
@@ -10375,7 +10414,7 @@ class MainActivity : ComponentActivity() {
 
         val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         out.setPixels(outPixels, 0, width, 0, 0, width, height)
-        return polishMonochromeEdges(sharpenMonochromeAlpha(out))
+        return out
     }
 
     private fun polishForegroundEdges(source: Bitmap): Bitmap {
@@ -11671,8 +11710,8 @@ class MainActivity : ComponentActivity() {
     ) {
         Original("原始", "保留原层"),
         TextSafe("字标保全", "保护白字"),
-        Plate("去底板", "移除大底板"),
-        Full("全清理", "清理底板和阴影"),
+        Plate("清理", "兼容旧去底板规则"),
+        Full("清理", "合并底板与阴影清理"),
         ComposedBackground("拼合背景", "从完整图标提取背景"),
         ComponentSubject("底座当主体", "保留复杂底座"),
         ComponentBackground("底座当背景", "底座作为背景"),
@@ -11765,6 +11804,7 @@ class MainActivity : ComponentActivity() {
 
             private fun previewChoiceFromName(name: String?): PreviewChoice =
                 PreviewChoice.entries.firstOrNull { it.name == name }
+                    ?.let { if (it == PreviewChoice.Plate) PreviewChoice.Full else it }
                     ?.takeUnless { it.isCustom }
                     ?: PreviewChoice.Full
         }
@@ -11813,15 +11853,17 @@ class MainActivity : ComponentActivity() {
     private enum class LocalSeparationMode(val value: String, val label: String, val summary: String) {
         Auto("auto", "自动", "按图标特征自动选择底板清理、边缘修复或阴影清理"),
         Original("original", "原始", "完全保留系统绘制的前景层"),
-        Plate("plate", "去底板", "只移除前景里接触边界的大面积伪底板"),
-        Full("full", "全清理", "移除伪底板并柔化明显拖尾的长阴影"),
+        Plate("plate", "清理", "兼容旧去底板规则"),
+        Full("full", "清理", "合并底板和长阴影清理"),
         ComposedBackground("composed_background", "拼合背景", "先拼合完整图标，再从拼合图里估算背景并分离主体"),
         ComponentSubject("component_subject", "底座当主体", "把 adaptive background 里的复杂底座合进主体，背景重建为纯色或渐变"),
         ComponentBackground("component_background", "底座当背景", "保留 adaptive background 为背景，只取 foreground 当主体");
 
         companion object {
             fun fromValue(value: String?): LocalSeparationMode =
-                entries.firstOrNull { it.value == value } ?: Auto
+                entries.firstOrNull { it.value == value }
+                    ?.let { if (it == Plate) Full else it }
+                    ?: Auto
         }
     }
 
