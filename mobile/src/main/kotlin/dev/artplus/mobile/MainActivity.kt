@@ -23,6 +23,8 @@ import android.os.Looper
 import android.os.Process
 import android.provider.DocumentsContract
 import android.provider.Settings
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import android.text.Editable
 import android.text.InputFilter
 import android.text.InputType
@@ -144,12 +146,15 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
+import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.URL
 import java.net.URLDecoder
 import java.nio.FloatBuffer
 import java.nio.charset.StandardCharsets
+import java.security.KeyStore
 import java.lang.reflect.InvocationTargetException
 import java.util.ArrayDeque
 import java.util.UUID
@@ -159,6 +164,10 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
@@ -271,6 +280,8 @@ class MainActivity : ComponentActivity() {
     private var rmbgComponentSaveStatus by mutableStateOf("")
     private var rmbgInputSize by mutableStateOf(DEFAULT_RMBG_INPUT_SIZE)
     private var draftRmbgInputSizeText by mutableStateOf(DEFAULT_RMBG_INPUT_SIZE.toString())
+    private var rmbgBackend by mutableStateOf(RmbgInferenceBackend.Cpu)
+    private var lastRmbgInferenceReport by mutableStateOf<RmbgInferenceReport?>(null)
     private var choicePopupRequest by mutableStateOf<ChoicePopupRequest?>(null)
     private var choicePopupVisible by mutableStateOf(false)
     private var nextChoicePopupId = 0L
@@ -279,6 +290,7 @@ class MainActivity : ComponentActivity() {
     private var debugHttpServer: DebugHttpServer? = null
     private var rmbgRuntime: DynamicRmbgRuntime? = null
     private var rmbgComponentStatus by mutableStateOf("")
+    private val rmbgQnnCapabilityText: String by lazy { probeRmbgQnnCapability() }
 
     private data class ChoicePopupRequest(
         val id: Long,
@@ -2568,6 +2580,32 @@ class MainActivity : ComponentActivity() {
                 value = if (component == null) "未安装" else "已安装",
             )
             Spacer(modifier = Modifier.height(12.dp))
+            RmbgBackendChoiceRow(
+                enabled = !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            SettingLine(
+                title = "推理状态",
+                summary = rmbgInferenceStatusSummary(),
+                value = rmbgInferenceStatusValue(),
+            )
+            if (lastRmbgCandidateError != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = lastRmbgCandidateError.orEmpty(),
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.error,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            SettingLine(
+                title = "QNN",
+                summary = rmbgQnnCapabilityText,
+                value = "占位",
+            )
+            Spacer(modifier = Modifier.height(12.dp))
             RmbgInputSizeChoiceRow(
                 enabled = !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
             )
@@ -3071,7 +3109,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun RmbgInputSizeChoiceRow(enabled: Boolean) {
-        val options = remember { listOf(128, 256, 512) }
+        val options = remember { RMBG_INPUT_SIZE_OPTIONS }
         ChoicePopupRow(
             title = "推理分辨率",
             summary = "默认 $DEFAULT_RMBG_INPUT_SIZE",
@@ -3082,12 +3120,28 @@ class MainActivity : ComponentActivity() {
             optionLabel = { it.toString() },
             optionSummary = { size ->
                 when (size) {
-                    128 -> "更省内存"
-                    256 -> "默认"
-                    else -> "更细"
+                    DEFAULT_RMBG_INPUT_SIZE -> "RMBG-2.0"
+                    128, 256, 512 -> "低分辨率模型"
+                    else -> "自定义"
                 }
             },
             onSelected = { updateRmbgInputSize(it) },
+        )
+    }
+
+    @Composable
+    private fun RmbgBackendChoiceRow(enabled: Boolean) {
+        val options = remember { RmbgInferenceBackend.runnableEntries }
+        ChoicePopupRow(
+            title = "推理后端",
+            summary = "CPU / NNAPI / 严格 NNAPI",
+            value = rmbgBackend.label,
+            enabled = enabled && !isBusy,
+            options = options,
+            selected = rmbgBackend,
+            optionLabel = { it.label },
+            optionSummary = { it.summary },
+            onSelected = { updateRmbgBackend(it) },
         )
     }
 
@@ -4171,28 +4225,32 @@ class MainActivity : ComponentActivity() {
     private fun getInstalledApplications(pm: PackageManager): List<ApplicationInfo> =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             pm.getInstalledApplications(
-                PackageManager.ApplicationInfoFlags.of(PackageManager.MATCH_ALL.toLong()),
+                PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
             )
         } else {
-            pm.getInstalledApplications(PackageManager.MATCH_ALL)
+            pm.getInstalledApplications(PackageManager.GET_META_DATA)
         }
 
     private fun getApplicationInfoCompat(packageName: String): ApplicationInfo =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             packageManager.getApplicationInfo(
                 packageName,
-                PackageManager.ApplicationInfoFlags.of(PackageManager.MATCH_ALL.toLong()),
+                PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
             )
         } else {
             @Suppress("DEPRECATION")
-            packageManager.getApplicationInfo(packageName, PackageManager.MATCH_ALL)
+            packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
         }
 
     private fun isDebugGenerateIntent(intent: Intent?): Boolean =
-        intent?.getStringExtra(EXTRA_DEBUG_GENERATE_PACKAGE)?.isNotBlank() == true
+        intent?.getStringExtra(EXTRA_DEBUG_GENERATE_PACKAGE)?.isNotBlank() == true &&
+            isDebugTokenValid(intent.getStringExtra(EXTRA_DEBUG_GENERATE_TOKEN))
 
     private fun handleDebugGenerateIntent(intent: Intent?) {
-        if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0) {
+        if (!isDebugBuild()) {
+            return
+        }
+        if (!isDebugTokenValid(intent?.getStringExtra(EXTRA_DEBUG_GENERATE_TOKEN))) {
             return
         }
         val debugPackageName = intent
@@ -4205,11 +4263,15 @@ class MainActivity : ComponentActivity() {
         val debugMode = LocalSeparationMode.fromValue(
             intent.getStringExtra(EXTRA_DEBUG_GENERATE_MODE),
         )
+        val rootWriteMode = RootWriteMode.fromValue(
+            intent.getStringExtra(EXTRA_DEBUG_GENERATE_ROOT_WRITE_MODE),
+        )
         startDebugGeneration(
             packageName = debugPackageName,
             useGpt = useGpt,
             installWithRoot = installWithRoot,
             debugMode = debugMode,
+            rootWriteMode = rootWriteMode,
         )
     }
 
@@ -4218,6 +4280,7 @@ class MainActivity : ComponentActivity() {
         useGpt: Boolean,
         installWithRoot: Boolean,
         debugMode: LocalSeparationMode,
+        rootWriteMode: RootWriteMode,
     ): Boolean {
         var accepted = false
         runOnMainSync {
@@ -4253,10 +4316,10 @@ class MainActivity : ComponentActivity() {
                     localModeOverride = debugMode,
                 )
                 if (installWithRoot) {
-                    installWithRoot(result.outDir, packageName, RootWriteMode.All)
+                    installWithRoot(result.outDir, packageName, rootWriteMode)
                     runOnMainSync {
                         markPackageGenerated(packageName)
-                        statusText = "调试生成完成并写入 Root，未刷新，请手动点刷新 ART+ 图标: ${result.outDir.absolutePath}"
+                        statusText = "调试生成完成并${rootWriteMode.label}写入 Root，未刷新，请手动点刷新 ART+ 图标: ${result.outDir.absolutePath}"
                     }
                 } else {
                     runOnMainSync {
@@ -4308,6 +4371,7 @@ class MainActivity : ComponentActivity() {
                     .put("shadow_removal_percent", shadowRemovalPercent)
                     .put("edge_polish_percent", edgePolishPercent)
                     .put("rmbg_input_size", rmbgInputSize)
+                    .put("rmbg_backend", rmbgBackend.value)
                     .put("adaptive_foreground_mode", adaptiveForegroundMode.value)
                     .put("original_foreground_cleanup_mode", originalForegroundCleanupMode.value),
             )
@@ -4388,6 +4452,10 @@ class MainActivity : ComponentActivity() {
                     .put("auto_usable", rmbgDebug.result?.autoUsable ?: false)
                     .put("bounds", rmbgDebug.boundsText)
                     .put("crop_risk", rmbgDebug.cropRisk)
+                    .put("backend", rmbgDebug.inference.actualBackend.value)
+                    .put("requested_backend", rmbgDebug.inference.requestedBackend.value)
+                    .put("elapsed_ms", rmbgDebug.inference.elapsedMs)
+                    .put("fallback_reason", rmbgDebug.inference.fallbackReason ?: "")
                 saveLayer("candidate_rmbg_raw", rmbgDebug.foreground, rmbgJson)
                 val rendered = renderCandidateForeground(
                     rmbgCandidate ?: IconCandidate(
@@ -4406,16 +4474,27 @@ class MainActivity : ComponentActivity() {
                     rmbgCandidate ?: IconCandidate(rmbgDebug.foreground, localSource.recbg, monochromeRaw = rmbgDebug.foreground),
                     invertLuma = false,
                 ), rmbgJson)
+                val candidateError = if (rmbgCandidate == null) "RMBG候选未通过校验" else null
                 if (rmbgCandidate == null) {
-                    rmbgJson.put("ok", false).put("error", "RMBG候选未通过校验")
+                    rmbgJson.put("ok", false).put("error", candidateError)
                 } else {
                     rmbgJson
                         .put("ok", true)
                 }
+                runOnMainSync {
+                    lastRmbgInferenceReport = rmbgDebug.inference
+                    lastRmbgCandidateError = candidateError
+                }
             } catch (error: Throwable) {
+                val message = describeRmbgFailure(error)
                 rmbgJson
                     .put("ok", false)
-                    .put("error", describeRmbgFailure(error))
+                    .put("error", message)
+                    .put("requested_backend", rmbgBackend.value)
+                runOnMainSync {
+                    lastRmbgCandidateError = message
+                    lastRmbgInferenceReport = null
+                }
             }
             candidatesJson.put("rmbg", rmbgJson)
         }
@@ -4434,6 +4513,7 @@ class MainActivity : ComponentActivity() {
         val boundsText: String,
         val cropRisk: Boolean,
         val manualUsable: Boolean,
+        val inference: RmbgInferenceReport,
     )
 
     private fun loadGptSettings() {
@@ -4441,28 +4521,119 @@ class MainActivity : ComponentActivity() {
         gptImageMode = GptImageMode.fromValue(prefs.getString(PREF_GPT_MODE, GptImageMode.Responses.value))
         val storedBaseUrl = prefs.getString(PREF_GPT_BASE_URL, "") ?: ""
         gptBaseUrl = if (storedBaseUrl == LEGACY_DEFAULT_GPT_BASE_URL) "" else storedBaseUrl
-        gptApiKey = prefs.getString(PREF_GPT_API_KEY, "") ?: ""
+        gptApiKey = loadGptApiKey(prefs)
         if (storedBaseUrl == LEGACY_DEFAULT_GPT_BASE_URL) {
-            prefs.edit().putString(PREF_GPT_BASE_URL, "").commit()
+            prefs.edit().putString(PREF_GPT_BASE_URL, "").apply()
         }
     }
 
-    private fun saveGptSettings(): Boolean =
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+    private fun saveGptSettings(): Boolean {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val encryptedKey = encryptSecret(gptApiKey.trim())
+        return prefs
             .edit()
             .putString(PREF_GPT_MODE, gptImageMode.value)
-            .putString(PREF_GPT_BASE_URL, gptBaseUrl)
-            .putString(PREF_GPT_API_KEY, gptApiKey)
+            .putString(PREF_GPT_BASE_URL, gptBaseUrl.trim())
+            .remove(PREF_GPT_API_KEY)
+            .apply {
+                if (encryptedKey.isBlank()) {
+                    remove(PREF_GPT_API_KEY_ENCRYPTED)
+                } else {
+                    putString(PREF_GPT_API_KEY_ENCRYPTED, encryptedKey)
+                }
+            }
             .commit()
+    }
+
+    private fun loadGptApiKey(prefs: android.content.SharedPreferences): String {
+        val encrypted = prefs.getString(PREF_GPT_API_KEY_ENCRYPTED, null)
+        val decrypted = encrypted
+            ?.takeIf { it.isNotBlank() }
+            ?.let { runCatching { decryptSecret(it) }.getOrNull() }
+        if (decrypted != null) {
+            if (prefs.contains(PREF_GPT_API_KEY)) {
+                prefs.edit().remove(PREF_GPT_API_KEY).apply()
+            }
+            return decrypted
+        }
+        val legacyPlain = prefs.getString(PREF_GPT_API_KEY, "") ?: ""
+        if (legacyPlain.isNotBlank()) {
+            val migrated = encryptSecret(legacyPlain)
+            prefs.edit()
+                .remove(PREF_GPT_API_KEY)
+                .putString(PREF_GPT_API_KEY_ENCRYPTED, migrated)
+                .apply()
+        }
+        return legacyPlain
+    }
+
+    private fun encryptSecret(value: String): String {
+        if (value.isBlank()) {
+            return ""
+        }
+        val cipher = Cipher.getInstance(KEYSTORE_CIPHER_TRANSFORMATION)
+        cipher.init(Cipher.ENCRYPT_MODE, gptSecretKey())
+        val encrypted = cipher.doFinal(value.toByteArray(StandardCharsets.UTF_8))
+        return listOf(cipher.iv, encrypted)
+            .joinToString(":") { Base64.encodeToString(it, Base64.NO_WRAP) }
+    }
+
+    private fun decryptSecret(value: String): String {
+        val parts = value.split(':')
+        if (parts.size != 2) {
+            error("invalid encrypted secret")
+        }
+        val iv = Base64.decode(parts[0], Base64.NO_WRAP)
+        val encrypted = Base64.decode(parts[1], Base64.NO_WRAP)
+        val cipher = Cipher.getInstance(KEYSTORE_CIPHER_TRANSFORMATION)
+        cipher.init(Cipher.DECRYPT_MODE, gptSecretKey(), GCMParameterSpec(KEYSTORE_GCM_TAG_BITS, iv))
+        return String(cipher.doFinal(encrypted), StandardCharsets.UTF_8)
+    }
+
+    private fun gptSecretKey(): SecretKey {
+        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+        (keyStore.getKey(KEYSTORE_GPT_KEY_ALIAS, null) as? SecretKey)?.let { return it }
+        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+        keyGenerator.init(
+            KeyGenParameterSpec.Builder(
+                KEYSTORE_GPT_KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+            )
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setRandomizedEncryptionRequired(true)
+                .build(),
+        )
+        return keyGenerator.generateKey()
+    }
 
     private fun loadRmbgSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         rmbgComponentUrl = prefs.getString(PREF_RMBG_COMPONENT_URL, DEFAULT_RMBG_COMPONENT_URL)
             ?.takeIf { it.isNotBlank() }
             ?: DEFAULT_RMBG_COMPONENT_URL
-        rmbgInputSize = prefs.getInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
+        val storedInputSize = prefs.getInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
+        val migratedInputSize = if (
+            !prefs.getBoolean(PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024, false) &&
+            storedInputSize == 256 &&
+            rmbgComponentUrl == DEFAULT_RMBG_COMPONENT_URL
+        ) {
+            DEFAULT_RMBG_INPUT_SIZE
+        } else {
+            storedInputSize
+        }
+        rmbgInputSize = migratedInputSize
             .coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
         draftRmbgInputSizeText = rmbgInputSize.toString()
+        rmbgBackend = RmbgInferenceBackend.fromValue(
+            prefs.getString(PREF_RMBG_INFERENCE_BACKEND, RmbgInferenceBackend.Cpu.value),
+        )
+        if (!prefs.getBoolean(PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024, false)) {
+            prefs.edit()
+                .putInt(PREF_RMBG_INPUT_SIZE, rmbgInputSize)
+                .putBoolean(PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024, true)
+                .apply()
+        }
     }
 
     private fun saveRmbgSettings(): Boolean =
@@ -4470,6 +4641,7 @@ class MainActivity : ComponentActivity() {
             .edit()
             .putString(PREF_RMBG_COMPONENT_URL, rmbgComponentUrl.trim())
             .putInt(PREF_RMBG_INPUT_SIZE, rmbgInputSize)
+            .putString(PREF_RMBG_INFERENCE_BACKEND, rmbgBackend.value)
             .commit()
 
     private fun loadLocalSeparationSettings() {
@@ -4679,6 +4851,43 @@ class MainActivity : ComponentActivity() {
         runCatching { rmbgRuntime?.close() }
         rmbgRuntime = null
         statusText = "RMBG 分辨率$rmbgComponentSaveStatus"
+    }
+
+    private fun updateRmbgBackend(backend: RmbgInferenceBackend) {
+        if (rmbgBackend == backend) {
+            return
+        }
+        rmbgBackend = backend
+        lastRmbgInferenceReport = null
+        rmbgComponentSaveStatus = if (saveRmbgSettings()) "已保存" else "保存失败"
+        runCatching { rmbgRuntime?.close() }
+        rmbgRuntime = null
+        statusText = "RMBG 后端${backend.label}$rmbgComponentSaveStatus"
+    }
+
+    private fun rmbgInferenceStatusValue(): String =
+        if (isGeneratingRmbgCandidate) {
+            "运行中"
+        } else {
+            lastRmbgInferenceReport?.actualBackend?.label ?: rmbgBackend.label
+        }
+
+    private fun rmbgInferenceStatusSummary(): String {
+        if (isGeneratingRmbgCandidate) {
+            return rmbgCandidateStatusText.ifBlank { "RMBG运行中: ${rmbgBackend.label}" }
+        }
+        val report = lastRmbgInferenceReport
+        if (report != null) {
+            return buildString {
+                append("请求 ${report.requestedBackend.label}，实际 ${report.actualBackend.label}")
+                append("，耗时 ${report.elapsedMs}ms")
+                report.fallbackReason?.takeIf { it.isNotBlank() }?.let {
+                    append("，fallback: ")
+                    append(it)
+                }
+            }
+        }
+        return "尚未运行；当前请求 ${rmbgBackend.label}"
     }
 
     private fun saveImageTuningSettings() {
@@ -4983,8 +5192,8 @@ class MainActivity : ComponentActivity() {
     private fun buildRmbgCandidate(sourceIcon: Bitmap, recbg: Bitmap): CandidateBuildResult? {
         val component = findRmbgComponent() ?: return null
         return runCatching {
-            val alpha = runRmbgAlphaMask(sourceIcon, component)
-            val foreground = applyAlphaArrayToSource(sourceIcon, alpha)
+            val mask = runRmbgAlphaMask(sourceIcon, component)
+            val foreground = applyAlphaArrayToSource(sourceIcon, mask.alpha)
             val coverage = meaningfulAlphaCoverage(foreground)
             val bounds = meaningfulAlphaBounds(foreground)
             val cropRisk = bounds?.let { hasAutoCropRisk(it, foreground.width, foreground.height) } ?: true
@@ -5006,14 +5215,15 @@ class MainActivity : ComponentActivity() {
                 ),
                 autoUsable = coverage in RMBG_MIN_AUTO_COVERAGE..RMBG_MAX_AUTO_COVERAGE,
                 coverage = coverage,
+                rmbgInference = mask.report,
             )
         }.getOrElse { throw it }
     }
 
     private fun buildRmbgDebugCandidate(sourceIcon: Bitmap, recbg: Bitmap): RmbgDebugCandidate {
         val component = findRmbgComponent() ?: error("未安装 RMBG 组件 ZIP")
-        val alpha = runRmbgAlphaMask(sourceIcon, component)
-        val foreground = applyAlphaArrayToSource(sourceIcon, alpha)
+        val mask = runRmbgAlphaMask(sourceIcon, component)
+        val foreground = applyAlphaArrayToSource(sourceIcon, mask.alpha)
         val coverage = meaningfulAlphaCoverage(foreground)
         val bounds = meaningfulAlphaBounds(foreground)
         val cropRisk = bounds?.let { hasAutoCropRisk(it, foreground.width, foreground.height) } ?: true
@@ -5041,6 +5251,7 @@ class MainActivity : ComponentActivity() {
             boundsText = bounds?.let { "${it.width()}x${it.height()}@${it.left},${it.top}" } ?: "无",
             cropRisk = cropRisk,
             manualUsable = manualUsable,
+            inference = mask.report,
         )
     }
 
@@ -5200,7 +5411,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun downloadRmbgFile(urlText: String, target: File, minBytes: Long, label: String) {
-        val url = URL(urlText)
+        val url = validatedRemoteUrl(urlText, label)
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = RMBG_DOWNLOAD_CONNECT_TIMEOUT_MS
@@ -5223,6 +5434,9 @@ class MainActivity : ComponentActivity() {
                 error("HTTP ${connection.responseCode}: $message")
             }
             val totalBytes = connection.contentLengthLong.takeIf { it > 0L }
+            if (totalBytes != null && totalBytes > RMBG_MAX_DOWNLOAD_BYTES) {
+                error("$label 超过最大下载大小")
+            }
             var downloaded = 0L
             var nextReportAt = 0L
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -5241,6 +5455,9 @@ class MainActivity : ComponentActivity() {
                         }
                         output.write(buffer, 0, read)
                         downloaded += read.toLong()
+                        if (downloaded > RMBG_MAX_DOWNLOAD_BYTES) {
+                            error("$label 超过最大下载大小")
+                        }
                         if (downloaded >= nextReportAt) {
                             val progress = totalBytes?.let { downloaded.toFloat() / it.toFloat() }
                             val text = totalBytes?.let { total ->
@@ -5266,6 +5483,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun unzipRmbgComponent(input: InputStream, targetDir: File) {
+        val canonicalTarget = targetDir.canonicalFile
+        var totalWritten = 0L
+        var fileCount = 0
         ZipInputStream(input).use { zip ->
             while (true) {
                 val entry = zip.nextEntry ?: break
@@ -5274,12 +5494,33 @@ class MainActivity : ComponentActivity() {
                     zip.closeEntry()
                     continue
                 }
+                fileCount += 1
+                if (fileCount > RMBG_MAX_COMPONENT_ZIP_ENTRIES) {
+                    error("RMBG组件压缩包文件过多")
+                }
                 val outFile = File(targetDir, entryName)
+                val canonicalOut = outFile.canonicalFile
+                if (!canonicalOut.path.startsWith(canonicalTarget.path + File.separator)) {
+                    error("RMBG组件压缩包路径非法")
+                }
                 if (entry.isDirectory) {
-                    outFile.mkdirs()
+                    canonicalOut.mkdirs()
                 } else {
-                    outFile.parentFile?.mkdirs()
-                    FileOutputStream(outFile).use { output -> zip.copyTo(output) }
+                    canonicalOut.parentFile?.mkdirs()
+                    FileOutputStream(canonicalOut).use { output ->
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        while (true) {
+                            val read = zip.read(buffer)
+                            if (read < 0) {
+                                break
+                            }
+                            totalWritten += read.toLong()
+                            if (totalWritten > RMBG_MAX_COMPONENT_ZIP_UNPACK_BYTES) {
+                                error("RMBG组件压缩包过大")
+                            }
+                            output.write(buffer, 0, read)
+                        }
+                    }
                 }
                 zip.closeEntry()
             }
@@ -5332,13 +5573,39 @@ class MainActivity : ComponentActivity() {
         ).joinToString("|")
     }
 
-    private class DynamicRmbgRuntime(private val component: RmbgComponent) : AutoCloseable {
-        val componentKey: String = component.key
+    private data class RmbgInferenceReport(
+        val requestedBackend: RmbgInferenceBackend,
+        val actualBackend: RmbgInferenceBackend,
+        val elapsedMs: Long,
+        val fallbackReason: String? = null,
+    )
+
+    private data class RmbgModelOutput(
+        val output: FloatArray,
+        val report: RmbgInferenceReport,
+    )
+
+    private data class RmbgMaskResult(
+        val alpha: IntArray,
+        val report: RmbgInferenceReport,
+    )
+
+    private class RmbgBackendException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
+    private inner class DynamicRmbgRuntime(
+        private val component: RmbgComponent,
+        private val requestedBackend: RmbgInferenceBackend,
+    ) : AutoCloseable {
+        val componentKey: String = "${component.key}|${requestedBackend.value}"
+        var activeBackend: RmbgInferenceBackend = requestedBackend
+            private set
+        var fallbackReason: String? = null
+            private set
 
         private val environmentClass: Class<*>
         private val environment: Any
-        private val sessionOptions: Any
-        private val session: Any
+        private var sessionOptions: Any? = null
+        private var session: Any? = null
         private val tensorClass: Class<*>
         private val onnxTensorClass: Class<*>
         private val closeMethod = AutoCloseable::class.java.getMethod("close")
@@ -5351,28 +5618,142 @@ class MainActivity : ComponentActivity() {
             tensorClass = onnxTensorClass
             environment = environmentClass.getMethod("getEnvironment").invoke(null)
                 ?: error("无法初始化 ONNX Runtime 环境")
-            sessionOptions = sessionOptionsClass.getConstructor().newInstance()
-            runCatching { sessionOptionsClass.getMethod("setMemoryPatternOptimization", Boolean::class.javaPrimitiveType).invoke(sessionOptions, false) }
-            runCatching { sessionOptionsClass.getMethod("setCPUArenaAllocator", Boolean::class.javaPrimitiveType).invoke(sessionOptions, false) }
-            runCatching { sessionOptionsClass.getMethod("setIntraOpNumThreads", Int::class.javaPrimitiveType).invoke(sessionOptions, 1) }
-            runCatching { sessionOptionsClass.getMethod("setInterOpNumThreads", Int::class.javaPrimitiveType).invoke(sessionOptions, 1) }
-            session = environmentClass
-                .getMethod("createSession", String::class.java, sessionOptionsClass)
-                .invoke(environment, component.model.absolutePath, sessionOptions)
-                ?: error("无法创建 RMBG ONNX 会话")
+            if (requestedBackend == RmbgInferenceBackend.Cpu) {
+                val created = createSessionPair(sessionOptionsClass) { }
+                sessionOptions = created.first
+                session = created.second
+                activeBackend = RmbgInferenceBackend.Cpu
+            } else {
+                val nnapiAttempt = runCatching {
+                    createSessionPair(sessionOptionsClass) { options ->
+                        configureNnapiProvider(classLoader, sessionOptionsClass, options, requestedBackend)
+                    }
+                }
+                nnapiAttempt
+                    .onSuccess { created ->
+                        sessionOptions = created.first
+                        session = created.second
+                        activeBackend = requestedBackend
+                    }
+                    .onFailure { nnapiError ->
+                        if (!requestedBackend.allowCpuFallback) {
+                            throw RmbgBackendException(
+                                "NNAPI严格模式创建失败: ${describeRmbgFailure(nnapiError)}",
+                                nnapiError,
+                            )
+                        }
+                        val cpuAttempt = runCatching { createSessionPair(sessionOptionsClass) { } }
+                        cpuAttempt
+                            .onSuccess { created ->
+                                sessionOptions = created.first
+                                session = created.second
+                                activeBackend = RmbgInferenceBackend.Cpu
+                                fallbackReason = "NNAPI创建失败，已回退CPU: ${describeRmbgFailure(nnapiError)}"
+                            }
+                            .onFailure { cpuError ->
+                                throw RmbgBackendException(
+                                    "NNAPI创建失败，CPU回退也失败: NNAPI ${describeRmbgFailure(nnapiError)}；CPU ${describeRmbgFailure(cpuError)}",
+                                    cpuError,
+                                )
+                            }
+                    }
+            }
+        }
+
+        private fun createSessionPair(
+            sessionOptionsClass: Class<*>,
+            configure: (Any) -> Unit,
+        ): Pair<Any, Any> {
+            val options = sessionOptionsClass.getConstructor().newInstance()
+            try {
+                configureBaseOptions(sessionOptionsClass, options)
+                configure(options)
+                val createdSession = environmentClass
+                    .getMethod("createSession", String::class.java, sessionOptionsClass)
+                    .invoke(environment, component.model.absolutePath, options)
+                    ?: error("无法创建 RMBG ONNX 会话")
+                return options to createdSession
+            } catch (error: InvocationTargetException) {
+                runCatching { closeMethod.invoke(options) }
+                throw error.targetException ?: error
+            } catch (error: Throwable) {
+                runCatching { closeMethod.invoke(options) }
+                throw error
+            }
+        }
+
+        private fun configureBaseOptions(sessionOptionsClass: Class<*>, options: Any) {
+            runCatching { sessionOptionsClass.getMethod("setMemoryPatternOptimization", Boolean::class.javaPrimitiveType).invoke(options, false) }
+            runCatching { sessionOptionsClass.getMethod("setCPUArenaAllocator", Boolean::class.javaPrimitiveType).invoke(options, false) }
+            runCatching { sessionOptionsClass.getMethod("setIntraOpNumThreads", Int::class.javaPrimitiveType).invoke(options, 1) }
+            runCatching { sessionOptionsClass.getMethod("setInterOpNumThreads", Int::class.javaPrimitiveType).invoke(options, 1) }
+        }
+
+        private fun configureNnapiProvider(
+            classLoader: ClassLoader,
+            sessionOptionsClass: Class<*>,
+            options: Any,
+            backend: RmbgInferenceBackend,
+        ) {
+            if (backend == RmbgInferenceBackend.NnapiStrict) {
+                val flags = createNnapiFlags(classLoader, disableCpu = true)
+                invokeSessionOption(
+                    sessionOptionsClass.getMethod("addNnapi", java.util.EnumSet::class.java),
+                    options,
+                    flags,
+                )
+                return
+            }
+            val noArgAddNnapi = sessionOptionsClass.methods.firstOrNull {
+                it.name == "addNnapi" && it.parameterTypes.isEmpty()
+            }
+            if (noArgAddNnapi != null) {
+                invokeSessionOption(noArgAddNnapi, options)
+            } else {
+                val flags = createNnapiFlags(classLoader, disableCpu = false)
+                invokeSessionOption(
+                    sessionOptionsClass.getMethod("addNnapi", java.util.EnumSet::class.java),
+                    options,
+                    flags,
+                )
+            }
+        }
+
+        private fun createNnapiFlags(classLoader: ClassLoader, disableCpu: Boolean): Any {
+            val flagsClass = classLoader.loadClass("ai.onnxruntime.providers.NNAPIFlags")
+            @Suppress("UNCHECKED_CAST")
+            val flags = java.util.EnumSet::class.java
+                .getMethod("noneOf", Class::class.java)
+                .invoke(null, flagsClass) as MutableSet<Any>
+            if (disableCpu) {
+                val cpuDisabled = flagsClass.getMethod("valueOf", String::class.java)
+                    .invoke(null, "CPU_DISABLED")
+                    ?: error("无法加载 NNAPI CPU_DISABLED flag")
+                flags.add(cpuDisabled)
+            }
+            return flags
+        }
+
+        private fun invokeSessionOption(method: java.lang.reflect.Method, target: Any, vararg args: Any) {
+            try {
+                method.invoke(target, *args)
+            } catch (error: InvocationTargetException) {
+                throw error.targetException ?: error
+            }
         }
 
         @Suppress("UNCHECKED_CAST")
         fun run(input: FloatBuffer, shape: LongArray): FloatArray {
+            val activeSession = session ?: error("RMBG ONNX 会话未初始化")
             val tensor = tensorClass
                 .getMethod("createTensor", environmentClass, FloatBuffer::class.java, LongArray::class.java)
                 .invoke(null, environment, input, shape)
             try {
-                val inputNames = session.javaClass.getMethod("getInputNames").invoke(session) as Set<String>
+                val inputNames = activeSession.javaClass.getMethod("getInputNames").invoke(activeSession) as Set<String>
                 val feeds = mapOf(inputNames.first() to tensor)
-                val runMethod = session.javaClass.getMethod("run", Map::class.java)
+                val runMethod = activeSession.javaClass.getMethod("run", Map::class.java)
                 val result = try {
-                    runMethod.invoke(session, feeds)
+                    runMethod.invoke(activeSession, feeds)
                 } catch (error: InvocationTargetException) {
                     throw error.targetException ?: error
                 }
@@ -5390,21 +5771,82 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun close() {
-            runCatching { closeMethod.invoke(session) }
-            runCatching { closeMethod.invoke(sessionOptions) }
+            runCatching { session?.let { closeMethod.invoke(it) } }
+            runCatching { sessionOptions?.let { closeMethod.invoke(it) } }
+            session = null
+            sessionOptions = null
         }
     }
 
-    private fun <T> withRmbgRuntime(component: RmbgComponent, block: (DynamicRmbgRuntime) -> T): T =
+    private fun runRmbgModel(component: RmbgComponent, input: FloatBuffer, shape: LongArray): RmbgModelOutput =
         synchronized(this) {
             runCatching { rmbgRuntime?.close() }
             rmbgRuntime = null
-            DynamicRmbgRuntime(component).use { runtime ->
-                block(runtime)
+            val requestedBackend = rmbgBackend
+            val startedAt = System.nanoTime()
+            var runtime: DynamicRmbgRuntime? = null
+            var activeBackendAtFailure: RmbgInferenceBackend? = null
+            try {
+                input.rewind()
+                runtime = DynamicRmbgRuntime(component, requestedBackend)
+                rmbgRuntime = runtime
+                activeBackendAtFailure = runtime.activeBackend
+                val output = runtime.run(input, shape)
+                RmbgModelOutput(
+                    output = output,
+                    report = RmbgInferenceReport(
+                        requestedBackend = requestedBackend,
+                        actualBackend = runtime.activeBackend,
+                        elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt),
+                        fallbackReason = runtime.fallbackReason,
+                    ),
+                )
+            } catch (error: Throwable) {
+                val firstFailure = describeRmbgFailure(error)
+                runCatching { runtime?.close() }
+                rmbgRuntime = null
+                if (
+                    requestedBackend.allowCpuFallback &&
+                    activeBackendAtFailure != null &&
+                    activeBackendAtFailure != RmbgInferenceBackend.Cpu
+                ) {
+                    runtime = try {
+                        DynamicRmbgRuntime(component, RmbgInferenceBackend.Cpu)
+                    } catch (cpuCreateError: Throwable) {
+                        throw RmbgBackendException(
+                            "NNAPI推理失败，CPU回退创建也失败: NNAPI $firstFailure；CPU ${describeRmbgFailure(cpuCreateError)}",
+                            cpuCreateError,
+                        )
+                    }
+                    rmbgRuntime = runtime
+                    try {
+                        input.rewind()
+                        val output = runtime.run(input, shape)
+                        RmbgModelOutput(
+                            output = output,
+                            report = RmbgInferenceReport(
+                                requestedBackend = requestedBackend,
+                                actualBackend = RmbgInferenceBackend.Cpu,
+                                elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt),
+                                fallbackReason = "NNAPI推理失败，已回退CPU: $firstFailure",
+                            ),
+                        )
+                    } catch (cpuRunError: Throwable) {
+                        throw RmbgBackendException(
+                            "NNAPI推理失败，CPU回退也失败: NNAPI $firstFailure；CPU ${describeRmbgFailure(cpuRunError)}",
+                            cpuRunError,
+                        )
+                    }
+                } else {
+                    throw error
+                }
+            } finally {
+                runCatching { runtime?.close() }
+                rmbgRuntime = null
             }
         }
 
-    private fun runRmbgAlphaMask(sourceIcon: Bitmap, component: RmbgComponent): IntArray {
+    private fun runRmbgAlphaMask(sourceIcon: Bitmap, component: RmbgComponent): RmbgMaskResult {
         val inputSize = rmbgInputSize.coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
         val modelInput = resizeBitmap(sourceIcon, inputSize, inputSize)
         val inputPixels = IntArray(inputSize * inputSize)
@@ -5424,9 +5866,8 @@ class MainActivity : ComponentActivity() {
         }
         input.rewind()
 
-        val output = withRmbgRuntime(component) { runtime ->
-            runtime.run(input, longArrayOf(1L, 3L, inputSize.toLong(), inputSize.toLong()))
-        }
+        val modelOutput = runRmbgModel(component, input, longArrayOf(1L, 3L, inputSize.toLong(), inputSize.toLong()))
+        val output = modelOutput.output
         if (output.isEmpty()) {
             error("RMBG输出为空")
         }
@@ -5458,7 +5899,7 @@ class MainActivity : ComponentActivity() {
                     .coerceIn(0, 255)
             }
         }
-        return scaledPixels
+        return RmbgMaskResult(alpha = scaledPixels, report = modelOutput.report)
     }
 
     private fun applyAlphaArrayToSource(source: Bitmap, alpha: IntArray): Bitmap {
@@ -6402,17 +6843,22 @@ class MainActivity : ComponentActivity() {
             statusText = lastRmbgCandidateError ?: "未安装 RMBG 组件"
             return
         }
-        if (isGeneratingRmbgCandidate || isGeneratingGptCandidate || isBusy || !rmbgGenerationGate.compareAndSet(false, true)) {
+        if (isGeneratingRmbgCandidate || isGeneratingGptCandidate || isBusy) {
+            statusText = "RMBG正在运行或主任务忙，请等待"
+            return
+        }
+        if (!rmbgGenerationGate.compareAndSet(false, true)) {
+            statusText = "RMBG正在运行，请等待"
             return
         }
         isGeneratingRmbgCandidate = true
         lastRmbgCandidateError = null
         rmbgCandidatePackageName = session.packageName
         rmbgCandidateMode = mode
-        rmbgCandidateStatusText = "RMBG运行中，请等待: ${mode.label}"
+        rmbgCandidateStatusText = "RMBG运行中(${rmbgBackend.label})，请等待: ${mode.label}"
         rmbgCandidateFailurePackageName = null
         rmbgCandidateFailureMode = null
-        statusText = "RMBG候选生成中: ${session.packageName}"
+        statusText = "RMBG候选生成中(${rmbgBackend.label}): ${session.packageName}"
         val selections = previewSelections.withChoice(mode, PreviewChoice.Rmbg)
         startUiFriendlyThread("ArtPlusRmbgCandidate") {
             try {
@@ -6420,6 +6866,7 @@ class MainActivity : ComponentActivity() {
                 val result = buildRmbgCandidate(source, session.baseRecbg)
                     ?: error("RMBG候选未通过校验")
                 val candidate = result.candidate ?: error("RMBG候选为空")
+                val inferenceReport = result.rmbgInference
                 val updatedSession = session.copy(
                     candidates = session.candidates + (PreviewChoice.Rmbg to candidate),
                 )
@@ -6432,9 +6879,10 @@ class MainActivity : ComponentActivity() {
                     previewSelections = selections
                     previewVersion += 1
                     lastRmbgCandidateError = null
+                    lastRmbgInferenceReport = inferenceReport
                     rmbgCandidateFailurePackageName = null
                     rmbgCandidateFailureMode = null
-                    statusText = "RMBG候选已生成并应用到 ${mode.label}"
+                    statusText = "RMBG候选已生成并应用到 ${mode.label}: ${formatRmbgInferenceReport(inferenceReport)}"
                 }
             } catch (error: Throwable) {
                 val message = describeRmbgFailure(error)
@@ -6442,7 +6890,7 @@ class MainActivity : ComponentActivity() {
                     lastRmbgCandidateError = message
                     rmbgCandidateFailurePackageName = session.packageName
                     rmbgCandidateFailureMode = mode
-                    statusText = "RMBG候选失败: $message"
+                    statusText = "RMBG候选失败(${rmbgBackend.label}): $message"
                 }
             } finally {
                 rmbgGenerationGate.set(false)
@@ -6470,17 +6918,22 @@ class MainActivity : ComponentActivity() {
             statusText = lastRmbgCandidateError ?: "未安装 RMBG 组件"
             return
         }
-        if (isGeneratingRmbgCandidate || isGeneratingGptCandidate || isBusy || !rmbgGenerationGate.compareAndSet(false, true)) {
+        if (isGeneratingRmbgCandidate || isGeneratingGptCandidate || isBusy) {
+            statusText = "RMBG正在运行或主任务忙，请等待"
+            return
+        }
+        if (!rmbgGenerationGate.compareAndSet(false, true)) {
+            statusText = "RMBG正在运行，请等待"
             return
         }
         isGeneratingRmbgCandidate = true
         lastRmbgCandidateError = null
         rmbgCandidatePackageName = session.packageName
         rmbgCandidateMode = null
-        rmbgCandidateStatusText = "RMBG运行中，请等待: 全部"
+        rmbgCandidateStatusText = "RMBG运行中(${rmbgBackend.label})，请等待: 全部"
         rmbgCandidateFailurePackageName = null
         rmbgCandidateFailureMode = null
-        statusText = "RMBG候选生成中: ${session.packageName}"
+        statusText = "RMBG候选生成中(${rmbgBackend.label}): ${session.packageName}"
         val selections = PreviewSelections.default(PreviewChoice.Rmbg)
         startUiFriendlyThread("ArtPlusRmbgCandidateAll") {
             try {
@@ -6488,6 +6941,7 @@ class MainActivity : ComponentActivity() {
                 val result = buildRmbgCandidate(source, session.baseRecbg)
                     ?: error("RMBG候选未通过校验")
                 val candidate = result.candidate ?: error("RMBG候选为空")
+                val inferenceReport = result.rmbgInference
                 val updatedSession = session.copy(
                     candidates = session.candidates + (PreviewChoice.Rmbg to candidate),
                 )
@@ -6501,9 +6955,10 @@ class MainActivity : ComponentActivity() {
                     previewChoiceMode = null
                     previewVersion += 1
                     lastRmbgCandidateError = null
+                    lastRmbgInferenceReport = inferenceReport
                     rmbgCandidateFailurePackageName = null
                     rmbgCandidateFailureMode = null
-                    statusText = "RMBG候选已生成并应用到全部"
+                    statusText = "RMBG候选已生成并应用到全部: ${formatRmbgInferenceReport(inferenceReport)}"
                 }
             } catch (error: Throwable) {
                 val message = describeRmbgFailure(error)
@@ -6511,7 +6966,7 @@ class MainActivity : ComponentActivity() {
                     lastRmbgCandidateError = message
                     rmbgCandidateFailurePackageName = session.packageName
                     rmbgCandidateFailureMode = null
-                    statusText = "RMBG候选失败: $message"
+                    statusText = "RMBG候选失败(${rmbgBackend.label}): $message"
                 }
             } finally {
                 rmbgGenerationGate.set(false)
@@ -6530,6 +6985,9 @@ class MainActivity : ComponentActivity() {
         val raw = root.message ?: root.javaClass.simpleName
         val lower = raw.lowercase()
         return when {
+            root is RmbgBackendException -> {
+                raw
+            }
             root is OutOfMemoryError ||
                 "outofmemory" in lower ||
                 "failed to allocate" in lower ||
@@ -6539,12 +6997,52 @@ class MainActivity : ComponentActivity() {
             "未通过校验" in raw -> {
                 raw
             }
-            "reshape" in lower || "shape" in lower -> {
-                "模型输入尺寸不匹配；请重新安装 RMBG-2.0 ONNX 组件"
+            "reshape" in lower || "shape" in lower || "invalid dimensions" in lower -> {
+                "模型输入尺寸不匹配；当前 RMBG-2.0 ONNX 组件需要 1024 推理分辨率"
+            }
+            "nnapi" in lower -> {
+                "NNAPI后端失败: $raw"
             }
             else -> raw
         }
     }
+
+    private fun formatRmbgInferenceReport(report: RmbgInferenceReport?): String {
+        if (report == null) {
+            return rmbgBackend.label
+        }
+        return buildString {
+            append(report.actualBackend.label)
+            append(" ")
+            append(report.elapsedMs)
+            append("ms")
+            report.fallbackReason?.takeIf { it.isNotBlank() }?.let {
+                append("，fallback: ")
+                append(it)
+            }
+        }
+    }
+
+    private fun probeRmbgQnnCapability(): String =
+        runCatching {
+            val classLoader = MainActivity::class.java.classLoader ?: ClassLoader.getSystemClassLoader()
+            val sessionOptionsClass = classLoader.loadClass("ai.onnxruntime.OrtSession\$SessionOptions")
+            val hasAddQnn = sessionOptionsClass.methods.any { method ->
+                method.name == "addQnn" && method.parameterTypes.size == 1 && method.parameterTypes[0] == Map::class.java
+            }
+            val environmentClass = classLoader.loadClass("ai.onnxruntime.OrtEnvironment")
+            val providers = environmentClass.getMethod("getAvailableProviders").invoke(null) as? Set<*>
+            val hasQnnProvider = providers.orEmpty().any { provider ->
+                (provider as? Enum<*>)?.name == "QNN"
+            }
+            when {
+                !hasAddQnn -> "QNN API 不存在"
+                hasQnnProvider -> "QNN Provider 可见；未配置 QNN native 库，保持占位不启用"
+                else -> "QNN API 存在；当前 ORT native 未启用 QNN Provider"
+            }
+        }.getOrElse { error ->
+            "QNN 探测失败: ${error.message ?: error.javaClass.simpleName}"
+        }
 
     private fun unwrapInvocationError(error: Throwable): Throwable {
         var current = error
@@ -6838,7 +7336,8 @@ class MainActivity : ComponentActivity() {
         contentType: String,
         accept: String = "application/json",
     ): String {
-        val connection = (URL(urlText).openConnection() as HttpURLConnection).apply {
+        val url = validatedRemoteUrl(urlText, "GPT")
+        val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = GPT_CONNECT_TIMEOUT_MS
             readTimeout = GPT_READ_TIMEOUT_MS
@@ -6866,7 +7365,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun downloadBytes(urlText: String): ByteArray {
-        val connection = (URL(urlText).openConnection() as HttpURLConnection).apply {
+        val url = validatedRemoteUrl(urlText, "GPT图片")
+        val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = GPT_CONNECT_TIMEOUT_MS
             readTimeout = GPT_READ_TIMEOUT_MS
@@ -6888,6 +7388,18 @@ class MainActivity : ComponentActivity() {
         } finally {
             connection.disconnect()
         }
+    }
+
+    private fun validatedRemoteUrl(urlText: String, label: String): URL {
+        val url = URL(urlText)
+        val protocol = url.protocol.lowercase(Locale.US)
+        if (protocol != "http" && protocol != "https") {
+            error("$label URL 只支持 HTTP/HTTPS")
+        }
+        if (protocol == "http" && !isDebugBuild()) {
+            error("$label URL 在正式版中必须使用 HTTPS")
+        }
+        return url
     }
 
     private fun parseResponsesStream(text: String): JSONObject {
@@ -9727,6 +10239,7 @@ class MainActivity : ComponentActivity() {
             DocumentsContract.getDocumentId(parentDoc),
         )
         return try {
+            var found: Uri? = null
             contentResolver.query(
                 childrenUri,
                 arrayOf(
@@ -9741,11 +10254,12 @@ class MainActivity : ComponentActivity() {
                     val childName = cursor.getString(1)
                     if (displayName == childName) {
                         val documentId = cursor.getString(0)
-                        return DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
+                        found = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
+                        break
                     }
                 }
-                null
             }
+            found
         } catch (_: Exception) {
             null
         }
@@ -9798,14 +10312,33 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startDebugHttpServerIfNeeded() {
-        if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0) {
+        if (!isDebugBuild()) {
             return
         }
         if (debugHttpServer != null) {
             return
         }
+        debugToken()
         debugHttpServer = DebugHttpServer(DEBUG_HTTP_PORT).also { it.start() }
     }
+
+    private fun isDebugBuild(): Boolean =
+        (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+
+    private fun debugToken(): String {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val existing = prefs.getString(PREF_DEBUG_TOKEN, null)
+            ?.takeIf { it.length >= 32 }
+        if (existing != null) {
+            return existing
+        }
+        val created = UUID.randomUUID().toString() + UUID.randomUUID().toString()
+        prefs.edit().putString(PREF_DEBUG_TOKEN, created).apply()
+        return created
+    }
+
+    private fun isDebugTokenValid(token: String?): Boolean =
+        token != null && token == debugToken()
 
     private fun runOnMainSync(action: () -> Unit) {
         if (Looper.myLooper() == Looper.getMainLooper()) {
@@ -9836,6 +10369,9 @@ class MainActivity : ComponentActivity() {
             .put("status", statusText)
             .put("foreground_subject_percent", foregroundSubjectPercent)
             .put("monochrome_theme_scale", (monochromeThemeScale * 100).roundToInt())
+            .put("gpt_mode", gptImageMode.value)
+            .put("gpt_base_url", gptBaseUrl)
+            .put("gpt_api_key_set", gptApiKey.isNotBlank())
             .put("background_separation_percent", backgroundSeparationPercent)
             .put("plate_removal_percent", plateRemovalPercent)
             .put("shadow_removal_percent", shadowRemovalPercent)
@@ -9845,6 +10381,24 @@ class MainActivity : ComponentActivity() {
             .put("rmbg_component_abi", findRmbgComponent()?.abi ?: "")
             .put("rmbg_model_name", RMBG_MODEL_NAME)
             .put("rmbg_input_size", rmbgInputSize)
+            .put("rmbg_backend", rmbgBackend.value)
+            .put("rmbg_backend_label", rmbgBackend.label)
+            .put("rmbg_backend_status", rmbgInferenceStatusSummary())
+            .put("rmbg_actual_backend", lastRmbgInferenceReport?.actualBackend?.value ?: "")
+            .put("rmbg_inference_elapsed_ms", lastRmbgInferenceReport?.elapsedMs ?: JSONObject.NULL)
+            .put("rmbg_inference_fallback_reason", lastRmbgInferenceReport?.fallbackReason ?: "")
+            .put("rmbg_last_error", lastRmbgCandidateError ?: "")
+            .put("rmbg_qnn_status", rmbgQnnCapabilityText)
+            .put("rmbg_backends", JSONArray().also { array ->
+                RmbgInferenceBackend.runnableEntries.forEach { backend ->
+                    array.put(
+                        JSONObject()
+                            .put("value", backend.value)
+                            .put("label", backend.label)
+                            .put("summary", backend.summary),
+                    )
+                }
+            })
             .put("adaptive_foreground_mode", adaptiveForegroundMode.value)
             .put("adaptive_foreground_modes", JSONArray().also { array ->
                 AdaptiveForegroundMode.entries.forEach { mode ->
@@ -9941,12 +10495,31 @@ class MainActivity : ComponentActivity() {
                 edgePolishPercent = it.coerceIn(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT)
                 draftEdgePolishText = edgePolishPercent.toString()
             }
+            params["gpt_mode"]?.let {
+                gptImageMode = GptImageMode.fromValue(it)
+            }
+            params["gpt_base_url"]?.let {
+                gptBaseUrl = it
+            }
+            params["gpt_api_key"]?.let {
+                gptApiKey = it
+            }
+            if (
+                params.containsKey("gpt_mode") ||
+                params.containsKey("gpt_base_url") ||
+                params.containsKey("gpt_api_key")
+            ) {
+                saveGptSettings()
+            }
             params["rmbg_input_size"]?.toIntOrNull()?.let {
                 rmbgInputSize = it.coerceIn(MIN_RMBG_INPUT_SIZE, MAX_RMBG_INPUT_SIZE)
                 draftRmbgInputSizeText = rmbgInputSize.toString()
                 saveRmbgSettings()
                 runCatching { rmbgRuntime?.close() }
                 rmbgRuntime = null
+            }
+            params["rmbg_backend"]?.let {
+                updateRmbgBackend(RmbgInferenceBackend.fromValue(it))
             }
             params["adaptive_foreground_mode"]?.let {
                 adaptiveForegroundMode = AdaptiveForegroundMode.fromValue(it)
@@ -10030,6 +10603,7 @@ class MainActivity : ComponentActivity() {
           <h2>Generate</h2>
           <label>Package <input id="packageName" value="io.github.vvb2060.magisk"></label>
           <label>Mode <select id="mode"><option>original</option><option>auto</option><option>plate</option><option>full</option></select></label>
+          <label>Root write <select id="rootWriteMode"><option>all</option><option>default</option><option>monochrome</option></select></label>
           <button id="generate" type="button">Generate</button>
           <h2>Status</h2>
           <pre id="out"></pre>
@@ -10042,11 +10616,20 @@ class MainActivity : ComponentActivity() {
         ];
         async function load(){
           const data = await fetch('/debug/params').then(r=>r.json());
-          const form = document.getElementById('params');
-          form.innerHTML = '';
-          const select = document.createElement('select');
-          data.adaptive_foreground_modes.forEach(m => {
-            const option = document.createElement('option');
+	          const form = document.getElementById('params');
+	          form.innerHTML = '';
+	          const rmbgBackend = document.createElement('select');
+	          data.rmbg_backends.forEach(m => {
+	            const option = document.createElement('option');
+	            option.value = m.value; option.textContent = m.value + ' - ' + m.label;
+	            option.selected = m.value === data.rmbg_backend;
+	            rmbgBackend.appendChild(option);
+	          });
+	          rmbgBackend.name = 'rmbg_backend';
+	          form.appendChild(row('rmbg_backend', rmbgBackend));
+	          const select = document.createElement('select');
+	          data.adaptive_foreground_modes.forEach(m => {
+	            const option = document.createElement('option');
             option.value = m.value; option.textContent = m.value + ' - ' + m.label;
             option.selected = m.value === data.adaptive_foreground_mode;
             select.appendChild(option);
@@ -10078,10 +10661,11 @@ class MainActivity : ComponentActivity() {
           load();
         };
         document.getElementById('generate').onclick = async () => {
-          const pkg = encodeURIComponent(document.getElementById('packageName').value);
-          const mode = encodeURIComponent(document.getElementById('mode').value);
-          document.getElementById('out').textContent = await fetch('/debug/generate?package='+pkg+'&mode='+mode,{method:'POST'}).then(r=>r.text());
-        };
+	          const pkg = encodeURIComponent(document.getElementById('packageName').value);
+	          const mode = encodeURIComponent(document.getElementById('mode').value);
+	          const rootWriteMode = encodeURIComponent(document.getElementById('rootWriteMode').value);
+	          document.getElementById('out').textContent = await fetch('/debug/generate?package='+pkg+'&mode='+mode+'&root_write_mode='+rootWriteMode,{method:'POST'}).then(r=>r.text());
+	        };
         load();
         </script>
         </body>
@@ -10097,6 +10681,7 @@ class MainActivity : ComponentActivity() {
     private data class DebugHttpRequest(
         val method: String,
         val target: String,
+        val headers: Map<String, String>,
         val body: String,
     )
 
@@ -10120,7 +10705,9 @@ class MainActivity : ComponentActivity() {
         private fun startTcpServer() {
             thread = Thread({
                 runCatching {
-                    ServerSocket(port).use { server ->
+                    ServerSocket().use { server ->
+                        server.reuseAddress = true
+                        server.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), port))
                         serverSocket = server
                         while (running) {
                             val socket = runCatching { server.accept() }.getOrNull() ?: break
@@ -10204,7 +10791,7 @@ class MainActivity : ComponentActivity() {
                 writeResponse(output, DebugHttpResponse(400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"bad request\"}"))
                 return
             }
-            writeResponse(output, route(request.method, request.target, request.body))
+            writeResponse(output, route(request))
         }
 
         private fun readRequest(input: InputStream): DebugHttpRequest? {
@@ -10232,6 +10819,7 @@ class MainActivity : ComponentActivity() {
             return DebugHttpRequest(
                 method = parts[0].uppercase(Locale.US),
                 target = parts[1],
+                headers = headers,
                 body = body,
             )
         }
@@ -10286,10 +10874,16 @@ class MainActivity : ComponentActivity() {
                 .map { it.trimEnd('\r') }
                 .filter { it.isNotBlank() }
 
-        private fun route(method: String, target: String, body: String): DebugHttpResponse {
+        private fun route(request: DebugHttpRequest): DebugHttpResponse {
+            val method = request.method
+            val target = request.target
+            val body = request.body
             val path = target.substringBefore('?')
             val query = parseQuery(target.substringAfter('?', ""))
             return try {
+                if (!isAuthorizedDebugRequest(request, query, body)) {
+                    return jsonResponse(JSONObject().put("ok", false).put("error", "forbidden"), 403)
+                }
                 when {
                     method == "GET" && (path == "/" || path == "/debug") ->
                         DebugHttpResponse(200, "text/html; charset=utf-8", debugHomeHtml())
@@ -10330,6 +10924,7 @@ class MainActivity : ComponentActivity() {
                                 useGpt = params["use_gpt"]?.toBooleanStrictOrNull() ?: false,
                                 installWithRoot = params["install_root"]?.toBooleanStrictOrNull() ?: false,
                                 debugMode = mode,
+                                rootWriteMode = RootWriteMode.fromValue(params["root_write_mode"]),
                             )
                             val snapshot = currentDebugParamsOnMain()
                             jsonResponse(
@@ -10337,6 +10932,8 @@ class MainActivity : ComponentActivity() {
                                     .put("ok", accepted)
                                     .put("package", packageName)
                                     .put("mode", mode.value)
+                                    .put("rmbg_backend", snapshot.optString("rmbg_backend"))
+                                    .put("rmbg_backend_status", snapshot.optString("rmbg_backend_status"))
                                     .put("status", snapshot.optString("status")),
                                 if (accepted) 202 else 409,
                             )
@@ -10352,6 +10949,18 @@ class MainActivity : ComponentActivity() {
                     500,
                 )
             }
+        }
+
+        private fun isAuthorizedDebugRequest(
+            request: DebugHttpRequest,
+            query: Map<String, String>,
+            body: String,
+        ): Boolean {
+            val bodyParams = runCatching { parseBodyParams(body) }.getOrDefault(emptyMap())
+            val token = request.headers[DEBUG_HTTP_TOKEN_HEADER.lowercase(Locale.US)]
+                ?: query[DEBUG_HTTP_TOKEN_PARAM]
+                ?: bodyParams[DEBUG_HTTP_TOKEN_PARAM]
+            return isDebugTokenValid(token)
         }
 
         private fun parseBodyParams(body: String): Map<String, String> {
@@ -10403,6 +11012,7 @@ class MainActivity : ComponentActivity() {
                 200 -> "OK"
                 202 -> "Accepted"
                 400 -> "Bad Request"
+                403 -> "Forbidden"
                 404 -> "Not Found"
                 409 -> "Conflict"
                 else -> "Error"
@@ -10527,6 +11137,7 @@ class MainActivity : ComponentActivity() {
         val candidate: IconCandidate?,
         val autoUsable: Boolean,
         val coverage: Double,
+        val rmbgInference: RmbgInferenceReport? = null,
     )
 
     private data class MaskComponent(
@@ -10692,6 +11303,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private enum class RmbgInferenceBackend(
+        val value: String,
+        val label: String,
+        val summary: String,
+        val allowCpuFallback: Boolean,
+    ) {
+        Cpu("cpu", "CPU", "ONNX Runtime CPU 默认路径", false),
+        Nnapi("nnapi", "NNAPI", "注册 NNAPI EP；创建或推理失败时回退 CPU", true),
+        NnapiStrict("nnapi_strict", "NNAPI严格", "注册 NNAPI EP 并禁用 NNAPI CPU fallback；失败直接报错", false);
+
+        companion object {
+            val runnableEntries: List<RmbgInferenceBackend> = listOf(Cpu, Nnapi, NnapiStrict)
+
+            fun fromValue(value: String?): RmbgInferenceBackend =
+                entries.firstOrNull { it.value == value } ?: Cpu
+        }
+    }
+
     private enum class LocalSeparationMode(val value: String, val label: String, val summary: String) {
         Auto("auto", "自动", "按图标特征自动选择底板清理、边缘修复或阴影清理"),
         Original("original", "原始", "完全保留系统绘制的前景层"),
@@ -10734,10 +11363,15 @@ class MainActivity : ComponentActivity() {
         Ungenerated("未生成"),
     }
 
-    private enum class RootWriteMode(val label: String) {
-        All("全部"),
-        DefaultOnly("默认"),
-        MonochromeOnly("单色"),
+    private enum class RootWriteMode(val value: String, val label: String) {
+        All("all", "全部"),
+        DefaultOnly("default", "默认"),
+        MonochromeOnly("monochrome", "单色");
+
+        companion object {
+            fun fromValue(value: String?): RootWriteMode =
+                entries.firstOrNull { it.value == value } ?: All
+        }
     }
 
     companion object {
@@ -10747,8 +11381,11 @@ class MainActivity : ComponentActivity() {
         private const val PREF_GPT_MODE = "gpt_mode"
         private const val PREF_GPT_BASE_URL = "gpt_base_url"
         private const val PREF_GPT_API_KEY = "gpt_api_key"
+        private const val PREF_GPT_API_KEY_ENCRYPTED = "gpt_api_key_encrypted"
         private const val PREF_RMBG_COMPONENT_URL = "rmbg_component_url"
         private const val PREF_RMBG_INPUT_SIZE = "rmbg_input_size"
+        private const val PREF_RMBG_INFERENCE_BACKEND = "rmbg_inference_backend"
+        private const val PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024 = "rmbg_input_size_migrated_to_1024"
         private const val PREF_LOCAL_SEPARATION_MODE = "local_separation_mode"
         private const val PREF_FOREGROUND_SUBJECT_PERCENT = "foreground_subject_percent"
         private const val PREF_MONOCHROME_THEME_SCALE = "monochrome_theme_scale"
@@ -10766,10 +11403,13 @@ class MainActivity : ComponentActivity() {
         private const val PREF_IMAGE_TUNING_VERSION = "image_tuning_version"
         private const val PREF_FOREGROUND_SUBJECT_PERCENT_MIGRATED = "foreground_subject_percent_migrated"
         private const val PREF_USAGE_PERMISSION_PROMPTED = "usage_permission_prompted"
+        private const val PREF_DEBUG_TOKEN = "debug_token"
         private const val EXTRA_DEBUG_GENERATE_PACKAGE = "dev.artplus.mobile.DEBUG_GENERATE_PACKAGE"
         private const val EXTRA_DEBUG_GENERATE_USE_GPT = "dev.artplus.mobile.DEBUG_GENERATE_USE_GPT"
         private const val EXTRA_DEBUG_GENERATE_INSTALL_ROOT = "dev.artplus.mobile.DEBUG_GENERATE_INSTALL_ROOT"
         private const val EXTRA_DEBUG_GENERATE_MODE = "dev.artplus.mobile.DEBUG_GENERATE_MODE"
+        private const val EXTRA_DEBUG_GENERATE_ROOT_WRITE_MODE = "dev.artplus.mobile.DEBUG_GENERATE_ROOT_WRITE_MODE"
+        private const val EXTRA_DEBUG_GENERATE_TOKEN = "dev.artplus.mobile.DEBUG_GENERATE_TOKEN"
         private const val CURRENT_IMAGE_TUNING_VERSION = 4
         private const val SIZE_1X1 = 240
         private const val SIZE_2X2 = 704
@@ -10777,15 +11417,19 @@ class MainActivity : ComponentActivity() {
         private const val GPT_SOURCE_SIZE = 1024
         private const val RMBG_COMPONENT_DIR = "rmbg_component"
         private const val RMBG_MODEL_NAME = "bria-rmbg.onnx"
-        private const val DEFAULT_RMBG_INPUT_SIZE = 256
+        private const val DEFAULT_RMBG_INPUT_SIZE = 1024
         private const val MIN_RMBG_INPUT_SIZE = 128
-        private const val MAX_RMBG_INPUT_SIZE = 512
+        private const val MAX_RMBG_INPUT_SIZE = 1024
         private const val RMBG_MIN_MODEL_BYTES = 100_000_000L
         private const val RMBG_MIN_COMPONENT_ZIP_BYTES = 100_000_000L
+        private const val RMBG_MAX_DOWNLOAD_BYTES = 2L * 1024L * 1024L * 1024L
+        private const val RMBG_MAX_COMPONENT_ZIP_ENTRIES = 128
+        private const val RMBG_MAX_COMPONENT_ZIP_UNPACK_BYTES = 800L * 1024L * 1024L
         private const val RMBG_DOWNLOAD_CONNECT_TIMEOUT_MS = 30_000
         private const val RMBG_DOWNLOAD_READ_TIMEOUT_MS = 1_800_000
         private const val DEFAULT_RMBG_COMPONENT_URL =
             "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model.onnx"
+        private val RMBG_INPUT_SIZE_OPTIONS = listOf(128, 256, 512, 1024)
         private val RMBG_NORMALIZE_MEAN = floatArrayOf(0.485f, 0.456f, 0.406f)
         private val RMBG_NORMALIZE_STD = floatArrayOf(0.229f, 0.224f, 0.225f)
         private const val LEGACY_DEFAULT_GPT_BASE_URL = "http://192.168.31.179:3002/v1"
@@ -10800,6 +11444,12 @@ class MainActivity : ComponentActivity() {
         private const val DEBUG_HTTP_READ_TIMEOUT_MS = 4_000
         private const val DEBUG_HTTP_MAX_HEADER_BYTES = 16 * 1024
         private const val DEBUG_HTTP_MAX_BODY_BYTES = 64 * 1024
+        private const val DEBUG_HTTP_TOKEN_HEADER = "X-ArtPlus-Debug-Token"
+        private const val DEBUG_HTTP_TOKEN_PARAM = "token"
+        private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+        private const val KEYSTORE_GPT_KEY_ALIAS = "artplus_gpt_api_key"
+        private const val KEYSTORE_CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
+        private const val KEYSTORE_GCM_TAG_BITS = 128
         private const val PREVIEW_LIVE_ASSET_DEBOUNCE_MS = 70L
         private const val PREVIEW_OUTPUT_DEBOUNCE_MS = 140L
         private const val PREVIEW_REBUILD_DEBOUNCE_MS = 180L
