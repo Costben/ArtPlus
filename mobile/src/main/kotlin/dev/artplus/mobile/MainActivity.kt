@@ -156,6 +156,7 @@ import com.composables.icons.lucide.KeyRound
 import com.composables.icons.lucide.Layers
 import com.composables.icons.lucide.Link
 import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.MessageSquareText
 import com.composables.icons.lucide.Palette
 import com.composables.icons.lucide.Radius
 import com.composables.icons.lucide.RefreshCw
@@ -251,6 +252,8 @@ class MainActivity : ComponentActivity() {
     private var isBusy by mutableStateOf(false)
     private var didRequestAppLoad = false
     private var gptImageMode by mutableStateOf(GptImageMode.Responses)
+    private var gptPromptPreset by mutableStateOf(GptPromptPreset.StableCutout)
+    private var gptCustomPrompt by mutableStateOf("")
     private var gptBaseUrl by mutableStateOf("")
     private var gptApiKey by mutableStateOf("")
     private var gptSettingsSaveStatus by mutableStateOf("")
@@ -267,6 +270,14 @@ class MainActivity : ComponentActivity() {
     private var draftShadowRemovalText by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT.toString())
     private var edgePolishPercent by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT)
     private var draftEdgePolishText by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT.toString())
+    private var rmbgAlphaStrengthPercent by mutableStateOf(DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT)
+    private var draftRmbgAlphaStrengthText by mutableStateOf(DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT.toString())
+    private var rmbgEdgeFeatherPercent by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT)
+    private var draftRmbgEdgeFeatherText by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT.toString())
+    private var rmbgEdgeAdjustPercent by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT)
+    private var draftRmbgEdgeAdjustText by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT.toString())
+    private var rmbgWeakAlphaKeepPercent by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT)
+    private var draftRmbgWeakAlphaKeepText by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT.toString())
     private var liquidGlassEnabled by mutableStateOf(false)
     private var liquidGlassRadius by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS)
     private var draftLiquidGlassRadiusText by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS.toString())
@@ -1073,6 +1084,10 @@ class MainActivity : ComponentActivity() {
             previewSelections,
             foregroundSubjectPercent,
             edgePolishPercent,
+            rmbgAlphaStrengthPercent,
+            rmbgEdgeFeatherPercent,
+            rmbgEdgeAdjustPercent,
+            rmbgWeakAlphaKeepPercent,
             liquidGlassEnabled,
             liquidGlassRadius,
             previewVersion,
@@ -1110,6 +1125,14 @@ class MainActivity : ComponentActivity() {
             overflow = TextOverflow.Ellipsis,
         )
         Spacer(modifier = Modifier.height(3.dp))
+        Text(
+            text = "预览图可点击选择不同抠图规则",
+            style = MiuixTheme.textStyles.footnote1,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = packageName,
             style = MiuixTheme.textStyles.footnote1,
@@ -1812,10 +1835,32 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun CandidateIconPreview(candidate: IconCandidate, mode: PreviewMode) {
-        var assets by remember(candidate, mode, foregroundSubjectPercent, edgePolishPercent, liquidGlassEnabled, liquidGlassRadius) {
+        var assets by remember(
+            candidate,
+            mode,
+            foregroundSubjectPercent,
+            edgePolishPercent,
+            rmbgAlphaStrengthPercent,
+            rmbgEdgeFeatherPercent,
+            rmbgEdgeAdjustPercent,
+            rmbgWeakAlphaKeepPercent,
+            liquidGlassEnabled,
+            liquidGlassRadius,
+        ) {
             mutableStateOf<PreviewAssets?>(null)
         }
-        LaunchedEffect(candidate, mode, foregroundSubjectPercent, edgePolishPercent, liquidGlassEnabled, liquidGlassRadius) {
+        LaunchedEffect(
+            candidate,
+            mode,
+            foregroundSubjectPercent,
+            edgePolishPercent,
+            rmbgAlphaStrengthPercent,
+            rmbgEdgeFeatherPercent,
+            rmbgEdgeAdjustPercent,
+            rmbgWeakAlphaKeepPercent,
+            liquidGlassEnabled,
+            liquidGlassRadius,
+        ) {
             assets = null
             try {
                 assets = withContext(previewWorkerDispatcher) {
@@ -1993,6 +2038,46 @@ class MainActivity : ComponentActivity() {
                 max = MAX_EDGE_POLISH_PERCENT,
                 onDraftChange = { draftEdgePolishText = it },
                 onSave = { updateEdgePolishPercent(it) },
+            )
+            NumberParameterControl(
+                title = "RMBG Alpha 强度",
+                summary = "默认 $DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT，100 不变",
+                value = rmbgAlphaStrengthPercent,
+                draftText = draftRmbgAlphaStrengthText,
+                min = MIN_RMBG_ALPHA_STRENGTH_PERCENT,
+                max = MAX_RMBG_ALPHA_STRENGTH_PERCENT,
+                onDraftChange = { draftRmbgAlphaStrengthText = it },
+                onSave = { updateRmbgAlphaStrengthPercent(it) },
+            )
+            NumberParameterControl(
+                title = "RMBG 边缘柔化",
+                summary = "默认 $DEFAULT_RMBG_EDGE_FEATHER_PERCENT",
+                value = rmbgEdgeFeatherPercent,
+                draftText = draftRmbgEdgeFeatherText,
+                min = MIN_RMBG_EDGE_FEATHER_PERCENT,
+                max = MAX_RMBG_EDGE_FEATHER_PERCENT,
+                onDraftChange = { draftRmbgEdgeFeatherText = it },
+                onSave = { updateRmbgEdgeFeatherPercent(it) },
+            )
+            NumberParameterControl(
+                title = "RMBG 边缘扩张",
+                summary = "默认 $DEFAULT_RMBG_EDGE_ADJUST_PERCENT，低收缩高扩张",
+                value = rmbgEdgeAdjustPercent,
+                draftText = draftRmbgEdgeAdjustText,
+                min = MIN_RMBG_EDGE_ADJUST_PERCENT,
+                max = MAX_RMBG_EDGE_ADJUST_PERCENT,
+                onDraftChange = { draftRmbgEdgeAdjustText = it },
+                onSave = { updateRmbgEdgeAdjustPercent(it) },
+            )
+            NumberParameterControl(
+                title = "RMBG 弱透明保留",
+                summary = "默认 $DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT",
+                value = rmbgWeakAlphaKeepPercent,
+                draftText = draftRmbgWeakAlphaKeepText,
+                min = MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+                max = MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+                onDraftChange = { draftRmbgWeakAlphaKeepText = it },
+                onSave = { updateRmbgWeakAlphaKeepPercent(it) },
             )
             NumberParameterControl(
                 title = "单色缩放",
@@ -2608,6 +2693,28 @@ class MainActivity : ComponentActivity() {
     private fun GptSettingsCard() {
         SectionCard {
             GptModeChoiceRow()
+            Spacer(modifier = Modifier.height(12.dp))
+            GptPromptChoiceRow()
+            AnimatedVisibility(
+                visible = gptPromptPreset == GptPromptPreset.Custom,
+                enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                    expandVertically(animationSpec = tween(durationMillis = 180)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                    shrinkVertically(animationSpec = tween(durationMillis = 160)),
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    InlineInputField(
+                        value = gptCustomPrompt,
+                        onValueChange = {
+                            gptCustomPrompt = it
+                            gptSettingsSaveStatus = ""
+                        },
+                        label = "自定义前景提示词",
+                        icon = SettingsIconKind.Prompt,
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
             InlineInputField(
                 value = gptBaseUrl,
@@ -3234,6 +3341,26 @@ class MainActivity : ComponentActivity() {
     private fun GptImageMode.shortSummary(): String = when (this) {
         GptImageMode.Responses -> "Codex image gen"
         GptImageMode.Images -> "直连 gpt-image-2"
+    }
+
+    @Composable
+    private fun GptPromptChoiceRow() {
+        val presets = GptPromptPreset.entries
+        ChoicePopupRow(
+            title = "GPT 提示词",
+            summary = gptPromptPreset.summary,
+            value = gptPromptPreset.label,
+            enabled = !isBusy,
+            icon = SettingsIconKind.Prompt,
+            options = presets,
+            selected = gptPromptPreset,
+            optionLabel = { it.label },
+            optionSummary = { it.summary },
+            onSelected = { preset ->
+                gptPromptPreset = preset
+                gptSettingsSaveStatus = ""
+            },
+        )
     }
 
     @Composable
@@ -3944,6 +4071,7 @@ class MainActivity : ComponentActivity() {
             "RMBG 状态" -> SettingsIconKind.Chip
             "模型版本" -> SettingsIconKind.Layers
             "GPT image two 生成模式" -> SettingsIconKind.Spark
+            "GPT 提示词" -> SettingsIconKind.Prompt
             "液态玻璃风格" -> SettingsIconKind.Glass
             "圆角半径" -> SettingsIconKind.Radius
             "主体占比" -> SettingsIconKind.Scale
@@ -3951,6 +4079,10 @@ class MainActivity : ComponentActivity() {
             "底板颜色阈值" -> SettingsIconKind.Plate
             "长阴影清理强度" -> SettingsIconKind.Shadow
             "毛刺优化" -> SettingsIconKind.Spark
+            "RMBG Alpha 强度" -> SettingsIconKind.Cutout
+            "RMBG 边缘柔化" -> SettingsIconKind.Cutout
+            "RMBG 边缘扩张" -> SettingsIconKind.Scale
+            "RMBG 弱透明保留" -> SettingsIconKind.Cutout
             "单色缩放" -> SettingsIconKind.Scale
             else -> SettingsIconKind.Dot
         }
@@ -3971,6 +4103,7 @@ class MainActivity : ComponentActivity() {
         Shadow,
         Link,
         Key,
+        Prompt,
         Dot,
     }
 
@@ -3990,6 +4123,7 @@ class MainActivity : ComponentActivity() {
         SettingsIconKind.Shadow -> Lucide.Eraser
         SettingsIconKind.Link -> Lucide.Link
         SettingsIconKind.Key -> Lucide.KeyRound
+        SettingsIconKind.Prompt -> Lucide.MessageSquareText
         SettingsIconKind.Dot -> Lucide.Settings
     }
 
@@ -4814,6 +4948,10 @@ class MainActivity : ComponentActivity() {
     private fun loadGptSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         gptImageMode = GptImageMode.fromValue(prefs.getString(PREF_GPT_MODE, GptImageMode.Responses.value))
+        gptPromptPreset = GptPromptPreset.fromValue(
+            prefs.getString(PREF_GPT_PROMPT_PRESET, GptPromptPreset.StableCutout.value),
+        )
+        gptCustomPrompt = prefs.getString(PREF_GPT_CUSTOM_PROMPT, "") ?: ""
         val storedBaseUrl = prefs.getString(PREF_GPT_BASE_URL, "") ?: ""
         gptBaseUrl = if (storedBaseUrl == LEGACY_DEFAULT_GPT_BASE_URL) "" else storedBaseUrl
         gptApiKey = loadGptApiKey(prefs)
@@ -4828,6 +4966,8 @@ class MainActivity : ComponentActivity() {
         return prefs
             .edit()
             .putString(PREF_GPT_MODE, gptImageMode.value)
+            .putString(PREF_GPT_PROMPT_PRESET, gptPromptPreset.value)
+            .putString(PREF_GPT_CUSTOM_PROMPT, gptCustomPrompt.trim())
             .putString(PREF_GPT_BASE_URL, gptBaseUrl.trim())
             .remove(PREF_GPT_API_KEY)
             .apply {
@@ -5012,6 +5152,26 @@ class MainActivity : ComponentActivity() {
             prefs.getInt(PREF_EDGE_POLISH_PERCENT, DEFAULT_EDGE_POLISH_PERCENT)
         }.coerceIn(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT)
         draftEdgePolishText = edgePolishPercent.toString()
+        rmbgAlphaStrengthPercent = prefs.getInt(
+            PREF_RMBG_ALPHA_STRENGTH_PERCENT,
+            DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT,
+        ).coerceIn(MIN_RMBG_ALPHA_STRENGTH_PERCENT, MAX_RMBG_ALPHA_STRENGTH_PERCENT)
+        draftRmbgAlphaStrengthText = rmbgAlphaStrengthPercent.toString()
+        rmbgEdgeFeatherPercent = prefs.getInt(
+            PREF_RMBG_EDGE_FEATHER_PERCENT,
+            DEFAULT_RMBG_EDGE_FEATHER_PERCENT,
+        ).coerceIn(MIN_RMBG_EDGE_FEATHER_PERCENT, MAX_RMBG_EDGE_FEATHER_PERCENT)
+        draftRmbgEdgeFeatherText = rmbgEdgeFeatherPercent.toString()
+        rmbgEdgeAdjustPercent = prefs.getInt(
+            PREF_RMBG_EDGE_ADJUST_PERCENT,
+            DEFAULT_RMBG_EDGE_ADJUST_PERCENT,
+        ).coerceIn(MIN_RMBG_EDGE_ADJUST_PERCENT, MAX_RMBG_EDGE_ADJUST_PERCENT)
+        draftRmbgEdgeAdjustText = rmbgEdgeAdjustPercent.toString()
+        rmbgWeakAlphaKeepPercent = prefs.getInt(
+            PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+            DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+        ).coerceIn(MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT, MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT)
+        draftRmbgWeakAlphaKeepText = rmbgWeakAlphaKeepPercent.toString()
         adaptiveForegroundMode = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             AdaptiveForegroundMode.Auto
         } else {
@@ -5056,6 +5216,10 @@ class MainActivity : ComponentActivity() {
             .putInt(PREF_PLATE_REMOVAL_PERCENT, plateRemovalPercent)
             .putInt(PREF_SHADOW_REMOVAL_PERCENT, shadowRemovalPercent)
             .putInt(PREF_EDGE_POLISH_PERCENT, edgePolishPercent)
+            .putInt(PREF_RMBG_ALPHA_STRENGTH_PERCENT, rmbgAlphaStrengthPercent)
+            .putInt(PREF_RMBG_EDGE_FEATHER_PERCENT, rmbgEdgeFeatherPercent)
+            .putInt(PREF_RMBG_EDGE_ADJUST_PERCENT, rmbgEdgeAdjustPercent)
+            .putInt(PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT, rmbgWeakAlphaKeepPercent)
             .putString(PREF_ADAPTIVE_FOREGROUND_MODE, adaptiveForegroundMode.value)
             .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, adaptiveDirectMaxCoveragePercent)
             .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, adaptiveDirectMaxCoverageIncreasePercent)
@@ -5138,6 +5302,46 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
+    private fun updateRmbgAlphaStrengthPercent(value: Int) {
+        rmbgAlphaStrengthPercent = value.coerceIn(
+            MIN_RMBG_ALPHA_STRENGTH_PERCENT,
+            MAX_RMBG_ALPHA_STRENGTH_PERCENT,
+        )
+        draftRmbgAlphaStrengthText = rmbgAlphaStrengthPercent.toString()
+        saveImageTuningSettings()
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateRmbgEdgeFeatherPercent(value: Int) {
+        rmbgEdgeFeatherPercent = value.coerceIn(
+            MIN_RMBG_EDGE_FEATHER_PERCENT,
+            MAX_RMBG_EDGE_FEATHER_PERCENT,
+        )
+        draftRmbgEdgeFeatherText = rmbgEdgeFeatherPercent.toString()
+        saveImageTuningSettings()
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateRmbgEdgeAdjustPercent(value: Int) {
+        rmbgEdgeAdjustPercent = value.coerceIn(
+            MIN_RMBG_EDGE_ADJUST_PERCENT,
+            MAX_RMBG_EDGE_ADJUST_PERCENT,
+        )
+        draftRmbgEdgeAdjustText = rmbgEdgeAdjustPercent.toString()
+        saveImageTuningSettings()
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateRmbgWeakAlphaKeepPercent(value: Int) {
+        rmbgWeakAlphaKeepPercent = value.coerceIn(
+            MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+            MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+        )
+        draftRmbgWeakAlphaKeepText = rmbgWeakAlphaKeepPercent.toString()
+        saveImageTuningSettings()
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
     private fun currentRmbgModelPreset(): RmbgModelPreset {
         val url = rmbgComponentUrl.trim()
         return RMBG_MODEL_PRESETS.firstOrNull { preset ->
@@ -5181,6 +5385,10 @@ class MainActivity : ComponentActivity() {
             .putInt(PREF_PLATE_REMOVAL_PERCENT, plateRemovalPercent)
             .putInt(PREF_SHADOW_REMOVAL_PERCENT, shadowRemovalPercent)
             .putInt(PREF_EDGE_POLISH_PERCENT, edgePolishPercent)
+            .putInt(PREF_RMBG_ALPHA_STRENGTH_PERCENT, rmbgAlphaStrengthPercent)
+            .putInt(PREF_RMBG_EDGE_FEATHER_PERCENT, rmbgEdgeFeatherPercent)
+            .putInt(PREF_RMBG_EDGE_ADJUST_PERCENT, rmbgEdgeAdjustPercent)
+            .putInt(PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT, rmbgWeakAlphaKeepPercent)
             .putString(PREF_ADAPTIVE_FOREGROUND_MODE, adaptiveForegroundMode.value)
             .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, adaptiveDirectMaxCoveragePercent)
             .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, adaptiveDirectMaxCoverageIncreasePercent)
@@ -5655,7 +5863,8 @@ class MainActivity : ComponentActivity() {
         val component = findRmbgComponent() ?: return null
         return runCatching {
             val mask = runRmbgAlphaMask(sourceIcon, component)
-            val foreground = applyAlphaArrayToSource(sourceIcon, mask.alpha)
+            val tunedAlpha = tuneRmbgAlpha(mask.alpha, sourceIcon.width, sourceIcon.height)
+            val foreground = applyAlphaArrayToSource(sourceIcon, tunedAlpha)
             val coverage = meaningfulAlphaCoverage(foreground)
             val bounds = meaningfulAlphaBounds(foreground)
             val cropRisk = bounds?.let { hasAutoCropRisk(it, foreground.width, foreground.height) } ?: true
@@ -5668,6 +5877,8 @@ class MainActivity : ComponentActivity() {
                     recfgRaw = foreground,
                     recbg = recbg,
                     monochromeRaw = foreground,
+                    rmbgSourceRaw = sourceIcon,
+                    rmbgAlphaRaw = mask.alpha,
                 ),
                 autoUsable = manualUsable && coverage in RMBG_MIN_AUTO_COVERAGE..RMBG_MAX_AUTO_COVERAGE,
                 coverage = coverage,
@@ -5687,7 +5898,8 @@ class MainActivity : ComponentActivity() {
     private fun buildRmbgDebugCandidate(sourceIcon: Bitmap, recbg: Bitmap): RmbgDebugCandidate {
         val component = findRmbgComponent() ?: error("未安装 RMBG 组件 ZIP")
         val mask = runRmbgAlphaMask(sourceIcon, component)
-        val foreground = applyAlphaArrayToSource(sourceIcon, mask.alpha)
+        val tunedAlpha = tuneRmbgAlpha(mask.alpha, sourceIcon.width, sourceIcon.height)
+        val foreground = applyAlphaArrayToSource(sourceIcon, tunedAlpha)
         val coverage = meaningfulAlphaCoverage(foreground)
         val bounds = meaningfulAlphaBounds(foreground)
         val cropRisk = bounds?.let { hasAutoCropRisk(it, foreground.width, foreground.height) } ?: true
@@ -5698,6 +5910,8 @@ class MainActivity : ComponentActivity() {
             recfgRaw = foreground,
             recbg = recbg,
             monochromeRaw = foreground,
+            rmbgSourceRaw = sourceIcon,
+            rmbgAlphaRaw = mask.alpha,
         )
         val result = CandidateBuildResult(
             candidate = candidate,
@@ -6232,17 +6446,176 @@ class MainActivity : ComponentActivity() {
         val scaleX = outputSide.toFloat() / sourceIcon.width.toFloat()
         val scaleY = outputSide.toFloat() / sourceIcon.height.toFloat()
         for (y in 0 until sourceIcon.height) {
-            val sourceY = ((y + 0.5f) * scaleY).toInt().coerceIn(0, outputSide - 1)
-            val rowOffset = sourceY * outputSide
+            val sourceY = ((y + 0.5f) * scaleY - 0.5f).coerceIn(0f, (outputSide - 1).toFloat())
+            val y0 = sourceY.toInt().coerceIn(0, outputSide - 1)
+            val y1 = (y0 + 1).coerceIn(0, outputSide - 1)
+            val yRatio = sourceY - y0.toFloat()
+            val row0 = y0 * outputSide
+            val row1 = y1 * outputSide
             val outOffset = y * sourceIcon.width
             for (x in 0 until sourceIcon.width) {
-                val sourceX = ((x + 0.5f) * scaleX).toInt().coerceIn(0, outputSide - 1)
-                scaledPixels[outOffset + x] = (((output[rowOffset + sourceX] - min) / range) * 255.0f)
+                val sourceX = ((x + 0.5f) * scaleX - 0.5f).coerceIn(0f, (outputSide - 1).toFloat())
+                val x0 = sourceX.toInt().coerceIn(0, outputSide - 1)
+                val x1 = (x0 + 1).coerceIn(0, outputSide - 1)
+                val xRatio = sourceX - x0.toFloat()
+                val top = output[row0 + x0] * (1f - xRatio) + output[row0 + x1] * xRatio
+                val bottom = output[row1 + x0] * (1f - xRatio) + output[row1 + x1] * xRatio
+                val value = top * (1f - yRatio) + bottom * yRatio
+                scaledPixels[outOffset + x] = (((value - min) / range) * 255.0f)
                     .roundToInt()
                     .coerceIn(0, 255)
             }
         }
         return RmbgMaskResult(alpha = scaledPixels, report = modelOutput.report)
+    }
+
+    private fun tuneRmbgAlpha(alpha: IntArray, width: Int, height: Int): IntArray {
+        if (alpha.size != width * height || width <= 0 || height <= 0) {
+            return alpha.copyOf()
+        }
+        var current = alpha.copyOf()
+        val strength = rmbgAlphaStrengthPercent.coerceIn(
+            MIN_RMBG_ALPHA_STRENGTH_PERCENT,
+            MAX_RMBG_ALPHA_STRENGTH_PERCENT,
+        )
+        if (strength != DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT) {
+            val gamma = DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT.toDouble() / strength.toDouble()
+            for (i in current.indices) {
+                val normalized = current[i].coerceIn(0, 255).toDouble() / 255.0
+                current[i] = (normalized.pow(gamma) * 255.0)
+                    .roundToInt()
+                    .coerceIn(0, 255)
+            }
+        }
+
+        val adjust = rmbgEdgeAdjustPercent.coerceIn(
+            MIN_RMBG_EDGE_ADJUST_PERCENT,
+            MAX_RMBG_EDGE_ADJUST_PERCENT,
+        ) - DEFAULT_RMBG_EDGE_ADJUST_PERCENT
+        if (adjust != 0) {
+            val radius = ((abs(adjust) / 50.0) * RMBG_EDGE_ADJUST_MAX_RADIUS)
+                .roundToInt()
+                .coerceIn(1, RMBG_EDGE_ADJUST_MAX_RADIUS)
+            val morphed = morphRmbgAlpha(current, width, height, expand = adjust > 0, radius = radius)
+            val blend = (abs(adjust).toDouble() / DEFAULT_RMBG_EDGE_ADJUST_PERCENT.toDouble())
+                .coerceIn(0.0, 1.0)
+            for (i in current.indices) {
+                current[i] = (current[i] * (1.0 - blend) + morphed[i] * blend)
+                    .roundToInt()
+                    .coerceIn(0, 255)
+            }
+        }
+
+        val feather = ratioPercent(rmbgEdgeFeatherPercent.coerceIn(
+            MIN_RMBG_EDGE_FEATHER_PERCENT,
+            MAX_RMBG_EDGE_FEATHER_PERCENT,
+        ))
+        if (feather > 0.0) {
+            val radius = if (rmbgEdgeFeatherPercent >= 70) 2 else 1
+            current = featherRmbgAlphaEdges(current, width, height, strength = feather, radius = radius)
+        }
+
+        val weakKeep = ratioPercent(rmbgWeakAlphaKeepPercent.coerceIn(
+            MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+            MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+        ))
+        if (weakKeep < 1.0) {
+            val lowCut = lerpDouble(RMBG_WEAK_ALPHA_MAX_CUT.toDouble(), 0.0, weakKeep)
+                .roundToInt()
+                .coerceIn(0, 254)
+            if (lowCut > 0) {
+                val range = (255 - lowCut).coerceAtLeast(1)
+                for (i in current.indices) {
+                    val value = current[i].coerceIn(0, 255)
+                    current[i] = if (value <= lowCut) {
+                        0
+                    } else {
+                        (((value - lowCut).toDouble() / range.toDouble()) * 255.0)
+                            .roundToInt()
+                            .coerceIn(0, 255)
+                    }
+                }
+            }
+        }
+        return current
+    }
+
+    private fun morphRmbgAlpha(
+        alpha: IntArray,
+        width: Int,
+        height: Int,
+        expand: Boolean,
+        radius: Int,
+    ): IntArray {
+        val out = IntArray(alpha.size)
+        val safeRadius = radius.coerceAtLeast(1)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                var selected = if (expand) 0 else 255
+                for (dy in -safeRadius..safeRadius) {
+                    for (dx in -safeRadius..safeRadius) {
+                        val nx = x + dx
+                        val ny = y + dy
+                        val value = if (nx in 0 until width && ny in 0 until height) {
+                            alpha[ny * width + nx].coerceIn(0, 255)
+                        } else {
+                            0
+                        }
+                        selected = if (expand) {
+                            maxOf(selected, value)
+                        } else {
+                            minOf(selected, value)
+                        }
+                    }
+                }
+                out[y * width + x] = selected
+            }
+        }
+        return out
+    }
+
+    private fun featherRmbgAlphaEdges(
+        alpha: IntArray,
+        width: Int,
+        height: Int,
+        strength: Double,
+        radius: Int,
+    ): IntArray {
+        val out = alpha.copyOf()
+        val safeRadius = radius.coerceAtLeast(1)
+        val blend = strength.coerceIn(0.0, 1.0)
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val index = y * width + x
+                var sum = 0
+                var count = 0
+                var minAlpha = 255
+                var maxAlpha = 0
+                for (dy in -safeRadius..safeRadius) {
+                    for (dx in -safeRadius..safeRadius) {
+                        val nx = x + dx
+                        val ny = y + dy
+                        val value = if (nx in 0 until width && ny in 0 until height) {
+                            alpha[ny * width + nx].coerceIn(0, 255)
+                        } else {
+                            0
+                        }
+                        sum += value
+                        count++
+                        minAlpha = minOf(minAlpha, value)
+                        maxAlpha = maxOf(maxAlpha, value)
+                    }
+                }
+                if (count <= 0 || maxAlpha - minAlpha < RMBG_EDGE_FEATHER_MIN_ALPHA_DELTA) {
+                    continue
+                }
+                val average = sum.toDouble() / count.toDouble()
+                out[index] = (alpha[index] * (1.0 - blend) + average * blend)
+                    .roundToInt()
+                    .coerceIn(0, 255)
+            }
+        }
+        return out
     }
 
     private fun applyAlphaArrayToSource(source: Bitmap, alpha: IntArray): Bitmap {
@@ -7018,12 +7391,15 @@ class MainActivity : ComponentActivity() {
             },
             preserveGeometry = if (customForeground != null) true else base.preserveGeometry,
             customFinalBitmap = null,
+            rmbgSourceRaw = if (customForeground != null) null else base.rmbgSourceRaw,
+            rmbgAlphaRaw = if (customForeground != null) null else base.rmbgAlphaRaw,
         )
     }
 
     private fun monochromeForCandidate(candidate: IconCandidate, invertLuma: Boolean = false): Bitmap {
         val foreground = renderCandidateForeground(candidate)
-        val source = candidate.monochromeRaw?.let { renderCandidateBitmap(it) }
+        val source = rmbgTunedForegroundRaw(candidate)?.let { renderCandidateBitmap(it) }
+            ?: candidate.monochromeRaw?.let { renderCandidateBitmap(it) }
         val monochrome = when {
             source != null && candidate.monochromeIsNative -> {
                 cleanNativeMonochrome(source)
@@ -7139,7 +7515,19 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun renderCandidateForeground(candidate: IconCandidate): Bitmap =
-        polishForegroundEdges(renderCandidateBitmap(candidate.recfgRaw))
+        polishForegroundEdges(renderCandidateBitmap(rmbgTunedForegroundRaw(candidate) ?: candidate.recfgRaw))
+
+    private fun rmbgTunedForegroundRaw(candidate: IconCandidate): Bitmap? {
+        val source = candidate.rmbgSourceRaw ?: return null
+        val alpha = candidate.rmbgAlphaRaw ?: return null
+        if (alpha.size != source.width * source.height) {
+            return null
+        }
+        return applyAlphaArrayToSource(
+            source = source,
+            alpha = tuneRmbgAlpha(alpha, source.width, source.height),
+        )
+    }
 
     private fun renderCandidateBitmap(bitmap: Bitmap): Bitmap =
         normalizeForegroundSubjectSize(bitmap)
@@ -8122,20 +8510,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun activeGptForegroundPrompt(): String {
+        val custom = gptCustomPrompt.trim()
+        val base = if (gptPromptPreset == GptPromptPreset.Custom && custom.isNotBlank()) {
+            custom
+        } else {
+            gptPromptPreset.foregroundPrompt.ifBlank { GptPromptPreset.StableCutout.foregroundPrompt }
+        }
+        return base.trim().trimEnd('.') +
+            ". Scale the subject/logo so its visible bounding box is about $foregroundSubjectPercent% of the final square canvas."
+    }
+
     private fun buildTransparentForegroundPrompt(): String =
-        "Keep only the app icon main subject/logo. Remove the original background. " +
-            "Return the remaining subject/logo on a transparent background. " +
-            "Do not add any new circle, glow, outline, shadow, halo, plate, or filled backdrop behind the subject. " +
-            "Scale the subject/logo so its visible bounding box is about $foregroundSubjectPercent% of the final square canvas. " +
-            "Preserve the subject shape, position, colors, face details, highlights, and internal shading."
+        activeGptForegroundPrompt() + " Return the extracted subject on a real transparent background with alpha channel."
 
     private fun buildChromaForegroundPrompt(chromaHex: String): String =
-        "Keep only the app icon main subject/logo. Remove the original background. " +
-            "Scale the subject/logo so its visible bounding box is about $foregroundSubjectPercent% of the final square canvas. " +
-            "Place the remaining subject on a perfectly flat solid $chromaHex chroma-key background. " +
+        activeGptForegroundPrompt() +
+            " Place the extracted subject on a perfectly flat solid $chromaHex chroma-key background. " +
             "The chroma-key background must be one uniform color, with no checkerboard, no transparency preview pattern, " +
             "no shadows, no gradients, no texture, and no lighting variation. " +
-            "Do not use $chromaHex anywhere in the subject/logo. Preserve the subject shape and colors."
+            "Do not use $chromaHex anywhere in the subject/logo."
 
     private fun buildBackgroundPrompt(): String =
         "Remove the app icon main subject/logo. Rebuild only the clean original background plate. No logo, no text, no symbol."
@@ -8612,6 +9006,28 @@ class MainActivity : ComponentActivity() {
         lerpDouble(LEGACY_SHADOW_REMOVAL_MIN, LEGACY_SHADOW_REMOVAL_MAX, ratioPercent(shadowRemovalPercent))
             .toInt()
             .coerceIn(0, 255)
+
+    private fun effectiveShadowMaxSaturation(): Double =
+        lerpDouble(SHADOW_MAX_SATURATION_MIN, SHADOW_MAX_SATURATION_MAX, ratioPercent(shadowRemovalPercent))
+
+    private fun effectiveShadowMaxLuminance(): Int =
+        lerpDouble(SHADOW_MAX_LUMINANCE_MIN, SHADOW_MAX_LUMINANCE_MAX, ratioPercent(shadowRemovalPercent))
+            .roundToInt()
+            .coerceIn(0, 255)
+
+    private fun effectiveShadowMinVisibleRatio(): Double =
+        lerpDouble(SHADOW_MIN_VISIBLE_RATIO_MAX, SHADOW_MIN_VISIBLE_RATIO_MIN, ratioPercent(shadowRemovalPercent))
+
+    private fun effectiveShadowMinOffset(): Double =
+        lerpDouble(SHADOW_MIN_OFFSET_MAX, SHADOW_MIN_OFFSET_MIN, ratioPercent(shadowRemovalPercent))
+
+    private fun effectiveShadowMinDownOffset(): Double =
+        lerpDouble(SHADOW_MIN_DOWN_OFFSET_MAX, SHADOW_MIN_DOWN_OFFSET_MIN, ratioPercent(shadowRemovalPercent))
+
+    private fun effectiveShadowMinLumaDrop(): Int =
+        lerpDouble(SHADOW_MIN_LUMA_DROP_MAX, SHADOW_MIN_LUMA_DROP_MIN, ratioPercent(shadowRemovalPercent))
+            .roundToInt()
+            .coerceAtLeast(0)
 
     private fun lerpDouble(start: Double, end: Double, ratio: Double): Double =
         start + (end - start) * ratio.coerceIn(0.0, 1.0)
@@ -9159,6 +9575,12 @@ class MainActivity : ComponentActivity() {
         val highAlpha = BooleanArray(pixels.size)
         val shadowCandidate = BooleanArray(pixels.size)
         val alphaMax = effectiveShadowRemovalAlpha()
+        val saturationMax = effectiveShadowMaxSaturation()
+        val luminanceMax = effectiveShadowMaxLuminance()
+        val minVisibleRatio = effectiveShadowMinVisibleRatio()
+        val minOffset = effectiveShadowMinOffset()
+        val minDownOffset = effectiveShadowMinDownOffset()
+        val minLumaDrop = effectiveShadowMinLumaDrop()
         if (alphaMax <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
             return ShadowCleanupResult(source, changed = false, removedRatio = 0.0)
         }
@@ -9180,8 +9602,8 @@ class MainActivity : ComponentActivity() {
                 }
                 if (
                     alpha <= alphaMax &&
-                    saturation(pixel) <= SHADOW_MAX_SATURATION &&
-                    luma(pixel) <= SHADOW_MAX_LUMINANCE
+                    saturation(pixel) <= saturationMax &&
+                    luma(pixel) <= luminanceMax
                 ) {
                     shadowCandidate[index] = true
                 }
@@ -9197,7 +9619,7 @@ class MainActivity : ComponentActivity() {
         val selected = BooleanArray(pixels.size)
         connectedMaskComponents(shadowCandidate, width, height).forEach { component ->
             val componentRatio = component.size.toDouble() / visible.toDouble()
-            if (componentRatio < SHADOW_MIN_VISIBLE_RATIO) {
+            if (componentRatio < minVisibleRatio) {
                 return@forEach
             }
             var componentX = 0.0
@@ -9224,9 +9646,9 @@ class MainActivity : ComponentActivity() {
             val offset = kotlin.math.sqrt(dx * dx + dy * dy)
             val medianDrop = percentile(lumaDrops, 0.50)
             if (
-                offset >= SHADOW_MIN_OFFSET &&
-                dy >= SHADOW_MIN_DOWN_OFFSET &&
-                medianDrop >= SHADOW_MIN_LUMA_DROP
+                offset >= minOffset &&
+                dy >= minDownOffset &&
+                medianDrop >= minLumaDrop
             ) {
                 component.indices.forEach { selected[it] = true }
             }
@@ -10896,12 +11318,18 @@ class MainActivity : ComponentActivity() {
             .put("foreground_subject_percent", foregroundSubjectPercent)
             .put("monochrome_theme_scale", (monochromeThemeScale * 100).roundToInt())
             .put("gpt_mode", gptImageMode.value)
+            .put("gpt_prompt_preset", gptPromptPreset.value)
+            .put("gpt_custom_prompt", gptCustomPrompt)
             .put("gpt_base_url", gptBaseUrl)
             .put("gpt_api_key_set", gptApiKey.isNotBlank())
             .put("background_separation_percent", backgroundSeparationPercent)
             .put("plate_removal_percent", plateRemovalPercent)
             .put("shadow_removal_percent", shadowRemovalPercent)
             .put("edge_polish_percent", edgePolishPercent)
+            .put("rmbg_alpha_strength_percent", rmbgAlphaStrengthPercent)
+            .put("rmbg_edge_feather_percent", rmbgEdgeFeatherPercent)
+            .put("rmbg_edge_adjust_percent", rmbgEdgeAdjustPercent)
+            .put("rmbg_weak_alpha_keep_percent", rmbgWeakAlphaKeepPercent)
             .put("liquid_glass_enabled", liquidGlassEnabled)
             .put("liquid_glass_radius", liquidGlassRadius)
             .put("rmbg_model_installed", findRmbgComponent() != null)
@@ -10941,6 +11369,22 @@ class MainActivity : ComponentActivity() {
                     .put("plate_removal_percent", intRangeJson(MIN_PLATE_REMOVAL_PERCENT, MAX_PLATE_REMOVAL_PERCENT))
                     .put("shadow_removal_percent", intRangeJson(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT))
                     .put("edge_polish_percent", intRangeJson(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT))
+                    .put(
+                        "rmbg_alpha_strength_percent",
+                        intRangeJson(MIN_RMBG_ALPHA_STRENGTH_PERCENT, MAX_RMBG_ALPHA_STRENGTH_PERCENT),
+                    )
+                    .put(
+                        "rmbg_edge_feather_percent",
+                        intRangeJson(MIN_RMBG_EDGE_FEATHER_PERCENT, MAX_RMBG_EDGE_FEATHER_PERCENT),
+                    )
+                    .put(
+                        "rmbg_edge_adjust_percent",
+                        intRangeJson(MIN_RMBG_EDGE_ADJUST_PERCENT, MAX_RMBG_EDGE_ADJUST_PERCENT),
+                    )
+                    .put(
+                        "rmbg_weak_alpha_keep_percent",
+                        intRangeJson(MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT, MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT),
+                    )
                     .put("liquid_glass_radius", intRangeJson(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS))
                     .put(
                         "adaptive_direct_max_coverage_percent",
@@ -11008,6 +11452,34 @@ class MainActivity : ComponentActivity() {
                 edgePolishPercent = it.coerceIn(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT)
                 draftEdgePolishText = edgePolishPercent.toString()
             }
+            params["rmbg_alpha_strength_percent"]?.toIntOrNull()?.let {
+                rmbgAlphaStrengthPercent = it.coerceIn(
+                    MIN_RMBG_ALPHA_STRENGTH_PERCENT,
+                    MAX_RMBG_ALPHA_STRENGTH_PERCENT,
+                )
+                draftRmbgAlphaStrengthText = rmbgAlphaStrengthPercent.toString()
+            }
+            params["rmbg_edge_feather_percent"]?.toIntOrNull()?.let {
+                rmbgEdgeFeatherPercent = it.coerceIn(
+                    MIN_RMBG_EDGE_FEATHER_PERCENT,
+                    MAX_RMBG_EDGE_FEATHER_PERCENT,
+                )
+                draftRmbgEdgeFeatherText = rmbgEdgeFeatherPercent.toString()
+            }
+            params["rmbg_edge_adjust_percent"]?.toIntOrNull()?.let {
+                rmbgEdgeAdjustPercent = it.coerceIn(
+                    MIN_RMBG_EDGE_ADJUST_PERCENT,
+                    MAX_RMBG_EDGE_ADJUST_PERCENT,
+                )
+                draftRmbgEdgeAdjustText = rmbgEdgeAdjustPercent.toString()
+            }
+            params["rmbg_weak_alpha_keep_percent"]?.toIntOrNull()?.let {
+                rmbgWeakAlphaKeepPercent = it.coerceIn(
+                    MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+                    MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+                )
+                draftRmbgWeakAlphaKeepText = rmbgWeakAlphaKeepPercent.toString()
+            }
             params["liquid_glass_enabled"]?.toBooleanStrictOrNull()?.let {
                 liquidGlassEnabled = it
             }
@@ -11018,6 +11490,12 @@ class MainActivity : ComponentActivity() {
             params["gpt_mode"]?.let {
                 gptImageMode = GptImageMode.fromValue(it)
             }
+            params["gpt_prompt_preset"]?.let {
+                gptPromptPreset = GptPromptPreset.fromValue(it)
+            }
+            params["gpt_custom_prompt"]?.let {
+                gptCustomPrompt = it
+            }
             params["gpt_base_url"]?.let {
                 gptBaseUrl = it
             }
@@ -11026,6 +11504,8 @@ class MainActivity : ComponentActivity() {
             }
             if (
                 params.containsKey("gpt_mode") ||
+                params.containsKey("gpt_prompt_preset") ||
+                params.containsKey("gpt_custom_prompt") ||
                 params.containsKey("gpt_base_url") ||
                 params.containsKey("gpt_api_key")
             ) {
@@ -11122,6 +11602,7 @@ class MainActivity : ComponentActivity() {
         <script>
         const numericKeys = [
           'foreground_subject_percent','background_separation_percent','plate_removal_percent','shadow_removal_percent','edge_polish_percent',
+          'rmbg_alpha_strength_percent','rmbg_edge_feather_percent','rmbg_edge_adjust_percent','rmbg_weak_alpha_keep_percent',
           'liquid_glass_radius',
           'adaptive_direct_max_coverage_percent','adaptive_direct_max_coverage_increase_percent',
           'adaptive_mask_edge_coverage_percent','adaptive_mask_min_coverage_percent','adaptive_center_epsilon_percent'
@@ -11604,6 +12085,8 @@ class MainActivity : ComponentActivity() {
         val monochromeIsNative: Boolean = false,
         val preserveGeometry: Boolean = false,
         val customFinalBitmap: Bitmap? = null,
+        val rmbgSourceRaw: Bitmap? = null,
+        val rmbgAlphaRaw: IntArray? = null,
     )
 
     private data class GenerationSession(
@@ -11836,6 +12319,51 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private enum class GptPromptPreset(
+        val value: String,
+        val label: String,
+        val summary: String,
+        val foregroundPrompt: String,
+    ) {
+        Default(
+            "default",
+            "默认",
+            "保留主体颜色和细节",
+            "Keep only the app icon main subject/logo. Remove the original background. " +
+                "Return the remaining subject/logo on a transparent background. " +
+                "Do not add any new circle, glow, outline, shadow, halo, plate, or filled backdrop behind the subject. " +
+                "Preserve the subject shape, position, colors, face details, highlights, and internal shading.",
+        ),
+        StableCutout(
+            "stable_cutout",
+            "镂空稳定",
+            "优先保留孔洞和负形",
+            "Extract only the visible foreground subject/logo from the app icon with a precise alpha mask. " +
+                "Preserve all cutouts, counters, holes, transparent gaps, negative-space shapes, inner openings, and thin strokes exactly as in the source. " +
+                "Do not fill enclosed holes or bridge gaps. Do not invent a backing plate, outline, halo, shadow, glow, circle, rounded square, or extra background. " +
+                "Keep antialiasing on the true subject edge and preserve the original colors, gradients, highlights, shadows, and internal details of the subject.",
+        ),
+        CleanLayers(
+            "clean_layers",
+            "干净分层",
+            "主体与背景分离更强",
+            "Separate the app icon into a clean foreground subject/logo only. " +
+                "Remove every background plate, wallpaper, rounded square, circle, glow, halo, cast shadow, and decorative backdrop. " +
+                "Keep the subject/logo centered and preserve its original colors, gradients, highlights, and internal shading without redrawing it.",
+        ),
+        Custom(
+            "custom",
+            "自定义",
+            "使用下面输入的前景提示词",
+            "",
+        );
+
+        companion object {
+            fun fromValue(value: String?): GptPromptPreset =
+                entries.firstOrNull { it.value == value } ?: StableCutout
+        }
+    }
+
     private data class RmbgModelPreset(
         val id: String,
         val label: String,
@@ -11916,6 +12444,8 @@ class MainActivity : ComponentActivity() {
         private const val PREF_GENERATED_PACKAGE_NAMES = "generated_package_names"
         private const val PREF_GENERATED_PACKAGE_NAMES_UPDATED_AT = "generated_package_names_updated_at"
         private const val PREF_GPT_MODE = "gpt_mode"
+        private const val PREF_GPT_PROMPT_PRESET = "gpt_prompt_preset"
+        private const val PREF_GPT_CUSTOM_PROMPT = "gpt_custom_prompt"
         private const val PREF_GPT_BASE_URL = "gpt_base_url"
         private const val PREF_GPT_API_KEY = "gpt_api_key"
         private const val PREF_GPT_API_KEY_ENCRYPTED = "gpt_api_key_encrypted"
@@ -11929,6 +12459,10 @@ class MainActivity : ComponentActivity() {
         private const val PREF_PLATE_REMOVAL_PERCENT = "plate_removal_percent"
         private const val PREF_SHADOW_REMOVAL_PERCENT = "shadow_removal_percent"
         private const val PREF_EDGE_POLISH_PERCENT = "edge_polish_percent"
+        private const val PREF_RMBG_ALPHA_STRENGTH_PERCENT = "rmbg_alpha_strength_percent"
+        private const val PREF_RMBG_EDGE_FEATHER_PERCENT = "rmbg_edge_feather_percent"
+        private const val PREF_RMBG_EDGE_ADJUST_PERCENT = "rmbg_edge_adjust_percent"
+        private const val PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT = "rmbg_weak_alpha_keep_percent"
         private const val PREF_LIQUID_GLASS_ENABLED = "liquid_glass_enabled"
         private const val PREF_LIQUID_GLASS_RADIUS = "liquid_glass_radius"
         private const val PREF_ADAPTIVE_FOREGROUND_MODE = "adaptive_foreground_mode"
@@ -12184,6 +12718,18 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_EDGE_POLISH_PERCENT = 60
         private const val MIN_EDGE_POLISH_PERCENT = 1
         private const val MAX_EDGE_POLISH_PERCENT = 100
+        private const val DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT = 100
+        private const val MIN_RMBG_ALPHA_STRENGTH_PERCENT = 20
+        private const val MAX_RMBG_ALPHA_STRENGTH_PERCENT = 220
+        private const val DEFAULT_RMBG_EDGE_FEATHER_PERCENT = 0
+        private const val MIN_RMBG_EDGE_FEATHER_PERCENT = 0
+        private const val MAX_RMBG_EDGE_FEATHER_PERCENT = 100
+        private const val DEFAULT_RMBG_EDGE_ADJUST_PERCENT = 50
+        private const val MIN_RMBG_EDGE_ADJUST_PERCENT = 0
+        private const val MAX_RMBG_EDGE_ADJUST_PERCENT = 100
+        private const val DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT = 100
+        private const val MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT = 0
+        private const val MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT = 100
         private const val DEFAULT_LIQUID_GLASS_RADIUS = 34
         private const val MIN_LIQUID_GLASS_RADIUS = 0
         private const val MAX_LIQUID_GLASS_RADIUS = 120
@@ -12238,6 +12784,9 @@ class MainActivity : ComponentActivity() {
         private const val RMBG_MAX_MANUAL_COVERAGE = 0.62
         private const val RMBG_MIN_AUTO_COVERAGE = 0.02
         private const val RMBG_MAX_AUTO_COVERAGE = 0.34
+        private const val RMBG_EDGE_ADJUST_MAX_RADIUS = 3
+        private const val RMBG_EDGE_FEATHER_MIN_ALPHA_DELTA = 12
+        private const val RMBG_WEAK_ALPHA_MAX_CUT = 72
         private const val TWO_LAYER_PLATE_BACKGROUND_DISTANCE = 35.0
         private const val TWO_LAYER_SUBJECT_BACKGROUND_DISTANCE = 72.0
         private const val TWO_LAYER_MIN_PLATE_COVERAGE = 0.12
@@ -12286,12 +12835,18 @@ class MainActivity : ComponentActivity() {
         private const val CORNER_MASK_WHITE_THRESHOLD = 220
         private const val CORNER_MASK_MAX_REMOVED_RATIO = 0.45
         private const val SHADOW_HIGH_ALPHA_THRESHOLD = 160
-        private const val SHADOW_MAX_SATURATION = 0.20
-        private const val SHADOW_MAX_LUMINANCE = 220
-        private const val SHADOW_MIN_VISIBLE_RATIO = 0.045
-        private const val SHADOW_MIN_OFFSET = 8.0
-        private const val SHADOW_MIN_DOWN_OFFSET = 2.0
-        private const val SHADOW_MIN_LUMA_DROP = 9
+        private const val SHADOW_MAX_SATURATION_MIN = 0.08
+        private const val SHADOW_MAX_SATURATION_MAX = 0.42
+        private const val SHADOW_MAX_LUMINANCE_MIN = 120.0
+        private const val SHADOW_MAX_LUMINANCE_MAX = 245.0
+        private const val SHADOW_MIN_VISIBLE_RATIO_MIN = 0.012
+        private const val SHADOW_MIN_VISIBLE_RATIO_MAX = 0.085
+        private const val SHADOW_MIN_OFFSET_MIN = 2.0
+        private const val SHADOW_MIN_OFFSET_MAX = 16.0
+        private const val SHADOW_MIN_DOWN_OFFSET_MIN = -2.0
+        private const val SHADOW_MIN_DOWN_OFFSET_MAX = 6.0
+        private const val SHADOW_MIN_LUMA_DROP_MIN = 2.0
+        private const val SHADOW_MIN_LUMA_DROP_MAX = 18.0
         private const val SHADOW_EDGE_ANTIALIAS_RADIUS = 2
         private const val SHADOW_EDGE_REPAIR_MAX_ALPHA = 96
         private const val SHADOW_PRESERVE_EDGE_RADIUS = 3
