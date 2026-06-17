@@ -3,6 +3,7 @@ package dev.artplus.mobile
 import android.Manifest
 import android.app.AppOpsManager
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
@@ -201,6 +202,7 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.math.sqrt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -282,8 +284,26 @@ class MainActivity : ComponentActivity() {
     private var liquidGlassEnabled by mutableStateOf(false)
     private var liquidGlassRadius by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS)
     private var draftLiquidGlassRadiusText by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS.toString())
-    private var liquidGlassRimWidthLevel by mutableStateOf(DEFAULT_LIQUID_GLASS_RIM_WIDTH_LEVEL)
-    private var draftLiquidGlassRimWidthLevelText by mutableStateOf(DEFAULT_LIQUID_GLASS_RIM_WIDTH_LEVEL.toString())
+    private var liquidGlassOuterWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH)
+    private var draftLiquidGlassOuterWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH.toString())
+    private var liquidGlassTopAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA)
+    private var draftLiquidGlassTopAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA.toString())
+    private var liquidGlassBottomAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA)
+    private var draftLiquidGlassBottomAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA.toString())
+    private var liquidGlassBackgroundMistAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA)
+    private var draftLiquidGlassBackgroundMistAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA.toString())
+    private var liquidGlassBottomDarkAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
+    private var draftLiquidGlassBottomDarkAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA.toString())
+    private var liquidGlassSubjectScalePercent by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
+    private var draftLiquidGlassSubjectScaleText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT.toString())
+    private var liquidGlassSubjectOutlineWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
+    private var draftLiquidGlassSubjectOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH.toString())
+    private var liquidGlassSubjectInnerOutlineWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH)
+    private var draftLiquidGlassSubjectInnerOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH.toString())
+    private var liquidGlassSubjectShadowAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
+    private var draftLiquidGlassSubjectShadowAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA.toString())
+    private var liquidGlassSubjectOpacityPercent by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
+    private var draftLiquidGlassSubjectOpacityText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT.toString())
     private var adaptiveForegroundMode by mutableStateOf(AdaptiveForegroundMode.Auto)
     private var adaptiveDirectMaxCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT)
     private var adaptiveDirectMaxCoverageIncreasePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT)
@@ -291,6 +311,7 @@ class MainActivity : ComponentActivity() {
     private var adaptiveMaskMinCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT)
     private var adaptiveCenterEpsilonPercent by mutableStateOf(DEFAULT_ADAPTIVE_CENTER_EPSILON_PERCENT)
     private var originalForegroundCleanupMode by mutableStateOf(OriginalForegroundCleanupMode.Auto)
+    private var nightSubjectLightBackgroundEnabled by mutableStateOf(false)
     private var currentPage by mutableStateOf(AppPage.Home)
     private var generatedFilter by mutableStateOf(GeneratedFilter.All)
     private var generatedPackageNames by mutableStateOf<Set<String>>(emptySet())
@@ -1161,7 +1182,17 @@ class MainActivity : ComponentActivity() {
             rmbgWeakAlphaKeepPercent,
             liquidGlassEnabled,
             liquidGlassRadius,
-            liquidGlassRimWidthLevel,
+            liquidGlassOuterWidth,
+            liquidGlassTopAlpha,
+            liquidGlassBottomAlpha,
+            liquidGlassBackgroundMistAlpha,
+            liquidGlassBottomDarkAlpha,
+            liquidGlassSubjectScalePercent,
+            liquidGlassSubjectOutlineWidth,
+            liquidGlassSubjectInnerOutlineWidth,
+            liquidGlassSubjectShadowAlpha,
+            liquidGlassSubjectOpacityPercent,
+            nightSubjectLightBackgroundEnabled,
             previewVersion,
         ) {
             if (session == null) {
@@ -1336,6 +1367,88 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+            if (mode == PreviewMode.NormalDark && missingMessage == null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(enabled = !isBusy) {
+                            updateNightSubjectLightBackgroundEnabled(!nightSubjectLightBackgroundEnabled)
+                        }
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(1.dp),
+                    ) {
+                        Text(
+                            text = "填充背景色",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = "填补主体暗部",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    PreviewCornerSwitch(
+                        checked = nightSubjectLightBackgroundEnabled,
+                        enabled = !isBusy,
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun PreviewCornerSwitch(checked: Boolean, enabled: Boolean) {
+        val trackColor by animateColorAsState(
+            targetValue = when {
+                checked && enabled -> MiuixTheme.colorScheme.primaryVariant
+                checked -> MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.46f)
+                enabled -> MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.92f)
+                else -> MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.52f)
+            },
+            animationSpec = tween(durationMillis = 180),
+            label = "PreviewCornerSwitchTrack",
+        )
+        val thumbColor by animateColorAsState(
+            targetValue = if (enabled) {
+                MiuixTheme.colorScheme.onPrimaryVariant
+            } else {
+                MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.54f)
+            },
+            animationSpec = tween(durationMillis = 180),
+            label = "PreviewCornerSwitchThumb",
+        )
+        val thumbOffset by animateDpAsState(
+            targetValue = if (checked) 14.dp else 0.dp,
+            animationSpec = tween(durationMillis = 180),
+            label = "PreviewCornerSwitchOffset",
+        )
+        Box(
+            modifier = Modifier
+                .width(34.dp)
+                .height(20.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(trackColor)
+                .padding(2.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Box(
+                modifier = Modifier
+                    .offset(x = thumbOffset)
+                    .size(16.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(thumbColor),
+            )
         }
     }
 
@@ -1919,7 +2032,17 @@ class MainActivity : ComponentActivity() {
             rmbgWeakAlphaKeepPercent,
             liquidGlassEnabled,
             liquidGlassRadius,
-            liquidGlassRimWidthLevel,
+            liquidGlassOuterWidth,
+            liquidGlassTopAlpha,
+            liquidGlassBottomAlpha,
+            liquidGlassBackgroundMistAlpha,
+            liquidGlassBottomDarkAlpha,
+            liquidGlassSubjectScalePercent,
+            liquidGlassSubjectOutlineWidth,
+            liquidGlassSubjectInnerOutlineWidth,
+            liquidGlassSubjectShadowAlpha,
+            liquidGlassSubjectOpacityPercent,
+            nightSubjectLightBackgroundEnabled,
         ) {
             mutableStateOf<PreviewAssets?>(null)
         }
@@ -1935,7 +2058,17 @@ class MainActivity : ComponentActivity() {
             rmbgWeakAlphaKeepPercent,
             liquidGlassEnabled,
             liquidGlassRadius,
-            liquidGlassRimWidthLevel,
+            liquidGlassOuterWidth,
+            liquidGlassTopAlpha,
+            liquidGlassBottomAlpha,
+            liquidGlassBackgroundMistAlpha,
+            liquidGlassBottomDarkAlpha,
+            liquidGlassSubjectScalePercent,
+            liquidGlassSubjectOutlineWidth,
+            liquidGlassSubjectInnerOutlineWidth,
+            liquidGlassSubjectShadowAlpha,
+            liquidGlassSubjectOpacityPercent,
+            nightSubjectLightBackgroundEnabled,
         ) {
             assets = null
             try {
@@ -2209,9 +2342,10 @@ class MainActivity : ComponentActivity() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             LiquidGlassToggleRow()
+            LiquidGlassSectionTitle("玻璃层")
             NumberParameterControl(
-                title = "圆角半径",
-                summary = "0 方形，120 圆形，默认 $DEFAULT_LIQUID_GLASS_RADIUS",
+                title = "玻璃圆角",
+                summary = "控制玻璃遮罩圆角，背景与主体按同一轮廓裁剪",
                 value = liquidGlassRadius,
                 draftText = draftLiquidGlassRadiusText,
                 min = MIN_LIQUID_GLASS_RADIUS,
@@ -2221,39 +2355,125 @@ class MainActivity : ComponentActivity() {
                 icon = SettingsIconKind.Radius,
             )
             NumberParameterControl(
-                title = "边缘高光宽度",
-                summary = "0 无，5 当前，10 两倍",
-                value = liquidGlassRimWidthLevel,
-                draftText = draftLiquidGlassRimWidthLevelText,
-                min = MIN_LIQUID_GLASS_RIM_WIDTH_LEVEL,
-                max = MAX_LIQUID_GLASS_RIM_WIDTH_LEVEL,
+                title = "外框高度",
+                summary = "控制玻璃外缘高光的厚度",
+                value = liquidGlassOuterWidth,
+                draftText = draftLiquidGlassOuterWidthText,
+                min = MIN_LIQUID_GLASS_OUTER_WIDTH,
+                max = MAX_LIQUID_GLASS_OUTER_WIDTH,
                 step = 1,
-                onDraftChange = { draftLiquidGlassRimWidthLevelText = it },
-                onSave = { updateLiquidGlassRimWidthLevel(it) },
+                onDraftChange = { draftLiquidGlassOuterWidthText = it },
+                onSave = { updateLiquidGlassOuterWidth(it) },
                 icon = SettingsIconKind.Glass,
             )
             NumberParameterControl(
-                title = "主体阴影等级",
-                summary = "0 关闭，10 最浓",
-                value = foregroundShadowLevel,
-                draftText = draftForegroundShadowLevelText,
-                min = MIN_FOREGROUND_SHADOW_LEVEL,
-                max = MAX_FOREGROUND_SHADOW_LEVEL,
+                title = "顶部强度",
+                summary = "控制顶边贴边高光的亮度",
+                value = liquidGlassTopAlpha,
+                draftText = draftLiquidGlassTopAlphaText,
+                min = MIN_LIQUID_GLASS_ALPHA,
+                max = MAX_LIQUID_GLASS_ALPHA,
                 step = 1,
-                onDraftChange = { draftForegroundShadowLevelText = it },
-                onSave = { updateForegroundShadowLevel(it) },
+                onDraftChange = { draftLiquidGlassTopAlphaText = it },
+                onSave = { updateLiquidGlassTopAlpha(it) },
+                icon = SettingsIconKind.Spark,
+            )
+            NumberParameterControl(
+                title = "底边强度",
+                summary = "控制底边贴边高光的亮度",
+                value = liquidGlassBottomAlpha,
+                draftText = draftLiquidGlassBottomAlphaText,
+                min = MIN_LIQUID_GLASS_ALPHA,
+                max = MAX_LIQUID_GLASS_ALPHA,
+                step = 1,
+                onDraftChange = { draftLiquidGlassBottomAlphaText = it },
+                onSave = { updateLiquidGlassBottomAlpha(it) },
+                icon = SettingsIconKind.Spark,
+            )
+            NumberParameterControl(
+                title = "背景灰雾",
+                summary = "给图标背景叠加均匀暗雾，降低整体亮度",
+                value = liquidGlassBackgroundMistAlpha,
+                draftText = draftLiquidGlassBackgroundMistAlphaText,
+                min = MIN_LIQUID_GLASS_MIST_ALPHA,
+                max = MAX_LIQUID_GLASS_MIST_ALPHA,
+                step = 1,
+                onDraftChange = { draftLiquidGlassBackgroundMistAlphaText = it },
+                onSave = { updateLiquidGlassBackgroundMistAlpha(it) },
                 icon = SettingsIconKind.Shadow,
             )
             NumberParameterControl(
-                title = "单色主体缩放",
-                summary = "只影响单色主题图标",
-                value = (monochromeThemeScale * 100).roundToInt(),
-                draftText = draftMonochromeThemeScaleText,
-                min = MIN_MONOCHROME_THEME_SCALE_PERCENT,
-                max = MAX_MONOCHROME_THEME_SCALE_PERCENT,
-                onDraftChange = { draftMonochromeThemeScaleText = it },
-                onSave = { updateMonochromeThemeScalePercent(it) },
+                title = "底部灰雾",
+                summary = "给底部叠加暗雾渐变，压住底边亮度",
+                value = liquidGlassBottomDarkAlpha,
+                draftText = draftLiquidGlassBottomDarkAlphaText,
+                min = MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
+                max = MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
+                step = 1,
+                onDraftChange = { draftLiquidGlassBottomDarkAlphaText = it },
+                onSave = { updateLiquidGlassBottomDarkAlpha(it) },
+                icon = SettingsIconKind.Shadow,
+            )
+            LiquidGlassSectionTitle("主体层")
+            NumberParameterControl(
+                title = "主体比例",
+                summary = "调整主体在玻璃层中的缩放比例",
+                value = liquidGlassSubjectScalePercent,
+                draftText = draftLiquidGlassSubjectScaleText,
+                min = MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
+                max = MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
+                step = 1,
+                onDraftChange = { draftLiquidGlassSubjectScaleText = it },
+                onSave = { updateLiquidGlassSubjectScalePercent(it) },
                 icon = SettingsIconKind.Scale,
+            )
+            NumberParameterControl(
+                title = "主体外框宽度",
+                summary = "沿主体外侧透明边界添加高光描边",
+                value = liquidGlassSubjectOutlineWidth,
+                draftText = draftLiquidGlassSubjectOutlineWidthText,
+                min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                step = 1,
+                onDraftChange = { draftLiquidGlassSubjectOutlineWidthText = it },
+                onSave = { updateLiquidGlassSubjectOutlineWidth(it) },
+                icon = SettingsIconKind.Spark,
+            )
+            NumberParameterControl(
+                title = "主体内框宽度",
+                summary = "沿主体内侧透明边界添加高光描边",
+                value = liquidGlassSubjectInnerOutlineWidth,
+                draftText = draftLiquidGlassSubjectInnerOutlineWidthText,
+                min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                step = 1,
+                onDraftChange = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+                onSave = { updateLiquidGlassSubjectInnerOutlineWidth(it) },
+                icon = SettingsIconKind.Spark,
+            )
+            NumberParameterControl(
+                title = "主体阴影",
+                summary = "控制主体投影透明度，增强层次",
+                value = liquidGlassSubjectShadowAlpha,
+                draftText = draftLiquidGlassSubjectShadowAlphaText,
+                min = MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
+                max = MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
+                step = 1,
+                onDraftChange = { draftLiquidGlassSubjectShadowAlphaText = it },
+                onSave = { updateLiquidGlassSubjectShadowAlpha(it) },
+                icon = SettingsIconKind.Shadow,
+            )
+            NumberParameterControl(
+                title = "主体透明度",
+                summary = "控制主体层整体不透明度",
+                value = liquidGlassSubjectOpacityPercent,
+                draftText = draftLiquidGlassSubjectOpacityText,
+                min = MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+                max = MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+                step = 1,
+                onDraftChange = { draftLiquidGlassSubjectOpacityText = it },
+                onSave = { updateLiquidGlassSubjectOpacityPercent(it) },
+                icon = SettingsIconKind.Glass,
             )
         }
     }
@@ -2522,11 +2742,9 @@ class MainActivity : ComponentActivity() {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "$summary · $min-$max",
+                        text = "$summary · 范围 $min-$max",
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 Row(
@@ -2567,12 +2785,16 @@ class MainActivity : ComponentActivity() {
         max: Float,
         onDraftChange: (String) -> Unit,
         onSave: (Float) -> Unit,
+        enabled: Boolean = true,
+        icon: SettingsIconKind? = null,
     ) {
+        val controlEnabled = enabled && !isBusy
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -2588,8 +2810,6 @@ class MainActivity : ComponentActivity() {
                     text = "$summary · 范围 ${formatScale(min)}-${formatScale(max)}",
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Row(
@@ -2599,6 +2819,7 @@ class MainActivity : ComponentActivity() {
                 DecimalInputBox(
                     value = draftText,
                     fallbackValue = formatScale(value),
+                    enabled = controlEnabled,
                     onValueChange = onDraftChange,
                     onDone = { submitted ->
                         submitted.toFloatOrNull()
@@ -2614,12 +2835,12 @@ class MainActivity : ComponentActivity() {
     private fun DecimalInputBox(
         value: String,
         fallbackValue: String,
+        enabled: Boolean,
         onValueChange: (String) -> Unit,
         onDone: (String) -> Unit,
     ) {
         val textColor = MiuixTheme.colorScheme.onSurface.toArgb()
         val cursorColor = MiuixTheme.colorScheme.primaryVariant.toArgb()
-        val enabled = !isBusy
         val bringIntoViewRequester = remember { BringIntoViewRequester() }
         var bringIntoViewRequest by remember { mutableStateOf(0) }
 
@@ -2648,8 +2869,10 @@ class MainActivity : ComponentActivity() {
                         gravity = Gravity.CENTER
                         includeFontPadding = false
                         isSingleLine = true
-                        filters = arrayOf(InputFilter.LengthFilter(4))
-                        inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                        filters = arrayOf(InputFilter.LengthFilter(8))
+                        inputType = InputType.TYPE_CLASS_NUMBER or
+                            InputType.TYPE_NUMBER_FLAG_DECIMAL or
+                            InputType.TYPE_NUMBER_FLAG_SIGNED
                         imeOptions = EditorInfo.IME_ACTION_DONE or
                             EditorInfo.IME_FLAG_NO_EXTRACT_UI or
                             EditorInfo.IME_FLAG_NO_FULLSCREEN
@@ -3177,7 +3400,7 @@ class MainActivity : ComponentActivity() {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "只叠加圆角边缘高光和近边缘暗部",
+                    text = "开启后按当前液态玻璃参数重绘背景和前景光影",
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,
@@ -3233,6 +3456,17 @@ class MainActivity : ComponentActivity() {
                     .background(thumbColor),
             )
         }
+    }
+
+    @Composable
+    private fun LiquidGlassSectionTitle(title: String) {
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.title4,
+            color = MiuixTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 
     @Composable
@@ -4309,6 +4543,7 @@ class MainActivity : ComponentActivity() {
             "GPT image two 生成模式" -> SettingsIconKind.Spark
             "GPT 提示词" -> SettingsIconKind.Prompt
             "液态玻璃风格" -> SettingsIconKind.Glass
+            "渲染方式" -> SettingsIconKind.Layers
             "圆角半径" -> SettingsIconKind.Radius
             "边缘高光宽度" -> SettingsIconKind.Glass
             "主体占比" -> SettingsIconKind.Scale
@@ -4346,6 +4581,7 @@ class MainActivity : ComponentActivity() {
         Spark,
         Scale,
         Cutout,
+        Palette,
         Plate,
         Shadow,
         Eraser,
@@ -4367,6 +4603,7 @@ class MainActivity : ComponentActivity() {
         SettingsIconKind.Spark -> Lucide.Sparkles
         SettingsIconKind.Scale -> Lucide.Scale
         SettingsIconKind.Cutout -> Lucide.SlidersHorizontal
+        SettingsIconKind.Palette -> Lucide.Palette
         SettingsIconKind.Plate -> Lucide.Palette
         SettingsIconKind.Shadow -> Lucide.Sparkles
         SettingsIconKind.Eraser -> Lucide.Eraser
@@ -5080,9 +5317,9 @@ class MainActivity : ComponentActivity() {
                 renderSize,
                 transparent = false,
             )
+            val direct = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
             val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
             val subtracted = subtractBackground(composed, background)
-            val direct = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
             val selection = chooseBetterAdaptiveForeground(subtracted, direct, background)
             val chosen = selection.bitmap
             val adaptiveJson = JSONObject()
@@ -5127,7 +5364,7 @@ class MainActivity : ComponentActivity() {
         if (includeRmbg) {
             val rmbgJson = JSONObject()
             try {
-                val rmbgDebug = buildRmbgDebugCandidate(source240, localSource.recbg)
+                val rmbgDebug = buildRmbgDebugCandidate(source240)
                 val rmbgCandidate = rmbgDebug.result?.candidate
                 val validationWarning = rmbgDebug.result?.validationWarning
                 rmbgJson
@@ -5463,6 +5700,10 @@ class MainActivity : ComponentActivity() {
                 prefs.getString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, OriginalForegroundCleanupMode.Auto.value),
             )
         }
+        nightSubjectLightBackgroundEnabled = prefs.getBoolean(
+            PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED,
+            false,
+        )
         prefs.edit()
             .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, foregroundSubjectPercent)
             .putInt(PREF_FOREGROUND_SHADOW_LEVEL, foregroundShadowLevel)
@@ -5482,6 +5723,7 @@ class MainActivity : ComponentActivity() {
             .putInt(PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, adaptiveMaskMinCoveragePercent)
             .putInt(PREF_ADAPTIVE_CENTER_EPSILON_PERCENT, adaptiveCenterEpsilonPercent)
             .putString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, originalForegroundCleanupMode.value)
+            .putBoolean(PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED, nightSubjectLightBackgroundEnabled)
             .putInt(PREF_IMAGE_TUNING_VERSION, CURRENT_IMAGE_TUNING_VERSION)
             .putBoolean(PREF_FOREGROUND_SUBJECT_PERCENT_MIGRATED, true)
             .apply()
@@ -5662,33 +5904,116 @@ class MainActivity : ComponentActivity() {
             .putInt(PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, adaptiveMaskMinCoveragePercent)
             .putInt(PREF_ADAPTIVE_CENTER_EPSILON_PERCENT, adaptiveCenterEpsilonPercent)
             .putString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, originalForegroundCleanupMode.value)
+            .putBoolean(PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED, nightSubjectLightBackgroundEnabled)
             .putInt(PREF_IMAGE_TUNING_VERSION, CURRENT_IMAGE_TUNING_VERSION)
             .apply()
     }
 
+    private fun updateNightSubjectLightBackgroundEnabled(enabled: Boolean) {
+        if (nightSubjectLightBackgroundEnabled == enabled) {
+            return
+        }
+        nightSubjectLightBackgroundEnabled = enabled
+        saveImageTuningSettings()
+        statusText = if (enabled) {
+            "正常暗色已开启填充背景色"
+        } else {
+            "正常暗色已关闭填充背景色"
+        }
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
     private fun loadLiquidGlassSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        liquidGlassEnabled = prefs.getBoolean(PREF_LIQUID_GLASS_ENABLED, false)
+        val migratedToLayered = prefs.getBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, false)
+        liquidGlassEnabled = if (migratedToLayered) {
+            prefs.getBoolean(PREF_LIQUID_GLASS_ENABLED, true)
+        } else {
+            true
+        }
         liquidGlassRadius = prefs.getInt(
             PREF_LIQUID_GLASS_RADIUS,
             DEFAULT_LIQUID_GLASS_RADIUS,
         ).coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)
         draftLiquidGlassRadiusText = liquidGlassRadius.toString()
-        liquidGlassRimWidthLevel = prefs.getInt(
-            PREF_LIQUID_GLASS_RIM_WIDTH_LEVEL,
-            prefs.getInt(PREF_LIQUID_GLASS_BACKGROUND_LEVEL_LEGACY, DEFAULT_LIQUID_GLASS_RIM_WIDTH_LEVEL),
-        ).coerceIn(MIN_LIQUID_GLASS_RIM_WIDTH_LEVEL, MAX_LIQUID_GLASS_RIM_WIDTH_LEVEL)
-        draftLiquidGlassRimWidthLevelText = liquidGlassRimWidthLevel.toString()
+        liquidGlassOuterWidth = prefs.getInt(
+            PREF_LIQUID_GLASS_OUTER_WIDTH,
+            prefs.getInt(PREF_LIQUID_GLASS_BACKGROUND_LEVEL_LEGACY, DEFAULT_LIQUID_GLASS_OUTER_WIDTH),
+        ).coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)
+        draftLiquidGlassOuterWidthText = liquidGlassOuterWidth.toString()
+        liquidGlassTopAlpha = prefs.getInt(
+            PREF_LIQUID_GLASS_TOP_ALPHA,
+            DEFAULT_LIQUID_GLASS_TOP_ALPHA,
+        ).coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+        draftLiquidGlassTopAlphaText = liquidGlassTopAlpha.toString()
+        liquidGlassBottomAlpha = prefs.getInt(
+            PREF_LIQUID_GLASS_BOTTOM_ALPHA,
+            DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA,
+        ).coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+        draftLiquidGlassBottomAlphaText = liquidGlassBottomAlpha.toString()
+        liquidGlassBackgroundMistAlpha = prefs.getInt(
+            PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA,
+            DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA,
+        ).coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
+        draftLiquidGlassBackgroundMistAlphaText = liquidGlassBackgroundMistAlpha.toString()
+        liquidGlassBottomDarkAlpha = prefs.getInt(
+            PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
+            DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
+        ).coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
+        draftLiquidGlassBottomDarkAlphaText = liquidGlassBottomDarkAlpha.toString()
+        liquidGlassSubjectScalePercent = prefs.getInt(
+            PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
+            DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
+        draftLiquidGlassSubjectScaleText = liquidGlassSubjectScalePercent.toString()
+        liquidGlassSubjectOutlineWidth = prefs.getInt(
+            PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+            DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
+        draftLiquidGlassSubjectOutlineWidthText = liquidGlassSubjectOutlineWidth.toString()
+        liquidGlassSubjectInnerOutlineWidth = prefs.getInt(
+            PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH,
+            DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH,
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
+        draftLiquidGlassSubjectInnerOutlineWidthText = liquidGlassSubjectInnerOutlineWidth.toString()
+        liquidGlassSubjectShadowAlpha = prefs.getInt(
+            PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
+            DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
+        draftLiquidGlassSubjectShadowAlphaText = liquidGlassSubjectShadowAlpha.toString()
+        liquidGlassSubjectOpacityPercent = prefs.getInt(
+            PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+            DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
+        draftLiquidGlassSubjectOpacityText = liquidGlassSubjectOpacityPercent.toString()
+        if (!migratedToLayered) {
+            prefs.edit()
+                .putLiquidGlassSettings()
+                .apply()
+        }
     }
 
     private fun saveLiquidGlassSettings() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
-            .putBoolean(PREF_LIQUID_GLASS_ENABLED, liquidGlassEnabled)
-            .putInt(PREF_LIQUID_GLASS_RADIUS, liquidGlassRadius)
-            .putInt(PREF_LIQUID_GLASS_RIM_WIDTH_LEVEL, liquidGlassRimWidthLevel)
+            .putLiquidGlassSettings()
             .apply()
     }
+
+    private fun SharedPreferences.Editor.putLiquidGlassSettings(): SharedPreferences.Editor =
+        putBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, true)
+            .putBoolean(PREF_LIQUID_GLASS_ENABLED, liquidGlassEnabled)
+            .putInt(PREF_LIQUID_GLASS_RADIUS, liquidGlassRadius)
+            .putInt(PREF_LIQUID_GLASS_OUTER_WIDTH, liquidGlassOuterWidth)
+            .putInt(PREF_LIQUID_GLASS_TOP_ALPHA, liquidGlassTopAlpha)
+            .putInt(PREF_LIQUID_GLASS_BOTTOM_ALPHA, liquidGlassBottomAlpha)
+            .putInt(PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA, liquidGlassBackgroundMistAlpha)
+            .putInt(PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA, liquidGlassBottomDarkAlpha)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, liquidGlassSubjectScalePercent)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, liquidGlassSubjectOutlineWidth)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH, liquidGlassSubjectInnerOutlineWidth)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, liquidGlassSubjectShadowAlpha)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, liquidGlassSubjectOpacityPercent)
 
     private fun updateLiquidGlassEnabled(enabled: Boolean) {
         if (liquidGlassEnabled == enabled) {
@@ -5705,16 +6030,97 @@ class MainActivity : ComponentActivity() {
         liquidGlassRadius = next
         draftLiquidGlassRadiusText = next.toString()
         saveLiquidGlassSettings()
-        statusText = "液态玻璃圆角半径 $next"
+        statusText = "液态玻璃圆角 $next"
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassRimWidthLevel(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_RIM_WIDTH_LEVEL, MAX_LIQUID_GLASS_RIM_WIDTH_LEVEL)
-        liquidGlassRimWidthLevel = next
-        draftLiquidGlassRimWidthLevelText = next.toString()
+    private fun updateLiquidGlassOuterWidth(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)
+        liquidGlassOuterWidth = next
+        draftLiquidGlassOuterWidthText = next.toString()
         saveLiquidGlassSettings()
-        statusText = "边缘高光宽度 $next"
+        statusText = "液态玻璃外框高度 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassTopAlpha(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+        liquidGlassTopAlpha = next
+        draftLiquidGlassTopAlphaText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃顶部强度 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassBottomAlpha(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+        liquidGlassBottomAlpha = next
+        draftLiquidGlassBottomAlphaText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃底边强度 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassBackgroundMistAlpha(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
+        liquidGlassBackgroundMistAlpha = next
+        draftLiquidGlassBackgroundMistAlphaText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃背景灰雾 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassBottomDarkAlpha(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
+        liquidGlassBottomDarkAlpha = next
+        draftLiquidGlassBottomDarkAlphaText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃底部灰雾 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassSubjectScalePercent(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
+        liquidGlassSubjectScalePercent = next
+        draftLiquidGlassSubjectScaleText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃主体比例 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassSubjectOutlineWidth(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
+        liquidGlassSubjectOutlineWidth = next
+        draftLiquidGlassSubjectOutlineWidthText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃主体外框 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassSubjectInnerOutlineWidth(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
+        liquidGlassSubjectInnerOutlineWidth = next
+        draftLiquidGlassSubjectInnerOutlineWidthText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃主体内框 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassSubjectShadowAlpha(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
+        liquidGlassSubjectShadowAlpha = next
+        draftLiquidGlassSubjectShadowAlphaText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃主体阴影 $next"
+        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updateLiquidGlassSubjectOpacityPercent(value: Int) {
+        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
+        liquidGlassSubjectOpacityPercent = next
+        draftLiquidGlassSubjectOpacityText = next.toString()
+        saveLiquidGlassSettings()
+        statusText = "液态玻璃主体透明度 $next"
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
@@ -6101,16 +6507,16 @@ class MainActivity : ComponentActivity() {
         savePng(recbg2x1, File(dir, "recbg_2x1.png"))
         savePng(recbg2x2, File(dir, "recbg_2x2.png"))
 
-        val outputRecfg = applyForegroundShadow(baseRecfg)
+        val outputRecfg = foregroundForSize(baseRecfg, SIZE_1X1, SIZE_1X1, forceLiquidGlass = true)
         val recfg1x2Source = decodeGeneratedBitmap(dir, "recfg_1x2.png")
             ?: centerOnCanvas(baseRecfg, SIZE_1X2[0], SIZE_1X2[1])
         val recfg2x1Source = decodeGeneratedBitmap(dir, "recfg_2x1.png")
             ?: centerOnCanvas(baseRecfg, SIZE_2X1[0], SIZE_2X1[1])
         val recfg2x2Source = decodeGeneratedBitmap(dir, "recfg_2x2.png")
             ?: centerOnCanvas(baseRecfg, SIZE_2X2, SIZE_2X2)
-        val recfg1x2 = applyForegroundShadow(recfg1x2Source)
-        val recfg2x1 = applyForegroundShadow(recfg2x1Source)
-        val recfg2x2 = applyForegroundShadow(recfg2x2Source)
+        val recfg1x2 = foregroundForSize(recfg1x2Source, SIZE_1X2[0], SIZE_1X2[1], forceLiquidGlass = true)
+        val recfg2x1 = foregroundForSize(recfg2x1Source, SIZE_2X1[0], SIZE_2X1[1], forceLiquidGlass = true)
+        val recfg2x2 = foregroundForSize(recfg2x2Source, SIZE_2X2, SIZE_2X2, forceLiquidGlass = true)
 
         writeDefaultSubjectMonochromeFiles(dir, baseRecfg, overwriteExisting = false)
 
@@ -6119,10 +6525,10 @@ class MainActivity : ComponentActivity() {
         savePng(recfg2x1, File(dir, "recfg_2x1.png"))
         savePng(recfg2x2, File(dir, "recfg_2x2.png"))
 
-        savePng(nightForeground(outputRecfg, recbg), File(dir, "rec_night.png"))
-        savePng(nightForeground(recfg1x2, recbg1x2), File(dir, "rec_night_1x2.png"))
-        savePng(nightForeground(recfg2x1, recbg2x1), File(dir, "rec_night_2x1.png"))
-        savePng(nightForeground(recfg2x2, recbg2x2), File(dir, "rec_night_2x2.png"))
+        savePng(normalDarkForeground(outputRecfg, recbg), File(dir, "rec_night.png"))
+        savePng(normalDarkForeground(recfg1x2, recbg1x2), File(dir, "rec_night_1x2.png"))
+        savePng(normalDarkForeground(recfg2x1, recbg2x1), File(dir, "rec_night_2x1.png"))
+        savePng(normalDarkForeground(recfg2x2, recbg2x2), File(dir, "rec_night_2x2.png"))
     }
 
     private fun writeDefaultSubjectMonochromeFiles(
@@ -6166,7 +6572,7 @@ class MainActivity : ComponentActivity() {
         } else {
             resizeBitmap(source, width, height)
         }
-        return renderLiquidGlassBackground(resized, liquidGlassRadius)
+        return liquidGlassBackgroundForSize(resized, width, height, forceLiquidGlass = true)
     }
 
     private fun decodeGeneratedBitmap(dir: File, name: String): Bitmap? =
@@ -6516,12 +6922,13 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun buildRmbgCandidate(sourceIcon: Bitmap, recbg: Bitmap): CandidateBuildResult? {
+    private fun buildRmbgCandidate(sourceIcon: Bitmap): CandidateBuildResult? {
         val component = findRmbgComponent() ?: return null
         return runCatching {
             val mask = runRmbgAlphaMask(sourceIcon, component)
             val tunedAlpha = tuneRmbgAlpha(mask.alpha, sourceIcon.width, sourceIcon.height)
             val foreground = applyAlphaArrayToSource(sourceIcon, tunedAlpha)
+            val cleanBackground = rebuildRmbgBackground(sourceIcon, foreground)
             val coverage = meaningfulAlphaCoverage(foreground)
             val bounds = meaningfulAlphaBounds(foreground)
             val cropRisk = bounds?.let { hasAutoCropRisk(it, foreground.width, foreground.height) } ?: true
@@ -6532,7 +6939,7 @@ class MainActivity : ComponentActivity() {
             CandidateBuildResult(
                 candidate = IconCandidate(
                     recfgRaw = foreground,
-                    recbg = recbg,
+                    recbg = cleanBackground,
                     monochromeRaw = foreground,
                     rmbgSourceRaw = sourceIcon,
                     rmbgAlphaRaw = mask.alpha,
@@ -6546,17 +6953,27 @@ class MainActivity : ComponentActivity() {
         }.getOrElse { throw it }
     }
 
+    private fun rebuildRmbgBackground(sourceIcon: Bitmap, foreground: Bitmap): Bitmap {
+        val fallback = solidBitmap(
+            sourceIcon.width,
+            sourceIcon.height,
+            estimatePlainIconBackground(sourceIcon),
+        )
+        return rebuildComposedIconBackground(sourceIcon, foreground, fallback)
+    }
+
     private fun rmbgValidationWarning(coverage: Double, bounds: Bounds?, cropRisk: Boolean): String {
         val coverageText = (coverage * 100.0).roundToInt()
         val boundsText = bounds?.let { "${it.width()}x${it.height()}@${it.left},${it.top}" } ?: "无"
         return "RMBG候选未通过校验，已保留: 覆盖率 ${coverageText}%，边界 $boundsText，贴边风险 ${if (cropRisk) "是" else "否"}"
     }
 
-    private fun buildRmbgDebugCandidate(sourceIcon: Bitmap, recbg: Bitmap): RmbgDebugCandidate {
+    private fun buildRmbgDebugCandidate(sourceIcon: Bitmap): RmbgDebugCandidate {
         val component = findRmbgComponent() ?: error("未安装 RMBG 组件 ZIP")
         val mask = runRmbgAlphaMask(sourceIcon, component)
         val tunedAlpha = tuneRmbgAlpha(mask.alpha, sourceIcon.width, sourceIcon.height)
         val foreground = applyAlphaArrayToSource(sourceIcon, tunedAlpha)
+        val cleanBackground = rebuildRmbgBackground(sourceIcon, foreground)
         val coverage = meaningfulAlphaCoverage(foreground)
         val bounds = meaningfulAlphaBounds(foreground)
         val cropRisk = bounds?.let { hasAutoCropRisk(it, foreground.width, foreground.height) } ?: true
@@ -6565,7 +6982,7 @@ class MainActivity : ComponentActivity() {
             !cropRisk
         val candidate = IconCandidate(
             recfgRaw = foreground,
-            recbg = recbg,
+            recbg = cleanBackground,
             monochromeRaw = foreground,
             rmbgSourceRaw = sourceIcon,
             rmbgAlphaRaw = mask.alpha,
@@ -7777,7 +8194,8 @@ class MainActivity : ComponentActivity() {
 
     private fun writePackageOutputs(session: GenerationSession, selections: PreviewSelections) {
         val light = candidateWithCustomOverrides(session, PreviewMode.NormalLight, selections.normalLight)
-        val lightRecfg = renderCandidateForeground(light)
+        val lightBaseRecfg = renderCandidateForegroundBase(light)
+        val lightRecfg = foregroundForSize(lightBaseRecfg, SIZE_1X1, SIZE_1X1)
         val lightBaseRecbg = light.recbg
         val lightRecbg = liquidGlassBackgroundForSize(lightBaseRecbg, SIZE_1X1, SIZE_1X1)
         savePng(lightRecbg, File(session.outDir, "recbg.png"))
@@ -7789,31 +8207,35 @@ class MainActivity : ComponentActivity() {
         savePng(recbg2x1, File(session.outDir, "recbg_2x1.png"))
         savePng(recbg2x2, File(session.outDir, "recbg_2x2.png"))
 
-        val recfg1x2 = centerOnCanvas(lightRecfg, SIZE_1X2[0], SIZE_1X2[1])
-        val recfg2x1 = centerOnCanvas(lightRecfg, SIZE_2X1[0], SIZE_2X1[1])
-        val recfg2x2 = centerOnCanvas(lightRecfg, SIZE_2X2, SIZE_2X2)
+        val recfg1x2 = foregroundForSize(lightBaseRecfg, SIZE_1X2[0], SIZE_1X2[1])
+        val recfg2x1 = foregroundForSize(lightBaseRecfg, SIZE_2X1[0], SIZE_2X1[1])
+        val recfg2x2 = foregroundForSize(lightBaseRecfg, SIZE_2X2, SIZE_2X2)
         savePng(recfg1x2, File(session.outDir, "recfg_1x2.png"))
         savePng(recfg2x1, File(session.outDir, "recfg_2x1.png"))
         savePng(recfg2x2, File(session.outDir, "recfg_2x2.png"))
 
         val night = candidateWithCustomOverrides(session, PreviewMode.NormalDark, selections.normalDark)
-        val nightRecfg = renderCandidateForeground(night)
+        val nightBaseRecfg = renderCandidateForegroundBase(night)
+        val nightRecfg = foregroundForSize(nightBaseRecfg, SIZE_1X1, SIZE_1X1)
         val nightBaseRecbg = night.recbg
         val nightRecbg = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_1X1, SIZE_1X1)
-        val nightRecfg1x2 = centerOnCanvas(nightRecfg, SIZE_1X2[0], SIZE_1X2[1])
-        val nightRecfg2x1 = centerOnCanvas(nightRecfg, SIZE_2X1[0], SIZE_2X1[1])
-        val nightRecfg2x2 = centerOnCanvas(nightRecfg, SIZE_2X2, SIZE_2X2)
-        savePng(nightForeground(nightRecfg, nightRecbg), File(session.outDir, "rec_night.png"))
+        val nightRecfg1x2 = foregroundForSize(nightBaseRecfg, SIZE_1X2[0], SIZE_1X2[1])
+        val nightRecfg2x1 = foregroundForSize(nightBaseRecfg, SIZE_2X1[0], SIZE_2X1[1])
+        val nightRecfg2x2 = foregroundForSize(nightBaseRecfg, SIZE_2X2, SIZE_2X2)
+        val nightRecbg1x2 = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_1X2[0], SIZE_1X2[1])
+        val nightRecbg2x1 = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X1[0], SIZE_2X1[1])
+        val nightRecbg2x2 = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X2, SIZE_2X2)
+        savePng(normalDarkForeground(nightRecfg, nightRecbg), File(session.outDir, "rec_night.png"))
         savePng(
-            nightForeground(nightRecfg1x2, liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_1X2[0], SIZE_1X2[1])),
+            normalDarkForeground(nightRecfg1x2, nightRecbg1x2),
             File(session.outDir, "rec_night_1x2.png"),
         )
         savePng(
-            nightForeground(nightRecfg2x1, liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X1[0], SIZE_2X1[1])),
+            normalDarkForeground(nightRecfg2x1, nightRecbg2x1),
             File(session.outDir, "rec_night_2x1.png"),
         )
         savePng(
-            nightForeground(nightRecfg2x2, liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X2, SIZE_2X2)),
+            normalDarkForeground(nightRecfg2x2, nightRecbg2x2),
             File(session.outDir, "rec_night_2x2.png"),
         )
 
@@ -7840,144 +8262,450 @@ class MainActivity : ComponentActivity() {
         savePng(adjustColor(lightRecfg, 0.7f, 0.95f), File(session.outDir, "peb.png"))
     }
 
-    private fun liquidGlassBackgroundForSize(source: Bitmap, width: Int, height: Int): Bitmap {
+    private fun liquidGlassBackgroundForSize(
+        source: Bitmap,
+        width: Int,
+        height: Int,
+        forceLiquidGlass: Boolean = false,
+    ): Bitmap {
         val resized = if (source.width == width && source.height == height) {
             source
         } else {
             resizeBitmap(source, width, height)
         }
-        return if (liquidGlassEnabled) {
-            renderLiquidGlassBackground(resized, liquidGlassRadius)
+        return if (forceLiquidGlass || liquidGlassEnabled) {
+            renderLayeredLiquidGlassBackground(resized)
         } else {
             resized
         }
     }
 
-    private fun renderLiquidGlassBackground(source: Bitmap, radius: Int): Bitmap {
+    private fun foregroundForSize(
+        source: Bitmap,
+        width: Int,
+        height: Int,
+        forceLiquidGlass: Boolean = false,
+    ): Bitmap {
+        val sized = if (source.width == width && source.height == height) {
+            source
+        } else {
+            centerOnCanvas(source, width, height)
+        }
+        return if (forceLiquidGlass || liquidGlassEnabled) {
+            renderLayeredLiquidGlassForeground(sized)
+        } else {
+            applyForegroundShadow(sized)
+        }
+    }
+
+    private fun renderLayeredLiquidGlassBackground(source: Bitmap): Bitmap {
         val width = source.width
         val height = source.height
-        val minSide = minOf(width, height).toFloat().coerceAtLeast(1f)
-        val scale = minSide / SIZE_1X1.toFloat()
-        val requestedRadius = radius.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS) * scale
-        val rimWidthScale = liquidGlassRimWidthScale()
+        val radius = liquidGlassRadiusForSize(width, height)
+        val shapeMask = roundedRectMaskAlpha(width, height, radius, feather = liquidGlassMaskFeather(width, height))
         val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(out)
+        canvas.drawColor(AndroidColor.TRANSPARENT)
         canvas.drawBitmap(source, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
 
-        val outerStroke = ((minSide * 0.015f).coerceIn(1.5f, 6.5f) * rimWidthScale)
-        val inset = outerStroke / 2f + 0.5f
-        val rect = RectF(inset, inset, width - inset, height - inset)
-        val cornerRadius = requestedRadius.coerceIn(0f, minOf(rect.width(), rect.height()) / 2f)
-        val fillRadius = requestedRadius.coerceIn(0f, minSide / 2f)
-
-        val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
-            shader = LinearGradient(
+        val mistAlpha = liquidGlassBackgroundMistAlpha.coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
+        if (mistAlpha > 0) {
+            canvas.drawRect(
                 0f,
                 0f,
-                0f,
+                width.toFloat(),
                 height.toFloat(),
-                intArrayOf(
-                    AndroidColor.argb(14, 255, 255, 255),
-                    AndroidColor.argb(0, 255, 255, 255),
-                    AndroidColor.argb(0, 0, 0, 0),
-                    AndroidColor.argb(12, 0, 0, 0),
-                ),
-                floatArrayOf(0f, 0.34f, 0.68f, 1f),
-                Shader.TileMode.CLAMP,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = AndroidColor.argb(mistAlpha, 0, 0, 0)
+                },
             )
         }
-        canvas.drawRoundRect(RectF(0f, 0f, width.toFloat(), height.toFloat()), fillRadius, fillRadius, fillPaint)
+        drawLayeredLiquidGlassLight(canvas, width, height, radius)
+        return applyAlphaMask(out, shapeMask)
+    }
 
-        val innerShadowStroke = (minSide * 0.020f).coerceIn(3f, 10f)
-        val innerShadowInset = innerShadowStroke * 0.72f + 1f
-        val innerShadowRect = RectF(
-            innerShadowInset,
-            innerShadowInset,
-            width - innerShadowInset,
-            height - innerShadowInset,
+    private fun renderLayeredLiquidGlassForeground(source: Bitmap): Bitmap {
+        val width = source.width
+        val height = source.height
+        val radius = liquidGlassRadiusForSize(width, height)
+        val shapeMask = roundedRectMaskAlpha(width, height, radius, feather = liquidGlassMaskFeather(width, height))
+        val subject = scaleBitmapAroundCanvasCenter(
+            source,
+            liquidGlassSubjectScalePercent
+                .coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
+                .toFloat() / 100f,
         )
-        val innerShadowRadius = (requestedRadius - innerShadowInset / 2f)
-            .coerceIn(0f, minOf(innerShadowRect.width(), innerShadowRect.height()) / 2f)
-        val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = innerShadowStroke
-            shader = LinearGradient(
-                0f,
-                innerShadowRect.top,
-                0f,
-                innerShadowRect.bottom,
-                intArrayOf(
-                    AndroidColor.argb(0, 0, 0, 0),
-                    AndroidColor.argb(0, 0, 0, 0),
-                    AndroidColor.argb(38, 0, 0, 0),
-                    AndroidColor.argb(22, 0, 0, 0),
-                ),
-                floatArrayOf(0f, 0.62f, 0.92f, 1f),
-                Shader.TileMode.CLAMP,
-            )
-        }
-        canvas.drawRoundRect(innerShadowRect, innerShadowRadius, innerShadowRadius, shadowPaint)
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        canvas.drawColor(AndroidColor.TRANSPARENT)
 
-        if (rimWidthScale > 0f) {
-            val rimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style = Paint.Style.STROKE
-                strokeWidth = outerStroke
-                shader = LinearGradient(
-                    0f,
-                    rect.top,
-                    0f,
-                    rect.bottom,
-                    intArrayOf(
-                        AndroidColor.argb(186, 255, 255, 255),
-                        AndroidColor.argb(102, 255, 255, 255),
-                        AndroidColor.argb(10, 255, 255, 255),
-                        AndroidColor.argb(0, 255, 255, 255),
-                        AndroidColor.argb(130, 255, 255, 255),
-                    ),
-                    floatArrayOf(0f, 0.12f, 0.34f, 0.70f, 1f),
-                    Shader.TileMode.CLAMP,
-                )
-            }
-            canvas.drawRoundRect(rect, cornerRadius, cornerRadius, rimPaint)
-
-            val hairlineStroke = (minSide * 0.0035f).coerceIn(0.8f, 1.7f) * rimWidthScale
-            val hairlineInset = outerStroke + hairlineStroke
-            val hairlineRect = RectF(
-                hairlineInset,
-                hairlineInset,
-                width - hairlineInset,
-                height - hairlineInset,
+        val subjectShadowAlpha = liquidGlassSubjectShadowAlpha
+            .coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
+        if (subjectShadowAlpha > 0) {
+            val minSide = minOf(width, height).coerceAtLeast(1)
+            val params = ForegroundShadowParams(
+                alpha = subjectShadowAlpha,
+                blurRadius = minSide * 0.026f,
+                offsetX = 0,
+                offsetY = (minSide * 0.018f).roundToInt().coerceAtLeast(1),
+                spread = 0,
             )
-            val hairlineRadius = (requestedRadius - hairlineInset / 2f)
-                .coerceIn(0f, minOf(hairlineRect.width(), hairlineRect.height()) / 2f)
-            val hairlinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style = Paint.Style.STROKE
-                strokeWidth = hairlineStroke
-                shader = LinearGradient(
-                    0f,
-                    hairlineRect.top,
-                    0f,
-                    hairlineRect.bottom,
-                    intArrayOf(
-                        AndroidColor.argb(112, 255, 255, 255),
-                        AndroidColor.argb(28, 255, 255, 255),
-                        AndroidColor.argb(76, 255, 255, 255),
-                    ),
-                    floatArrayOf(0f, 0.50f, 1f),
-                    Shader.TileMode.CLAMP,
-                )
-            }
-            canvas.drawRoundRect(hairlineRect, hairlineRadius, hairlineRadius, hairlinePaint)
+            val shadow = subjectShadowBitmap(subject, params)
+            canvas.drawBitmap(shadow, params.offsetX.toFloat(), params.offsetY.toFloat(), Paint(Paint.FILTER_BITMAP_FLAG))
         }
 
+        val outlineWidth = liquidGlassScaledWidth(
+            width,
+            height,
+            liquidGlassSubjectOutlineWidth.coerceIn(
+                MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+            ),
+        )
+        if (outlineWidth > 0) {
+            canvas.drawBitmap(
+                subjectOutlineLayer(subject, outlineWidth, inner = false, alphaScale = 0.92f),
+                0f,
+                0f,
+                Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG),
+            )
+        }
+
+        val innerOutlineWidth = liquidGlassScaledWidth(
+            width,
+            height,
+            liquidGlassSubjectInnerOutlineWidth.coerceIn(
+                MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+            ),
+        )
+        if (innerOutlineWidth > 0) {
+            canvas.drawBitmap(
+                subjectOutlineLayer(subject, innerOutlineWidth, inner = true, alphaScale = 0.76f),
+                0f,
+                0f,
+                Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG),
+            )
+        }
+
+        val subjectOpacity = liquidGlassSubjectOpacityPercent
+            .coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
+        if (subjectOpacity > 0) {
+            canvas.drawBitmap(
+                subject,
+                0f,
+                0f,
+                Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
+                    alpha = (subjectOpacity * 255f / 100f).roundToInt().coerceIn(0, 255)
+                },
+            )
+        }
+        return applyAlphaMask(out, shapeMask)
+    }
+
+    private fun drawLayeredLiquidGlassLight(canvas: Canvas, width: Int, height: Int, radius: Float) {
+        val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
+        val bottom = height.toFloat()
+        val topAlpha = liquidGlassTopAlpha.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+        val bottomAlpha = liquidGlassBottomAlpha.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+
+        canvas.drawRoundRect(
+            rect,
+            radius,
+            radius,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.FILL
+                shader = LinearGradient(
+                    0f,
+                    0f,
+                    0f,
+                    bottom,
+                    intArrayOf(
+                        whiteWithAlpha(14f),
+                        whiteWithAlpha(0f),
+                        whiteWithAlpha(0f),
+                        whiteWithAlpha(bottomAlpha * 0.16f),
+                    ),
+                    floatArrayOf(0f, 0.35f, 0.70f, 1f),
+                    Shader.TileMode.CLAMP,
+                )
+            },
+        )
+
+        val bottomDarkAlpha = liquidGlassBottomDarkAlpha
+            .coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
+        if (bottomDarkAlpha > 0) {
+            canvas.drawRoundRect(
+                rect,
+                radius,
+                radius,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style = Paint.Style.FILL
+                    shader = LinearGradient(
+                        0f,
+                        bottom - height * 0.38f,
+                        0f,
+                        bottom,
+                        intArrayOf(
+                            blackWithAlpha(0f),
+                            blackWithAlpha(bottomDarkAlpha * 0.45f),
+                            blackWithAlpha(bottomDarkAlpha.toFloat()),
+                        ),
+                        floatArrayOf(0f, 0.72f, 1f),
+                        Shader.TileMode.CLAMP,
+                    )
+                },
+            )
+        }
+
+        val outerWidth = liquidGlassOuterWidth
+            .coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)
+            .toFloat() * liquidGlassScaleForSize(width, height)
+        if (outerWidth <= 0f) {
+            return
+        }
+        canvas.drawRoundRect(
+            rect,
+            radius,
+            radius,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = outerWidth
+                shader = LinearGradient(
+                    0f,
+                    0f,
+                    0f,
+                    bottom,
+                    intArrayOf(
+                        whiteWithAlpha(topAlpha.toFloat()),
+                        whiteWithAlpha(topAlpha * 0.38f),
+                        whiteWithAlpha(0f),
+                        whiteWithAlpha(0f),
+                        whiteWithAlpha(bottomAlpha * 0.36f),
+                        whiteWithAlpha(bottomAlpha.toFloat()),
+                    ),
+                    floatArrayOf(0f, 0.13f, 0.42f, 0.70f, 0.92f, 1f),
+                    Shader.TileMode.CLAMP,
+                )
+            },
+        )
+    }
+
+    private fun liquidGlassRadiusForSize(width: Int, height: Int): Float {
+        val minSide = minOf(width, height).toFloat().coerceAtLeast(1f)
+        return (liquidGlassRadius.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS) * liquidGlassScaleForSize(width, height))
+            .coerceIn(0f, minSide / 2f)
+    }
+
+    private fun liquidGlassScaleForSize(width: Int, height: Int): Float =
+        minOf(width, height).toFloat().coerceAtLeast(1f) / SIZE_1X1.toFloat()
+
+    private fun liquidGlassMaskFeather(width: Int, height: Int): Float =
+        maxOf(1f, liquidGlassScaleForSize(width, height))
+
+    private fun liquidGlassScaledWidth(width: Int, height: Int, value: Int): Int =
+        (value * liquidGlassScaleForSize(width, height)).roundToInt().coerceAtLeast(0)
+
+    private fun scaleBitmapAroundCanvasCenter(source: Bitmap, scale: Float): Bitmap {
+        val safeScale = scale.coerceIn(
+            MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT / 100f,
+            MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT / 100f,
+        )
+        if (safeScale in 0.995f..1.005f) {
+            return source
+        }
+        val scaledWidth = (source.width * safeScale).roundToInt().coerceAtLeast(1)
+        val scaledHeight = (source.height * safeScale).roundToInt().coerceAtLeast(1)
+        val scaled = Bitmap.createScaledBitmap(source, scaledWidth, scaledHeight, true)
+        val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+        Canvas(out).apply {
+            drawColor(AndroidColor.TRANSPARENT)
+            drawBitmap(
+                scaled,
+                (source.width - scaledWidth) / 2f,
+                (source.height - scaledHeight) / 2f,
+                Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG),
+            )
+        }
         return out
     }
 
-    private fun liquidGlassRimWidthScale(): Float =
-        liquidGlassRimWidthLevel
-            .coerceIn(MIN_LIQUID_GLASS_RIM_WIDTH_LEVEL, MAX_LIQUID_GLASS_RIM_WIDTH_LEVEL)
-            .toFloat() / DEFAULT_LIQUID_GLASS_RIM_WIDTH_LEVEL.toFloat()
+    private fun subjectOutlineLayer(source: Bitmap, width: Int, inner: Boolean, alphaScale: Float): Bitmap {
+        val baseAlpha = bitmapAlphaArray(source)
+        val edgeAlpha = if (inner) {
+            val eroded = minFilterAlpha(baseAlpha, source.width, source.height, width)
+            IntArray(baseAlpha.size) { index -> (baseAlpha[index] - eroded[index]).coerceIn(0, 255) }
+        } else {
+            val dilated = maxFilterAlpha(baseAlpha, source.width, source.height, width)
+            IntArray(baseAlpha.size) { index -> (dilated[index] - baseAlpha[index]).coerceIn(0, 255) }
+        }
+        return alphaArrayToColorLayer(edgeAlpha, source.width, source.height, AndroidColor.WHITE, alphaScale)
+    }
+
+    private fun maxFilterAlpha(alpha: IntArray, width: Int, height: Int, radius: Int): IntArray {
+        if (radius <= 0) {
+            return alpha.copyOf()
+        }
+        val horizontal = IntArray(alpha.size)
+        val out = IntArray(alpha.size)
+        for (y in 0 until height) {
+            val row = y * width
+            for (x in 0 until width) {
+                var maxAlpha = 0
+                val left = maxOf(0, x - radius)
+                val right = minOf(width - 1, x + radius)
+                for (cx in left..right) {
+                    maxAlpha = maxOf(maxAlpha, alpha[row + cx])
+                }
+                horizontal[row + x] = maxAlpha
+            }
+        }
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                var maxAlpha = 0
+                val top = maxOf(0, y - radius)
+                val bottom = minOf(height - 1, y + radius)
+                for (cy in top..bottom) {
+                    maxAlpha = maxOf(maxAlpha, horizontal[cy * width + x])
+                }
+                out[y * width + x] = maxAlpha
+            }
+        }
+        return out
+    }
+
+    private fun minFilterAlpha(alpha: IntArray, width: Int, height: Int, radius: Int): IntArray {
+        if (radius <= 0) {
+            return alpha.copyOf()
+        }
+        val horizontal = IntArray(alpha.size)
+        val out = IntArray(alpha.size)
+        for (y in 0 until height) {
+            val row = y * width
+            for (x in 0 until width) {
+                if (x - radius < 0 || x + radius >= width) {
+                    horizontal[row + x] = 0
+                    continue
+                }
+                var minAlpha = 255
+                for (cx in (x - radius)..(x + radius)) {
+                    minAlpha = minOf(minAlpha, alpha[row + cx])
+                }
+                horizontal[row + x] = minAlpha
+            }
+        }
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                if (y - radius < 0 || y + radius >= height) {
+                    out[y * width + x] = 0
+                    continue
+                }
+                var minAlpha = 255
+                for (cy in (y - radius)..(y + radius)) {
+                    minAlpha = minOf(minAlpha, horizontal[cy * width + x])
+                }
+                out[y * width + x] = minAlpha
+            }
+        }
+        return out
+    }
+
+    private fun whiteWithAlpha(alpha: Float): Int =
+        AndroidColor.argb(alpha.roundToInt().coerceIn(0, 255), 255, 255, 255)
+
+    private fun blackWithAlpha(alpha: Float): Int =
+        AndroidColor.argb(alpha.roundToInt().coerceIn(0, 255), 0, 0, 0)
+
+    private fun applyAlphaMask(source: Bitmap, mask: IntArray): Bitmap {
+        val width = source.width
+        val height = source.height
+        val pixels = IntArray(width * height)
+        source.getPixels(pixels, 0, width, 0, 0, width, height)
+        for (i in pixels.indices) {
+            val pixel = pixels[i]
+            val alpha = (AndroidColor.alpha(pixel) * mask[i] / 255f).roundToInt().coerceIn(0, 255)
+            pixels[i] = if (alpha <= 0) {
+                AndroidColor.TRANSPARENT
+            } else {
+                AndroidColor.argb(alpha, AndroidColor.red(pixel), AndroidColor.green(pixel), AndroidColor.blue(pixel))
+            }
+        }
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(pixels, 0, width, 0, 0, width, height)
+        return out
+    }
+
+    private fun roundedRectMaskAlpha(width: Int, height: Int, radius: Float, feather: Float): IntArray {
+        val mask = IntArray(width * height)
+        val halfWidth = width * 0.5f
+        val halfHeight = height * 0.5f
+        val safeFeather = feather.coerceAtLeast(0.001f)
+        val denom = safeFeather * 2f
+        for (y in 0 until height) {
+            val centeredY = y + 0.5f - halfHeight
+            for (x in 0 until width) {
+                val centeredX = x + 0.5f - halfWidth
+                val distance = sdRoundedRectCentered(centeredX, centeredY, halfWidth, halfHeight, radius)
+                val alpha = when {
+                    distance <= -safeFeather -> 255
+                    distance >= safeFeather -> 0
+                    else -> ((safeFeather - distance) / denom * 255f).roundToInt().coerceIn(0, 255)
+                }
+                mask[y * width + x] = alpha
+            }
+        }
+        return mask
+    }
+
+    private fun sdRoundedRectCentered(
+        x: Float,
+        y: Float,
+        halfWidth: Float,
+        halfHeight: Float,
+        radius: Float,
+    ): Float {
+        val qx = abs(x) - (halfWidth - radius)
+        val qy = abs(y) - (halfHeight - radius)
+        val outside = vectorLength(maxOf(qx, 0f), maxOf(qy, 0f))
+        val inside = minOf(maxOf(qx, qy), 0f)
+        return outside + inside - radius
+    }
+
+    private fun bitmapAlphaArray(source: Bitmap): IntArray {
+        val pixels = IntArray(source.width * source.height)
+        source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
+        for (i in pixels.indices) {
+            pixels[i] = AndroidColor.alpha(pixels[i])
+        }
+        return pixels
+    }
+
+    private fun alphaArrayToColorLayer(
+        alpha: IntArray,
+        width: Int,
+        height: Int,
+        color: Int,
+        alphaScale: Float,
+    ): Bitmap {
+        val outPixels = IntArray(alpha.size)
+        val red = AndroidColor.red(color)
+        val green = AndroidColor.green(color)
+        val blue = AndroidColor.blue(color)
+        for (i in alpha.indices) {
+            val scaledAlpha = (alpha[i] * alphaScale).roundToInt().coerceIn(0, 255)
+            outPixels[i] = if (scaledAlpha <= 0) {
+                AndroidColor.TRANSPARENT
+            } else {
+                AndroidColor.argb(scaledAlpha, red, green, blue)
+            }
+        }
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(outPixels, 0, width, 0, 0, width, height)
+        return out
+    }
+
+    private fun vectorLength(x: Float, y: Float): Float =
+        sqrt((x * x + y * y).toDouble()).toFloat()
 
     private fun candidateOrFallback(
         session: GenerationSession,
@@ -8069,17 +8797,28 @@ class MainActivity : ComponentActivity() {
             )
         }
         val foreground = renderCandidateForegroundBase(candidate)
-        val source = rmbgTunedForegroundRaw(candidate)?.let { renderCandidateBitmap(it) }
-            ?: candidate.monochromeRaw?.let { renderCandidateBitmap(it) }
+        val rmbgSource = rmbgTunedForegroundRaw(candidate)?.let { renderCandidateBitmap(it) }
+        val nativeSource = candidate.monochromeRaw?.let { renderCandidateBitmap(it) }
         val monochrome = when {
-            source != null && candidate.monochromeIsNative -> {
-                cleanNativeMonochrome(source)
+            rmbgSource != null -> {
+                monochromeAlpha(rmbgSource, invertLuma = invertLuma)
             }
-            source == null || hasForegroundTonalRange(foreground) -> {
+            hasForegroundTonalRange(foreground) -> {
                 monochromeAlpha(foreground, invertLuma = invertLuma)
             }
+            nativeSource != null &&
+                candidate.monochromeIsNative &&
+                isUsableNativeMonochrome(nativeSource, foreground) -> {
+                cleanNativeMonochrome(nativeSource)
+            }
+            nativeSource != null && hasForegroundTonalRange(nativeSource) -> {
+                monochromeAlpha(nativeSource, invertLuma = invertLuma)
+            }
+            nativeSource != null && !candidate.monochromeIsNative -> {
+                monochromeAlpha(nativeSource, invertLuma = invertLuma)
+            }
             else -> {
-                monochromeAlphaFromMask(source)
+                monochromeAlpha(foreground, invertLuma = invertLuma)
             }
         }
         return trimMonochromeEdge(monochrome)
@@ -8091,9 +8830,10 @@ class MainActivity : ComponentActivity() {
     private fun filterDecimalInput(value: String): String {
         val builder = StringBuilder()
         var hasDot = false
-        value.forEach { char ->
+        value.forEachIndexed { index, char ->
             when {
                 char.isDigit() -> builder.append(char)
+                char == '-' && index == 0 && builder.isEmpty() -> builder.append(char)
                 char == '.' && !hasDot -> {
                     builder.append(char)
                     hasDot = true
@@ -8106,7 +8846,7 @@ class MainActivity : ComponentActivity() {
             filtered.take(dotIndex + 3)
         } else {
             filtered
-        }.take(4)
+        }.take(8)
     }
 
     private fun formatScale(value: Float): String =
@@ -8123,7 +8863,8 @@ class MainActivity : ComponentActivity() {
         val night = candidateWithCustomOverrides(session, PreviewMode.NormalDark, selections.normalDark)
         val nightPreview = run {
             val nightRecfg = renderCandidateForeground(night)
-            nightForeground(nightRecfg, liquidGlassBackgroundForSize(night.recbg, SIZE_1X1, SIZE_1X1))
+            val nightRecbg = liquidGlassBackgroundForSize(night.recbg, SIZE_1X1, SIZE_1X1)
+            normalDarkForeground(nightRecfg, nightRecbg)
         }
 
         val monochromeLight = monochromeForCandidate(
@@ -8179,7 +8920,7 @@ class MainActivity : ComponentActivity() {
         return PreviewAssets(
             recbg = recbg,
             recfg = recfg,
-            recNight = nightForeground(recfg, recbg),
+            recNight = normalDarkForeground(recfg, recbg),
             monochromeLight = monochromeForCandidate(candidate, invertLuma = true),
             monochromeDark = monochromeForCandidate(candidate, invertLuma = false),
         )
@@ -8189,7 +8930,7 @@ class MainActivity : ComponentActivity() {
         polishForegroundEdges(renderCandidateBitmap(rmbgTunedForegroundRaw(candidate) ?: candidate.recfgRaw))
 
     private fun renderCandidateForeground(candidate: IconCandidate): Bitmap =
-        applyForegroundShadow(renderCandidateForegroundBase(candidate))
+        foregroundForSize(renderCandidateForegroundBase(candidate), SIZE_1X1, SIZE_1X1)
 
     private fun applyForegroundShadow(source: Bitmap): Bitmap {
         val level = foregroundShadowLevel.coerceIn(MIN_FOREGROUND_SHADOW_LEVEL, MAX_FOREGROUND_SHADOW_LEVEL)
@@ -8548,7 +9289,7 @@ class MainActivity : ComponentActivity() {
         var session = result.session
         if (choice == PreviewChoice.Rmbg || choice == PreviewChoice.RmbgComposedBackground) {
             val source = resizeBitmap(session.sourceIcon, SIZE_1X1, SIZE_1X1)
-            val rmbgResult = buildRmbgCandidate(source, session.baseRecbg)
+            val rmbgResult = buildRmbgCandidate(source)
                 ?: error("未安装 RMBG 组件 ZIP")
             val candidate = rmbgResult.candidate ?: error("RMBG候选为空")
             session = session.copy(
@@ -8768,7 +9509,7 @@ class MainActivity : ComponentActivity() {
         startUiFriendlyThread("ArtPlusRmbgCandidate") {
             try {
                 val source = resizeBitmap(session.sourceIcon, SIZE_1X1, SIZE_1X1)
-                val result = buildRmbgCandidate(source, session.baseRecbg)
+                val result = buildRmbgCandidate(source)
                     ?: error("未安装 RMBG 组件 ZIP")
                 val candidate = result.candidate ?: error("RMBG候选为空")
                 val inferenceReport = result.rmbgInference
@@ -8848,7 +9589,7 @@ class MainActivity : ComponentActivity() {
         startUiFriendlyThread("ArtPlusRmbgCandidateAll") {
             try {
                 val source = resizeBitmap(session.sourceIcon, SIZE_1X1, SIZE_1X1)
-                val result = buildRmbgCandidate(source, session.baseRecbg)
+                val result = buildRmbgCandidate(source)
                     ?: error("未安装 RMBG 组件 ZIP")
                 val candidate = result.candidate ?: error("RMBG候选为空")
                 val inferenceReport = result.rmbgInference
@@ -9590,9 +10331,9 @@ class MainActivity : ComponentActivity() {
                 renderSize,
                 transparent = false,
             )
+            val directForeground = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
             val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
             val foreground = subtractBackground(composed, background)
-            val directForeground = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
             val recbg = resizeBitmap(background, SIZE_1X1, SIZE_1X1)
             val foregroundSelection = chooseBetterAdaptiveForeground(foreground, directForeground, background)
             val monochrome = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -9937,11 +10678,16 @@ class MainActivity : ComponentActivity() {
             outPixels[i] = if (outAlpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
                 AndroidColor.TRANSPARENT
             } else {
+                val restored = restoredForegroundColor(
+                    visiblePixel = pixel,
+                    backgroundPixel = backgroundPixels[i],
+                    foregroundAlpha = alpha,
+                )
                 AndroidColor.argb(
                     outAlpha,
-                    AndroidColor.red(pixel),
-                    AndroidColor.green(pixel),
-                    AndroidColor.blue(pixel),
+                    AndroidColor.red(restored),
+                    AndroidColor.green(restored),
+                    AndroidColor.blue(restored),
                 )
             }
         }
@@ -10014,14 +10760,33 @@ class MainActivity : ComponentActivity() {
     private fun lerpDouble(start: Double, end: Double, ratio: Double): Double =
         start + (end - start) * ratio.coerceIn(0.0, 1.0)
 
-    private fun subtractBackground(composed: Bitmap, background: Bitmap): Bitmap {
+    private fun subtractBackground(
+        composed: Bitmap,
+        background: Bitmap,
+        colorSource: Bitmap? = null,
+    ): Bitmap {
         val width = composed.width
         val height = composed.height
         val composedPixels = IntArray(width * height)
         val backgroundPixels = IntArray(width * height)
         val outPixels = IntArray(width * height)
         composed.getPixels(composedPixels, 0, width, 0, 0, width, height)
-        background.getPixels(backgroundPixels, 0, width, 0, 0, width, height)
+        val bg = if (background.width == width && background.height == height) {
+            background
+        } else {
+            resizeBitmap(background, width, height)
+        }
+        bg.getPixels(backgroundPixels, 0, width, 0, 0, width, height)
+        val colorSourcePixels = colorSource?.let { source ->
+            val sized = if (source.width == width && source.height == height) {
+                source
+            } else {
+                resizeBitmap(source, width, height)
+            }
+            IntArray(width * height).also { pixels ->
+                sized.getPixels(pixels, 0, width, 0, 0, width, height)
+            }
+        }
         val transparentDistance = ADAPTIVE_SUBTRACT_TRANSPARENT_DISTANCE
         val opaqueDistance = effectiveBackgroundSeparationDistance()
 
@@ -10038,17 +10803,52 @@ class MainActivity : ComponentActivity() {
             }
             val alpha = ((distance - transparentDistance) / (opaqueDistance - transparentDistance))
                 .coerceIn(0.0, 1.0)
+            val outAlpha = (composedAlpha * alpha).toInt().coerceIn(0, 255)
+            if (outAlpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                outPixels[i] = AndroidColor.TRANSPARENT
+                continue
+            }
+            val restored = restoredForegroundColor(
+                visiblePixel = composedPixels[i],
+                backgroundPixel = backgroundPixels[i],
+                foregroundAlpha = alpha,
+                colorSourcePixel = colorSourcePixels?.get(i),
+            )
             outPixels[i] = AndroidColor.argb(
-                (composedAlpha * alpha).toInt().coerceIn(0, 255),
-                AndroidColor.red(composedPixels[i]),
-                AndroidColor.green(composedPixels[i]),
-                AndroidColor.blue(composedPixels[i]),
+                outAlpha,
+                AndroidColor.red(restored),
+                AndroidColor.green(restored),
+                AndroidColor.blue(restored),
             )
         }
 
         val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         out.setPixels(outPixels, 0, width, 0, 0, width, height)
         return repairTransparentEdgeColors(out)
+    }
+
+    private fun restoredForegroundColor(
+        visiblePixel: Int,
+        backgroundPixel: Int,
+        foregroundAlpha: Double,
+        colorSourcePixel: Int? = null,
+    ): Int {
+        if (
+            colorSourcePixel != null &&
+            AndroidColor.alpha(colorSourcePixel) > LOCAL_ALPHA_VISIBLE_THRESHOLD
+        ) {
+            return AndroidColor.rgb(
+                AndroidColor.red(colorSourcePixel),
+                AndroidColor.green(colorSourcePixel),
+                AndroidColor.blue(colorSourcePixel),
+            )
+        }
+        val alpha = foregroundAlpha.coerceIn(0.001, 1.0)
+        return AndroidColor.rgb(
+            uncompositeChannel(AndroidColor.red(visiblePixel), AndroidColor.red(backgroundPixel), alpha),
+            uncompositeChannel(AndroidColor.green(visiblePixel), AndroidColor.green(backgroundPixel), alpha),
+            uncompositeChannel(AndroidColor.blue(visiblePixel), AndroidColor.blue(backgroundPixel), alpha),
+        )
     }
 
     private fun centerOffsetRatio(bounds: Bounds, width: Int, height: Int): Double {
@@ -10187,12 +10987,36 @@ class MainActivity : ComponentActivity() {
 
         val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         out.setPixels(cleaned, 0, width, 0, 0, width, height)
+        val cleanedBitmap = removeBackgroundColoredResidue(out, edge.color)
+        if (isUnsafePlateRemoval(source, cleanedBitmap)) {
+            return ForegroundCleanupResult(source, changed = false, removedRatio = removedRatio, repairedRatio = 0.0)
+        }
         return ForegroundCleanupResult(
-            bitmap = removeBackgroundColoredResidue(out, edge.color),
+            bitmap = cleanedBitmap,
             changed = true,
             removedRatio = removedRatio,
             repairedRatio = repaired.toDouble() / visible.toDouble(),
         )
+    }
+
+    private fun isUnsafePlateRemoval(source: Bitmap, cleaned: Bitmap): Boolean {
+        val sourceCoverage = meaningfulAlphaCoverage(source)
+        val cleanedCoverage = meaningfulAlphaCoverage(cleaned)
+        if (cleanedCoverage <= PLATE_MIN_SAFE_REMAINING_COVERAGE) {
+            return true
+        }
+        if (sourceCoverage <= 0.0) {
+            return false
+        }
+        val keptRatio = cleanedCoverage / sourceCoverage
+        if (keptRatio < PLATE_MIN_SAFE_KEEP_RATIO) {
+            return true
+        }
+        val sourceBounds = meaningfulAlphaBounds(source) ?: return false
+        val cleanedBounds = meaningfulAlphaBounds(cleaned) ?: return true
+        val sourceMax = maxOf(sourceBounds.width(), sourceBounds.height()).toDouble()
+        val cleanedMax = maxOf(cleanedBounds.width(), cleanedBounds.height()).toDouble()
+        return sourceMax > 0.0 && cleanedMax / sourceMax < PLATE_MIN_SAFE_BOUNDS_RATIO
     }
 
     private fun removeCornerMaskResidue(
@@ -10218,15 +11042,11 @@ class MainActivity : ComponentActivity() {
 
         val candidate = BooleanArray(pixels.size)
         for (i in pixels.indices) {
-            val pixel = pixels[i]
-            val alpha = AndroidColor.alpha(pixel)
-            if (alpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                continue
-            }
-            candidate[i] =
-                alpha < CORNER_MASK_OPAQUE_ALPHA ||
-                colorDistance(pixel, backgroundPixels[i]) <= CORNER_MASK_BACKGROUND_DISTANCE ||
-                (removeNearWhite && isNearWhite(pixel))
+            candidate[i] = isCornerMaskResidueCandidate(
+                pixel = pixels[i],
+                backgroundPixel = backgroundPixels[i],
+                removeNearWhite = removeNearWhite,
+            )
         }
 
         val remove = BooleanArray(pixels.size)
@@ -10296,6 +11116,31 @@ class MainActivity : ComponentActivity() {
         AndroidColor.red(pixel) >= CORNER_MASK_WHITE_THRESHOLD &&
             AndroidColor.green(pixel) >= CORNER_MASK_WHITE_THRESHOLD &&
             AndroidColor.blue(pixel) >= CORNER_MASK_WHITE_THRESHOLD
+
+    private fun isCornerMaskResidueCandidate(
+        pixel: Int,
+        backgroundPixel: Int,
+        removeNearWhite: Boolean,
+    ): Boolean {
+        val alpha = AndroidColor.alpha(pixel)
+        if (alpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+            return false
+        }
+
+        val backgroundDistance = colorDistance(pixel, backgroundPixel)
+        val subjectLike = alpha >= CORNER_MASK_SUBJECT_ALPHA &&
+            backgroundDistance >= CORNER_MASK_SUBJECT_BACKGROUND_DISTANCE
+        if (subjectLike) {
+            return false
+        }
+
+        val nearBackground = backgroundDistance <= CORNER_MASK_BACKGROUND_DISTANCE
+        val weakMaskEdge = alpha < CORNER_MASK_OPAQUE_ALPHA && nearBackground
+        val nearWhiteMaskEdge = removeNearWhite &&
+            isNearWhite(pixel) &&
+            (nearBackground || alpha < CORNER_MASK_WHITE_EDGE_ALPHA)
+        return nearBackground || weakMaskEdge || nearWhiteMaskEdge
+    }
 
     private fun isInCornerMaskZone(x: Int, y: Int, width: Int, height: Int): Boolean {
         val zone = minOf(CORNER_MASK_ZONE_SIZE, width / 2, height / 2).coerceAtLeast(1)
@@ -11056,7 +11901,92 @@ class MainActivity : ComponentActivity() {
         return kotlin.math.sqrt((dr * dr + dg * dg + db * db).toDouble())
     }
 
-    private fun nightForeground(source: Bitmap, background: Bitmap): Bitmap {
+    private fun normalDarkForeground(source: Bitmap, darkBackground: Bitmap): Bitmap {
+        val preserved = nightForeground(
+            source = source,
+            background = darkBackground,
+            preserveSubjectColors = true,
+        )
+        val boosted = supportNightForegroundWithColor(
+            source = source,
+            preserved = preserved,
+            supportColor = NIGHT_APP_WHITE,
+            maxBlend = NIGHT_DEFAULT_BOOST_MAX_BLEND,
+        )
+        return if (nightSubjectLightBackgroundEnabled) {
+            supportNightForegroundWithColor(
+                source = source,
+                preserved = boosted,
+                supportColor = sampleColor(darkBackground),
+                maxBlend = NIGHT_FILL_BACKGROUND_MAX_BLEND,
+            )
+        } else {
+            boosted
+        }
+    }
+
+    private fun supportNightForegroundWithColor(
+        source: Bitmap,
+        preserved: Bitmap,
+        supportColor: Int,
+        maxBlend: Double,
+    ): Bitmap {
+        val width = preserved.width
+        val height = preserved.height
+        val sourcePixels = IntArray(width * height)
+        val preservedPixels = IntArray(width * height)
+        val outPixels = IntArray(sourcePixels.size)
+        source.getPixels(sourcePixels, 0, width, 0, 0, width, height)
+        preserved.getPixels(preservedPixels, 0, width, 0, 0, width, height)
+
+        for (i in sourcePixels.indices) {
+            val sourcePixel = sourcePixels[i]
+            val preservedPixel = preservedPixels[i]
+            val alpha = AndroidColor.alpha(preservedPixel)
+            outPixels[i] = if (alpha <= 0) {
+                AndroidColor.TRANSPARENT
+            } else {
+                val sourceLuma = luma(sourcePixel)
+                val sourceSaturation = saturation(sourcePixel)
+                val darkness = ((NIGHT_SUPPORT_MAX_LUMA - sourceLuma).toDouble() /
+                    (NIGHT_SUPPORT_MAX_LUMA - NIGHT_SUPPORT_MIN_LUMA).toDouble())
+                    .coerceIn(0.0, 1.0)
+                val neutrality = ((NIGHT_SUPPORT_MAX_SATURATION - sourceSaturation) /
+                    NIGHT_SUPPORT_MAX_SATURATION)
+                    .coerceIn(0.0, 1.0)
+                val blend = (darkness * neutrality * maxBlend)
+                    .takeUnless {
+                        sourceSaturation >= NIGHT_SUPPORT_PRESERVE_SATURATION ||
+                            sourceLuma >= NIGHT_SUPPORT_PRESERVE_LUMA
+                    }
+                    ?: 0.0
+                AndroidColor.argb(
+                    alpha,
+                    blendChannel(AndroidColor.red(preservedPixel), AndroidColor.red(supportColor), blend),
+                    blendChannel(AndroidColor.green(preservedPixel), AndroidColor.green(supportColor), blend),
+                    blendChannel(AndroidColor.blue(preservedPixel), AndroidColor.blue(supportColor), blend),
+                )
+            }
+        }
+
+        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        out.setPixels(outPixels, 0, width, 0, 0, width, height)
+        return smoothAlphaEdges(
+            featherVisibleEdges(repairTransparentEdgeColors(out), NIGHT_EDGE_FEATHER_BLEND),
+            NIGHT_EDGE_SMOOTH_STRENGTH,
+        )
+    }
+
+    private fun blendChannel(base: Int, target: Int, blend: Double): Int =
+        (base * (1.0 - blend) + target * blend)
+            .roundToInt()
+            .coerceIn(0, 255)
+
+    private fun nightForeground(
+        source: Bitmap,
+        background: Bitmap,
+        preserveSubjectColors: Boolean = false,
+    ): Bitmap {
         val width = source.width
         val height = source.height
         val sourcePixels = IntArray(width * height)
@@ -11093,7 +12023,10 @@ class MainActivity : ComponentActivity() {
             if (pixelLuma <= NIGHT_DARK_LUMA_THRESHOLD) {
                 darkWeight += weight
             }
-            if (pixelSaturation >= NIGHT_COLOR_SATURATION_THRESHOLD) {
+            if (
+                pixelLuma > NIGHT_DARK_COLOR_IGNORE_LUMA_THRESHOLD &&
+                pixelSaturation >= NIGHT_COLOR_SATURATION_THRESHOLD
+            ) {
                 colorWeight += weight
             }
         }
@@ -11142,7 +12075,8 @@ class MainActivity : ComponentActivity() {
                         isNightWhiteSubjectPixel(pixel, includeSoftEdge = true)
                     }
                 }
-                darkRatio >= NIGHT_DARK_RATIO_THRESHOLD &&
+                !preserveSubjectColors &&
+                    darkRatio >= NIGHT_DARK_RATIO_THRESHOLD &&
                     whiteRatio <= NIGHT_DARK_MAX_WHITE_RATIO &&
                     colorRatio <= NIGHT_DARK_COLOR_RATIO_MAX &&
                     bgLuma >= NIGHT_BACKGROUND_COLORED_LUMA_THRESHOLD -> {
@@ -11468,6 +12402,21 @@ class MainActivity : ComponentActivity() {
             return false
         }
         return percentile(lumas, 0.98) - percentile(lumas, 0.02) >= MONO_TONAL_RANGE_THRESHOLD
+    }
+
+    private fun isUsableNativeMonochrome(source: Bitmap, foreground: Bitmap): Boolean {
+        val nativeCoverage = meaningfulAlphaCoverage(source)
+        if (nativeCoverage <= 0.0) {
+            return false
+        }
+        if (nativeCoverage >= MONO_NATIVE_MAX_TILE_COVERAGE) {
+            return false
+        }
+        val foregroundCoverage = meaningfulAlphaCoverage(foreground)
+        if (foregroundCoverage > 0.0 && nativeCoverage > foregroundCoverage + MONO_NATIVE_MAX_COVERAGE_EXTRA) {
+            return false
+        }
+        return true
     }
 
     private fun repairTransparentEdgeColors(sourcePixels: IntArray, width: Int, height: Int): IntArray {
@@ -12344,7 +13293,17 @@ class MainActivity : ComponentActivity() {
             .put("rmbg_weak_alpha_keep_percent", rmbgWeakAlphaKeepPercent)
             .put("liquid_glass_enabled", liquidGlassEnabled)
             .put("liquid_glass_radius", liquidGlassRadius)
-            .put("liquid_glass_rim_width_level", liquidGlassRimWidthLevel)
+            .put("liquid_glass_outer_width", liquidGlassOuterWidth)
+            .put("liquid_glass_top_alpha", liquidGlassTopAlpha)
+            .put("liquid_glass_bottom_alpha", liquidGlassBottomAlpha)
+            .put("liquid_glass_background_mist_alpha", liquidGlassBackgroundMistAlpha)
+            .put("liquid_glass_bottom_dark_alpha", liquidGlassBottomDarkAlpha)
+            .put("liquid_glass_subject_scale_percent", liquidGlassSubjectScalePercent)
+            .put("liquid_glass_subject_outline_width", liquidGlassSubjectOutlineWidth)
+            .put("liquid_glass_subject_inner_outline_width", liquidGlassSubjectInnerOutlineWidth)
+            .put("liquid_glass_subject_shadow_alpha", liquidGlassSubjectShadowAlpha)
+            .put("liquid_glass_subject_opacity_percent", liquidGlassSubjectOpacityPercent)
+            .put("liquid_glass_param_labels", liquidGlassParamLabelsJson())
             .put("rmbg_model_installed", findRmbgComponent() != null)
             .put("rmbg_component_installed", findRmbgComponent() != null)
             .put("rmbg_component_abi", findRmbgComponent()?.abi ?: "")
@@ -12400,9 +13359,33 @@ class MainActivity : ComponentActivity() {
                         intRangeJson(MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT, MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT),
                     )
                     .put("liquid_glass_radius", intRangeJson(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS))
+                    .put("liquid_glass_outer_width", intRangeJson(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH))
+                    .put("liquid_glass_top_alpha", intRangeJson(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA))
+                    .put("liquid_glass_bottom_alpha", intRangeJson(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA))
+                    .put("liquid_glass_background_mist_alpha", intRangeJson(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA))
                     .put(
-                        "liquid_glass_rim_width_level",
-                        intRangeJson(MIN_LIQUID_GLASS_RIM_WIDTH_LEVEL, MAX_LIQUID_GLASS_RIM_WIDTH_LEVEL),
+                        "liquid_glass_bottom_dark_alpha",
+                        intRangeJson(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA),
+                    )
+                    .put(
+                        "liquid_glass_subject_scale_percent",
+                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT),
+                    )
+                    .put(
+                        "liquid_glass_subject_outline_width",
+                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH),
+                    )
+                    .put(
+                        "liquid_glass_subject_inner_outline_width",
+                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH),
+                    )
+                    .put(
+                        "liquid_glass_subject_shadow_alpha",
+                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA),
+                    )
+                    .put(
+                        "liquid_glass_subject_opacity_percent",
+                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT),
                     )
                     .put(
                         "adaptive_direct_max_coverage_percent",
@@ -12432,6 +13415,21 @@ class MainActivity : ComponentActivity() {
     private fun intRangeJson(min: Int, max: Int): JSONObject =
         JSONObject().put("min", min).put("max", max)
 
+    private fun liquidGlassParamLabelsJson(): JSONObject =
+        JSONObject()
+            .put("liquid_glass_enabled", "启用液态玻璃")
+            .put("liquid_glass_radius", "玻璃圆角")
+            .put("liquid_glass_outer_width", "外框高度")
+            .put("liquid_glass_top_alpha", "顶部强度")
+            .put("liquid_glass_bottom_alpha", "底边强度")
+            .put("liquid_glass_background_mist_alpha", "背景灰雾")
+            .put("liquid_glass_bottom_dark_alpha", "底部灰雾")
+            .put("liquid_glass_subject_scale_percent", "主体比例")
+            .put("liquid_glass_subject_outline_width", "主体外框宽度")
+            .put("liquid_glass_subject_inner_outline_width", "主体内框宽度")
+            .put("liquid_glass_subject_shadow_alpha", "主体阴影")
+            .put("liquid_glass_subject_opacity_percent", "主体透明度")
+
     private fun currentDebugParamsOnMain(): JSONObject {
         var snapshot: JSONObject? = null
         runOnMainSync {
@@ -12443,6 +13441,13 @@ class MainActivity : ComponentActivity() {
     private fun applyDebugParams(params: Map<String, String>): JSONObject {
         var snapshot: JSONObject? = null
         runOnMainSync {
+            fun intParam(vararg keys: String): Int? {
+                keys.forEach { key ->
+                    params[key]?.toIntOrNull()?.let { return it }
+                }
+                return null
+            }
+
             params["foreground_subject_percent"]?.toIntOrNull()?.let {
                 foregroundSubjectPercent = it.coerceIn(MIN_FOREGROUND_SUBJECT_PERCENT, MAX_FOREGROUND_SUBJECT_PERCENT)
             }
@@ -12505,16 +13510,64 @@ class MainActivity : ComponentActivity() {
             params["liquid_glass_enabled"]?.toBooleanStrictOrNull()?.let {
                 liquidGlassEnabled = it
             }
-            params["liquid_glass_radius"]?.toIntOrNull()?.let {
+            intParam("liquid_glass_radius", "radius")?.let {
                 liquidGlassRadius = it.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)
                 draftLiquidGlassRadiusText = liquidGlassRadius.toString()
             }
-            (params["liquid_glass_rim_width_level"] ?: params["liquid_glass_background_level"])?.toIntOrNull()?.let {
-                liquidGlassRimWidthLevel = it.coerceIn(
-                    MIN_LIQUID_GLASS_RIM_WIDTH_LEVEL,
-                    MAX_LIQUID_GLASS_RIM_WIDTH_LEVEL,
+            intParam("liquid_glass_outer_width", "outerWidth", "liquid_glass_background_level")?.let {
+                liquidGlassOuterWidth = it.coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)
+                draftLiquidGlassOuterWidthText = liquidGlassOuterWidth.toString()
+            }
+            intParam("liquid_glass_top_alpha", "topAlpha")?.let {
+                liquidGlassTopAlpha = it.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+                draftLiquidGlassTopAlphaText = liquidGlassTopAlpha.toString()
+            }
+            intParam("liquid_glass_bottom_alpha", "bottomAlpha")?.let {
+                liquidGlassBottomAlpha = it.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+                draftLiquidGlassBottomAlphaText = liquidGlassBottomAlpha.toString()
+            }
+            intParam("liquid_glass_background_mist_alpha", "backgroundMistAlpha")?.let {
+                liquidGlassBackgroundMistAlpha = it.coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
+                draftLiquidGlassBackgroundMistAlphaText = liquidGlassBackgroundMistAlpha.toString()
+            }
+            intParam("liquid_glass_bottom_dark_alpha", "bottomDarkAlpha")?.let {
+                liquidGlassBottomDarkAlpha = it.coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
+                draftLiquidGlassBottomDarkAlphaText = liquidGlassBottomDarkAlpha.toString()
+            }
+            intParam("liquid_glass_subject_scale_percent", "subjectScale")?.let {
+                liquidGlassSubjectScalePercent = it.coerceIn(
+                    MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
+                    MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
                 )
-                draftLiquidGlassRimWidthLevelText = liquidGlassRimWidthLevel.toString()
+                draftLiquidGlassSubjectScaleText = liquidGlassSubjectScalePercent.toString()
+            }
+            intParam("liquid_glass_subject_outline_width", "subjectOutlineWidth")?.let {
+                liquidGlassSubjectOutlineWidth = it.coerceIn(
+                    MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                    MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                )
+                draftLiquidGlassSubjectOutlineWidthText = liquidGlassSubjectOutlineWidth.toString()
+            }
+            intParam("liquid_glass_subject_inner_outline_width", "subjectInnerOutlineWidth")?.let {
+                liquidGlassSubjectInnerOutlineWidth = it.coerceIn(
+                    MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                    MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                )
+                draftLiquidGlassSubjectInnerOutlineWidthText = liquidGlassSubjectInnerOutlineWidth.toString()
+            }
+            intParam("liquid_glass_subject_shadow_alpha", "subjectShadowAlpha")?.let {
+                liquidGlassSubjectShadowAlpha = it.coerceIn(
+                    MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
+                    MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
+                )
+                draftLiquidGlassSubjectShadowAlphaText = liquidGlassSubjectShadowAlpha.toString()
+            }
+            intParam("liquid_glass_subject_opacity_percent", "subjectOpacity")?.let {
+                liquidGlassSubjectOpacityPercent = it.coerceIn(
+                    MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+                    MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+                )
+                draftLiquidGlassSubjectOpacityText = liquidGlassSubjectOpacityPercent.toString()
             }
             params["gpt_mode"]?.let {
                 gptImageMode = GptImageMode.fromValue(it)
@@ -12629,15 +13682,26 @@ class MainActivity : ComponentActivity() {
           <pre id="out"></pre>
         </main>
         <script>
+        let labels = {};
         const numericKeys = [
-          'foreground_subject_percent','background_separation_percent','plate_removal_percent','shadow_removal_percent','edge_polish_percent',
+          'foreground_subject_percent','foreground_shadow_level',
+          'background_separation_percent','plate_removal_percent','shadow_removal_percent','edge_polish_percent',
           'rmbg_alpha_strength_percent','rmbg_edge_feather_percent','rmbg_edge_adjust_percent','rmbg_weak_alpha_keep_percent',
-          'liquid_glass_radius',
+          'liquid_glass_radius','liquid_glass_outer_width','liquid_glass_top_alpha','liquid_glass_bottom_alpha',
+          'liquid_glass_background_mist_alpha','liquid_glass_bottom_dark_alpha',
+          'liquid_glass_subject_scale_percent','liquid_glass_subject_outline_width',
+          'liquid_glass_subject_inner_outline_width','liquid_glass_subject_shadow_alpha','liquid_glass_subject_opacity_percent',
           'adaptive_direct_max_coverage_percent','adaptive_direct_max_coverage_increase_percent',
           'adaptive_mask_edge_coverage_percent','adaptive_mask_min_coverage_percent','adaptive_center_epsilon_percent'
         ];
+        const checkboxKeys = [
+          'liquid_glass_enabled'
+        ];
+        const colorKeys = [];
+        const selectSpecs = [];
         async function load(){
           const data = await fetch('/debug/params').then(r=>r.json());
+          labels = data.liquid_glass_param_labels || {};
 	          const form = document.getElementById('params');
 	          form.innerHTML = '';
 	          const select = document.createElement('select');
@@ -12658,18 +13722,40 @@ class MainActivity : ComponentActivity() {
           });
           originalCleanup.name = 'original_foreground_cleanup_mode';
           form.appendChild(row('original_foreground_cleanup_mode', originalCleanup));
+          selectSpecs.forEach(([key, optionsKey]) => {
+            const input = document.createElement('select');
+            (data[optionsKey] || []).forEach(m => {
+              const option = document.createElement('option');
+              option.value = m.value; option.textContent = m.value + ' - ' + m.label;
+              option.selected = m.value === data[key];
+              input.appendChild(option);
+            });
+            input.name = key;
+            form.appendChild(row(key, input));
+          });
+          checkboxKeys.forEach(k => {
+            const input = document.createElement('input');
+            input.type = 'checkbox'; input.name = k; input.checked = !!data[k];
+            form.appendChild(row(k, input));
+          });
+          colorKeys.forEach(k => {
+            const input = document.createElement('input');
+            input.type = 'text'; input.name = k; input.value = data[k] || '';
+            form.appendChild(row(k, input));
+          });
           numericKeys.forEach(k => {
             const input = document.createElement('input');
-            input.type = 'number'; input.name = k; input.value = data[k];
+            input.type = 'number'; input.name = k; input.value = data[k]; input.step = 'any';
             if (data.ranges[k]) { input.min = data.ranges[k].min; input.max = data.ranges[k].max; }
             form.appendChild(row(k, input));
           });
           document.getElementById('out').textContent = JSON.stringify(data, null, 2);
         }
-        function row(label, input){ const l=document.createElement('label'); const s=document.createElement('span'); s.textContent=label; l.appendChild(s); l.appendChild(input); return l; }
+        function row(label, input){ const l=document.createElement('label'); const s=document.createElement('span'); s.textContent=labels[label] || label; l.appendChild(s); l.appendChild(input); return l; }
         document.getElementById('save').onclick = async () => {
           const body = {};
           new FormData(document.getElementById('params')).forEach((v,k)=>body[k]=v);
+          checkboxKeys.forEach(k => { const el = document.querySelector('[name="'+k+'"]'); body[k] = el && el.checked ? 'true' : 'false'; });
           document.getElementById('out').textContent = await fetch('/debug/params',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(r=>r.text());
           load();
         };
@@ -13515,8 +14601,18 @@ class MainActivity : ComponentActivity() {
         private const val PREF_RMBG_EDGE_ADJUST_PERCENT = "rmbg_edge_adjust_percent"
         private const val PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT = "rmbg_weak_alpha_keep_percent"
         private const val PREF_LIQUID_GLASS_ENABLED = "liquid_glass_enabled"
+        private const val PREF_LIQUID_GLASS_LAYERED_MIGRATED = "liquid_glass_layered_migrated"
         private const val PREF_LIQUID_GLASS_RADIUS = "liquid_glass_radius"
-        private const val PREF_LIQUID_GLASS_RIM_WIDTH_LEVEL = "liquid_glass_rim_width_level"
+        private const val PREF_LIQUID_GLASS_OUTER_WIDTH = "liquid_glass_outer_width"
+        private const val PREF_LIQUID_GLASS_TOP_ALPHA = "liquid_glass_top_alpha"
+        private const val PREF_LIQUID_GLASS_BOTTOM_ALPHA = "liquid_glass_bottom_alpha"
+        private const val PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA = "liquid_glass_background_mist_alpha"
+        private const val PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA = "liquid_glass_bottom_dark_alpha"
+        private const val PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT = "liquid_glass_subject_scale_percent"
+        private const val PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH = "liquid_glass_subject_outline_width"
+        private const val PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH = "liquid_glass_subject_inner_outline_width"
+        private const val PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA = "liquid_glass_subject_shadow_alpha"
+        private const val PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = "liquid_glass_subject_opacity_percent"
         private const val PREF_LIQUID_GLASS_BACKGROUND_LEVEL_LEGACY = "liquid_glass_background_level"
         private const val PREF_ADAPTIVE_FOREGROUND_MODE = "adaptive_foreground_mode"
         private const val PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT = "adaptive_direct_max_coverage_percent"
@@ -13525,6 +14621,7 @@ class MainActivity : ComponentActivity() {
         private const val PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT = "adaptive_mask_min_coverage_percent"
         private const val PREF_ADAPTIVE_CENTER_EPSILON_PERCENT = "adaptive_center_epsilon_percent"
         private const val PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE = "original_foreground_cleanup_mode"
+        private const val PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED = "night_subject_light_background_enabled"
         private const val PREF_IMAGE_TUNING_VERSION = "image_tuning_version"
         private const val PREF_FOREGROUND_SUBJECT_PERCENT_MIGRATED = "foreground_subject_percent_migrated"
         private const val PREF_USAGE_PERMISSION_PROMPTED = "usage_permission_prompted"
@@ -13694,6 +14791,7 @@ class MainActivity : ComponentActivity() {
         private const val NIGHT_WHITE_RATIO_THRESHOLD = 0.55
         private const val NIGHT_DARK_RATIO_THRESHOLD = 0.55
         private const val NIGHT_DARK_MAX_WHITE_RATIO = 0.20
+        private const val NIGHT_DARK_COLOR_IGNORE_LUMA_THRESHOLD = 112
         private const val NIGHT_COLOR_SATURATION_THRESHOLD = 0.28
         private const val NIGHT_COLOR_RATIO_MAX = 0.06
         private const val NIGHT_DARK_COLOR_RATIO_MAX = 0.16
@@ -13730,6 +14828,13 @@ class MainActivity : ComponentActivity() {
         private const val NIGHT_EDGE_CONTRAST_RADIUS = 2
         private const val NIGHT_EDGE_COLORED_NEIGHBOR_SATURATION = 0.18
         private const val NIGHT_EDGE_DARK_NEIGHBOR_LUMA = 116
+        private const val NIGHT_SUPPORT_MIN_LUMA = 24
+        private const val NIGHT_SUPPORT_MAX_LUMA = 150
+        private const val NIGHT_SUPPORT_MAX_SATURATION = 0.22
+        private const val NIGHT_SUPPORT_PRESERVE_SATURATION = 0.18
+        private const val NIGHT_SUPPORT_PRESERVE_LUMA = 172
+        private const val NIGHT_DEFAULT_BOOST_MAX_BLEND = 0.16
+        private const val NIGHT_FILL_BACKGROUND_MAX_BLEND = 0.30
         private const val MONO_ALPHA_MIN = 40
         private const val MONO_ALPHA_MAX = 230
         private const val MONO_ALPHA_GAMMA = 0.85
@@ -13746,6 +14851,8 @@ class MainActivity : ComponentActivity() {
         private const val MONO_TONAL_MIN_VISIBLE_PIXELS = 64
         private const val MONO_TONAL_RANGE_THRESHOLD = 12
         private const val MONO_EDGE_TRIM_FEATHER_SCALE = 0.26
+        private const val MONO_NATIVE_MAX_TILE_COVERAGE = 0.70
+        private const val MONO_NATIVE_MAX_COVERAGE_EXTRA = 0.18
         private const val MONO_NATIVE_EDGE_LOW_CUT = 6
         private const val MONO_NATIVE_EDGE_HIGH_CUT = 44
         private const val MONO_EDGE_SHARPEN_LOW_CUT = 18
@@ -13791,12 +14898,35 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT = 100
         private const val MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT = 0
         private const val MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT = 100
-        private const val DEFAULT_LIQUID_GLASS_RADIUS = 34
+        private const val DEFAULT_LIQUID_GLASS_RADIUS = 95
         private const val MIN_LIQUID_GLASS_RADIUS = 0
-        private const val MAX_LIQUID_GLASS_RADIUS = 120
-        private const val DEFAULT_LIQUID_GLASS_RIM_WIDTH_LEVEL = 5
-        private const val MIN_LIQUID_GLASS_RIM_WIDTH_LEVEL = 0
-        private const val MAX_LIQUID_GLASS_RIM_WIDTH_LEVEL = 10
+        private const val MAX_LIQUID_GLASS_RADIUS = 240
+        private const val DEFAULT_LIQUID_GLASS_OUTER_WIDTH = 2
+        private const val MIN_LIQUID_GLASS_OUTER_WIDTH = 0
+        private const val MAX_LIQUID_GLASS_OUTER_WIDTH = 70
+        private const val DEFAULT_LIQUID_GLASS_TOP_ALPHA = 175
+        private const val DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA = 122
+        private const val MIN_LIQUID_GLASS_ALPHA = 0
+        private const val MAX_LIQUID_GLASS_ALPHA = 255
+        private const val DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA = 0
+        private const val MIN_LIQUID_GLASS_MIST_ALPHA = 0
+        private const val MAX_LIQUID_GLASS_MIST_ALPHA = 160
+        private const val DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA = 24
+        private const val MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA = 0
+        private const val MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA = 50
+        private const val DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT = 100
+        private const val MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT = 45
+        private const val MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT = 180
+        private const val DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH = 0
+        private const val DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH = 0
+        private const val MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH = 0
+        private const val MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH = 36
+        private const val DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA = 0
+        private const val MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA = 0
+        private const val MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA = 180
+        private const val DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = 100
+        private const val MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = 0
+        private const val MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = 100
         private const val LEGACY_BACKGROUND_SEPARATION_MIN = 12.0
         private const val LEGACY_BACKGROUND_SEPARATION_MAX = 420.0
         private const val LEGACY_PLATE_REMOVAL_MIN = 0.0
@@ -13879,6 +15009,9 @@ class MainActivity : ComponentActivity() {
         private const val EDGE_BAND_RATIO = 0.035f
         private const val PLATE_BORDER_COVERAGE_THRESHOLD = 0.42
         private const val PLATE_MIN_REMOVED_RATIO = 0.05
+        private const val PLATE_MIN_SAFE_REMAINING_COVERAGE = 0.01
+        private const val PLATE_MIN_SAFE_KEEP_RATIO = 0.18
+        private const val PLATE_MIN_SAFE_BOUNDS_RATIO = 0.28
         private const val RESIDUE_MAX_ALPHA = 190
         private const val RESIDUE_BACKGROUND_MIN_SATURATION = 0.18
         private const val RESIDUE_DISTANCE_SCALE = 1.45
@@ -13896,7 +15029,10 @@ class MainActivity : ComponentActivity() {
         private const val CORNER_MASK_ZONE_SIZE = 68
         private const val CORNER_MASK_OPAQUE_ALPHA = 250
         private const val CORNER_MASK_BACKGROUND_DISTANCE = 90.0
+        private const val CORNER_MASK_SUBJECT_ALPHA = 32
+        private const val CORNER_MASK_SUBJECT_BACKGROUND_DISTANCE = 130.0
         private const val CORNER_MASK_WHITE_THRESHOLD = 220
+        private const val CORNER_MASK_WHITE_EDGE_ALPHA = 180
         private const val CORNER_MASK_MAX_REMOVED_RATIO = 0.45
         private const val SHADOW_HIGH_ALPHA_THRESHOLD = 160
         private const val SHADOW_MAX_SATURATION_MIN = 0.08
