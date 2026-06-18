@@ -2,6 +2,7 @@ package dev.artplus.mobile
 
 import android.Manifest
 import android.app.AppOpsManager
+import android.app.WallpaperManager
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
@@ -324,6 +325,8 @@ class MainActivity : ComponentActivity() {
     private var previewVersion by mutableStateOf(0)
     private var activeGenerationSession by mutableStateOf<GenerationSession?>(null)
     private var previewSelections by mutableStateOf(PreviewSelections.default(PreviewChoice.Full))
+    private var previewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
+    private var previewIconSizeDp by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP)
     private var previewChoiceMode by mutableStateOf<PreviewMode?>(null)
     private var isGptPreviewLoading by mutableStateOf(false)
     private var isGeneratingGptCandidate by mutableStateOf(false)
@@ -1244,6 +1247,8 @@ class MainActivity : ComponentActivity() {
             overflow = TextOverflow.Ellipsis,
         )
         Spacer(modifier = Modifier.height(10.dp))
+        PreviewDisplaySettings()
+        Spacer(modifier = Modifier.height(10.dp))
         if (displayAssets == null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1270,6 +1275,8 @@ class MainActivity : ComponentActivity() {
                 label = "正常亮色",
                 assets = displayAssets,
                 mode = PreviewMode.NormalLight,
+                desktopBackground = previewDesktopBackground,
+                iconSizeDp = previewIconSizeDp,
                 loading = previewLoading,
                 choiceEnabled = session != null,
                 onClick = { previewChoiceMode = PreviewMode.NormalLight },
@@ -1279,6 +1286,8 @@ class MainActivity : ComponentActivity() {
                 label = "正常暗色",
                 assets = displayAssets,
                 mode = PreviewMode.NormalDark,
+                desktopBackground = previewDesktopBackground,
+                iconSizeDp = previewIconSizeDp,
                 loading = previewLoading,
                 choiceEnabled = session != null,
                 onClick = { previewChoiceMode = PreviewMode.NormalDark },
@@ -1294,6 +1303,8 @@ class MainActivity : ComponentActivity() {
                 label = "单色亮色",
                 assets = displayAssets,
                 mode = PreviewMode.MonochromeLight,
+                desktopBackground = previewDesktopBackground,
+                iconSizeDp = previewIconSizeDp,
                 loading = previewLoading,
                 choiceEnabled = session != null,
                 onClick = { previewChoiceMode = PreviewMode.MonochromeLight },
@@ -1303,6 +1314,8 @@ class MainActivity : ComponentActivity() {
                 label = "单色暗色",
                 assets = displayAssets,
                 mode = PreviewMode.MonochromeDark,
+                desktopBackground = previewDesktopBackground,
+                iconSizeDp = previewIconSizeDp,
                 loading = previewLoading,
                 choiceEnabled = session != null,
                 onClick = { previewChoiceMode = PreviewMode.MonochromeDark },
@@ -1316,10 +1329,124 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun PreviewDisplaySettings() {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = "预览设置",
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "只影响这里的显示，不会改生成结果",
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+                Text(
+                    text = "$previewIconSizeDp%",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            SteppedPercentSlider(
+                value = previewIconSizeDp,
+                min = MIN_PREVIEW_ICON_SIZE_DP,
+                max = MAX_PREVIEW_ICON_SIZE_DP,
+                step = 1,
+                enabled = !isBusy,
+                showDots = false,
+                onValueChange = { updatePreviewIconSizeDp(it) },
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                PreviewDesktopBackground.entries.forEach { option ->
+                    PreviewBackgroundOption(
+                        option = option,
+                        selected = option == previewDesktopBackground,
+                        modifier = Modifier.weight(1f),
+                        onClick = { updatePreviewDesktopBackground(option) },
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun PreviewBackgroundOption(
+        option: PreviewDesktopBackground,
+        selected: Boolean,
+        modifier: Modifier = Modifier,
+        onClick: () -> Unit,
+    ) {
+        val borderColor = if (selected) {
+            MiuixTheme.colorScheme.primaryVariant
+        } else {
+            MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.18f)
+        }
+        Column(
+            modifier = modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(MiuixTheme.colorScheme.secondaryContainer.copy(alpha = if (selected) 0.82f else 0.52f))
+                .clickable(enabled = !isBusy && !selected, onClick = onClick)
+                .padding(horizontal = 6.dp, vertical = 7.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(22.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(borderColor.copy(alpha = 0.14f))
+                    .padding(2.dp),
+            ) {
+                PreviewDesktopBackgroundSurface(
+                    option = option,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(6.dp)),
+                )
+            }
+            Text(
+                text = option.label,
+                style = MiuixTheme.textStyles.footnote1,
+                color = if (selected) {
+                    MiuixTheme.colorScheme.onSurface
+                } else {
+                    MiuixTheme.colorScheme.onSurfaceVariantSummary
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+
+    @Composable
     private fun PreviewTile(
         label: String,
         assets: PreviewAssets?,
         mode: PreviewMode,
+        desktopBackground: PreviewDesktopBackground,
+        iconSizeDp: Int,
         loading: Boolean,
         choiceEnabled: Boolean,
         onClick: () -> Unit,
@@ -1350,13 +1477,30 @@ class MainActivity : ComponentActivity() {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(84.dp),
+                    .height(118.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 if (missingMessage == null) {
-                    GeneratedIconPreview(assets, mode)
+                    DesktopIconPreview(
+                        desktopBackground = desktopBackground,
+                        iconSize = iconSizeDp.dp,
+                    ) {
+                        GeneratedIconPreview(
+                            assets = assets,
+                            mode = mode,
+                            modifier = Modifier.size(iconSizeDp.dp),
+                        )
+                    }
                 } else {
-                    MissingIconPreview(mode = mode)
+                    DesktopIconPreview(
+                        desktopBackground = desktopBackground,
+                        iconSize = iconSizeDp.dp,
+                    ) {
+                        MissingIconPreview(
+                            modifier = Modifier.size(iconSizeDp.dp),
+                            mode = mode,
+                        )
+                    }
                 }
                 if (loadingAlpha > 0.01f) {
                     AiIconLoadingPreview(
@@ -1364,43 +1508,6 @@ class MainActivity : ComponentActivity() {
                             .size(72.dp)
                             .graphicsLayer { alpha = loadingAlpha },
                         overlay = true,
-                    )
-                }
-            }
-            if (mode == PreviewMode.NormalDark && missingMessage == null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable(enabled = !isBusy) {
-                            updateNightSubjectLightBackgroundEnabled(!nightSubjectLightBackgroundEnabled)
-                        }
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(1.dp),
-                    ) {
-                        Text(
-                            text = "填充背景色",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = "填补主体暗部",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    PreviewCornerSwitch(
-                        checked = nightSubjectLightBackgroundEnabled,
-                        enabled = !isBusy,
                     )
                 }
             }
@@ -1453,7 +1560,88 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun GeneratedIconPreview(assets: PreviewAssets?, mode: PreviewMode) {
+    private fun DesktopIconPreview(
+        desktopBackground: PreviewDesktopBackground,
+        iconSize: Dp,
+        content: @Composable () -> Unit,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(116.dp)
+                .clip(RoundedCornerShape(18.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            PreviewDesktopBackgroundSurface(
+                option = desktopBackground,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(
+                modifier = Modifier.size(iconSize),
+                contentAlignment = Alignment.Center,
+            ) {
+                content()
+            }
+        }
+    }
+
+    @Composable
+    private fun PreviewDesktopBackgroundSurface(
+        option: PreviewDesktopBackground,
+        modifier: Modifier = Modifier,
+    ) {
+        val wallpaper = remember(option) {
+            if (option == PreviewDesktopBackground.Wallpaper) {
+                loadPreviewWallpaperBitmap()
+            } else {
+                null
+            }
+        }
+        val wallpaperImage = remember(wallpaper) { wallpaper?.asImageBitmap() }
+        Box(modifier = modifier.background(option.fallbackColor)) {
+            if (wallpaperImage != null) {
+                Image(
+                    bitmap = wallpaperImage,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else if (option == PreviewDesktopBackground.Wallpaper) {
+                ComposeCanvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF25262E),
+                                Color(0xFF4B5968),
+                                Color(0xFFB7A68D),
+                            ),
+                            start = Offset.Zero,
+                            end = Offset(w, h),
+                        ),
+                    )
+                    drawCircle(
+                        color = Color(0xFFEAE2D3).copy(alpha = 0.28f),
+                        radius = maxOf(w, h) * 0.34f,
+                        center = Offset(w * 0.22f, h * 0.18f),
+                    )
+                    drawCircle(
+                        color = Color(0xFF6A8FBD).copy(alpha = 0.24f),
+                        radius = maxOf(w, h) * 0.32f,
+                        center = Offset(w * 0.82f, h * 0.76f),
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun GeneratedIconPreview(
+        assets: PreviewAssets?,
+        mode: PreviewMode,
+        modifier: Modifier = Modifier.size(72.dp),
+    ) {
         val iconShape = RoundedCornerShape(20.dp)
         val md3LightBackground = systemMaterialColor("system_accent1_100", Color(0xFFEADDFF))
         val md3LightForeground = systemMaterialColor("system_accent1_700", Color(0xFF21005D))
@@ -1467,8 +1655,7 @@ class MainActivity : ComponentActivity() {
         }
 
         Box(
-            modifier = Modifier
-                .size(72.dp)
+            modifier = modifier
                 .clip(iconShape)
                 .background(background),
             contentAlignment = Alignment.Center,
@@ -1672,6 +1859,44 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun PreviewNightFillBackgroundRow() {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.58f))
+                .clickable(enabled = !isBusy) {
+                    updateNightSubjectLightBackgroundEnabled(!nightSubjectLightBackgroundEnabled)
+                }
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = "填充背景色",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "将暗色背景颜色填补到主体暗部",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+            PreviewCornerSwitch(
+                checked = nightSubjectLightBackgroundEnabled,
+                enabled = !isBusy,
+            )
+        }
+    }
+
+    @Composable
     private fun PreviewChoiceDialog(mode: PreviewMode, session: GenerationSession) {
         val defaultChoices = listOf(
             PreviewChoice.Original,
@@ -1735,11 +1960,15 @@ class MainActivity : ComponentActivity() {
                         value = foregroundSubjectPercent,
                         min = MIN_FOREGROUND_SUBJECT_PERCENT,
                         max = MAX_FOREGROUND_SUBJECT_PERCENT,
-                        step = 10,
+                        step = 1,
                         enabled = !isBusy,
                         showDots = false,
                         onValueChange = { updateForegroundSubjectPercent(it) },
                     )
+                    if (mode == PreviewMode.NormalDark) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        PreviewNightFillBackgroundRow()
+                    }
                     Spacer(modifier = Modifier.height(14.dp))
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -3118,7 +3347,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.weight(1f),
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
+            GeneratedPreviewSection()
+            Spacer(modifier = Modifier.height(14.dp))
             SettingLine(
                 title = "主体占比",
                 summary = "复杂游戏图标建议 100%，范围 20% 到 150%",
@@ -3129,12 +3359,11 @@ class MainActivity : ComponentActivity() {
                 value = foregroundSubjectPercent,
                 min = MIN_FOREGROUND_SUBJECT_PERCENT,
                 max = MAX_FOREGROUND_SUBJECT_PERCENT,
-                step = 10,
+                step = 1,
                 enabled = !isBusy,
                 showDots = false,
                 onValueChange = { updateForegroundSubjectPercent(it) },
             )
-            GeneratedPreviewSection()
             Spacer(modifier = Modifier.height(14.dp))
             AdvancedSeparationSettings()
         }
@@ -4684,6 +4913,17 @@ class MainActivity : ComponentActivity() {
         drawDrawable(entry.applicationInfo.loadIcon(packageManager), ICON_CACHE_SIZE, ICON_CACHE_SIZE, transparent = true)
             .also { it.prepareToDraw() }
 
+    private fun loadPreviewWallpaperBitmap(): Bitmap? =
+        runCatching {
+            val drawable = WallpaperManager.getInstance(this).drawable ?: return null
+            drawDrawable(
+                drawable = drawable,
+                width = PREVIEW_WALLPAPER_SAMPLE_SIZE,
+                height = PREVIEW_WALLPAPER_SAMPLE_SIZE,
+                transparent = false,
+            ).also { it.prepareToDraw() }
+        }.getOrNull()
+
     @Composable
     private fun BrandMark(size: Dp, text: String) {
         Box(
@@ -4887,6 +5127,11 @@ class MainActivity : ComponentActivity() {
         previewDirPath = prefs.getString(PREF_PREVIEW_DIR_PATH, null)
             ?.takeIf { it.isNotBlank() }
         previewSelections = PreviewSelections.fromPrefs(prefs)
+        previewDesktopBackground = PreviewDesktopBackground.fromName(
+            prefs.getString(PREF_PREVIEW_DESKTOP_BACKGROUND, null),
+        )
+        previewIconSizeDp = prefs.getInt(PREF_PREVIEW_ICON_SIZE_DP, DEFAULT_PREVIEW_ICON_SIZE_DP)
+            .coerceIn(MIN_PREVIEW_ICON_SIZE_DP, MAX_PREVIEW_ICON_SIZE_DP)
     }
 
     private fun saveUiState() {
@@ -4902,6 +5147,8 @@ class MainActivity : ComponentActivity() {
             .putString(PREF_PREVIEW_SELECTION_NORMAL_DARK, previewSelections.normalDark.name)
             .putString(PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT, previewSelections.monochromeLight.name)
             .putString(PREF_PREVIEW_SELECTION_MONOCHROME_DARK, previewSelections.monochromeDark.name)
+            .putString(PREF_PREVIEW_DESKTOP_BACKGROUND, previewDesktopBackground.name)
+            .putInt(PREF_PREVIEW_ICON_SIZE_DP, previewIconSizeDp)
             .apply()
     }
 
@@ -5921,6 +6168,20 @@ class MainActivity : ComponentActivity() {
             "正常暗色已关闭填充背景色"
         }
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updatePreviewIconSizeDp(value: Int) {
+        val next = value.coerceIn(MIN_PREVIEW_ICON_SIZE_DP, MAX_PREVIEW_ICON_SIZE_DP)
+        previewIconSizeDp = next
+        saveUiState()
+    }
+
+    private fun updatePreviewDesktopBackground(option: PreviewDesktopBackground) {
+        if (previewDesktopBackground == option) {
+            return
+        }
+        previewDesktopBackground = option
+        saveUiState()
     }
 
     private fun loadLiquidGlassSettings() {
@@ -14311,6 +14572,18 @@ class MainActivity : ComponentActivity() {
         MonochromeDark("单色暗色"),
     }
 
+    private enum class PreviewDesktopBackground(val label: String, val fallbackColor: Color) {
+        LightGray("浅灰", Color(0xFFE8E8E8)),
+        DarkGray("深灰", Color(0xFF4A4A4A)),
+        Black("纯黑", Color(0xFF050505)),
+        Wallpaper("桌面", Color(0xFF30333A));
+
+        companion object {
+            fun fromName(name: String?): PreviewDesktopBackground =
+                entries.firstOrNull { it.name == name } ?: DarkGray
+        }
+    }
+
     private enum class PreviewChoice(
         val label: String,
         val summary: String,
@@ -14636,6 +14909,8 @@ class MainActivity : ComponentActivity() {
         private const val PREF_PREVIEW_SELECTION_NORMAL_DARK = "preview_selection_normal_dark"
         private const val PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT = "preview_selection_monochrome_light"
         private const val PREF_PREVIEW_SELECTION_MONOCHROME_DARK = "preview_selection_monochrome_dark"
+        private const val PREF_PREVIEW_DESKTOP_BACKGROUND = "preview_desktop_background"
+        private const val PREF_PREVIEW_ICON_SIZE_DP = "preview_icon_size_dp"
         private const val EXTRA_DEBUG_GENERATE_PACKAGE = "dev.artplus.mobile.DEBUG_GENERATE_PACKAGE"
         private const val EXTRA_DEBUG_GENERATE_USE_GPT = "dev.artplus.mobile.DEBUG_GENERATE_USE_GPT"
         private const val EXTRA_DEBUG_GENERATE_INSTALL_ROOT = "dev.artplus.mobile.DEBUG_GENERATE_INSTALL_ROOT"
@@ -14755,6 +15030,10 @@ class MainActivity : ComponentActivity() {
         private const val PREVIEW_LIVE_ASSET_DEBOUNCE_MS = 70L
         private const val PREVIEW_OUTPUT_DEBOUNCE_MS = 140L
         private const val PREVIEW_REBUILD_DEBOUNCE_MS = 180L
+        private const val DEFAULT_PREVIEW_ICON_SIZE_DP = 70
+        private const val MIN_PREVIEW_ICON_SIZE_DP = 42
+        private const val MAX_PREVIEW_ICON_SIZE_DP = 96
+        private const val PREVIEW_WALLPAPER_SAMPLE_SIZE = 320
         private const val CHOICE_ROW_HORIZONTAL_BLEED_DP = 16
         private const val ICON_CACHE_SIZE = 96
         private const val PRELOAD_ICON_COUNT = 64
