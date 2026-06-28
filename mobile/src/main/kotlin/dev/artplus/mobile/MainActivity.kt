@@ -2694,7 +2694,7 @@ class MainActivity : ComponentActivity() {
             )
             NumberParameterControl(
                 title = "主体透明度",
-                summary = "控制主体层整体不透明度",
+                summary = "归一化主体后再控制整体不透明度",
                 value = liquidGlassSubjectOpacityPercent,
                 draftText = draftLiquidGlassSubjectOpacityText,
                 min = MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
@@ -8653,15 +8653,112 @@ class MainActivity : ComponentActivity() {
             .coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
         if (subjectOpacity > 0) {
             canvas.drawBitmap(
-                subject,
+                applyLiquidGlassSubjectOpacity(subject, subjectOpacity),
                 0f,
                 0f,
-                Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
-                    alpha = (subjectOpacity * 255f / 100f).roundToInt().coerceIn(0, 255)
-                },
+                Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG),
             )
         }
         return applyAlphaMask(out, shapeMask)
+    }
+
+    private fun applyLiquidGlassSubjectOpacity(source: Bitmap, opacityPercent: Int): Bitmap {
+        val targetAlpha = (opacityPercent.coerceIn(
+            MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+            MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+        ) * 255f / 100f).roundToInt().coerceIn(0, 255)
+        if (targetAlpha <= 0) {
+            return solidBitmap(source.width, source.height, AndroidColor.TRANSPARENT)
+        }
+
+        val pixels = IntArray(source.width * source.height)
+        source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
+        if (targetAlpha >= 255) {
+            val outPixels = IntArray(pixels.size)
+            for (i in pixels.indices) {
+                val pixel = pixels[i]
+                val alpha = AndroidColor.alpha(pixel)
+                outPixels[i] = if (alpha <= 0) {
+                    AndroidColor.TRANSPARENT
+                } else {
+                    val red = unpremultiplyChannel(AndroidColor.red(pixel), alpha)
+                    val green = unpremultiplyChannel(AndroidColor.green(pixel), alpha)
+                    val blue = unpremultiplyChannel(AndroidColor.blue(pixel), alpha)
+                    AndroidColor.argb(255, red, green, blue)
+                }
+            }
+            return Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888).apply {
+                setPixels(outPixels, 0, source.width, 0, 0, source.width, source.height)
+            }
+        }
+        val alphaScaleBase = liquidGlassSubjectAlphaScaleBase(pixels)
+        if (alphaScaleBase <= 0) {
+            return source
+        }
+        val solidAlphaCutoff = (alphaScaleBase * LIQUID_GLASS_SUBJECT_SOLID_ALPHA_RATIO)
+            .roundToInt()
+            .coerceIn(LOCAL_ALPHA_VISIBLE_THRESHOLD + 1, 255)
+
+        val outPixels = IntArray(pixels.size)
+        for (i in pixels.indices) {
+            val pixel = pixels[i]
+            val alpha = AndroidColor.alpha(pixel)
+            outPixels[i] = if (alpha <= 0) {
+                AndroidColor.TRANSPARENT
+            } else {
+                val red = unpremultiplyChannel(AndroidColor.red(pixel), alpha)
+                val green = unpremultiplyChannel(AndroidColor.green(pixel), alpha)
+                val blue = unpremultiplyChannel(AndroidColor.blue(pixel), alpha)
+                val normalizedAlpha = liquidGlassSubjectNormalizedAlpha(alpha, solidAlphaCutoff)
+                val outAlpha = (normalizedAlpha * targetAlpha).roundToInt().coerceIn(0, 255)
+                if (outAlpha <= 0) {
+                    AndroidColor.TRANSPARENT
+                } else {
+                    AndroidColor.argb(outAlpha, red, green, blue)
+                }
+            }
+        }
+        val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+        out.setPixels(outPixels, 0, source.width, 0, 0, source.width, source.height)
+        return out
+    }
+
+    private fun unpremultiplyChannel(channel: Int, alpha: Int): Int {
+        if (alpha <= 0) {
+            return 0
+        }
+        if (alpha >= 255) {
+            return channel.coerceIn(0, 255)
+        }
+        return ((channel * 255f) / alpha.toFloat()).roundToInt().coerceIn(0, 255)
+    }
+
+    private fun liquidGlassSubjectNormalizedAlpha(alpha: Int, solidAlphaCutoff: Int): Float {
+        if (alpha >= solidAlphaCutoff) {
+            return 1f
+        }
+        val range = (solidAlphaCutoff - LOCAL_ALPHA_VISIBLE_THRESHOLD)
+            .coerceAtLeast(1)
+            .toFloat()
+        val t = ((alpha - LOCAL_ALPHA_VISIBLE_THRESHOLD) / range).coerceIn(0f, 1f)
+        return t * t * (3f - 2f * t)
+    }
+
+    private fun liquidGlassSubjectAlphaScaleBase(pixels: IntArray): Int {
+        val visibleAlpha = pixels
+            .asSequence()
+            .map { AndroidColor.alpha(it) }
+            .filter { it > LOCAL_ALPHA_VISIBLE_THRESHOLD }
+            .toMutableList()
+        if (visibleAlpha.isEmpty()) {
+            return 0
+        }
+        val highAlpha = percentile(visibleAlpha, LIQUID_GLASS_SUBJECT_ALPHA_NORMALIZE_PERCENTILE)
+        val bodyAlpha = percentile(visibleAlpha, LIQUID_GLASS_SUBJECT_ALPHA_BODY_PERCENTILE)
+        return minOf(
+            highAlpha,
+            (bodyAlpha * LIQUID_GLASS_SUBJECT_ALPHA_OUTLIER_CAP).roundToInt(),
+        ).coerceIn(1, 255)
     }
 
     private fun drawLayeredLiquidGlassLight(canvas: Canvas, width: Int, height: Int, radius: Float) {
@@ -15206,6 +15303,10 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = 100
         private const val MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = 0
         private const val MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = 100
+        private const val LIQUID_GLASS_SUBJECT_ALPHA_NORMALIZE_PERCENTILE = 0.96
+        private const val LIQUID_GLASS_SUBJECT_ALPHA_BODY_PERCENTILE = 0.90
+        private const val LIQUID_GLASS_SUBJECT_ALPHA_OUTLIER_CAP = 1.25
+        private const val LIQUID_GLASS_SUBJECT_SOLID_ALPHA_RATIO = 0.48f
         private const val LEGACY_BACKGROUND_SEPARATION_MIN = 12.0
         private const val LEGACY_BACKGROUND_SEPARATION_MAX = 420.0
         private const val LEGACY_PLATE_REMOVAL_MIN = 0.0
