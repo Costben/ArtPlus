@@ -3527,75 +3527,85 @@ class MainActivity : ComponentActivity() {
             summary = "保存全部调参快照，可应用、对比或批量应用；批量流程只走本地。",
         ) {
             val activePreset = presets.firstOrNull { it.id == activePresetId }
-            SettingLine(
-                title = "当前预设",
-                summary = activePreset?.let { "已应用「${it.name}」" } ?: "未应用任何预设",
-                value = activePreset?.name ?: "—",
-            )
-            Row(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                TextButton(
-                    text = "保存当前为预设",
-                    onClick = {
-                        presetSaveName = ""
-                        presetSaveDialogVisible = true
+                SettingLine(
+                    title = "当前预设",
+                    summary = activePreset?.let { "已应用「${it.name}」" } ?: "未应用任何预设",
+                    value = activePreset?.name ?: "",
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    TextButton(
+                        text = "保存为预设",
+                        onClick = {
+                            presetSaveName = ""
+                            presetSaveDialogVisible = true
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        text = "还原上一步",
+                        onClick = { restoreLastParams() },
+                        enabled = lastParamsSnapshot != null,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                SettingLine(
+                    title = "批量落地方式",
+                    summary = "预设批量应用到所选应用时的写入方式",
+                    value = "",
+                )
+                SegmentedControl(
+                    labels = BatchOutputMode.entries.map { it.label },
+                    selectedIndex = BatchOutputMode.entries.indexOf(batchOutputMode).coerceAtLeast(0),
+                    onSelected = { index ->
+                        batchOutputMode = BatchOutputMode.entries[index]
+                        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                            .edit()
+                            .putString(PREF_BATCH_OUTPUT_MODE, batchOutputMode.name)
+                            .apply()
                     },
-                    modifier = Modifier.weight(1f),
                 )
-                TextButton(
-                    text = "还原上一步",
-                    onClick = { restoreLastParams() },
-                    enabled = lastParamsSnapshot != null,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            SettingLine(
-                title = "批量落地方式",
-                summary = "预设批量应用到所选应用时的写入方式",
-                value = batchOutputMode.label,
-            )
-            SegmentedControl(
-                labels = BatchOutputMode.entries.map { it.label },
-                selectedIndex = BatchOutputMode.entries.indexOf(batchOutputMode).coerceAtLeast(0),
-                onSelected = { index ->
-                    batchOutputMode = BatchOutputMode.entries[index]
-                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                        .edit()
-                        .putString(PREF_BATCH_OUTPUT_MODE, batchOutputMode.name)
-                        .apply()
-                },
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                TextButton(
-                    text = "导出全部",
-                    onClick = { exportPresetsToClipboard() },
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(
-                    text = "导入",
-                    onClick = {
-                        presetImportText = ""
-                        presetImportDialogVisible = true
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            if (presets.isEmpty()) {
-                Text(
-                    text = "还没有预设。先在本地规则/液态玻璃/RMBG 里调好参数，再点「保存当前为预设」。",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            } else {
-                presets.forEach { preset ->
-                    PresetRow(preset)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    TextButton(
+                        text = "导出全部",
+                        onClick = { exportPresetsToClipboard() },
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        text = "导入",
+                        onClick = {
+                            presetImportText = ""
+                            presetImportDialogVisible = true
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (presets.isEmpty()) {
+                    Text(
+                        text = "还没有预设。先在本地规则/液态玻璃/RMBG 里调好参数，再点「保存为预设」。",
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        presets.forEach { preset ->
+                            PresetRow(preset)
+                        }
+                    }
                 }
             }
         }
@@ -5941,7 +5951,9 @@ class MainActivity : ComponentActivity() {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            MetricPill(label = value)
+            if (value.isNotBlank()) {
+                MetricPill(label = value)
+            }
         }
     }
 
