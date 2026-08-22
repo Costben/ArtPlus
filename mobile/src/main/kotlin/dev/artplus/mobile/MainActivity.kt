@@ -2588,11 +2588,21 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(16.dp),
         ) {
+            val interactionSource = remember { MutableInteractionSource() }
+            val pressed by interactionSource.collectIsPressedAsState()
+            val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable(enabled = enabled) { currentPage = AppPage.AppPicker }
+                    .cardRowBleed(bleedPx)
+                    .background(cardRowPressedColor(pressed))
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        enabled = enabled,
+                        onClick = { currentPage = AppPage.AppPicker },
+                    )
+                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
                     .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -3079,13 +3089,21 @@ class MainActivity : ComponentActivity() {
         checked: Boolean,
         key: String,
     ) {
+        val interactionSource = remember { MutableInteractionSource() }
+        val pressed by interactionSource.collectIsPressedAsState()
+        val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .clickable(enabled = !isBusy) {
-                    updateLocalWorkflowToggle(key, !checked)
-                }
+                .cardRowBleed(bleedPx)
+                .background(cardRowPressedColor(pressed))
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = !isBusy,
+                    onClick = { updateLocalWorkflowToggle(key, !checked) },
+                )
+                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
                 .padding(vertical = 3.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -4815,13 +4833,21 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun PreviewStripSettingsCard() {
         SectionCard(title = "主页面预览", summary = "在主页面顶栏固定显示四种生成结果") {
+            val interactionSource = remember { MutableInteractionSource() }
+            val pressed by interactionSource.collectIsPressedAsState()
+            val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .clickable(enabled = !isBusy) {
-                        updatePreviewStripEnabled(!previewStripEnabled)
-                    }
+                    .cardRowBleed(bleedPx)
+                    .background(cardRowPressedColor(pressed))
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        enabled = !isBusy,
+                        onClick = { updatePreviewStripEnabled(!previewStripEnabled) },
+                    )
+                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
                     .padding(vertical = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -4853,11 +4879,21 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun LiquidGlassToggleRow() {
+        val interactionSource = remember { MutableInteractionSource() }
+        val pressed by interactionSource.collectIsPressedAsState()
+        val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .clickable(enabled = !isBusy) { updateLiquidGlassEnabled(!liquidGlassEnabled) }
+                .cardRowBleed(bleedPx)
+                .background(cardRowPressedColor(pressed))
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = !isBusy,
+                    onClick = { updateLiquidGlassEnabled(!liquidGlassEnabled) },
+                )
+                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
                 .padding(vertical = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -5326,6 +5362,28 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun Modifier.cardRowBleed(bleedPx: Int): Modifier =
+        layout { measurable, constraints ->
+            val expandedWidth = constraints.maxWidth + bleedPx * 2
+            val placeable = measurable.measure(
+                constraints.copy(
+                    minWidth = expandedWidth,
+                    maxWidth = expandedWidth,
+                ),
+            )
+            layout(constraints.maxWidth, placeable.height) {
+                placeable.place(-bleedPx, 0)
+            }
+        }
+
+    @Composable
+    private fun cardRowPressedColor(pressed: Boolean): Color =
+        if (pressed) {
+            MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.74f)
+        } else {
+            Color.Transparent
+        }
+
     @Composable
     private fun <T> ChoicePopupRow(
         title: String,
@@ -5342,11 +5400,7 @@ class MainActivity : ComponentActivity() {
         var anchorBounds by remember { mutableStateOf<Rect?>(null) }
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
-        val rowOverlay = if (pressed) {
-            MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.74f)
-        } else {
-            Color.Transparent
-        }
+        val rowOverlay = cardRowPressedColor(pressed)
         val density = LocalDensity.current
         val bleedPx = with(density) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
 
@@ -5367,18 +5421,7 @@ class MainActivity : ComponentActivity() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .layout { measurable, constraints ->
-                    val expandedWidth = constraints.maxWidth + bleedPx * 2
-                    val placeable = measurable.measure(
-                        constraints.copy(
-                            minWidth = expandedWidth,
-                            maxWidth = expandedWidth,
-                        ),
-                    )
-                    layout(constraints.maxWidth, placeable.height) {
-                        placeable.place(-bleedPx, 0)
-                    }
-                }
+                .cardRowBleed(bleedPx)
                 .onGloballyPositioned { anchorBounds = it.boundsInWindow() }
                 .clip(RoundedCornerShape(16.dp))
                 .background(rowOverlay)
@@ -5917,13 +5960,23 @@ class MainActivity : ComponentActivity() {
         enabled: Boolean = true,
         onClick: (() -> Unit)? = null,
     ) {
+        val interactionSource = remember { MutableInteractionSource() }
+        val pressed by interactionSource.collectIsPressedAsState()
+        val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
         val rowModifier = if (onClick == null) {
             Modifier.fillMaxWidth()
         } else {
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .clickable(enabled = enabled, onClick = onClick)
+                .cardRowBleed(bleedPx)
+                .background(cardRowPressedColor(pressed))
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = onClick,
+                )
+                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
                 .padding(vertical = 2.dp)
         }
         Row(
@@ -5969,11 +6022,21 @@ class MainActivity : ComponentActivity() {
         } else {
             MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.52f)
         }
+        val interactionSource = remember { MutableInteractionSource() }
+        val pressed by interactionSource.collectIsPressedAsState()
+        val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .clickable(enabled = enabled, onClick = onClick)
+                .cardRowBleed(bleedPx)
+                .background(cardRowPressedColor(pressed))
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = onClick,
+                )
+                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
                 .padding(vertical = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
