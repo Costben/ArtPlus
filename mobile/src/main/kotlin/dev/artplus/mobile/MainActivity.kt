@@ -101,6 +101,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -108,6 +110,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -121,6 +124,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -134,6 +138,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.layout
@@ -2591,72 +2597,82 @@ class MainActivity : ComponentActivity() {
             val interactionSource = remember { MutableInteractionSource() }
             val pressed by interactionSource.collectIsPressedAsState()
             val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .cardRowBleed(bleedPx)
-                    .background(cardRowPressedColor(pressed))
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        enabled = enabled,
-                        onClick = { currentPage = AppPage.AppPicker },
-                    )
-                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                    .padding(vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                if (selectedApp == null) {
-                    BrandMark(size = 48.dp, text = "UX")
-                } else {
-                    AppIcon(selectedApp, 48.dp)
-                }
+            val bridge = remember { SectionCardPressBridge() }
+            CompositionLocalProvider(LocalSectionCardPressBridge provides bridge) {
                 Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .sectionPressOverlay(bridge, extendTopEdge = true),
                 ) {
                     Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .trackSectionPress(bridge, pressed)
+                            .cardRowBleed(bleedPx)
+                            .background(cardRowPressedColor(pressed))
+                            .clickable(
+                                interactionSource = interactionSource,
+                                indication = null,
+                                enabled = enabled,
+                                onClick = { currentPage = AppPage.AppPicker },
+                            )
+                            .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
+                            .padding(vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        StatusDot(active = isBusy)
-                        Text(
-                            text = statusLabel,
-                            style = MiuixTheme.textStyles.title4,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                        if (selectedApp == null) {
+                            BrandMark(size = 48.dp, text = "UX")
+                        } else {
+                            AppIcon(selectedApp, 48.dp)
+                        }
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                StatusDot(active = isBusy)
+                                Text(
+                                    text = statusLabel,
+                                    style = MiuixTheme.textStyles.title4,
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            Text(
+                                text = selectedApp?.label ?: "选择一个应用开始生成",
+                                style = MiuixTheme.textStyles.body1,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = selectedApp?.packageName ?: statusText,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = "启动器 $launcherCount 个 / 全部 $totalCount 个 / 已生成 $generatedCount 个",
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Image(
+                            imageVector = Lucide.ChevronRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
                         )
                     }
-                    Text(
-                        text = selectedApp?.label ?: "选择一个应用开始生成",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = selectedApp?.packageName ?: statusText,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "启动器 $launcherCount 个 / 全部 $totalCount 个 / 已生成 $generatedCount 个",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
                 }
-                Image(
-                    imageVector = Lucide.ChevronRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                )
             }
         }
     }
@@ -3092,9 +3108,11 @@ class MainActivity : ComponentActivity() {
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
         val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
+        val bridge = LocalSectionCardPressBridge.current
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .trackSectionPress(bridge, pressed)
                 .cardRowBleed(bleedPx)
                 .background(cardRowPressedColor(pressed))
                 .clickable(
@@ -4836,9 +4854,11 @@ class MainActivity : ComponentActivity() {
             val interactionSource = remember { MutableInteractionSource() }
             val pressed by interactionSource.collectIsPressedAsState()
             val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
+            val bridge = LocalSectionCardPressBridge.current
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .trackSectionPress(bridge, pressed)
                     .cardRowBleed(bleedPx)
                     .background(cardRowPressedColor(pressed))
                     .clickable(
@@ -4882,9 +4902,11 @@ class MainActivity : ComponentActivity() {
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
         val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
+        val bridge = LocalSectionCardPressBridge.current
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .trackSectionPress(bridge, pressed)
                 .cardRowBleed(bleedPx)
                 .background(cardRowPressedColor(pressed))
                 .clickable(
@@ -5295,7 +5317,17 @@ class MainActivity : ComponentActivity() {
             if (!title.isNullOrBlank() || !summary.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))
             }
-            content()
+            val bridge = remember { SectionCardPressBridge() }
+            val extendTopEdge = title.isNullOrBlank() && summary.isNullOrBlank()
+            CompositionLocalProvider(LocalSectionCardPressBridge provides bridge) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .sectionPressOverlay(bridge, extendTopEdge),
+                ) {
+                    content()
+                }
+            }
         }
     }
 
@@ -5385,6 +5417,44 @@ class MainActivity : ComponentActivity() {
         }
 
     @Composable
+    private fun Modifier.sectionPressOverlay(
+        bridge: SectionCardPressBridge,
+        extendTopEdge: Boolean,
+    ): Modifier {
+        var containerCoords by remember { mutableStateOf<LayoutCoordinates?>(null) }
+        val highlightColor = cardRowPressedColor(true)
+        return this
+            .onGloballyPositioned { containerCoords = it }
+            .drawBehind {
+                val self = containerCoords ?: return@drawBehind
+                val originY = self.positionInRoot().y
+                val insetPx = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.toPx()
+                var topPressed = false
+                var bottomPressed = false
+                for ((row, _) in bridge.pressedRows) {
+                    val rowTop = row.positionInRoot().y - originY
+                    val rowBottom = rowTop + row.size.height
+                    if (rowTop <= 1f && extendTopEdge) topPressed = true
+                    if (rowBottom >= size.height - 1f) bottomPressed = true
+                }
+                if (topPressed) {
+                    drawRect(
+                        color = highlightColor,
+                        topLeft = Offset(-insetPx, -insetPx),
+                        size = Size(size.width + insetPx * 2f, insetPx),
+                    )
+                }
+                if (bottomPressed) {
+                    drawRect(
+                        color = highlightColor,
+                        topLeft = Offset(-insetPx, size.height),
+                        size = Size(size.width + insetPx * 2f, insetPx),
+                    )
+                }
+            }
+    }
+
+    @Composable
     private fun <T> ChoicePopupRow(
         title: String,
         summary: String,
@@ -5403,6 +5473,7 @@ class MainActivity : ComponentActivity() {
         val rowOverlay = cardRowPressedColor(pressed)
         val density = LocalDensity.current
         val bleedPx = with(density) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
+        val bridge = LocalSectionCardPressBridge.current
 
         fun openDialog() {
             openChoicePopup(
@@ -5421,6 +5492,7 @@ class MainActivity : ComponentActivity() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .trackSectionPress(bridge, pressed)
                 .cardRowBleed(bleedPx)
                 .onGloballyPositioned { anchorBounds = it.boundsInWindow() }
                 .clip(RoundedCornerShape(16.dp))
@@ -5963,11 +6035,13 @@ class MainActivity : ComponentActivity() {
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
         val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
+        val bridge = LocalSectionCardPressBridge.current
         val rowModifier = if (onClick == null) {
             Modifier.fillMaxWidth()
         } else {
             Modifier
                 .fillMaxWidth()
+                .trackSectionPress(bridge, pressed)
                 .cardRowBleed(bleedPx)
                 .background(cardRowPressedColor(pressed))
                 .clickable(
@@ -6025,9 +6099,11 @@ class MainActivity : ComponentActivity() {
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
         val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
+        val bridge = LocalSectionCardPressBridge.current
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .trackSectionPress(bridge, pressed)
                 .cardRowBleed(bleedPx)
                 .background(cardRowPressedColor(pressed))
                 .clickable(
@@ -17141,3 +17217,29 @@ class MainActivity : ComponentActivity() {
         )
     }
 }
+
+/** Per-card press state shared from rows to their enclosing card container. */
+private class SectionCardPressBridge {
+    val pressedRows = mutableStateMapOf<LayoutCoordinates, Boolean>()
+
+    fun track(coordinates: LayoutCoordinates, active: Boolean) {
+        if (active) {
+            pressedRows[coordinates] = true
+        } else {
+            pressedRows.remove(coordinates)
+        }
+    }
+}
+
+private val LocalSectionCardPressBridge = compositionLocalOf<SectionCardPressBridge?> { null }
+
+/**
+ * Reports this row's press state to the enclosing card container so it can extend
+ * the highlight over the card's inner padding when a first/last row is pressed.
+ */
+private fun Modifier.trackSectionPress(bridge: SectionCardPressBridge?, active: Boolean): Modifier =
+    if (bridge == null) {
+        this
+    } else {
+        onGloballyPositioned { bridge.track(it, active) }
+    }
