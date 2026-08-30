@@ -51,6 +51,8 @@ kotlin {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:2.3.20")
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.compose.animation:animation:1.10.5")
     implementation("com.caverock:androidsvg-aar:1.4")

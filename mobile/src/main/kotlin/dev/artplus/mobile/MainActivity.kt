@@ -138,6 +138,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.ContentScale
@@ -363,6 +368,7 @@ class MainActivity : ComponentActivity() {
     private var draftJsonParamsText by mutableStateOf("")
     private val presetStore by lazy { PresetStore(getSharedPreferences(PREFS_NAME, MODE_PRIVATE)) }
     private var currentPage by mutableStateOf(AppPage.Home)
+    private var showSystemApps by mutableStateOf(false)
     private var generatedFilter by mutableStateOf(GeneratedFilter.All)
     private var generatedPackageNames by mutableStateOf<Set<String>>(emptySet())
     private var multiSelectedPackageNames by mutableStateOf<Set<String>>(emptySet())
@@ -610,7 +616,7 @@ class MainActivity : ComponentActivity() {
             derivedStateOf { apps.firstOrNull { it.packageName == selectedPackageName } }
         }
         val scopedApps by remember {
-            derivedStateOf { apps.filter { it.launchable } }
+            derivedStateOf { apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, showSystemApps, packageName) } }
         }
         val generatedCount by remember {
             derivedStateOf { scopedApps.count { it.packageName in generatedPackageNames } }
@@ -2679,8 +2685,21 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun EmptyAppListCard() {
+        val hasHiddenSystemApps = !showSystemApps && apps.any { isSystemApp(it.applicationInfo) && it.packageName != packageName }
+        val hintText = when {
+            queryText.isNotBlank() && !showSystemApps && hasHiddenSystemApps ->
+                "没有匹配“${queryText.trim()}”的应用。尝试清空搜索词或打开“显示系统应用”开关查看系统应用。"
+            queryText.isNotBlank() ->
+                "没有匹配“${queryText.trim()}”的应用，尝试清空搜索词。"
+            hasHiddenSystemApps ->
+                "当前已隐藏系统应用。打开“显示系统应用”开关可查看系统应用，或在系统设置中允许 ArtPlus 读取应用列表后刷新。"
+            else ->
+                "清空搜索词，或在系统设置中允许 ArtPlus 读取应用列表后刷新。"
+        }
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().semantics {
+                contentDescription = "空应用列表提示"
+            },
             insideMargin = PaddingValues(16.dp),
         ) {
             Text(
@@ -2689,21 +2708,39 @@ class MainActivity : ComponentActivity() {
                 color = MiuixTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { contentDescription = "没有可显示的应用" },
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "清空搜索词，或在系统设置中允许 ArtPlus 读取应用列表后刷新。",
+                text = hintText,
                 style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 2,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.semantics { contentDescription = hintText },
             )
             Spacer(modifier = Modifier.height(12.dp))
+            if (hasHiddenSystemApps && !showSystemApps) {
+                TextButton(
+                    text = "显示系统应用",
+                    onClick = {
+                        showSystemApps = true
+                        saveUiState()
+                    },
+                    enabled = !isBusy,
+                    modifier = Modifier.fillMaxWidth().semantics {
+                        contentDescription = "显示系统应用按钮"
+                    },
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             TextButton(
                 text = "刷新应用列表",
                 onClick = { loadApps() },
                 enabled = !isBusy,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().semantics {
+                    contentDescription = "刷新应用列表"
+                },
             )
         }
     }
@@ -5022,6 +5059,67 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun ShowSystemAppsToggleRow() {
+        val interactionSource = remember { MutableInteractionSource() }
+        val pressed by interactionSource.collectIsPressedAsState()
+        val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
+        val bridge = LocalSectionCardPressBridge.current
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .trackSectionPress(bridge, pressed)
+                .cardRowBleed(bleedPx)
+                .background(cardRowPressedColor(pressed))
+                .semantics {
+                    contentDescription = "显示系统应用开关"
+                    stateDescription = if (showSystemApps) "已开启" else "已关闭"
+                    role = Role.Switch
+                }
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = !isBusy,
+                    onClick = {
+                        showSystemApps = !showSystemApps
+                        saveUiState()
+                    },
+                )
+                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
+                .padding(vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SettingsLineIcon(kind = SettingsIconKind.Shield)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Text(
+                    text = "显示系统应用",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = if (showSystemApps) "已包含系统应用，可搜索和批量选择" else "仅显示用户应用；系统应用已隐藏",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Box(
+                modifier = Modifier.semantics {
+                    contentDescription = "显示系统应用"
+                }
+            ) {
+                LiquidGlassSwitch(checked = showSystemApps, enabled = !isBusy)
+            }
+        }
+    }
+
+    @Composable
     private fun AppPickerControlsCard(
         filteredCount: Int,
         totalCount: Int,
@@ -5079,6 +5177,9 @@ class MainActivity : ComponentActivity() {
                         saveUiState()
                     }
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                ShowSystemAppsToggleRow()
+                Spacer(modifier = Modifier.height(4.dp))
                 InlineInputField(
                     value = queryText,
                     onValueChange = {
@@ -6150,6 +6251,7 @@ class MainActivity : ComponentActivity() {
         when (title) {
             "应用范围" -> SettingsIconKind.Grid
             "应用列表" -> SettingsIconKind.Grid
+            "显示系统应用" -> SettingsIconKind.Shield
             "已生成" -> SettingsIconKind.CheckBadge
             "使用情况访问" -> SettingsIconKind.Shield
             "Root 目标" -> SettingsIconKind.Shield
@@ -6506,6 +6608,7 @@ class MainActivity : ComponentActivity() {
         selectedPackageName = prefs.getString(PREF_SELECTED_PACKAGE_NAME, null)
             ?.takeIf { it.isNotBlank() }
         generatedFilter = GeneratedFilter.fromName(prefs.getString(PREF_GENERATED_FILTER, null))
+        showSystemApps = prefs.getBoolean(PREF_SHOW_SYSTEM_APPS, false)
         queryText = prefs.getString(PREF_QUERY_TEXT, "") ?: ""
         advancedSettingsCategory = AdvancedSettingsCategory.fromName(
             prefs.getString(PREF_ADVANCED_SETTINGS_CATEGORY, null),
@@ -6534,6 +6637,7 @@ class MainActivity : ComponentActivity() {
             .edit()
             .putString(PREF_SELECTED_PACKAGE_NAME, selectedPackageName)
             .putString(PREF_GENERATED_FILTER, generatedFilter.name)
+            .putBoolean(PREF_SHOW_SYSTEM_APPS, showSystemApps)
             .putString(PREF_QUERY_TEXT, queryText)
             .putString(PREF_ADVANCED_SETTINGS_CATEGORY, advancedSettingsCategory.name)
             .putString(PREF_ADVANCED_SETTINGS_TAB, advancedSettingsTab.name)
@@ -6806,6 +6910,27 @@ class MainActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
         }
+
+    private fun isSystemApp(applicationInfo: ApplicationInfo): Boolean = AppVisibility.isSystemApp(applicationInfo)
+
+    internal fun isSystemAppFlags(flags: Int): Boolean = AppVisibility.isSystemAppFlags(flags)
+
+    private fun shouldShowInAppPicker(entry: AppEntry): Boolean = AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, showSystemApps, packageName)
+
+    internal fun shouldShowInAppPickerForTest(
+        flags: Int,
+        pkg: String,
+        selfPackageName: String,
+        showSystemApps: Boolean,
+    ): Boolean = AppVisibility.shouldShow(flags, pkg, selfPackageName, showSystemApps)
+
+    internal fun shouldShowInAppPickerForTestWithLaunchable(
+        flags: Int,
+        pkg: String,
+        selfPackageName: String,
+        showSystemApps: Boolean,
+        launchable: Boolean,
+    ): Boolean = AppVisibility.shouldShowInPicker(flags, pkg, selfPackageName, showSystemApps, launchable)
 
     private fun isDebugGenerateIntent(intent: Intent?): Boolean =
         intent?.getStringExtra(EXTRA_DEBUG_GENERATE_PACKAGE)?.isNotBlank() == true &&
@@ -16894,6 +17019,7 @@ class MainActivity : ComponentActivity() {
         private const val PREF_PREVIEW_SELECTION_MONOCHROME_DARK = "preview_selection_monochrome_dark"
         private const val PREF_PREVIEW_DESKTOP_BACKGROUND = "preview_desktop_background"
         private const val PREF_PREVIEW_ICON_SIZE_DP = "preview_icon_size_dp"
+        private const val PREF_SHOW_SYSTEM_APPS = "show_system_apps"
         private const val EXTRA_DEBUG_GENERATE_PACKAGE = "dev.artplus.mobile.DEBUG_GENERATE_PACKAGE"
         private const val EXTRA_DEBUG_GENERATE_USE_GPT = "dev.artplus.mobile.DEBUG_GENERATE_USE_GPT"
         private const val EXTRA_DEBUG_GENERATE_INSTALL_ROOT = "dev.artplus.mobile.DEBUG_GENERATE_INSTALL_ROOT"
