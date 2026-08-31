@@ -59,4 +59,6 @@ dependencies {
     implementation("com.composables:icons-lucide-android:1.1.0")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
     implementation("top.yukonga.miuix.kmp:miuix-android:0.8.8")
+    implementation("io.github.kyant0:backdrop:1.0.6")
+    implementation("io.github.kyant0:shapes:1.2.0")
 }
