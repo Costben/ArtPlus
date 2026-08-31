@@ -12,8 +12,8 @@ android {
         applicationId = "dev.artplus.mobile"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.2.2"
+        versionCode = 8
+        versionName = "1.3"
 
         ndk {
             abiFilters += listOf("arm64-v8a")
@@ -47,6 +47,7 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        freeCompilerArgs.add("-Xcontext-parameters")
     }
 }
 
@@ -59,6 +60,5 @@ dependencies {
     implementation("com.composables:icons-lucide-android:1.1.0")
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
     implementation("top.yukonga.miuix.kmp:miuix-android:0.8.8")
-    implementation("io.github.kyant0:backdrop:1.0.6")
     implementation("io.github.kyant0:shapes:1.2.0")
 }
