@@ -273,9 +273,10 @@ class MainActivity : ComponentActivity() {
     private var outputTreeUri by mutableStateOf<Uri?>(null)
     private var isBusy by mutableStateOf(false)
     private var didRequestAppLoad = false
-    private var gptImageMode by mutableStateOf(GptImageMode.Responses)
+    private var gptImageMode by mutableStateOf(GptImageMode.Images)
     private var gptPromptPreset by mutableStateOf(GptPromptPreset.StableCutout)
     private var gptCustomPrompt by mutableStateOf("")
+    private var gptModelId by mutableStateOf("")
     private var gptBaseUrl by mutableStateOf("")
     private var gptApiKey by mutableStateOf("")
     private var gptSettingsSaveStatus by mutableStateOf("")
@@ -353,6 +354,8 @@ class MainActivity : ComponentActivity() {
     private var localEdgePolishEnabled by mutableStateOf(true)
     private var nightSubjectLightBackgroundEnabled by mutableStateOf(false)
     private var lastParamsSnapshot by mutableStateOf<TuningParams?>(null)
+    private val tuningHistory = mutableStateListOf<TuningParams>()
+    private var tuningHistoryIndex by mutableStateOf(-1)
     private var activePresetId by mutableStateOf<String?>(null)
     private var presetListVersion by mutableStateOf(0)
     private var batchOutputMode by mutableStateOf(BatchOutputMode.Root)
@@ -499,6 +502,7 @@ class MainActivity : ComponentActivity() {
         title = "ArtPlus Mobile"
         loadGptSettings()
         loadTuningParams()
+        initTuningHistory()
         loadRmbgSettings()
         loadGeneratedPackageCache()
         loadUiState()
@@ -958,20 +962,57 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         actions = {
-                            Box(
-                                modifier = Modifier
-                                    .padding(end = 18.dp)
-                                    .size(46.dp)
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .clickable(enabled = !isBusy) { currentPage = AppPage.Settings },
-                                contentAlignment = Alignment.Center,
+                            Row(
+                                modifier = Modifier.padding(end = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
-                                Image(
-                                    imageVector = Lucide.SlidersHorizontal,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(21.dp),
-                                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .clickable(enabled = canUndoTuning() && !isBusy) { undoTuning() },
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Image(
+                                        imageVector = Lucide.ChevronLeft,
+                                        contentDescription = "后退",
+                                        modifier = Modifier.size(21.dp),
+                                        colorFilter = ColorFilter.tint(
+                                            if (canUndoTuning() && !isBusy) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.45f),
+                                        ),
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .clickable(enabled = canRedoTuning() && !isBusy) { redoTuning() },
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Image(
+                                        imageVector = Lucide.ChevronRight,
+                                        contentDescription = "前进",
+                                        modifier = Modifier.size(21.dp),
+                                        colorFilter = ColorFilter.tint(
+                                            if (canRedoTuning() && !isBusy) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.45f),
+                                        ),
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .clickable(enabled = !isBusy) { currentPage = AppPage.Settings },
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Image(
+                                        imageVector = Lucide.SlidersHorizontal,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(21.dp),
+                                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                                    )
+                                }
                             }
                         },
                     )
@@ -1087,6 +1128,24 @@ class MainActivity : ComponentActivity() {
                         PreviewStripSettingsCard()
                         GptSettingsCard()
                         RmbgComponentCard()
+                        SectionCard(
+                            title = "恢复默认",
+                            summary = "一键恢复全部调参到出厂默认值，不会删除本地 RMBG 模型与已生成的图标包",
+                        ) {
+                            TextButton(
+                                text = "恢复默认配置",
+                                onClick = { resetToDefaults() },
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Text(
+                                text = "恢复后可通过首页预设卡片的「还原上一步」撤销",
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                        }
                     }
                 }
             }
@@ -3438,7 +3497,6 @@ class MainActivity : ComponentActivity() {
         presetStore.activePresetId = preset.id
         activePresetId = preset.id
         val outputUri = outputTreeUri
-        val outputMode = batchOutputMode
         val selectedAtStart = selectedPackageName
         startUiFriendlyThread("ArtPlusPresetBatch") {
             val successes = mutableListOf<String>()
@@ -3467,9 +3525,6 @@ class MainActivity : ComponentActivity() {
                         val result = generateArtPlusPackage(app, useGpt = false)
                         if (outputUri != null) {
                             exportToTree(result.outDir)
-                        }
-                        if (outputMode == BatchOutputMode.Root) {
-                            installWithRoot(result.outDir, packageName, RootWriteMode.All)
                         }
                         successes += packageName
                         if (packageName == selectedAtStart) {
@@ -3504,6 +3559,113 @@ class MainActivity : ComponentActivity() {
                         failures.isEmpty() -> "预设「${preset.name}」批量完成: ${successes.size}/${batchPackageNames.size}"
                         successes.isEmpty() -> "预设批量失败: ${failures.firstOrNull().orEmpty()}"
                         else -> "预设批量完成 ${successes.size} 个，失败 ${failures.size} 个：${failures.firstOrNull().orEmpty()}"
+                    }
+                }
+            } finally {
+                runOnUiThread {
+                    isBusy = false
+                    isGptPreviewLoading = false
+                    isGeneratingGptCandidate = false
+                    isGeneratingRmbgCandidate = false
+                    rmbgCandidatePackageName = null
+                    rmbgCandidateMode = null
+                    rmbgCandidateStatusText = ""
+                    batchApplyProgress = null
+                }
+            }
+        }
+    }
+
+    /** 在 APK 选择页多选态下套用当前预设/当前调参批量生成（本地）。 */
+    private fun applyCurrentPresetBatch() {
+        val preset = activePresetId?.let { presetStore.get(it) }
+        if (preset != null) {
+            applyPresetToSelectedApps(preset)
+            return
+        }
+        // 未选择任何预设：直接按当前调参批量生成
+        val batchPackageNames = multiSelectedPackageNames.toList().sorted()
+        if (batchPackageNames.isEmpty()) {
+            statusText = "先在应用页多选要批量处理的应用"
+            return
+        }
+        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
+            statusText = "当前有任务在运行，请等待"
+            return
+        }
+        isBusy = true
+        previewChoiceMode = null
+        batchApplyProgress = BatchApplyProgress(
+            title = "批量生成",
+            completed = 0,
+            total = batchPackageNames.size,
+            currentLabel = "准备处理 ${batchPackageNames.size} 个 APK",
+            failures = 0,
+        )
+        statusText = "按当前调参批量处理中: 0/${batchPackageNames.size}"
+        val outputUri = outputTreeUri
+        val selectedAtStart = selectedPackageName
+        startUiFriendlyThread("ArtPlusCurrentBatch") {
+            val successes = mutableListOf<String>()
+            val failures = mutableListOf<String>()
+            var selectedResult: GenerationResult? = null
+            try {
+                batchPackageNames.forEachIndexed { index, packageName ->
+                    val app = apps.firstOrNull { it.packageName == packageName }
+                    if (app == null) {
+                        failures += "$packageName: 应用不存在"
+                        updateBatchApplyProgress(
+                            completed = index + 1,
+                            total = batchPackageNames.size,
+                            currentLabel = "跳过: $packageName",
+                            failures = failures.size,
+                        )
+                        return@forEachIndexed
+                    }
+                    updateBatchApplyProgress(
+                        completed = index,
+                        total = batchPackageNames.size,
+                        currentLabel = "处理中: ${app.label} ($packageName)",
+                        failures = failures.size,
+                    )
+                    try {
+                        val result = generateArtPlusPackage(app, useGpt = false)
+                        if (outputUri != null) {
+                            exportToTree(result.outDir)
+                        }
+                        successes += packageName
+                        if (packageName == selectedAtStart) {
+                            selectedResult = result
+                        }
+                    } catch (error: Throwable) {
+                        failures += "$packageName: ${error.message ?: error.javaClass.simpleName}"
+                    }
+                    updateBatchApplyProgress(
+                        completed = index + 1,
+                        total = batchPackageNames.size,
+                        currentLabel = "已完成: ${app.label} ($packageName)",
+                        failures = failures.size,
+                    )
+                }
+                runOnUiThread {
+                    if (successes.isNotEmpty()) {
+                        updateGeneratedPackageCache(generatedPackageNames + successes)
+                        multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
+                    }
+                    val result = selectedResult
+                    if (result != null && selectedPackageName == selectedAtStart) {
+                        activeGenerationSession = result.session
+                        previewSelections = result.selections
+                        previewChoiceMode = null
+                        previewPackageName = result.session.packageName
+                        previewDirPath = result.outDir.absolutePath
+                        previewVersion += 1
+                        saveUiState()
+                    }
+                    statusText = when {
+                        failures.isEmpty() -> "按当前调参批量完成: ${successes.size}/${batchPackageNames.size}"
+                        successes.isEmpty() -> "批量失败: ${failures.firstOrNull().orEmpty()}"
+                        else -> "批量完成 ${successes.size} 个，失败 ${failures.size} 个：${failures.firstOrNull().orEmpty()}"
                     }
                 }
             } finally {
@@ -3604,11 +3766,74 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                SettingLine(
-                    title = "当前预设",
-                    summary = activePreset?.let { "已应用「${it.name}」" } ?: "未应用任何预设",
-                    value = activePreset?.name ?: "",
-                )
+                // 单槽位点击切换：点击当前预设槽位弹出列表上下选择（Issue 反馈）
+                var presetPickerAnchorBounds by remember(presetListVersion) { mutableStateOf<Rect?>(null) }
+                val presetPickerInteraction = remember(presetListVersion) { MutableInteractionSource() }
+                val presetPickerPressed by presetPickerInteraction.collectIsPressedAsState()
+                val presetPickerBridge = LocalSectionCardPressBridge.current
+                val presetPickerBleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
+                val presetPickerEnabled = presets.isNotEmpty() && !isBusy
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .trackSectionPress(presetPickerBridge, presetPickerPressed)
+                        .cardRowBleed(presetPickerBleedPx)
+                        .onGloballyPositioned { presetPickerAnchorBounds = it.boundsInWindow() }
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(cardRowPressedColor(presetPickerPressed))
+                        .clickable(
+                            interactionSource = presetPickerInteraction,
+                            indication = null,
+                            enabled = presetPickerEnabled,
+                            onClick = {
+                                openChoicePopup(
+                                    anchorBounds = presetPickerAnchorBounds,
+                                    items = presets.map { preset ->
+                                        ChoicePopupItem(
+                                            label = preset.name,
+                                            summary = formatPresetDate(preset.updatedAt) + if (preset.id == activePresetId) " · 已应用" else "",
+                                            selected = preset.id == activePresetId,
+                                            onSelected = { applyPreset(preset) },
+                                        )
+                                    },
+                                )
+                            },
+                        )
+                        .padding(vertical = 10.dp),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        SettingsLineIcon(kind = SettingsIconKind.Layers)
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(3.dp),
+                        ) {
+                            Text(
+                                text = "当前预设",
+                                style = MiuixTheme.textStyles.body1,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Text(
+                                text = activePreset?.let { "已应用「${it.name}」· 点击切换" } ?: if (presets.isEmpty()) "暂无预设 · 先保存一个" else "未应用任何预设 · 点击选择",
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        if (activePreset != null) {
+                            MetricPill(label = activePreset.name)
+                        }
+                        ChoicePopupChevron()
+                    }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -3628,38 +3853,31 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.weight(1f),
                     )
                 }
-                SettingLine(
-                    title = "批量落地方式",
-                    summary = "预设批量应用到所选应用时的写入方式",
-                    value = "",
-                )
-                SegmentedControl(
-                    labels = BatchOutputMode.entries.map { it.label },
-                    selectedIndex = BatchOutputMode.entries.indexOf(batchOutputMode).coerceAtLeast(0),
-                    onSelected = { index ->
-                        batchOutputMode = BatchOutputMode.entries[index]
-                        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                            .edit()
-                            .putString(PREF_BATCH_OUTPUT_MODE, batchOutputMode.name)
-                            .apply()
-                    },
+                TextButton(
+                    text = "恢复默认配置",
+                    onClick = { resetToDefaults() },
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    TextButton(
-                        text = "导出全部",
+                    CompactActionButton(
+                        text = "导出到剪贴板",
                         onClick = { exportPresetsToClipboard() },
+                        enabled = true,
                         modifier = Modifier.weight(1f),
+                        height = 48.dp,
                     )
-                    TextButton(
+                    CompactActionButton(
                         text = "导入",
                         onClick = {
                             presetImportText = ""
                             presetImportDialogVisible = true
                         },
+                        enabled = true,
                         modifier = Modifier.weight(1f),
+                        height = 48.dp,
                     )
                 }
                 if (presets.isEmpty()) {
@@ -3741,14 +3959,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.weight(1f),
                 )
                 TextButton(
-                    text = "对比",
+                    text = "对比当前",
                     onClick = { comparePreset(preset) },
-                    enabled = !isBusy,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(
-                    text = "批量",
-                    onClick = { applyPresetToSelectedApps(preset) },
                     enabled = !isBusy,
                     modifier = Modifier.weight(1f),
                 )
@@ -4597,7 +4809,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.weight(1f),
                 ) {
                     Text(
-                        text = "GPT生成",
+                        text = "AI生成",
                         style = MiuixTheme.textStyles.button,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -4704,6 +4916,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
+            InlineInputField(
+                value = gptModelId,
+                onValueChange = {
+                    gptModelId = it
+                    gptSettingsSaveStatus = ""
+                },
+                label = "模型 ID",
+                icon = SettingsIconKind.Layers,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             InlineInputField(
                 value = gptBaseUrl,
                 onValueChange = {
@@ -4877,12 +5099,36 @@ class MainActivity : ComponentActivity() {
             )
             Spacer(modifier = Modifier.height(10.dp))
             SettingNavigationLine(
-                title = "外部导出",
+                title = "外部导出目录",
                 summary = if (outputTreeUri == null) "未选择时仅保存在应用私有目录" else "生成后同步复制到你选择的目录",
                 enabled = !isBusy,
                 onClick = { chooseTreeLauncher.launch(null) },
             )
+            Spacer(modifier = Modifier.height(10.dp))
+            TextButton(
+                text = "导出到外部目录",
+                onClick = { exportCurrentToExternal() },
+                enabled = !isBusy,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
+    }
+
+    private fun exportCurrentToExternal() {
+        if (outputTreeUri == null) {
+            statusText = "先在上方选择外部导出目录"
+            return
+        }
+        val dir = activeGenerationSession?.outDir
+            ?: previewDirPath?.let { File(it) }?.takeIf { it.isDirectory }
+            ?: selectedPackageName?.let { artPlusPackageDir(it) }?.takeIf { hasGeneratedPackageBaseAssets(it) }
+        if (dir == null || !dir.isDirectory) {
+            statusText = "没有可导出的图标包，请先生成"
+            return
+        }
+        runCatching { exportToTree(dir) }
+            .onSuccess { statusText = "已导出到外部目录: ${dir.name}" }
+            .onFailure { error -> statusText = "导出失败: ${error.message ?: error.javaClass.simpleName}" }
     }
 
     @Composable
@@ -5224,13 +5470,25 @@ class MainActivity : ComponentActivity() {
                 height = 48.dp,
             )
         }
-        CompactActionButton(
-            text = "添加光影 $selectedCount",
-            onClick = { addLiquidGlassToMultiSelectedGenerated() },
-            enabled = !isBusy && selectedCount > 0,
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            height = 50.dp,
-        )
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            CompactActionButton(
+                text = "添加光影 $selectedCount",
+                onClick = { addLiquidGlassToMultiSelectedGenerated() },
+                enabled = !isBusy && selectedCount > 0,
+                modifier = Modifier.weight(1f),
+                height = 50.dp,
+            )
+            CompactActionButton(
+                text = "套用当前预设",
+                onClick = { applyCurrentPresetBatch() },
+                enabled = !isBusy && selectedCount > 0,
+                modifier = Modifier.weight(1f),
+                height = 50.dp,
+            )
+        }
     }
 
     @Composable
@@ -5453,8 +5711,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun GptImageMode.shortSummary(): String = when (this) {
-        GptImageMode.Responses -> "Codex image gen"
-        GptImageMode.Images -> "直连 gpt-image-2"
+        GptImageMode.Responses -> "Codex 专用 · GPT-image-2 via Codex 接口"
+        GptImageMode.Images -> "接口模式（默认） · 直连 gpt-image-2"
     }
 
     @Composable
@@ -7199,11 +7457,12 @@ class MainActivity : ComponentActivity() {
 
     private fun loadGptSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        gptImageMode = GptImageMode.fromValue(prefs.getString(PREF_GPT_MODE, GptImageMode.Responses.value))
+        gptImageMode = GptImageMode.fromValue(prefs.getString(PREF_GPT_MODE, GptImageMode.Images.value))
         gptPromptPreset = GptPromptPreset.fromValue(
             prefs.getString(PREF_GPT_PROMPT_PRESET, GptPromptPreset.StableCutout.value),
         )
         gptCustomPrompt = prefs.getString(PREF_GPT_CUSTOM_PROMPT, "") ?: ""
+        gptModelId = prefs.getString(PREF_GPT_MODEL_ID, "") ?: ""
         val storedBaseUrl = prefs.getString(PREF_GPT_BASE_URL, "") ?: ""
         gptBaseUrl = if (storedBaseUrl == LEGACY_DEFAULT_GPT_BASE_URL) "" else storedBaseUrl
         gptApiKey = loadGptApiKey(prefs)
@@ -7220,6 +7479,7 @@ class MainActivity : ComponentActivity() {
             .putString(PREF_GPT_MODE, gptImageMode.value)
             .putString(PREF_GPT_PROMPT_PRESET, gptPromptPreset.value)
             .putString(PREF_GPT_CUSTOM_PROMPT, gptCustomPrompt.trim())
+            .putString(PREF_GPT_MODEL_ID, gptModelId.trim())
             .putString(PREF_GPT_BASE_URL, gptBaseUrl.trim())
             .remove(PREF_GPT_API_KEY)
             .apply {
@@ -7858,6 +8118,22 @@ class MainActivity : ComponentActivity() {
         val before = currentTuningParams()
         if (captureUndo) {
             lastParamsSnapshot = before
+            // 历史栈：冷启动基线为起点，支持前进/后退
+            if (tuningHistory.isEmpty()) {
+                tuningHistory.add(before)
+                tuningHistoryIndex = 0
+            }
+            if (!params.sameAs(before)) {
+                if (tuningHistoryIndex < tuningHistory.size - 1) {
+                    tuningHistory.subList(tuningHistoryIndex + 1, tuningHistory.size).clear()
+                }
+                tuningHistory.add(params)
+                tuningHistoryIndex = tuningHistory.size - 1
+                if (tuningHistory.size > 50) {
+                    tuningHistory.removeAt(0)
+                    tuningHistoryIndex--
+                }
+            }
         }
         foregroundSubjectPercent = params.foregroundSubjectPercent
         foregroundShadowLevel = params.foregroundShadowLevel
@@ -7967,6 +8243,76 @@ class MainActivity : ComponentActivity() {
         lastParamsSnapshot = null
         applyTuningParams(snapshot, captureUndo = false)
         statusText = "已还原上一个参数"
+    }
+
+    /**
+     * 恢复默认配置（Issue #4）。
+     * 仅重置全部调参到出厂默认值（TuningParams 默认构造），不清除已下载的 RMBG 模型与已生成的图标包。
+     * 通过 TuningParams 默认值 + applyTuningParams 统一持久化，保证与各迁移逻辑一致。
+     */
+    private fun resetToDefaults(confirmed: Boolean = false) {
+        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
+            statusText = "当前有任务在运行，请等待"
+            return
+        }
+        if (!confirmed) {
+            requestServiceConfirm(
+                title = "恢复默认配置",
+                message = "将把全部调参恢复为出厂默认值（不影响已下载的 RMBG 模型与已生成的图标包），可通过「还原上一步」撤销。确认继续？",
+                confirmLabel = "恢复默认",
+            ) { resetToDefaults(confirmed = true) }
+            return
+        }
+        val defaults = TuningParams()
+        applyTuningParams(defaults, rebuildCandidates = true)
+        presetStore.activePresetId = null
+        activePresetId = null
+        statusText = "已恢复默认配置"
+    }
+
+    private fun initTuningHistory() {
+        val current = currentTuningParams()
+        tuningHistory.clear()
+        tuningHistory.add(current)
+        tuningHistoryIndex = 0
+    }
+
+    private fun canUndoTuning(): Boolean = tuningHistoryIndex > 0 && tuningHistory.isNotEmpty()
+
+    private fun canRedoTuning(): Boolean = tuningHistoryIndex >= 0 && tuningHistoryIndex < tuningHistory.size - 1
+
+    private fun undoTuning() {
+        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
+            statusText = "当前有任务在运行，请等待"
+            return
+        }
+        if (!canUndoTuning()) {
+            statusText = "已到最早的配置"
+            return
+        }
+        tuningHistoryIndex--
+        val target = tuningHistory[tuningHistoryIndex]
+        applyTuningParams(target, captureUndo = false)
+        presetStore.activePresetId = null
+        activePresetId = null
+        statusText = "已后退到上一个配置"
+    }
+
+    private fun redoTuning() {
+        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
+            statusText = "当前有任务在运行，请等待"
+            return
+        }
+        if (!canRedoTuning()) {
+            statusText = "已到最新的配置"
+            return
+        }
+        tuningHistoryIndex++
+        val target = tuningHistory[tuningHistoryIndex]
+        applyTuningParams(target, captureUndo = false)
+        presetStore.activePresetId = null
+        activePresetId = null
+        statusText = "已前进到下一个配置"
     }
 
     /** 启动时统一加载调参相关设置（保留各迁移分支）。 */
@@ -8243,7 +8589,7 @@ class MainActivity : ComponentActivity() {
         }
         if (useGpt && !confirmed) {
             requestServiceConfirm(
-                title = "使用 GPT 生成",
+                title = "使用 AI 生成",
                 message = "将调用云端图像接口（已累计 $gptRunCount 次）生成图标包。确认继续？",
                 confirmLabel = "继续",
             ) {
@@ -8258,7 +8604,7 @@ class MainActivity : ComponentActivity() {
             incrementGptRunCount()
         }
         statusText = if (useGpt) {
-            "GPT处理中: ${entry.packageName}"
+            "AI处理中: ${entry.packageName}"
         } else {
             "本地处理中(自动): ${entry.packageName}"
         }
@@ -8282,10 +8628,10 @@ class MainActivity : ComponentActivity() {
                     runOnUiThread {
                         markPackageGenerated(entry.packageName)
                     }
-                    val sourceLabel = if (useGpt) "GPT版" else "本地版"
+                    val sourceLabel = if (useGpt) "AI版" else "本地版"
                     status("已生成${sourceLabel}并${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
                 } else {
-                    status("已生成${if (useGpt) "GPT版" else "本地版"}: ${result.outDir.absolutePath}")
+                    status("已生成${if (useGpt) "AI版" else "本地版"}: ${result.outDir.absolutePath}")
                 }
             } catch (error: Exception) {
                 status("失败: ${error.message ?: error.javaClass.simpleName}")
@@ -11706,7 +12052,7 @@ class MainActivity : ComponentActivity() {
         }
         if (!confirmed) {
             requestServiceConfirm(
-                title = "使用 GPT 生成",
+                title = "使用 AI 生成",
                 message = "将调用云端图像接口（已累计 $gptRunCount 次）。确认继续？",
                 confirmLabel = "继续",
             ) {
@@ -11717,7 +12063,7 @@ class MainActivity : ComponentActivity() {
         isGeneratingGptCandidate = true
         isGptPreviewLoading = true
         incrementGptRunCount()
-        statusText = "GPT候选生成中: ${session.packageName}"
+        statusText = "AI候选生成中: ${session.packageName}"
         val selections = previewSelections.withChoice(mode, PreviewChoice.Gpt)
         startUiFriendlyThread("ArtPlusGptCandidate") {
             try {
@@ -11740,11 +12086,11 @@ class MainActivity : ComponentActivity() {
                     activeGenerationSession = updatedSession
                     previewSelections = selections
                     previewVersion += 1
-                    statusText = "GPT候选已生成并应用到 ${mode.label}"
+                    statusText = "AI候选已生成并应用到 ${mode.label}"
                     saveUiState()
                 }
             } catch (error: Exception) {
-                status("GPT候选失败: ${error.message ?: error.javaClass.simpleName}")
+                status("AI候选失败: ${error.message ?: error.javaClass.simpleName}")
             } finally {
                 runOnUiThread {
                     isGeneratingGptCandidate = false
@@ -11765,7 +12111,7 @@ class MainActivity : ComponentActivity() {
         }
         if (!confirmed) {
             requestServiceConfirm(
-                title = "使用 GPT 生成全部",
+                title = "使用 AI 生成全部",
                 message = "将调用云端图像接口（已累计 $gptRunCount 次）。确认继续？",
                 confirmLabel = "继续",
             ) {
@@ -11776,7 +12122,7 @@ class MainActivity : ComponentActivity() {
         isGeneratingGptCandidate = true
         isGptPreviewLoading = true
         incrementGptRunCount()
-        statusText = "GPT候选生成中: ${session.packageName}"
+        statusText = "AI候选生成中: ${session.packageName}"
         val selections = PreviewSelections.default(PreviewChoice.Gpt)
         startUiFriendlyThread("ArtPlusGptCandidateAll") {
             try {
@@ -11800,11 +12146,11 @@ class MainActivity : ComponentActivity() {
                     previewSelections = selections
                     previewChoiceMode = null
                     previewVersion += 1
-                    statusText = "GPT候选已生成并应用到全部"
+                    statusText = "AI候选已生成并应用到全部"
                     saveUiState()
                 }
             } catch (error: Exception) {
-                status("GPT候选失败: ${error.message ?: error.javaClass.simpleName}")
+                status("AI候选失败: ${error.message ?: error.javaClass.simpleName}")
             } finally {
                 runOnUiThread {
                     isGeneratingGptCandidate = false
@@ -12198,7 +12544,7 @@ class MainActivity : ComponentActivity() {
         val chromaForegroundPrompt = buildChromaForegroundPrompt(chromaHex)
         val backgroundPrompt = buildBackgroundPrompt()
 
-        status("GPT生成前景...")
+        status("AI生成前景...")
         var usedChromaForeground = false
         val rawForeground = try {
             val transparentForeground = gptEditImage(sourceIcon, transparentForegroundPrompt, "transparent")
@@ -12214,7 +12560,7 @@ class MainActivity : ComponentActivity() {
             status("GPT透明前景失败，改用纯色抠底兜底: ${error.message ?: error.javaClass.simpleName}")
             gptEditImage(sourceIcon, chromaForegroundPrompt, "opaque")
         }
-        status("GPT生成背景...")
+        status("AI生成背景...")
         val rawBackground = gptEditImage(sourceIcon, backgroundPrompt, "opaque")
 
         val recbg = Bitmap.createScaledBitmap(rawBackground, SIZE_1X1, SIZE_1X1, true)
@@ -12242,8 +12588,9 @@ class MainActivity : ComponentActivity() {
         }
 
     private fun responsesEditImage(source: Bitmap, prompt: String, background: String): Bitmap {
+        val model = gptModelId.trim().ifBlank { GPT_RESPONSE_MODEL }
         val body = JSONObject()
-            .put("model", GPT_RESPONSE_MODEL)
+            .put("model", model)
             .put(
                 "input",
                 JSONArray().put(
@@ -12296,7 +12643,7 @@ class MainActivity : ComponentActivity() {
             body.writeString("\r\n")
         }
 
-        field("model", GPT_IMAGE_MODEL)
+        field("model", gptModelId.trim().ifBlank { GPT_IMAGE_MODEL })
         field("prompt", prompt)
         field("size", GPT_IMAGE_SIZE)
         field("quality", GPT_IMAGE_QUALITY)
@@ -16940,6 +17287,7 @@ class MainActivity : ComponentActivity() {
         private const val PREF_GPT_MODE = "gpt_mode"
         private const val PREF_GPT_PROMPT_PRESET = "gpt_prompt_preset"
         private const val PREF_GPT_CUSTOM_PROMPT = "gpt_custom_prompt"
+        private const val PREF_GPT_MODEL_ID = "gpt_model_id"
         private const val PREF_GPT_BASE_URL = "gpt_base_url"
         private const val PREF_GPT_API_KEY = "gpt_api_key"
         private const val PREF_GPT_API_KEY_ENCRYPTED = "gpt_api_key_encrypted"
