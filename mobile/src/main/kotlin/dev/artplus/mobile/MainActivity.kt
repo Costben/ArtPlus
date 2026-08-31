@@ -89,6 +89,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -99,12 +100,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.drawBackdrop
+import top.yukonga.miuix.kmp.blur.blur
+import dev.artplus.mobile.glass.lens
+import dev.artplus.mobile.glass.vibrancy
+import dev.artplus.mobile.glass.FloatingBottomBar
+import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -1185,96 +1188,101 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            // 液态玻璃底栏（Kyant + KernelSU 1:1：悬浮+Capsule+blur8dp，熔断保留放大动画）
-            val isFloating = liquidGlassBottomBarEnabled
+            // 液态玻璃底栏（KernelSU FloatingBottomBar 1:1：vibrancy+blur4dp+lens24dp 三层玻璃+拖拽阻尼+高光镜面）
             val isBlurEnabled = liquidGlassBottomBarEnabled && liquidGlassBottomBarBlurEnabled
-            val bottomBarGlassModifier = when {
-                isBlurEnabled -> Modifier.drawBackdrop(
+            if (liquidGlassBottomBarEnabled) {
+                FloatingBottomBar(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                        .fillMaxWidth(),
+                    selectedIndex = { pagerState.currentPage },
+                    onSelected = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
                     backdrop = backdrop,
-                    shape = { Capsule() },
-                    effects = { blur(8f.dp.toPx()) },
-                    onDrawSurface = { drawRect(containerColor) }
-                )
-                isFloating -> Modifier.clip(Capsule()).background(containerColor.copy(alpha = 0.92f))
-                else -> Modifier.background(containerColor.copy(alpha = 0.92f))
-            }
-            val bottomBarOuterModifier = if (isFloating) {
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                    .then(bottomBarGlassModifier)
-                    .height(64.dp)
-                    .fillMaxWidth()
-            } else {
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .then(bottomBarGlassModifier)
-                    .height(64.dp)
-                    .fillMaxWidth()
-            }
-            Box(
-                modifier = bottomBarOuterModifier,
-                contentAlignment = Alignment.Center,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
+                    tabsCount = 3,
+                    isBlurEnabled = isBlurEnabled,
                 ) {
-                    val tabs = listOf(
+                    listOf(
                         Triple(Lucide.Grid2x2, "应用", 0),
                         Triple(Lucide.SlidersHorizontal, "生成", 1),
                         Triple(Lucide.Layers, "预设", 2),
-                    )
-                    tabs.forEach { (icon, label, index) ->
-                        val selected = pagerState.currentPage == index
-                        val pressScale by animateFloatAsState(
-                            targetValue = if (selected) 1.15f else 1f,
-                            animationSpec = spring(dampingRatio = 0.55f, stiffness = 420f),
-                            label = "TabGlassScale",
-                        )
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(
-                                    if (selected) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.22f)
-                                    else Color.Transparent,
-                                )
-                                .graphicsLayer {
-                                    scaleX = pressScale
-                                    scaleY = pressScale
-                                }
-                                .clickable {
-                                    scope.launch { pagerState.animateScrollToPage(index) }
-                                },
-                            contentAlignment = Alignment.Center,
+                    ).forEach { (icon, label, index) ->
+                        FloatingBottomBarItem(
+                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            modifier = Modifier.defaultMinSize(minWidth = 76.dp),
                         ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
-                                modifier = Modifier.graphicsLayer {
-                                    scaleX = pressScale
-                                    scaleY = pressScale
-                                },
+                            val selected = pagerState.currentPage == index
+                            val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            val tint = if (isBusy) baseTint.copy(alpha = 0.45f) else baseTint
+                            Image(
+                                imageVector = icon,
+                                contentDescription = label,
+                                modifier = Modifier.size(20.dp),
+                                colorFilter = ColorFilter.tint(tint),
+                            )
+                            Text(
+                                text = label,
+                                style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                                color = tint,
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        }
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .background(containerColor.copy(alpha = 0.92f))
+                        .height(64.dp)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        listOf(
+                            Triple(Lucide.Grid2x2, "应用", 0),
+                            Triple(Lucide.SlidersHorizontal, "生成", 1),
+                            Triple(Lucide.Layers, "预设", 2),
+                        ).forEach { (icon, label, index) ->
+                            val selected = pagerState.currentPage == index
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(
+                                        if (selected) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.22f)
+                                        else Color.Transparent,
+                                    )
+                                    .clickable { scope.launch { pagerState.animateScrollToPage(index) } },
+                                contentAlignment = Alignment.Center,
                             ) {
-                                val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
-                                val tint = if (isBusy) baseTint.copy(alpha = 0.45f) else baseTint
-                                Image(
-                                    imageVector = icon,
-                                    contentDescription = label,
-                                    modifier = Modifier.size(20.dp),
-                                    colorFilter = ColorFilter.tint(tint),
-                                )
-                                Text(
-                                    text = label,
-                                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
-                                    color = tint,
-                                    maxLines = 1,
-                                )
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                                ) {
+                                    val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
+                                    val tint = if (isBusy) baseTint.copy(alpha = 0.45f) else baseTint
+                                    Image(
+                                        imageVector = icon,
+                                        contentDescription = label,
+                                        modifier = Modifier.size(20.dp),
+                                        colorFilter = ColorFilter.tint(tint),
+                                    )
+                                    Text(
+                                        text = label,
+                                        style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                                        color = tint,
+                                        maxLines = 1,
+                                    )
+                                }
                             }
                         }
                     }
@@ -1356,7 +1364,6 @@ class MainActivity : ComponentActivity() {
                         GptSettingsCard()
                         RmbgComponentCard()
                         SectionCard(
-                            title = "外观",
                             summary = "液态玻璃底栏（1:1 复刻 KernelSU 浮动底栏，Backdrop+Capsule+blur）",
                         ) {
                             // 第一档：悬浮底栏
@@ -1369,14 +1376,14 @@ class MainActivity : ComponentActivity() {
                                         saveLiquidGlassSettings()
                                         statusText = if (liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭"
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                                    .padding(horizontal = 12.dp, vertical = 14.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 SettingsLineIcon(kind = SettingsIconKind.Glass)
                                 Column(
                                     modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                                    verticalArrangement = Arrangement.spacedBy(5.dp),
                                 ) {
                                     Text(
                                         text = "悬浮底栏",
@@ -1387,15 +1394,16 @@ class MainActivity : ComponentActivity() {
                                     )
                                     Text(
                                         text = if (liquidGlassBottomBarEnabled) "已开启 · 胶囊悬浮" else "已关闭 · 贴底直条",
+                                        modifier = Modifier.basicMarquee(),
                                         style = MiuixTheme.textStyles.footnote1,
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
+                                        softWrap = false,
                                     )
                                 }
                                 LiquidGlassSwitch(checked = liquidGlassBottomBarEnabled, enabled = !isBusy)
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             // 第二档：底栏模糊（仅悬浮时生效）
                             Row(
                                 modifier = Modifier
@@ -1406,14 +1414,14 @@ class MainActivity : ComponentActivity() {
                                         saveLiquidGlassSettings()
                                         statusText = if (liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭 · 实色胶囊"
                                     }
-                                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                                    .padding(horizontal = 12.dp, vertical = 14.dp),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 SettingsLineIcon(kind = SettingsIconKind.Glass)
                                 Column(
                                     modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                                    verticalArrangement = Arrangement.spacedBy(5.dp),
                                 ) {
                                     Text(
                                         text = "底栏模糊",
@@ -1426,10 +1434,11 @@ class MainActivity : ComponentActivity() {
                                         text = if (!liquidGlassBottomBarEnabled) "需先开启悬浮底栏"
                                         else if (liquidGlassBottomBarBlurEnabled) "已开启 · 采样背后模糊"
                                         else "已关闭 · 实色胶囊（保留放大动画）",
+                                        modifier = Modifier.basicMarquee(),
                                         style = MiuixTheme.textStyles.footnote1,
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
+                                        softWrap = false,
                                     )
                                 }
                                 LiquidGlassSwitch(checked = liquidGlassBottomBarBlurEnabled, enabled = !isBusy && liquidGlassBottomBarEnabled)
@@ -2989,7 +2998,7 @@ class MainActivity : ComponentActivity() {
                                 onClick = { currentPage = AppPage.AppPicker },
                             )
                             .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                            .padding(vertical = 2.dp),
+                            .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
@@ -4118,7 +4127,7 @@ class MainActivity : ComponentActivity() {
                         SettingsLineIcon(kind = SettingsIconKind.Layers)
                         Column(
                             modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(3.dp),
+                            verticalArrangement = Arrangement.spacedBy(5.dp),
                         ) {
                             Text(
                                 text = "当前预设",
@@ -4767,7 +4776,7 @@ class MainActivity : ComponentActivity() {
                 SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     Text(
                         text = title,
@@ -4832,7 +4841,7 @@ class MainActivity : ComponentActivity() {
             SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Text(
                     text = title,
@@ -5404,14 +5413,14 @@ class MainActivity : ComponentActivity() {
                 summary = "/data/oplus/uxicons/{package}",
                 value = "data",
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             SettingNavigationLine(
                 title = "外部导出目录",
                 summary = if (outputTreeUri == null) "未选择时仅保存在应用私有目录" else "生成后同步复制到你选择的目录",
                 enabled = !isBusy,
                 onClick = { chooseTreeLauncher.launch(null) },
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             TextButton(
                 text = "导出到外部目录",
                 onClick = { exportCurrentToExternal() },
@@ -5440,7 +5449,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun PreviewStripSettingsCard() {
-        SectionCard(title = "主页面预览", summary = "在主页面顶栏固定显示四种生成结果") {
+        SectionCard {
             val interactionSource = remember { MutableInteractionSource() }
             val pressed by interactionSource.collectIsPressedAsState()
             val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
@@ -5458,14 +5467,14 @@ class MainActivity : ComponentActivity() {
                         onClick = { updatePreviewStripEnabled(!previewStripEnabled) },
                     )
                     .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                    .padding(vertical = 2.dp),
+                    .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SettingsLineIcon(kind = SettingsIconKind.Palette)
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     Text(
                         text = "顶部 1×4 预览条",
@@ -5476,10 +5485,11 @@ class MainActivity : ComponentActivity() {
                     )
                     Text(
                         text = "只在主页面显示，参数或 JSON 保存后自动更新",
+                        modifier = Modifier.basicMarquee(),
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        softWrap = false,
                     )
                 }
                 LiquidGlassSwitch(checked = previewStripEnabled, enabled = !isBusy)
@@ -5506,14 +5516,14 @@ class MainActivity : ComponentActivity() {
                     onClick = { updateLiquidGlassEnabled(!liquidGlassEnabled) },
                 )
                 .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                .padding(vertical = 2.dp),
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SettingsLineIcon(kind = SettingsIconKind.Glass)
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Text(
                     text = "液态玻璃风格",
@@ -5524,10 +5534,11 @@ class MainActivity : ComponentActivity() {
                 )
                 Text(
                     text = "开启后按当前液态玻璃参数重绘背景和前景光影",
+                    modifier = Modifier.basicMarquee(),
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    softWrap = false,
                 )
             }
             LiquidGlassSwitch(checked = liquidGlassEnabled, enabled = !isBusy)
@@ -5582,7 +5593,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LiquidGlassBottomBarOptionRow(backdrop: com.kyant.backdrop.Backdrop) {
+    private fun LiquidGlassBottomBarOptionRow(backdrop: top.yukonga.miuix.kmp.blur.Backdrop) {
         val isDark = isSystemInDarkTheme()
         val glassColor = if (isDark) Color(0xFF121212).copy(alpha = 0.4f) else Color(0xFFFAFAFA).copy(alpha = 0.4f)
         val interactionSource = remember { MutableInteractionSource() }
@@ -5599,7 +5610,12 @@ class MainActivity : ComponentActivity() {
                     backdrop = backdrop,
                     shape = { Capsule() },
                     effects = {
-                        blur(8f.dp.toPx())
+                        vibrancy()
+                        blur(4f.dp.toPx())
+                        lens(
+                            refractionHeight = 10f.dp.toPx(),
+                            refractionAmount = 10f.dp.toPx(),
+                        )
                     },
                     onDrawSurface = { drawRect(glassColor) }
                 )
@@ -5621,7 +5637,7 @@ class MainActivity : ComponentActivity() {
             SettingsLineIcon(kind = SettingsIconKind.Glass)
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Text(
                     text = "液态玻璃底栏",
@@ -5631,7 +5647,7 @@ class MainActivity : ComponentActivity() {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "首页底部导航的液态玻璃效果（完全复用 Kyant 库）",
+                    text = "首页底部导航的液态玻璃效果（复用 Kyant 库，与 KernelSU 管理器 1:1）",
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,
@@ -5661,7 +5677,7 @@ class MainActivity : ComponentActivity() {
                 summary = "启动器 $launcherCount 个 / 全部 $totalCount 个",
                 value = "启动器",
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             SettingLine(
                 title = "已生成",
                 summary = "来自本地缓存；手动刷新后才重新读取 data 路径",
@@ -5699,14 +5715,14 @@ class MainActivity : ComponentActivity() {
                     },
                 )
                 .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                .padding(vertical = 2.dp),
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SettingsLineIcon(kind = SettingsIconKind.Shield)
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Text(
                     text = "显示系统应用",
@@ -5717,10 +5733,11 @@ class MainActivity : ComponentActivity() {
                 )
                 Text(
                     text = if (showSystemApps) "已包含系统应用，可搜索和批量选择" else "仅显示用户应用；系统应用已隐藏",
+                    modifier = Modifier.basicMarquee(),
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
             Box(
@@ -6230,7 +6247,7 @@ class MainActivity : ComponentActivity() {
                     enabled = enabled,
                     onClick = { openDialog() },
                 )
-                .padding(vertical = 10.dp),
+                .padding(vertical = 12.dp),
         ) {
             Row(
                 modifier = Modifier
@@ -6242,7 +6259,7 @@ class MainActivity : ComponentActivity() {
                 SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
                     Text(
                         text = title,
@@ -6253,10 +6270,11 @@ class MainActivity : ComponentActivity() {
                     )
                     Text(
                         text = summary,
+                        modifier = Modifier.basicMarquee(),
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        softWrap = false,
                     )
                 }
                 MetricPill(label = value)
@@ -6477,7 +6495,7 @@ class MainActivity : ComponentActivity() {
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Text(
                     text = item.label,
@@ -6778,7 +6796,7 @@ class MainActivity : ComponentActivity() {
                     onClick = onClick,
                 )
                 .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                .padding(vertical = 2.dp)
+                .padding(vertical = 4.dp)
         }
         Row(
             modifier = rowModifier,
@@ -6788,7 +6806,7 @@ class MainActivity : ComponentActivity() {
             SettingsLineIcon(kind = settingsIconForTitle(title))
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Text(
                     text = title,
@@ -6799,10 +6817,11 @@ class MainActivity : ComponentActivity() {
                 )
                 Text(
                     text = summary,
+                    modifier = Modifier.basicMarquee(),
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
             if (value.isNotBlank()) {
@@ -6840,14 +6859,14 @@ class MainActivity : ComponentActivity() {
                     onClick = onClick,
                 )
                 .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                .padding(vertical = 2.dp),
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SettingsLineIcon(kind = settingsIconForTitle(title))
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Text(
                     text = title,
@@ -6858,10 +6877,11 @@ class MainActivity : ComponentActivity() {
                 )
                 Text(
                     text = summary,
+                    modifier = Modifier.basicMarquee(),
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
             Image(
