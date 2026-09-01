@@ -18,9 +18,8 @@ outputs/tmp/
 CLAUDE.md
 AGENTS.md
 CONTEXT.md
-# release template (local only, not tracked)
-docs/RELEASE_NOTES_TEMPLATE.md
-docs/release-notes/EXAMPLE.md
+# docs (local only, not tracked)
+docs/
 
 # IDE
 .vscode/
