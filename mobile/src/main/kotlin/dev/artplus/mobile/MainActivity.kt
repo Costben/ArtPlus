@@ -1097,6 +1097,11 @@ class MainActivity : ComponentActivity() {
                                 onClick = { undoTuning() },
                             )
                         },
+                        belowTopBar = {
+                            if (previewStripEnabled) {
+                                HomePreviewStrip()
+                            }
+                        },
                         actions = {
                             TitleBarIconButton(
                                 icon = Lucide.Redo2,
@@ -1130,6 +1135,11 @@ class MainActivity : ComponentActivity() {
 
                     2 -> PagerShellPage(
                         title = "预设",
+                        belowTopBar = {
+                            if (previewStripEnabled) {
+                                HomePreviewStrip()
+                            }
+                        },
                     ) { innerPadding, scrollBehavior ->
                         LazyColumn(
                             modifier = Modifier
@@ -5704,7 +5714,7 @@ class MainActivity : ComponentActivity() {
         SectionCard(rowsFullBleed = true) {
             LibrarySettingRow(
                 title = "顶部 1×4 预览条",
-                summary = "只在主页面显示，参数或 JSON 保存后自动更新",
+                summary = "在主页、生成参数与预设页置顶显示，参数或 JSON 保存后自动更新",
                 icon = SettingsIconKind.Palette,
                 showSwitch = true,
                 checked = previewStripEnabled,
