@@ -83,8 +83,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -264,6 +266,7 @@ import top.yukonga.miuix.kmp.basic.DropdownDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
@@ -814,6 +817,7 @@ class MainActivity : ComponentActivity() {
                     pageBackground = pageBackground,
                     selectedApp = selectedApp,
                     launcherCount = launcherCount,
+                    totalCount = apps.size,
                     generatedCount = generatedCount,
                 )
             }
@@ -881,13 +885,6 @@ class MainActivity : ComponentActivity() {
                         },
                 ) {
                     when (overlayPage) {
-                        AppPage.Settings -> SettingsPage(
-                            pageBackground = pageBackground,
-                            launcherCount = launcherCount,
-                            totalCount = apps.size,
-                            generatedCount = generatedCount,
-                        )
-
                         AppPage.AppPicker -> AppPickerPage(
                             pageBackground = pageBackground,
                             filteredApps = filteredApps,
@@ -960,9 +957,73 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun HomePage(pageBackground: Color, selectedApp: AppEntry?, launcherCount: Int, generatedCount: Int) {
-        val scrollBehavior = MiuixScrollBehavior()
-        val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
+    private fun TitleBarIconButton(
+        icon: ImageVector,
+        contentDescription: String?,
+        enabled: Boolean,
+        onClick: () -> Unit,
+        dimWhenDisabled: Boolean = true,
+        paddingStart: Dp = 16.dp,
+        paddingEnd: Dp = 0.dp,
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(start = paddingStart, end = paddingEnd)
+                .size(36.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .clickable(enabled = enabled) { onClick() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(20.dp),
+                colorFilter = ColorFilter.tint(
+                    if (dimWhenDisabled && !enabled) {
+                        MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.45f)
+                    } else {
+                        MiuixTheme.colorScheme.onSurface
+                    },
+                ),
+            )
+        }
+    }
+
+    /**
+     * KernelSU 式的分页壳：每页拥有独立的 TopAppBar（标题+按钮随本页左右滑动），
+     * 页面滚动命中该页自身的 scrollBehavior 折叠顶栏。
+     */
+    @Composable
+    private fun PagerShellPage(
+        title: String,
+        navigationIcon: @Composable () -> Unit = {},
+        belowTopBar: @Composable ColumnScope.() -> Unit = {},
+        actions: @Composable RowScope.() -> Unit = {},
+        content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
+    ) {
+        val pageScrollBehavior = MiuixScrollBehavior()
+        Scaffold(
+            topBar = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    TopAppBar(
+                        title = title,
+                        scrollBehavior = pageScrollBehavior,
+                        navigationIconPadding = 0.dp,
+                        actionIconPadding = 0.dp,
+                        navigationIcon = navigationIcon,
+                        actions = actions,
+                    )
+                    belowTopBar()
+                }
+            },
+        ) { innerPadding ->
+            content(innerPadding, pageScrollBehavior)
+        }
+    }
+
+    @Composable
+    private fun HomePage(pageBackground: Color, selectedApp: AppEntry?, launcherCount: Int, totalCount: Int, generatedCount: Int) {
+        val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
         val scope = rememberCoroutineScope()
         val isDark = isSystemInDarkTheme()
         val containerColor = if (isDark) Color(0xFF121212).copy(alpha = 0.4f) else Color(0xFFFAFAFA).copy(alpha = 0.4f)
@@ -972,179 +1033,149 @@ class MainActivity : ComponentActivity() {
         }
 
         Box(Modifier.fillMaxSize()) {
-            Scaffold(
-                modifier = Modifier.layerBackdrop(backdrop),
-                topBar = {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        TopAppBar(
-                            title = "ArtPlus",
-                            scrollBehavior = scrollBehavior,
-                            navigationIconPadding = 0.dp,
-                            actionIconPadding = 0.dp,
-                            navigationIcon = {
-                                Row(
-                                    modifier = Modifier.padding(start = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(pageBackground)
+                    .layerBackdrop(backdrop),
+            ) { page ->
+                when (page) {
+                    0 -> PagerShellPage(
+                        title = "ArtPlus",
+                        navigationIcon = {
+                            TitleBarIconButton(
+                                icon = Lucide.RefreshCw,
+                                contentDescription = "刷新",
+                                enabled = !isBusy && !isRefreshingArtPlusIcons,
+                                dimWhenDisabled = false,
+                                onClick = { refreshConfirmVisible = true },
+                            )
+                        },
+                        belowTopBar = {
+                            if (previewStripEnabled) {
+                                HomePreviewStrip()
+                            }
+                        },
+                    ) { innerPadding, scrollBehavior ->
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                                .imePadding()
+                                .padding(innerPadding)
+                                .padding(horizontal = 12.dp),
+                            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+                        ) {
+                            item {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .clickable(enabled = !isBusy && !isRefreshingArtPlusIcons) { refreshConfirmVisible = true },
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Image(
-                                            imageVector = Lucide.RefreshCw,
-                                            contentDescription = "刷新",
-                                            modifier = Modifier.size(20.dp),
-                                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                                        )
+                                    if (!packageListPermissionGranted || !usageAccessGranted) {
+                                        PermissionCard()
                                     }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .clickable(enabled = canUndoTuning() && !isBusy) { undoTuning() },
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Image(
-                                            imageVector = Lucide.Undo2,
-                                            contentDescription = "撤回",
-                                            modifier = Modifier.size(20.dp),
-                                            colorFilter = ColorFilter.tint(
-                                                if (canUndoTuning() && !isBusy) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.45f),
-                                            ),
-                                        )
-                                    }
+                                    StatusCard(
+                                        selectedApp = selectedApp,
+                                        launcherCount = launcherCount,
+                                        totalCount = apps.size,
+                                        generatedCount = generatedCount,
+                                    )
+                                    GenerationCard(selectedApp)
                                 }
-                            },
-                            actions = {
-                                Row(
-                                    modifier = Modifier.padding(end = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(0.dp),
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .clickable(enabled = canRedoTuning() && !isBusy) { redoTuning() },
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Image(
-                                            imageVector = Lucide.Redo2,
-                                            contentDescription = "前进",
-                                            modifier = Modifier.size(20.dp),
-                                            colorFilter = ColorFilter.tint(
-                                                if (canRedoTuning() && !isBusy) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.45f),
-                                            ),
-                                        )
-                                    }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .clickable(enabled = !isBusy) { currentPage = AppPage.Settings },
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Image(
-                                            imageVector = Lucide.SlidersHorizontal,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                                        )
-                                    }
-                                }
-                            },
-                        )
-                        if (currentPage == AppPage.Home && previewStripEnabled) {
-                            HomePreviewStrip()
+                            }
                         }
                     }
-                },
-    
-            ) { innerPadding ->
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(pageBackground)
-                        .padding(innerPadding),
-                ) { page ->
-                    when (page) {
-                        0 -> {
-                            // 第一页：选择 APK + 生成任务（保持跳转式选择，不在首页直接展开列表）
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                                    .imePadding()
-                                    .padding(horizontal = 12.dp),
-                                contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-                            ) {
-                                item {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    ) {
-                                        if (!packageListPermissionGranted || !usageAccessGranted) {
-                                            PermissionCard()
-                                        }
-                                        StatusCard(
-                                            selectedApp = selectedApp,
-                                            launcherCount = launcherCount,
-                                            totalCount = apps.size,
-                                            generatedCount = generatedCount,
-                                        )
-                                        GenerationCard(selectedApp)
-                                    }
+
+                    1 -> PagerShellPage(
+                        title = "生成参数",
+                        navigationIcon = {
+                            TitleBarIconButton(
+                                icon = Lucide.Undo2,
+                                contentDescription = "撤回",
+                                enabled = canUndoTuning() && !isBusy,
+                                onClick = { undoTuning() },
+                            )
+                        },
+                        actions = {
+                            TitleBarIconButton(
+                                icon = Lucide.Redo2,
+                                contentDescription = "前进",
+                                enabled = canRedoTuning() && !isBusy,
+                                onClick = { redoTuning() },
+                                paddingStart = 0.dp,
+                                paddingEnd = 16.dp,
+                            )
+                        },
+                    ) { innerPadding, scrollBehavior ->
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                                .imePadding()
+                                .padding(innerPadding)
+                                .padding(horizontal = 12.dp),
+                            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+                        ) {
+                            item {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    GenerationSettingsCard()
                                 }
                             }
                         }
-                        1 -> {
-                            // 第二页：生成设置
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                                    .imePadding()
-                                    .padding(horizontal = 12.dp),
-                                contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-                            ) {
-                                item {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    ) {
-                                        GenerationSettingsCard()
-                                    }
+                    }
+
+                    2 -> PagerShellPage(
+                        title = "预设",
+                    ) { innerPadding, scrollBehavior ->
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                                .imePadding()
+                                .padding(innerPadding)
+                                .padding(horizontal = 12.dp),
+                            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+                        ) {
+                            item {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    PresetSettingsCard()
                                 }
                             }
                         }
-                        2 -> {
-                            // 第三页：预设设置
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                                    .imePadding()
-                                    .padding(horizontal = 12.dp),
-                                contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-                            ) {
-                                item {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                                    ) {
-                                        PresetSettingsCard()
-                                    }
-                                }
-                            }
-                        }
+                    }
+
+                    3 -> PagerShellPage(
+                        title = "设置",
+                        actions = {
+                            TitleBarIconButton(
+                                icon = Lucide.Save,
+                                contentDescription = null,
+                                enabled = !isBusy,
+                                dimWhenDisabled = false,
+                                onClick = { saveSettingsPage() },
+                                paddingStart = 0.dp,
+                                paddingEnd = 16.dp,
+                            )
+                        },
+                    ) { innerPadding, scrollBehavior ->
+                        SettingsPage(
+                            innerPadding = innerPadding,
+                            scrollBehavior = scrollBehavior,
+                            launcherCount = launcherCount,
+                            totalCount = totalCount,
+                            generatedCount = generatedCount,
+                        )
                     }
                 }
             }
+
             // 液态玻璃底栏（KernelSU FloatingBottomBar 1:1：vibrancy+blur4dp+lens24dp 三层玻璃+拖拽阻尼+高光镜面）
             val isBlurEnabled = liquidGlassBottomBarEnabled && liquidGlassBottomBarBlurEnabled
             if (liquidGlassBottomBarEnabled) {
@@ -1157,13 +1188,14 @@ class MainActivity : ComponentActivity() {
                     selectedIndex = { pagerState.currentPage },
                     onSelected = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
                     backdrop = backdrop,
-                    tabsCount = 3,
+                    tabsCount = 4,
                     isBlurEnabled = isBlurEnabled,
                 ) {
                     listOf(
-                        Triple(Lucide.Grid2x2, "应用", 0),
-                        Triple(Lucide.SlidersHorizontal, "生成", 1),
+                        Triple(Lucide.Grid2x2, "主页", 0),
+                        Triple(Lucide.SlidersHorizontal, "生成参数", 1),
                         Triple(Lucide.Layers, "预设", 2),
+                        Triple(Lucide.Settings, "设置", 3),
                     ).forEach { (icon, label, index) ->
                         FloatingBottomBarItem(
                             onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
@@ -1204,9 +1236,10 @@ class MainActivity : ComponentActivity() {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         listOf(
-                            Triple(Lucide.Grid2x2, "应用", 0),
-                            Triple(Lucide.SlidersHorizontal, "生成", 1),
+                            Triple(Lucide.Grid2x2, "主页", 0),
+                            Triple(Lucide.SlidersHorizontal, "生成参数", 1),
                             Triple(Lucide.Layers, "预设", 2),
+                            Triple(Lucide.Settings, "设置", 3),
                         ).forEach { (icon, label, index) ->
                             val selected = pagerState.currentPage == index
                             Box(
@@ -1249,65 +1282,23 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun SettingsPage(pageBackground: Color, launcherCount: Int, totalCount: Int, generatedCount: Int) {
-        val scrollBehavior = MiuixScrollBehavior()
-
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = "设置",
-                    scrollBehavior = scrollBehavior,
-                    navigationIconPadding = 0.dp,
-                    actionIconPadding = 0.dp,
-                    navigationIcon = {
-                        Box(
-                            modifier = Modifier
-                                .padding(start = 12.dp)
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable(enabled = !isBusy) { currentPage = AppPage.Home },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Image(
-                                imageVector = Lucide.ChevronLeft,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                            )
-                        }
-                    },
-                    actions = {
-                        Box(
-                            modifier = Modifier
-                                .padding(end = 12.dp)
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable(enabled = !isBusy) { saveSettingsPage() },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Image(
-                                imageVector = Lucide.Save,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                            )
-                        }
-                    },
-                )
-            },
-
-        ) { innerPadding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(pageBackground)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .padding(innerPadding)
-                    .imePadding()
-                    .padding(horizontal = 12.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+    private fun SettingsPage(
+        innerPadding: PaddingValues,
+        scrollBehavior: ScrollBehavior,
+        launcherCount: Int,
+        totalCount: Int,
+        generatedCount: Int,
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(innerPadding)
+                .imePadding()
+                .padding(horizontal = 12.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
                 item {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -1403,7 +1394,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-            }
         }
     }
 
@@ -1422,22 +1412,15 @@ class MainActivity : ComponentActivity() {
                 TopAppBar(
                     title = "选择 APK",
                     scrollBehavior = scrollBehavior,
+                    navigationIconPadding = 0.dp,
                     navigationIcon = {
-                        Box(
-                            modifier = Modifier
-                                .padding(start = 18.dp)
-                                .size(46.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable(enabled = !isBusy) { currentPage = AppPage.Home },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Image(
-                                imageVector = Lucide.ChevronLeft,
-                                contentDescription = null,
-                                modifier = Modifier.size(21.dp),
-                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                            )
-                        }
+                        TitleBarIconButton(
+                            icon = Lucide.ChevronLeft,
+                            contentDescription = "返回",
+                            enabled = !isBusy,
+                            dimWhenDisabled = false,
+                            onClick = { currentPage = AppPage.Home },
+                        )
                     },
                 )
             },
@@ -17245,7 +17228,6 @@ class MainActivity : ComponentActivity() {
 
     private enum class AppPage(val order: Int) {
         Home(0),
-        Settings(1),
         AppPicker(1),
     }
 
