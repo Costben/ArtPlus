@@ -16,6 +16,8 @@ outputs/tmp/
 *.log
 .cache/
 CLAUDE.md
+AGENTS.md
+CONTEXT.md
 
 # IDE
 .vscode/
