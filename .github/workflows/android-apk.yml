@@ -97,7 +97,7 @@ jobs:
         run: |
           if [[ "${VERSION}" == "1.1" ]]; then
             cat > release-notes.md <<EOF
-          ArtPlus Android 1.1
+          ArtPlus 1.1
 
           从 1.0 到 1.1 的主要变化：
 
@@ -119,7 +119,7 @@ jobs:
           EOF
           else
             {
-              echo "ArtPlus Android ${VERSION}"
+              echo "ArtPlus ${VERSION}"
               echo
               echo "- Built by GitHub Actions."
               echo "- Release build signed with the default Android debug signing key."
@@ -133,7 +133,7 @@ jobs:
             gh release create "${TAG_NAME}" "${APK_PATH}" \
               --repo "${GITHUB_REPOSITORY}" \
               --target "${GITHUB_SHA}" \
-              --title "ArtPlus Android ${VERSION}" \
+              --title "ArtPlus ${VERSION}" \
               --notes-file release-notes.md \
               --latest
           fi
