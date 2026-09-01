@@ -17,8 +17,8 @@ android {
         applicationId = "dev.artplus.mobile"
         minSdk = 26
         targetSdk = 37
-        versionCode = 8
-        versionName = "1.3"
+        versionCode = 9
+        versionName = "1.3.1"
 
         ndk {
             abiFilters += listOf("arm64-v8a")
