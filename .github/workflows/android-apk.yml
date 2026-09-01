@@ -81,16 +81,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout (for release notes)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download APK
         uses: actions/download-artifact@v4
         with:
           name: artplus-mobile-${{ needs.build.outputs.version }}
           path: release
-
-      - name: Checkout (for release notes)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Create GitHub Release
         env:
