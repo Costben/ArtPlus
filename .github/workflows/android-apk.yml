@@ -87,6 +87,11 @@ jobs:
           name: artplus-mobile-${{ needs.build.outputs.version }}
           path: release
 
+      - name: Checkout (for release notes)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -95,7 +100,12 @@ jobs:
           APK_PATH: release/${{ needs.build.outputs.apk_name }}
         shell: bash
         run: |
-          if [[ "${VERSION}" == "1.1" ]]; then
+          # 1) 优先使用手写稿 docs/release-notes/<version>.md
+          NOTES_CANDIDATE="docs/release-notes/${VERSION}.md"
+          if [[ -f "${NOTES_CANDIDATE}" ]]; then
+            cp "${NOTES_CANDIDATE}" release-notes.md
+            echo "Using ${NOTES_CANDIDATE} as release notes"
+          elif [[ "${VERSION}" == "1.1" ]]; then
             cat > release-notes.md <<EOF
           ArtPlus 1.1
 
@@ -118,13 +128,39 @@ jobs:
           - APK: $(basename "${APK_PATH}")
           EOF
           else
-            {
-              echo "ArtPlus ${VERSION}"
-              echo
-              echo "- Built by GitHub Actions."
-              echo "- Release build signed with the default Android debug signing key."
-              echo "- APK: $(basename "${APK_PATH}")"
-            } > release-notes.md
+            # 2) 兜底：双语空模板（修复/新增功能两类 + 可选优化）
+            cat > release-notes.md <<EOF
+          ## What's New
+
+          ### ✨ New Features
+          - 
+
+          ### 🐛 Fixes
+          - 
+
+          ### 🔧 Improvements (optional)
+          - 
+
+          ---
+
+          ## 更新内容
+
+          ### ✨ 新增功能
+          - 
+
+          ### 🐛 修复
+          - 
+
+          ### 🔧 优化（可选）
+          - 
+
+          ---
+
+          Build Info / 构建信息
+          - Built by GitHub Actions
+          - APK: $(basename "${APK_PATH}")
+          EOF
+            echo "Generated bilingual template for ${VERSION}, please edit docs/release-notes/${VERSION}.md next time"
           fi
 
           if gh release view "${TAG_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
