@@ -1307,6 +1307,16 @@ class MainActivity : ComponentActivity() {
         content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
     ) {
         val pageScrollBehavior = MiuixScrollBehavior()
+        var stripHeight by remember { mutableStateOf(0.dp) }
+        val isDark = isSystemInDarkTheme()
+        val targetExtra = if (showPreviewStrip) {
+            if (stripHeight > 0.dp) stripHeight else 84.dp
+        } else 0.dp
+        val animatedExtra by animateDpAsState(
+            targetValue = targetExtra,
+            animationSpec = tween(durationMillis = 180),
+            label = "previewStripExtra",
+        )
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
@@ -1321,7 +1331,13 @@ class MainActivity : ComponentActivity() {
             },
         ) { innerPadding ->
             Box(modifier = Modifier.fillMaxSize()) {
-                content(innerPadding, pageScrollBehavior)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = animatedExtra),
+                ) {
+                    content(innerPadding, pageScrollBehavior)
+                }
                 AnimatedVisibility(
                     visible = showPreviewStrip,
                     enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
@@ -1333,7 +1349,9 @@ class MainActivity : ComponentActivity() {
                         .padding(top = innerPadding.calculateTopPadding())
                         .zIndex(1f),
                 ) {
-                    HomePreviewStrip()
+                    HomePreviewStrip(
+                        onHeightMeasured = { h -> if (h > 0.dp) stripHeight = h },
+                    )
                 }
             }
         }
@@ -2618,13 +2636,20 @@ class MainActivity : ComponentActivity() {
 
     /** 主页面顶栏的紧凑 1×4 预览；设置页和应用选择页不会组合此组件。 */
     @Composable
-    private fun HomePreviewStrip() {
+    private fun HomePreviewStrip(
+        onHeightMeasured: (androidx.compose.ui.unit.Dp) -> Unit = {},
+    ) {
+        val density = LocalDensity.current
         val assets = sharedPreviewAssets
         val loading = isPreviewAssetsRefreshing || isPreviewOutputRefreshing || isGptPreviewLoading
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 0.dp),
+                .padding(horizontal = 12.dp, vertical = 0.dp)
+                .onGloballyPositioned { coords ->
+                    val h = with(density) { coords.size.height.toDp() }
+                    if (h > 0.dp) onHeightMeasured(h)
+                },
             insideMargin = PaddingValues(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
         ) {
             Row(
