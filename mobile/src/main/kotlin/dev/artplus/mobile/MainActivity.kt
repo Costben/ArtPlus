@@ -167,11 +167,13 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.ImeAction
@@ -186,13 +188,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.compose.foundation.shape.CircleShape
 import androidx.core.view.WindowInsetsControllerCompat
 import com.composables.icons.lucide.BadgeCheck
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Cpu
-import com.composables.icons.lucide.Redo2
-import com.composables.icons.lucide.Undo2
+import com.composables.icons.lucide.Download
+import com.composables.icons.lucide.EllipsisVertical
 import com.composables.icons.lucide.Eraser
 import com.composables.icons.lucide.FileUp
 import com.composables.icons.lucide.GlassWater
@@ -207,10 +212,13 @@ import com.composables.icons.lucide.Radius
 import com.composables.icons.lucide.RefreshCw
 import com.composables.icons.lucide.Scale
 import com.composables.icons.lucide.Save
+import com.composables.icons.lucide.Search
 import com.composables.icons.lucide.Settings
 import com.composables.icons.lucide.Shield
 import com.composables.icons.lucide.SlidersHorizontal
 import com.composables.icons.lucide.Sparkles
+import com.composables.icons.lucide.Upload
+import com.composables.icons.lucide.X
 import android.util.Base64
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -261,6 +269,8 @@ import org.json.JSONObject
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Checkbox
+import top.yukonga.miuix.kmp.basic.CheckboxDefaults
 import top.yukonga.miuix.kmp.basic.DropdownColors
 import top.yukonga.miuix.kmp.basic.DropdownDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -269,6 +279,8 @@ import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -277,7 +289,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
@@ -316,6 +327,7 @@ class MainActivity : ComponentActivity() {
     private var gptSettingsSaveStatus by mutableStateOf("")
     private var localSeparationMode by mutableStateOf(LocalSeparationMode.Auto)
     private var foregroundSubjectPercent by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT)
+    private var draftForegroundSubjectPercentText by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT.toString())
     private var foregroundShadowLevel by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL)
     private var draftForegroundShadowLevelText by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL.toString())
     private var monochromeThemeScale by mutableStateOf(DEFAULT_MONOCHROME_THEME_SCALE)
@@ -393,6 +405,7 @@ class MainActivity : ComponentActivity() {
     private val tuningHistory = mutableStateListOf<TuningParams>()
     private var tuningHistoryIndex by mutableStateOf(-1)
     private var activePresetId by mutableStateOf<String?>(null)
+    private var activePresetBaseParams by mutableStateOf<TuningParams?>(null)
     private var presetListVersion by mutableStateOf(0)
     private var batchOutputMode by mutableStateOf(BatchOutputMode.Root)
     private var gptRunCount by mutableStateOf(0)
@@ -402,10 +415,18 @@ class MainActivity : ComponentActivity() {
     private var presetImportDialogVisible by mutableStateOf(false)
     private var presetImportText by mutableStateOf("")
     private var presetRenameTarget by mutableStateOf<TuningPreset?>(null)
+    private var presetActionMenuTarget by mutableStateOf<TuningPreset?>(null)
+    private var presetDeleteConfirmTarget by mutableStateOf<TuningPreset?>(null)
+    private var presetSearchQuery by mutableStateOf("")
+    private var presetListExpanded by mutableStateOf(false)
     private var pendingServiceConfirm by mutableStateOf<ServiceConfirmRequest?>(null)
-    private var presetCompare by mutableStateOf<PresetCompareState?>(null)
+    private var autoConfirmRootWrite by mutableStateOf(false)
+    private var pendingRootWriteConfirm by mutableStateOf<RootWriteConfirmRequest?>(null)
+    private var rootWriteConfirmRememberSkip by mutableStateOf(false)
     private var draftJsonParamsText by mutableStateOf("")
     private var refreshConfirmVisible by mutableStateOf(false)
+    private var autoConfirmRefresh by mutableStateOf(false)
+    private var refreshConfirmRememberAuto by mutableStateOf(false)
     private val presetStore by lazy { PresetStore(getSharedPreferences(PREFS_NAME, MODE_PRIVATE)) }
     private var currentPage by mutableStateOf(AppPage.Home)
     private var showSystemApps by mutableStateOf(false)
@@ -423,7 +444,10 @@ class MainActivity : ComponentActivity() {
     private var activeGenerationSession by mutableStateOf<GenerationSession?>(null)
     private var previewSelections by mutableStateOf(PreviewSelections.default(PreviewChoice.Full))
     private var previewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
+    private var previewCornerRadiusDp by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP)
+    private var draftPreviewCornerRadiusDpText by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP.toString())
     private var previewIconSizeDp by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP)
+    private var draftPreviewIconSizeDpText by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP.toString())
     private var previewChoiceMode by mutableStateOf<PreviewMode?>(null)
     private var isGptPreviewLoading by mutableStateOf(false)
     private var isGeneratingGptCandidate by mutableStateOf(false)
@@ -461,6 +485,14 @@ class MainActivity : ComponentActivity() {
         val title: String,
         val message: String,
         val confirmLabel: String,
+        val onConfirm: () -> Unit,
+    )
+
+    /** 写入 Root 目标目录前的二次确认请求。 */
+    private data class RootWriteConfirmRequest(
+        val packageName: String,
+        val targetPath: String,
+        val rootWriteMode: RootWriteMode,
         val onConfirm: () -> Unit,
     )
 
@@ -903,27 +935,99 @@ class MainActivity : ComponentActivity() {
             }
 
             ServiceConfirmDialog()
-            PresetCompareDialog()
+            RootWriteConfirmDialog()
             RefreshConfirmDialog()
+            PresetPageDialogs()
+        }
+    }
+
+    @Composable
+    private fun ApplyDialogDimEffect() {
+        val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+        val targetDim = MiuixTheme.colorScheme.windowDimming.alpha
+        SideEffect {
+            dialogWindow?.setDimAmount(targetDim)
+        }
+    }
+
+    @Composable
+    private fun MiuixBottomDialog(
+        onDismissRequest: () -> Unit,
+        content: @Composable () -> Unit,
+    ) {
+        Dialog(
+            onDismissRequest = onDismissRequest,
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            ApplyDialogDimEffect()
+            var animateIn by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) {
+                animateIn = true
+            }
+            val offsetY by animateFloatAsState(
+                targetValue = if (animateIn) 0f else 320f,
+                animationSpec = spring(
+                    dampingRatio = 0.82f,
+                    stiffness = 420f,
+                ),
+                label = "MiuixBottomDialogSlideUp",
+            )
+            val alpha by animateFloatAsState(
+                targetValue = if (animateIn) 1f else 0f,
+                animationSpec = tween(durationMillis = 180),
+                label = "MiuixBottomDialogFadeIn",
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismissRequest,
+                    )
+                    .imePadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            translationY = offsetY
+                            this.alpha = alpha
+                        }
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {},
+                        ),
+                ) {
+                    content()
+                }
+            }
         }
     }
 
     @Composable
     private fun RefreshConfirmDialog() {
         if (!refreshConfirmVisible) return
-        Dialog(onDismissRequest = { refreshConfirmVisible = false }) {
+        MiuixBottomDialog(onDismissRequest = { refreshConfirmVisible = false }) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
                     text = "确认刷新",
-                    style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight(700)),
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
                     color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -931,26 +1035,71 @@ class MainActivity : ComponentActivity() {
                     text = "将重新扫描已生成图标并刷新显示，确认继续？",
                     style = MiuixTheme.textStyles.body1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 3,
+                    textAlign = TextAlign.Center,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .clickable { refreshConfirmRememberAuto = !refreshConfirmRememberAuto }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                 ) {
-                    TextButton(
-                        text = "取消",
+                    Checkbox(
+                        state = ToggleableState(refreshConfirmRememberAuto),
+                        onClick = { refreshConfirmRememberAuto = !refreshConfirmRememberAuto },
+                        colors = CheckboxDefaults.checkboxColors(
+                            checkedBackgroundColor = MiuixTheme.colorScheme.primaryVariant,
+                            checkedForegroundColor = MiuixTheme.colorScheme.onPrimaryVariant,
+                            uncheckedBackgroundColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
+                            uncheckedForegroundColor = Color.Transparent,
+                        ),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "以后都自动确认",
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
                         onClick = { refreshConfirmVisible = false },
                         modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        text = "刷新",
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "取消",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
                         onClick = {
+                            val shouldAuto = refreshConfirmRememberAuto
                             refreshConfirmVisible = false
+                            if (shouldAuto) {
+                                autoConfirmRefresh = true
+                                saveUiState()
+                            }
                             refreshArtPlusIcons()
                         },
                         modifier = Modifier.weight(1f),
-                    )
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "刷新",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }
@@ -1049,7 +1198,14 @@ class MainActivity : ComponentActivity() {
                                 contentDescription = "刷新",
                                 enabled = !isBusy && !isRefreshingArtPlusIcons,
                                 dimWhenDisabled = false,
-                                onClick = { refreshConfirmVisible = true },
+                                onClick = {
+                                    if (autoConfirmRefresh) {
+                                        refreshArtPlusIcons()
+                                    } else {
+                                        refreshConfirmRememberAuto = false
+                                        refreshConfirmVisible = true
+                                    }
+                                },
                             )
                         },
                         belowTopBar = {
@@ -1081,7 +1237,12 @@ class MainActivity : ComponentActivity() {
                                         totalCount = apps.size,
                                         generatedCount = generatedCount,
                                     )
-                                    GenerationCard(selectedApp)
+                                    GenerationActionCard(selectedApp)
+                                    if (previewDirPath != null && previewPackageName != null) {
+                                        GeneratedPreviewCard()
+                                    }
+                                    PreviewControlCard()
+                                    LayerDebugCard()
                                 }
                             }
                         }
@@ -1089,28 +1250,10 @@ class MainActivity : ComponentActivity() {
 
                     1 -> PagerShellPage(
                         title = "生成参数",
-                        navigationIcon = {
-                            TitleBarIconButton(
-                                icon = Lucide.Undo2,
-                                contentDescription = "撤回",
-                                enabled = canUndoTuning() && !isBusy,
-                                onClick = { undoTuning() },
-                            )
-                        },
                         belowTopBar = {
                             if (previewStripEnabled) {
                                 HomePreviewStrip()
                             }
-                        },
-                        actions = {
-                            TitleBarIconButton(
-                                icon = Lucide.Redo2,
-                                contentDescription = "前进",
-                                enabled = canRedoTuning() && !isBusy,
-                                onClick = { redoTuning() },
-                                paddingStart = 0.dp,
-                                paddingEnd = 16.dp,
-                            )
                         },
                     ) { innerPadding, scrollBehavior ->
                         LazyColumn(
@@ -1127,7 +1270,26 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
-                                    GenerationSettingsCard()
+                                    GenerationNavCard()
+                                    when (advancedSettingsTab) {
+                                        AdvancedSettingsTab.Sliders -> when (advancedSettingsCategory) {
+                                            AdvancedSettingsCategory.LiquidGlass -> {
+                                                LiquidGlassToggleCard()
+                                                LiquidGlassSurfaceCard()
+                                                LiquidGlassSubjectCard()
+                                            }
+                                            AdvancedSettingsCategory.Local -> {
+                                                LocalRuleTuningCard()
+                                                LocalWorkflowPipelineCard()
+                                            }
+                                            AdvancedSettingsCategory.Rmbg -> {
+                                                RmbgTuningCard()
+                                            }
+                                        }
+                                        AdvancedSettingsTab.Json -> {
+                                            JsonSettingsEditorCard()
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1135,6 +1297,30 @@ class MainActivity : ComponentActivity() {
 
                     2 -> PagerShellPage(
                         title = "预设",
+                        actions = {
+                            val presetCount = remember(presetListVersion) { presetStore.all().size }
+                            TitleBarIconButton(
+                                icon = Lucide.Download,
+                                contentDescription = "导入预设",
+                                enabled = !isBusy,
+                                dimWhenDisabled = false,
+                                onClick = {
+                                    presetImportText = ""
+                                    presetImportDialogVisible = true
+                                },
+                                paddingStart = 0.dp,
+                                paddingEnd = 8.dp,
+                            )
+                            TitleBarIconButton(
+                                icon = Lucide.Upload,
+                                contentDescription = "导出全部预设",
+                                enabled = !isBusy && presetCount > 0,
+                                dimWhenDisabled = true,
+                                onClick = { exportPresetsToClipboard() },
+                                paddingStart = 0.dp,
+                                paddingEnd = 16.dp,
+                            )
+                        },
                         belowTopBar = {
                             if (previewStripEnabled) {
                                 HomePreviewStrip()
@@ -1155,7 +1341,8 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
-                                    PresetSettingsCard()
+                                    PresetStatusCard()
+                                    PresetLibraryCard()
                                 }
                             }
                         }
@@ -1356,10 +1543,7 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
-                        SectionCard(
-                            title = "恢复默认",
-                            summary = "一键恢复全部调参到出厂默认值，不会删除本地 RMBG 模型与已生成的图标包",
-                        ) {
+                        SectionCard(rowsFullBleed = true) {
                             LibrarySettingRow(
                                 title = "恢复默认配置",
                                 summary = "恢复后可通过首页预设卡片的「还原上一步」撤销",
@@ -1369,35 +1553,66 @@ class MainActivity : ComponentActivity() {
                                 enabled = !isBusy,
                                 onClick = { resetDefaultsDialogVisible = true },
                             )
-                            OverlayDialog(
-                                show = resetDefaultsDialogVisible,
-                                title = "恢复默认",
-                                summary = "一键恢复全部调参到出厂默认值，不会删除本地 RMBG 模型与已生成的图标包。恢复后可通过预设卡片的「还原上一步」撤销。",
-                                onDismissRequest = { resetDefaultsDialogVisible = false },
-                                renderInRootScaffold = true,
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    TextButton(
-                                        text = "取消",
-                                        onClick = { resetDefaultsDialogVisible = false },
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    Button(
-                                        onClick = {
-                                            resetDefaultsDialogVisible = false
-                                            resetToDefaults()
-                                        },
-                                        enabled = !isBusy,
-                                        modifier = Modifier.weight(1f),
+                            if (resetDefaultsDialogVisible) {
+                                MiuixBottomDialog(onDismissRequest = { resetDefaultsDialogVisible = false }) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(28.dp))
+                                            .background(MiuixTheme.colorScheme.background)
+                                            .padding(horizontal = 24.dp, vertical = 22.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(16.dp),
                                     ) {
                                         Text(
                                             text = "恢复默认配置",
-                                            style = MiuixTheme.textStyles.button,
+                                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                                            color = MiuixTheme.colorScheme.onSurface,
+                                            textAlign = TextAlign.Center,
                                             maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
                                         )
+                                        Text(
+                                            text = "一键恢复全部调参到出厂默认值，不会删除本地 RMBG 模型与已生成的图标包。恢复后可通过预设卡片的「还原上一步」撤销。",
+                                            style = MiuixTheme.textStyles.body1,
+                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            textAlign = TextAlign.Center,
+                                            maxLines = 5,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        ) {
+                                            Button(
+                                                onClick = { resetDefaultsDialogVisible = false },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.buttonColors(),
+                                            ) {
+                                                Text(
+                                                    text = "取消",
+                                                    style = MiuixTheme.textStyles.button,
+                                                    color = MiuixTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                )
+                                            }
+                                            Button(
+                                                onClick = {
+                                                    resetDefaultsDialogVisible = false
+                                                    resetToDefaults()
+                                                },
+                                                enabled = !isBusy,
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.buttonColorsPrimary(),
+                                            ) {
+                                                Text(
+                                                    text = "恢复默认",
+                                                    style = MiuixTheme.textStyles.button,
+                                                    color = Color.White,
+                                                    maxLines = 1,
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1487,7 +1702,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun PermissionCard() {
-        SectionCard(title = "权限", summary = "启动时会自动请求普通权限；特殊权限需要进入系统设置确认") {
+        SectionCard {
             SettingLine(
                 title = "应用列表",
                 summary = if (packageListPermissionGranted) "已声明并可读取已安装应用" else "需要允许读取应用列表",
@@ -1528,6 +1743,7 @@ class MainActivity : ComponentActivity() {
             (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
         }
         Dialog(onDismissRequest = {}) {
+            ApplyDialogDimEffect()
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 insideMargin = PaddingValues(18.dp),
@@ -1583,7 +1799,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun GeneratedPreviewSection() {
+    private fun GeneratedPreviewCard() {
         val dirPath = previewDirPath ?: return
         val packageName = previewPackageName ?: return
         val session = activeGenerationSession?.takeIf {
@@ -1592,110 +1808,84 @@ class MainActivity : ComponentActivity() {
         val displayAssets = sharedPreviewAssets
         val previewLoading = isGptPreviewLoading || isPreviewAssetsRefreshing || isPreviewOutputRefreshing
 
-        Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            text = "预览",
-            style = MiuixTheme.textStyles.title4,
-            color = MiuixTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(
-            text = "预览图可点击选择不同抠图规则",
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = packageName,
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        PreviewDisplaySettings()
-        Spacer(modifier = Modifier.height(10.dp))
-        if (displayAssets == null) {
+        SectionCard {
+            if (displayAssets == null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AiIconLoadingPreview(modifier = Modifier.size(42.dp), overlay = true)
+                    Text(
+                        text = "加载预览中",
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                return@SectionCard
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
             ) {
-                AiIconLoadingPreview(modifier = Modifier.size(42.dp), overlay = true)
-                Text(
-                    text = "加载预览中",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                PreviewTile(
+                    label = "标准亮色",
+                    assets = displayAssets,
+                    mode = PreviewMode.NormalLight,
+                    desktopBackground = previewDesktopBackground,
+                    iconSizeDp = previewIconSizeDp,
+                    loading = previewLoading,
+                    choiceEnabled = session != null,
+                    onClick = { previewChoiceMode = PreviewMode.NormalLight },
+                    modifier = Modifier.weight(1f),
+                )
+                PreviewTile(
+                    label = "标准暗色",
+                    assets = displayAssets,
+                    mode = PreviewMode.NormalDark,
+                    desktopBackground = previewDesktopBackground,
+                    iconSizeDp = previewIconSizeDp,
+                    loading = previewLoading,
+                    choiceEnabled = session != null,
+                    onClick = { previewChoiceMode = PreviewMode.NormalDark },
+                    modifier = Modifier.weight(1f),
                 )
             }
-            return
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            PreviewTile(
-                label = "正常亮色",
-                assets = displayAssets,
-                mode = PreviewMode.NormalLight,
-                desktopBackground = previewDesktopBackground,
-                iconSizeDp = previewIconSizeDp,
-                loading = previewLoading,
-                choiceEnabled = session != null,
-                onClick = { previewChoiceMode = PreviewMode.NormalLight },
-                modifier = Modifier.weight(1f),
-            )
-            PreviewTile(
-                label = "正常暗色",
-                assets = displayAssets,
-                mode = PreviewMode.NormalDark,
-                desktopBackground = previewDesktopBackground,
-                iconSizeDp = previewIconSizeDp,
-                loading = previewLoading,
-                choiceEnabled = session != null,
-                onClick = { previewChoiceMode = PreviewMode.NormalDark },
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            PreviewTile(
-                label = "单色亮色",
-                assets = displayAssets,
-                mode = PreviewMode.MonochromeLight,
-                desktopBackground = previewDesktopBackground,
-                iconSizeDp = previewIconSizeDp,
-                loading = previewLoading,
-                choiceEnabled = session != null,
-                onClick = { previewChoiceMode = PreviewMode.MonochromeLight },
-                modifier = Modifier.weight(1f),
-            )
-            PreviewTile(
-                label = "单色暗色",
-                assets = displayAssets,
-                mode = PreviewMode.MonochromeDark,
-                desktopBackground = previewDesktopBackground,
-                iconSizeDp = previewIconSizeDp,
-                loading = previewLoading,
-                choiceEnabled = session != null,
-                onClick = { previewChoiceMode = PreviewMode.MonochromeDark },
-                modifier = Modifier.weight(1f),
-            )
-        }
-        LayerDebugPreview(session, displayAssets)
-        val chooserMode = previewChoiceMode
-        if (chooserMode != null && session != null) {
-            PreviewChoiceDialog(mode = chooserMode, session = session)
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                PreviewTile(
+                    label = "单色亮色",
+                    assets = displayAssets,
+                    mode = PreviewMode.MonochromeLight,
+                    desktopBackground = previewDesktopBackground,
+                    iconSizeDp = previewIconSizeDp,
+                    loading = previewLoading,
+                    choiceEnabled = session != null,
+                    onClick = { previewChoiceMode = PreviewMode.MonochromeLight },
+                    modifier = Modifier.weight(1f),
+                )
+                PreviewTile(
+                    label = "单色暗色",
+                    assets = displayAssets,
+                    mode = PreviewMode.MonochromeDark,
+                    desktopBackground = previewDesktopBackground,
+                    iconSizeDp = previewIconSizeDp,
+                    loading = previewLoading,
+                    choiceEnabled = session != null,
+                    onClick = { previewChoiceMode = PreviewMode.MonochromeDark },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            val chooserMode = previewChoiceMode
+            if (chooserMode != null && session != null) {
+                PreviewChoiceDialog(mode = chooserMode, session = session)
+            }
         }
     }
 
@@ -1719,6 +1909,9 @@ class MainActivity : ComponentActivity() {
                         assets = assets,
                         mode = mode,
                         loading = loading,
+                        desktopBackground = previewDesktopBackground,
+                        iconSizeDp = previewIconSizeDp,
+                        cornerRadiusDp = previewCornerRadiusDp,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -1731,34 +1924,46 @@ class MainActivity : ComponentActivity() {
         assets: PreviewAssets?,
         mode: PreviewMode,
         loading: Boolean,
+        desktopBackground: PreviewDesktopBackground,
+        iconSizeDp: Int,
+        cornerRadiusDp: Int,
         modifier: Modifier = Modifier,
     ) {
         val ready = assets != null && assets.missingMessage(mode) == null
+        val scaleRatio = (iconSizeDp.toFloat() / DEFAULT_PREVIEW_ICON_SIZE_DP.toFloat()).coerceIn(0.6f, 1.35f)
+        val scaledCornerDp = (cornerRadiusDp.toFloat() * (scaleRatio * 0.72f)).roundToInt().coerceAtLeast(0)
+        val iconFraction = (0.76f * scaleRatio).coerceIn(0.42f, 0.95f)
+
         Box(
             modifier = modifier
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                .clip(RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
         ) {
+            PreviewDesktopBackgroundSurface(
+                option = desktopBackground,
+                modifier = Modifier.fillMaxSize(),
+            )
             if (ready) {
                 GeneratedIconPreview(
                     assets = assets,
                     mode = mode,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(iconFraction),
+                    cornerRadiusDp = scaledCornerDp,
                 )
             } else {
                 MissingIconPreview(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(iconFraction),
                     mode = mode,
                     compact = true,
+                    cornerRadiusDp = scaledCornerDp,
                 )
             }
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.36f))
+                    .background(Color.Black.copy(alpha = 0.42f))
                     .padding(horizontal = 3.dp, vertical = 1.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -1780,12 +1985,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** 调试图层：前景 / 背景 / alpha 蒙版小图。 */
+    /** 调试图层卡片：前景 / 背景 / alpha 蒙版小图。 */
     @Composable
-    private fun LayerDebugPreview(session: GenerationSession?, assets: PreviewAssets?) {
-        if (session == null || assets == null) {
-            return
-        }
+    private fun LayerDebugCard() {
+        val dirPath = previewDirPath ?: return
+        val packageName = previewPackageName ?: return
+        val session = activeGenerationSession?.takeIf {
+            it.packageName == packageName && it.outDir.absolutePath == dirPath
+        } ?: return
+        val assets = sharedPreviewAssets ?: return
+
         val choice = previewSelections.normalLight
         val candidate = candidateForChoice(session, choice)
         val alphaMask = remember(candidate) {
@@ -1808,22 +2017,16 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = "调试图层",
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            LayerDebugTile(label = "前景", bitmap = assets.recfg?.asImageBitmap(), modifier = Modifier.weight(1f))
-            LayerDebugTile(label = "背景", bitmap = assets.recbg?.asImageBitmap(), modifier = Modifier.weight(1f))
-            LayerDebugTile(label = "蒙版", bitmap = alphaMask?.asImageBitmap(), modifier = Modifier.weight(1f))
+
+        SectionCard {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                LayerDebugTile(label = "前景", bitmap = assets.recfg?.asImageBitmap(), modifier = Modifier.weight(1f))
+                LayerDebugTile(label = "背景", bitmap = assets.recbg?.asImageBitmap(), modifier = Modifier.weight(1f))
+                LayerDebugTile(label = "蒙版", bitmap = alphaMask?.asImageBitmap(), modifier = Modifier.weight(1f))
+            }
         }
     }
 
@@ -1871,78 +2074,98 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PreviewDisplaySettings() {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Row(
+    private fun PreviewControlCard() {
+        SectionCard {
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                NumberParameterControl(
+                    title = "前景主体大小",
+                    summary = "控制前景主体在图标画布中的占比",
+                    value = foregroundSubjectPercent,
+                    draftText = draftForegroundSubjectPercentText,
+                    min = MIN_FOREGROUND_SUBJECT_PERCENT,
+                    max = MAX_FOREGROUND_SUBJECT_PERCENT,
+                    step = 1,
+                    onDraftChange = { draftForegroundSubjectPercentText = it },
+                    onSave = { updateForegroundSubjectPercent(it) },
+                    icon = SettingsIconKind.Scale,
+                )
+                NumberParameterControl(
+                    title = "预览圆角",
+                    summary = "控制预览图标的圆角大小",
+                    value = previewCornerRadiusDp,
+                    draftText = draftPreviewCornerRadiusDpText,
+                    min = MIN_PREVIEW_CORNER_RADIUS_DP,
+                    max = MAX_PREVIEW_CORNER_RADIUS_DP,
+                    step = 1,
+                    onDraftChange = { draftPreviewCornerRadiusDpText = it },
+                    onSave = { updatePreviewCornerRadiusDp(it) },
+                    icon = SettingsIconKind.Radius,
+                )
+                NumberParameterControl(
+                    title = "预览缩放",
+                    summary = "预览图显示大小",
+                    value = previewIconSizeDp,
+                    draftText = draftPreviewIconSizeDpText,
+                    min = MIN_PREVIEW_ICON_SIZE_DP,
+                    max = MAX_PREVIEW_ICON_SIZE_DP,
+                    step = 1,
+                    onDraftChange = { draftPreviewIconSizeDpText = it },
+                    onSave = { updatePreviewIconSizeDp(it) },
+                    icon = SettingsIconKind.Grid,
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable(enabled = !isBusy) {
+                            updatePreviewStripEnabled(!previewStripEnabled)
+                        }
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = "预览缩放",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "预览图显示大小；前景主体大小会同步到生成结果",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
+                    SettingsLineIcon(kind = SettingsIconKind.Palette)
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                    ) {
+                        Text(
+                            text = "顶部 1×4 预览条",
+                            style = MiuixTheme.textStyles.body1,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = "在主页、生成参数与预设页置顶显示",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Switch(
+                        checked = previewStripEnabled,
+                        onCheckedChange = { updatePreviewStripEnabled(it) },
+                        enabled = !isBusy,
                     )
                 }
-                Text(
-                    text = "$previewIconSizeDp%",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            SteppedPercentSlider(
-                value = previewIconSizeDp,
-                min = MIN_PREVIEW_ICON_SIZE_DP,
-                max = MAX_PREVIEW_ICON_SIZE_DP,
-                step = 1,
-                enabled = !isBusy,
-                showDots = false,
-                onValueChange = { updatePreviewIconSizeDp(it) },
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            SettingLine(
-                title = "前景主体大小",
-                summary = "控制前景主体在图标画布中的占比，范围 20%-150%",
-                value = "$foregroundSubjectPercent%",
-            )
-            SteppedPercentSlider(
-                value = foregroundSubjectPercent,
-                min = MIN_FOREGROUND_SUBJECT_PERCENT,
-                max = MAX_FOREGROUND_SUBJECT_PERCENT,
-                step = 1,
-                enabled = !isBusy,
-                showDots = false,
-                onValueChange = { updateForegroundSubjectPercent(it) },
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                PreviewDesktopBackground.entries.forEach { option ->
-                    PreviewBackgroundOption(
-                        option = option,
-                        selected = option == previewDesktopBackground,
-                        modifier = Modifier.weight(1f),
-                        onClick = { updatePreviewDesktopBackground(option) },
-                    )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    PreviewDesktopBackground.entries.forEach { option ->
+                        PreviewBackgroundOption(
+                            option = option,
+                            selected = option == previewDesktopBackground,
+                            modifier = Modifier.weight(1f),
+                            onClick = { updatePreviewDesktopBackground(option) },
+                        )
+                    }
                 }
             }
         }
@@ -2048,6 +2271,7 @@ class MainActivity : ComponentActivity() {
                             assets = assets,
                             mode = mode,
                             modifier = Modifier.size(iconSizeDp.dp),
+                            cornerRadiusDp = previewCornerRadiusDp,
                         )
                     }
                 } else {
@@ -2058,6 +2282,7 @@ class MainActivity : ComponentActivity() {
                         MissingIconPreview(
                             modifier = Modifier.size(iconSizeDp.dp),
                             mode = mode,
+                            cornerRadiusDp = previewCornerRadiusDp,
                         )
                     }
                 }
@@ -2200,8 +2425,9 @@ class MainActivity : ComponentActivity() {
         assets: PreviewAssets?,
         mode: PreviewMode,
         modifier: Modifier = Modifier.size(72.dp),
+        cornerRadiusDp: Int = previewCornerRadiusDp,
     ) {
-        val iconShape = RoundedCornerShape(20.dp)
+        val iconShape = RoundedCornerShape(cornerRadiusDp.dp)
         val md3LightBackground = systemMaterialColor("system_accent1_100", Color(0xFFEADDFF))
         val md3LightForeground = systemMaterialColor("system_accent1_700", Color(0xFF21005D))
         val md3DarkBackground = systemMaterialColor("system_accent1_700", Color(0xFF4F378B))
@@ -2279,6 +2505,7 @@ class MainActivity : ComponentActivity() {
         modifier: Modifier = Modifier.size(72.dp),
         mode: PreviewMode? = null,
         compact: Boolean = false,
+        cornerRadiusDp: Int = previewCornerRadiusDp,
     ) {
         val md3LightBackground = systemMaterialColor("system_accent1_100", Color(0xFFEADDFF))
         val md3DarkBackground = systemMaterialColor("system_accent1_700", Color(0xFF4F378B))
@@ -2294,8 +2521,8 @@ class MainActivity : ComponentActivity() {
             PreviewMode.NormalDark -> Color(0xFFE7E1E5)
             else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
         }
-        val outerRadius = if (compact) 16.dp else 20.dp
-        val innerRadius = if (compact) 10.dp else 14.dp
+        val outerRadius = cornerRadiusDp.dp
+        val innerRadius = (cornerRadiusDp * 0.7f).dp
         val innerPadding = if (compact) 11.dp else 14.dp
 
         Box(
@@ -2480,6 +2707,7 @@ class MainActivity : ComponentActivity() {
         }
         var showMoreRules by remember(mode) { mutableStateOf(false) }
         Dialog(onDismissRequest = { previewChoiceMode = null }) {
+            ApplyDialogDimEffect()
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2508,20 +2736,17 @@ class MainActivity : ComponentActivity() {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    SettingLine(
+                    NumberParameterControl(
                         title = "主体占比",
-                        summary = "复杂游戏图标建议 100%，范围 20% 到 150%",
-                        value = "$foregroundSubjectPercent%",
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    SteppedPercentSlider(
+                        summary = "复杂游戏图标建议 100%",
                         value = foregroundSubjectPercent,
+                        draftText = draftForegroundSubjectPercentText,
                         min = MIN_FOREGROUND_SUBJECT_PERCENT,
                         max = MAX_FOREGROUND_SUBJECT_PERCENT,
                         step = 1,
-                        enabled = !isBusy,
-                        showDots = false,
-                        onValueChange = { updateForegroundSubjectPercent(it) },
+                        onDraftChange = { draftForegroundSubjectPercentText = it },
+                        onSave = { updateForegroundSubjectPercent(it) },
+                        icon = SettingsIconKind.Scale,
                     )
                     if (mode == PreviewMode.NormalDark) {
                         Spacer(modifier = Modifier.height(12.dp))
@@ -3070,55 +3295,40 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    /** 第二层级「生成设置」：顶部「滑块 / JSON」切换 + 保存成预设。 */
+    /** 第二层级「生成设置」：顶部「滑块 / JSON」切换 + 保存成预设 + 滑块分类导航。 */
     @Composable
-    private fun AdvancedSeparationSettings() {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            SegmentedControl(
-                labels = AdvancedSettingsTab.entries.map { it.label },
-                selectedIndex = AdvancedSettingsTab.entries.indexOf(advancedSettingsTab).coerceAtLeast(0),
-                onSelected = { index ->
-                    advancedSettingsTab = AdvancedSettingsTab.entries[index]
-                    saveUiState()
-                },
-            )
-            TextButton(
-                text = "保存成预设",
-                onClick = {
-                    presetSaveName = ""
-                    presetSaveDialogVisible = true
-                },
+    private fun GenerationNavCard() {
+        SectionCard {
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-            )
-            when (advancedSettingsTab) {
-                AdvancedSettingsTab.Sliders -> AdvancedCategoryTabs(
-                    selected = advancedSettingsCategory,
-                    onSelected = { category ->
-                        advancedSettingsCategory = category
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                SegmentedControl(
+                    labels = AdvancedSettingsTab.entries.map { it.label },
+                    selectedIndex = AdvancedSettingsTab.entries.indexOf(advancedSettingsTab).coerceAtLeast(0),
+                    onSelected = { index ->
+                        advancedSettingsTab = AdvancedSettingsTab.entries[index]
                         saveUiState()
                     },
                 )
-                AdvancedSettingsTab.Json -> Unit
-            }
-            when (advancedSettingsTab) {
-                AdvancedSettingsTab.Sliders -> when (advancedSettingsCategory) {
-                    AdvancedSettingsCategory.LiquidGlass -> LiquidGlassAdvancedSettings()
-                    AdvancedSettingsCategory.Local -> LocalRuleAdvancedSettings()
-                    AdvancedSettingsCategory.Rmbg -> RmbgAdvancedSettings()
+                TextButton(
+                    text = "保存成预设",
+                    onClick = {
+                        presetSaveName = ""
+                        presetSaveDialogVisible = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (advancedSettingsTab == AdvancedSettingsTab.Sliders) {
+                    AdvancedCategoryTabs(
+                        selected = advancedSettingsCategory,
+                        onSelected = { category ->
+                            advancedSettingsCategory = category
+                            saveUiState()
+                        },
+                    )
                 }
-                AdvancedSettingsTab.Json -> JsonSettingsEditor()
             }
-        }
-    }
-
-    /** 第二层级「生成设置」卡片：滑块与 JSON 共用，保存的预设进入下方「预设设置」。 */
-    @Composable
-    private fun GenerationSettingsCard() {
-        SectionCard(title = "生成设置", summary = "滑块与 JSON 两种方式调整全部参数") {
-            AdvancedSeparationSettings()
         }
     }
 
@@ -3212,215 +3422,231 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LiquidGlassAdvancedSettings() {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            LiquidGlassToggleRow()
-            LiquidGlassSectionTitle("玻璃层")
-            NumberParameterControl(
-                title = "玻璃圆角",
-                summary = "控制玻璃遮罩圆角，背景与主体按同一轮廓裁剪",
-                value = liquidGlassRadius,
-                draftText = draftLiquidGlassRadiusText,
-                min = MIN_LIQUID_GLASS_RADIUS,
-                max = MAX_LIQUID_GLASS_RADIUS,
-                onDraftChange = { draftLiquidGlassRadiusText = it },
-                onSave = { updateLiquidGlassRadius(it) },
-                icon = SettingsIconKind.Radius,
-            )
-            NumberParameterControl(
-                title = "外框高度",
-                summary = "控制玻璃外缘高光的厚度",
-                value = liquidGlassOuterWidth,
-                draftText = draftLiquidGlassOuterWidthText,
-                min = MIN_LIQUID_GLASS_OUTER_WIDTH,
-                max = MAX_LIQUID_GLASS_OUTER_WIDTH,
-                step = 1,
-                onDraftChange = { draftLiquidGlassOuterWidthText = it },
-                onSave = { updateLiquidGlassOuterWidth(it) },
+    private fun LiquidGlassToggleCard() {
+        SectionCard(rowsFullBleed = true) {
+            LibrarySettingRow(
+                title = "液态玻璃风格",
+                summary = "开启后按当前液态玻璃参数重绘背景和前景光影",
                 icon = SettingsIconKind.Glass,
-            )
-            NumberParameterControl(
-                title = "顶部强度",
-                summary = "控制顶边贴边高光的亮度",
-                value = liquidGlassTopAlpha,
-                draftText = draftLiquidGlassTopAlphaText,
-                min = MIN_LIQUID_GLASS_ALPHA,
-                max = MAX_LIQUID_GLASS_ALPHA,
-                step = 1,
-                onDraftChange = { draftLiquidGlassTopAlphaText = it },
-                onSave = { updateLiquidGlassTopAlpha(it) },
-                icon = SettingsIconKind.Spark,
-            )
-            NumberParameterControl(
-                title = "底边强度",
-                summary = "控制底边贴边高光的亮度",
-                value = liquidGlassBottomAlpha,
-                draftText = draftLiquidGlassBottomAlphaText,
-                min = MIN_LIQUID_GLASS_ALPHA,
-                max = MAX_LIQUID_GLASS_ALPHA,
-                step = 1,
-                onDraftChange = { draftLiquidGlassBottomAlphaText = it },
-                onSave = { updateLiquidGlassBottomAlpha(it) },
-                icon = SettingsIconKind.Spark,
-            )
-            NumberParameterControl(
-                title = "背景灰雾",
-                summary = "给图标背景叠加均匀暗雾，降低整体亮度",
-                value = liquidGlassBackgroundMistAlpha,
-                draftText = draftLiquidGlassBackgroundMistAlphaText,
-                min = MIN_LIQUID_GLASS_MIST_ALPHA,
-                max = MAX_LIQUID_GLASS_MIST_ALPHA,
-                step = 1,
-                onDraftChange = { draftLiquidGlassBackgroundMistAlphaText = it },
-                onSave = { updateLiquidGlassBackgroundMistAlpha(it) },
-                icon = SettingsIconKind.Shadow,
-            )
-            NumberParameterControl(
-                title = "底部灰雾",
-                summary = "给底部叠加暗雾渐变，压住底边亮度",
-                value = liquidGlassBottomDarkAlpha,
-                draftText = draftLiquidGlassBottomDarkAlphaText,
-                min = MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-                max = MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-                step = 1,
-                onDraftChange = { draftLiquidGlassBottomDarkAlphaText = it },
-                onSave = { updateLiquidGlassBottomDarkAlpha(it) },
-                icon = SettingsIconKind.Shadow,
-            )
-            LiquidGlassSectionTitle("主体层")
-            NumberParameterControl(
-                title = "主体比例",
-                summary = "调整主体在玻璃层中的缩放比例",
-                value = liquidGlassSubjectScalePercent,
-                draftText = draftLiquidGlassSubjectScaleText,
-                min = MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-                max = MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-                step = 1,
-                onDraftChange = { draftLiquidGlassSubjectScaleText = it },
-                onSave = { updateLiquidGlassSubjectScalePercent(it) },
-                icon = SettingsIconKind.Scale,
-            )
-            NumberParameterControl(
-                title = "主体外框宽度",
-                summary = "沿主体外侧透明边界添加高光描边",
-                value = liquidGlassSubjectOutlineWidth,
-                draftText = draftLiquidGlassSubjectOutlineWidthText,
-                min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                step = 1,
-                onDraftChange = { draftLiquidGlassSubjectOutlineWidthText = it },
-                onSave = { updateLiquidGlassSubjectOutlineWidth(it) },
-                icon = SettingsIconKind.Spark,
-            )
-            NumberParameterControl(
-                title = "主体内框宽度",
-                summary = "沿主体内侧透明边界添加高光描边",
-                value = liquidGlassSubjectInnerOutlineWidth,
-                draftText = draftLiquidGlassSubjectInnerOutlineWidthText,
-                min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                step = 1,
-                onDraftChange = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                onSave = { updateLiquidGlassSubjectInnerOutlineWidth(it) },
-                icon = SettingsIconKind.Spark,
-            )
-            NumberParameterControl(
-                title = "主体阴影",
-                summary = "控制主体投影透明度，增强层次",
-                value = liquidGlassSubjectShadowAlpha,
-                draftText = draftLiquidGlassSubjectShadowAlphaText,
-                min = MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-                max = MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-                step = 1,
-                onDraftChange = { draftLiquidGlassSubjectShadowAlphaText = it },
-                onSave = { updateLiquidGlassSubjectShadowAlpha(it) },
-                icon = SettingsIconKind.Shadow,
-            )
-            NumberParameterControl(
-                title = "主体透明度",
-                summary = "归一化主体后再控制整体不透明度",
-                value = liquidGlassSubjectOpacityPercent,
-                draftText = draftLiquidGlassSubjectOpacityText,
-                min = MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
-                max = MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
-                step = 1,
-                onDraftChange = { draftLiquidGlassSubjectOpacityText = it },
-                onSave = { updateLiquidGlassSubjectOpacityPercent(it) },
-                icon = SettingsIconKind.Glass,
+                showSwitch = true,
+                checked = liquidGlassEnabled,
+                enabled = !isBusy,
+                onCheckedChange = { updateLiquidGlassEnabled(it) },
             )
         }
     }
 
     @Composable
-    private fun LocalRuleAdvancedSettings() {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "这些只影响“本地生成/自动规则”，对已精修 data 包不会重新抠图。",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            NumberParameterControl(
-                title = "背景相似度",
-                summary = "越高越容易把相近颜色当背景",
-                value = backgroundSeparationPercent,
-                draftText = draftBackgroundSeparationText,
-                min = MIN_BACKGROUND_SEPARATION_PERCENT,
-                max = MAX_BACKGROUND_SEPARATION_PERCENT,
-                onDraftChange = { draftBackgroundSeparationText = it },
-                onSave = { updateBackgroundSeparationPercent(it) },
-                icon = SettingsIconKind.Cutout,
-            )
-            NumberParameterControl(
-                title = "底板清理",
-                summary = "越高越容易移除纯色底板",
-                value = plateRemovalPercent,
-                draftText = draftPlateRemovalText,
-                min = MIN_PLATE_REMOVAL_PERCENT,
-                max = MAX_PLATE_REMOVAL_PERCENT,
-                onDraftChange = { draftPlateRemovalText = it },
-                onSave = { updatePlateRemovalPercent(it) },
-                icon = SettingsIconKind.Plate,
-            )
-            NumberParameterControl(
-                title = "旧阴影清理",
-                summary = "清掉原图里的长阴影，不是新增阴影",
-                value = shadowRemovalPercent,
-                draftText = draftShadowRemovalText,
-                min = MIN_SHADOW_REMOVAL_PERCENT,
-                max = MAX_SHADOW_REMOVAL_PERCENT,
-                onDraftChange = { draftShadowRemovalText = it },
-                onSave = { updateShadowRemovalPercent(it) },
-                icon = SettingsIconKind.Eraser,
-            )
-            NumberParameterControl(
-                title = "边缘修补",
-                summary = "修补抠图毛刺和半透明边",
-                value = edgePolishPercent,
-                draftText = draftEdgePolishText,
-                min = MIN_EDGE_POLISH_PERCENT,
-                max = MAX_EDGE_POLISH_PERCENT,
-                onDraftChange = { draftEdgePolishText = it },
-                onSave = { updateEdgePolishPercent(it) },
-                icon = SettingsIconKind.Spark,
-            )
-            Text(
-                text = "本地工作流开关",
-                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight(700)),
-                color = MiuixTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "关闭某一步后，预览、正式生成和批量应用都会跳过该步骤；默认全部开启。",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
+    private fun LiquidGlassSurfaceCard() {
+        SectionCard {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                NumberParameterControl(
+                    title = "玻璃圆角",
+                    summary = "控制玻璃遮罩圆角，背景与主体按同一轮廓裁剪",
+                    value = liquidGlassRadius,
+                    draftText = draftLiquidGlassRadiusText,
+                    min = MIN_LIQUID_GLASS_RADIUS,
+                    max = MAX_LIQUID_GLASS_RADIUS,
+                    onDraftChange = { draftLiquidGlassRadiusText = it },
+                    onSave = { updateLiquidGlassRadius(it) },
+                    icon = SettingsIconKind.Radius,
+                )
+                NumberParameterControl(
+                    title = "外框高度",
+                    summary = "控制玻璃外缘高光的厚度",
+                    value = liquidGlassOuterWidth,
+                    draftText = draftLiquidGlassOuterWidthText,
+                    min = MIN_LIQUID_GLASS_OUTER_WIDTH,
+                    max = MAX_LIQUID_GLASS_OUTER_WIDTH,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassOuterWidthText = it },
+                    onSave = { updateLiquidGlassOuterWidth(it) },
+                    icon = SettingsIconKind.Glass,
+                )
+                NumberParameterControl(
+                    title = "顶部强度",
+                    summary = "控制顶边贴边高光的亮度",
+                    value = liquidGlassTopAlpha,
+                    draftText = draftLiquidGlassTopAlphaText,
+                    min = MIN_LIQUID_GLASS_ALPHA,
+                    max = MAX_LIQUID_GLASS_ALPHA,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassTopAlphaText = it },
+                    onSave = { updateLiquidGlassTopAlpha(it) },
+                    icon = SettingsIconKind.Spark,
+                )
+                NumberParameterControl(
+                    title = "底边强度",
+                    summary = "控制底边贴边高光的亮度",
+                    value = liquidGlassBottomAlpha,
+                    draftText = draftLiquidGlassBottomAlphaText,
+                    min = MIN_LIQUID_GLASS_ALPHA,
+                    max = MAX_LIQUID_GLASS_ALPHA,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassBottomAlphaText = it },
+                    onSave = { updateLiquidGlassBottomAlpha(it) },
+                    icon = SettingsIconKind.Spark,
+                )
+                NumberParameterControl(
+                    title = "背景灰雾",
+                    summary = "给图标背景叠加均匀暗雾，降低整体亮度",
+                    value = liquidGlassBackgroundMistAlpha,
+                    draftText = draftLiquidGlassBackgroundMistAlphaText,
+                    min = MIN_LIQUID_GLASS_MIST_ALPHA,
+                    max = MAX_LIQUID_GLASS_MIST_ALPHA,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassBackgroundMistAlphaText = it },
+                    onSave = { updateLiquidGlassBackgroundMistAlpha(it) },
+                    icon = SettingsIconKind.Shadow,
+                )
+                NumberParameterControl(
+                    title = "底部灰雾",
+                    summary = "给底部叠加暗雾渐变，压住底边亮度",
+                    value = liquidGlassBottomDarkAlpha,
+                    draftText = draftLiquidGlassBottomDarkAlphaText,
+                    min = MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
+                    max = MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassBottomDarkAlphaText = it },
+                    onSave = { updateLiquidGlassBottomDarkAlpha(it) },
+                    icon = SettingsIconKind.Shadow,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun LiquidGlassSubjectCard() {
+        SectionCard {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                NumberParameterControl(
+                    title = "主体比例",
+                    summary = "调整主体在玻璃层中的缩放比例",
+                    value = liquidGlassSubjectScalePercent,
+                    draftText = draftLiquidGlassSubjectScaleText,
+                    min = MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
+                    max = MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassSubjectScaleText = it },
+                    onSave = { updateLiquidGlassSubjectScalePercent(it) },
+                    icon = SettingsIconKind.Scale,
+                )
+                NumberParameterControl(
+                    title = "主体外框宽度",
+                    summary = "沿主体外侧透明边界添加高光描边",
+                    value = liquidGlassSubjectOutlineWidth,
+                    draftText = draftLiquidGlassSubjectOutlineWidthText,
+                    min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                    max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassSubjectOutlineWidthText = it },
+                    onSave = { updateLiquidGlassSubjectOutlineWidth(it) },
+                    icon = SettingsIconKind.Spark,
+                )
+                NumberParameterControl(
+                    title = "主体内框宽度",
+                    summary = "沿主体内侧透明边界添加高光描边",
+                    value = liquidGlassSubjectInnerOutlineWidth,
+                    draftText = draftLiquidGlassSubjectInnerOutlineWidthText,
+                    min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                    max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+                    onSave = { updateLiquidGlassSubjectInnerOutlineWidth(it) },
+                    icon = SettingsIconKind.Spark,
+                )
+                NumberParameterControl(
+                    title = "主体阴影",
+                    summary = "控制主体投影透明度，增强层次",
+                    value = liquidGlassSubjectShadowAlpha,
+                    draftText = draftLiquidGlassSubjectShadowAlphaText,
+                    min = MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
+                    max = MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassSubjectShadowAlphaText = it },
+                    onSave = { updateLiquidGlassSubjectShadowAlpha(it) },
+                    icon = SettingsIconKind.Shadow,
+                )
+                NumberParameterControl(
+                    title = "主体透明度",
+                    summary = "归一化主体后再控制整体不透明度",
+                    value = liquidGlassSubjectOpacityPercent,
+                    draftText = draftLiquidGlassSubjectOpacityText,
+                    min = MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+                    max = MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
+                    step = 1,
+                    onDraftChange = { draftLiquidGlassSubjectOpacityText = it },
+                    onSave = { updateLiquidGlassSubjectOpacityPercent(it) },
+                    icon = SettingsIconKind.Glass,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun LocalRuleTuningCard() {
+        SectionCard {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                NumberParameterControl(
+                    title = "背景相似度",
+                    summary = "越高越容易把相近颜色当背景",
+                    value = backgroundSeparationPercent,
+                    draftText = draftBackgroundSeparationText,
+                    min = MIN_BACKGROUND_SEPARATION_PERCENT,
+                    max = MAX_BACKGROUND_SEPARATION_PERCENT,
+                    onDraftChange = { draftBackgroundSeparationText = it },
+                    onSave = { updateBackgroundSeparationPercent(it) },
+                    icon = SettingsIconKind.Cutout,
+                )
+                NumberParameterControl(
+                    title = "底板清理",
+                    summary = "越高越容易移除纯色底板",
+                    value = plateRemovalPercent,
+                    draftText = draftPlateRemovalText,
+                    min = MIN_PLATE_REMOVAL_PERCENT,
+                    max = MAX_PLATE_REMOVAL_PERCENT,
+                    onDraftChange = { draftPlateRemovalText = it },
+                    onSave = { updatePlateRemovalPercent(it) },
+                    icon = SettingsIconKind.Plate,
+                )
+                NumberParameterControl(
+                    title = "旧阴影清理",
+                    summary = "清掉原图里的长阴影，不是新增阴影",
+                    value = shadowRemovalPercent,
+                    draftText = draftShadowRemovalText,
+                    min = MIN_SHADOW_REMOVAL_PERCENT,
+                    max = MAX_SHADOW_REMOVAL_PERCENT,
+                    onDraftChange = { draftShadowRemovalText = it },
+                    onSave = { updateShadowRemovalPercent(it) },
+                    icon = SettingsIconKind.Eraser,
+                )
+                NumberParameterControl(
+                    title = "边缘修补",
+                    summary = "修补抠图毛刺和半透明边",
+                    value = edgePolishPercent,
+                    draftText = draftEdgePolishText,
+                    min = MIN_EDGE_POLISH_PERCENT,
+                    max = MAX_EDGE_POLISH_PERCENT,
+                    onDraftChange = { draftEdgePolishText = it },
+                    onSave = { updateEdgePolishPercent(it) },
+                    icon = SettingsIconKind.Spark,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun LocalWorkflowPipelineCard() {
+        SectionCard(rowsFullBleed = true) {
             LocalWorkflowToggleRow("背景估计与相减", "普通图标和 Adaptive 图标的背景分离", localBackgroundSeparationEnabled, "background")
             LocalWorkflowToggleRow("Adaptive 自动选层", "在合成前景与直接前景之间自动判断", localAdaptiveSelectionEnabled, "adaptive")
             LocalWorkflowToggleRow("角落蒙版清理", "清理 Adaptive 四角残留", localCornerMaskCleanupEnabled, "corner")
@@ -3449,108 +3675,76 @@ class MainActivity : ComponentActivity() {
         checked: Boolean,
         key: String,
     ) {
-        val interactionSource = remember { MutableInteractionSource() }
-        val pressed by interactionSource.collectIsPressedAsState()
-        val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
-        val bridge = LocalSectionCardPressBridge.current
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .trackSectionPress(bridge, pressed)
-                .cardRowBleed(bleedPx)
-                .background(cardRowPressedColor(pressed))
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    enabled = !isBusy,
-                    onClick = { updateLocalWorkflowToggle(key, !checked) },
-                )
-                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                .padding(vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SettingsLineIcon(kind = SettingsIconKind.Cutout)
+        LibrarySettingRow(
+            title = title,
+            summary = summary,
+            icon = SettingsIconKind.Cutout,
+            showSwitch = true,
+            checked = checked,
+            enabled = !isBusy,
+            onCheckedChange = { updateLocalWorkflowToggle(key, it) },
+        )
+    }
+
+    @Composable
+    private fun RmbgTuningCard() {
+        SectionCard {
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                NumberParameterControl(
+                    title = "Alpha 力度",
+                    summary = "100 不变，越高越实",
+                    value = rmbgAlphaStrengthPercent,
+                    draftText = draftRmbgAlphaStrengthText,
+                    min = MIN_RMBG_ALPHA_STRENGTH_PERCENT,
+                    max = MAX_RMBG_ALPHA_STRENGTH_PERCENT,
+                    onDraftChange = { draftRmbgAlphaStrengthText = it },
+                    onSave = { updateRmbgAlphaStrengthPercent(it) },
+                    icon = SettingsIconKind.Cutout,
                 )
-                Text(
-                    text = summary,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                NumberParameterControl(
+                    title = "边缘柔化",
+                    summary = "越高边缘越软",
+                    value = rmbgEdgeFeatherPercent,
+                    draftText = draftRmbgEdgeFeatherText,
+                    min = MIN_RMBG_EDGE_FEATHER_PERCENT,
+                    max = MAX_RMBG_EDGE_FEATHER_PERCENT,
+                    onDraftChange = { draftRmbgEdgeFeatherText = it },
+                    onSave = { updateRmbgEdgeFeatherPercent(it) },
+                    icon = SettingsIconKind.Cutout,
+                )
+                NumberParameterControl(
+                    title = "边缘扩缩",
+                    summary = "低收缩，高扩张",
+                    value = rmbgEdgeAdjustPercent,
+                    draftText = draftRmbgEdgeAdjustText,
+                    min = MIN_RMBG_EDGE_ADJUST_PERCENT,
+                    max = MAX_RMBG_EDGE_ADJUST_PERCENT,
+                    onDraftChange = { draftRmbgEdgeAdjustText = it },
+                    onSave = { updateRmbgEdgeAdjustPercent(it) },
+                    icon = SettingsIconKind.Scale,
+                )
+                NumberParameterControl(
+                    title = "弱透明保留",
+                    summary = "越高越保留半透明细节",
+                    value = rmbgWeakAlphaKeepPercent,
+                    draftText = draftRmbgWeakAlphaKeepText,
+                    min = MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+                    max = MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
+                    onDraftChange = { draftRmbgWeakAlphaKeepText = it },
+                    onSave = { updateRmbgWeakAlphaKeepPercent(it) },
+                    icon = SettingsIconKind.Cutout,
                 )
             }
-            LiquidGlassSwitch(checked = checked, enabled = !isBusy)
         }
     }
 
     @Composable
-    private fun RmbgAdvancedSettings() {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "这些只影响 RMBG 候选图，已精修主体不走这组参数。",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            NumberParameterControl(
-                title = "Alpha 力度",
-                summary = "100 不变，越高越实",
-                value = rmbgAlphaStrengthPercent,
-                draftText = draftRmbgAlphaStrengthText,
-                min = MIN_RMBG_ALPHA_STRENGTH_PERCENT,
-                max = MAX_RMBG_ALPHA_STRENGTH_PERCENT,
-                onDraftChange = { draftRmbgAlphaStrengthText = it },
-                onSave = { updateRmbgAlphaStrengthPercent(it) },
-                icon = SettingsIconKind.Cutout,
-            )
-            NumberParameterControl(
-                title = "边缘柔化",
-                summary = "越高边缘越软",
-                value = rmbgEdgeFeatherPercent,
-                draftText = draftRmbgEdgeFeatherText,
-                min = MIN_RMBG_EDGE_FEATHER_PERCENT,
-                max = MAX_RMBG_EDGE_FEATHER_PERCENT,
-                onDraftChange = { draftRmbgEdgeFeatherText = it },
-                onSave = { updateRmbgEdgeFeatherPercent(it) },
-                icon = SettingsIconKind.Cutout,
-            )
-            NumberParameterControl(
-                title = "边缘扩缩",
-                summary = "低收缩，高扩张",
-                value = rmbgEdgeAdjustPercent,
-                draftText = draftRmbgEdgeAdjustText,
-                min = MIN_RMBG_EDGE_ADJUST_PERCENT,
-                max = MAX_RMBG_EDGE_ADJUST_PERCENT,
-                onDraftChange = { draftRmbgEdgeAdjustText = it },
-                onSave = { updateRmbgEdgeAdjustPercent(it) },
-                icon = SettingsIconKind.Scale,
-            )
-            NumberParameterControl(
-                title = "弱透明保留",
-                summary = "越高越保留半透明细节",
-                value = rmbgWeakAlphaKeepPercent,
-                draftText = draftRmbgWeakAlphaKeepText,
-                min = MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-                max = MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-                onDraftChange = { draftRmbgWeakAlphaKeepText = it },
-                onSave = { updateRmbgWeakAlphaKeepPercent(it) },
-                icon = SettingsIconKind.Cutout,
-            )
+    private fun JsonSettingsEditorCard() {
+        SectionCard {
+            JsonSettingsEditor()
         }
     }
 
@@ -3559,7 +3753,9 @@ class MainActivity : ComponentActivity() {
     private fun refreshPresets() {
         presetListVersion += 1
         val stored = presetStore.activePresetId
-        activePresetId = if (stored != null && presetStore.get(stored) != null) stored else null
+        val preset = if (stored != null) presetStore.get(stored) else null
+        activePresetId = preset?.id
+        activePresetBaseParams = preset?.params
     }
 
     private fun loadPresetState() {
@@ -3620,10 +3816,11 @@ class MainActivity : ComponentActivity() {
             return
         }
         val now = System.currentTimeMillis()
+        val current = currentTuningParams()
         val preset = TuningPreset(
             id = UUID.randomUUID().toString(),
             name = name,
-            params = currentTuningParams(),
+            params = current,
             createdAt = now,
             updatedAt = now,
         )
@@ -3633,9 +3830,42 @@ class MainActivity : ComponentActivity() {
         }
         presetStore.activePresetId = preset.id
         activePresetId = preset.id
+        activePresetBaseParams = current
         presetListVersion += 1
         presetSaveDialogVisible = false
         statusText = "已保存预设「$name」（${preset.params.toParamMap().size} 项参数）"
+    }
+
+    private fun overwritePreset(preset: TuningPreset) {
+        val now = System.currentTimeMillis()
+        val current = currentTuningParams()
+        val updated = preset.copy(
+            params = current,
+            updatedAt = now,
+        )
+        if (!presetStore.save(updated)) {
+            statusText = "更新预设失败"
+            return
+        }
+        presetStore.activePresetId = updated.id
+        activePresetId = updated.id
+        activePresetBaseParams = current
+        presetListVersion += 1
+        statusText = "已覆盖更新预设「${updated.name}」"
+    }
+
+    private fun resetToPreset(preset: TuningPreset) {
+        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
+            statusText = "当前有任务在运行，请等待"
+            return
+        }
+        val before = currentTuningParams()
+        val merged = TuningParams.fromParamMap(preset.params.toParamMap(), before)
+        applyTuningParams(merged, rebuildCandidates = true)
+        presetStore.activePresetId = preset.id
+        activePresetId = preset.id
+        activePresetBaseParams = preset.params
+        statusText = "已重置回预设「${preset.name}」初始参数"
     }
 
     private fun applyPreset(preset: TuningPreset) {
@@ -3648,6 +3878,7 @@ class MainActivity : ComponentActivity() {
         applyTuningParams(merged, rebuildCandidates = true)
         presetStore.activePresetId = preset.id
         activePresetId = preset.id
+        activePresetBaseParams = preset.params
         statusText = "已应用预设「${preset.name}」，${before.diffSummary(merged)}"
     }
 
@@ -3655,6 +3886,7 @@ class MainActivity : ComponentActivity() {
         presetStore.delete(id)
         if (activePresetId == id) {
             activePresetId = null
+            activePresetBaseParams = null
         }
         presetListVersion += 1
         statusText = "已删除预设"
@@ -3683,6 +3915,17 @@ class MainActivity : ComponentActivity() {
         }
         clipboard.setPrimaryClip(ClipData.newPlainText("ArtPlus预设", json))
         statusText = "已复制 ${presetStore.all().size} 条预设 JSON 到剪贴板"
+    }
+
+    private fun exportSinglePresetToClipboard(preset: TuningPreset) {
+        val json = presetStore.exportSingleJson(preset)
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        if (clipboard == null) {
+            statusText = "剪贴板不可用"
+            return
+        }
+        clipboard.setPrimaryClip(ClipData.newPlainText("ArtPlus预设-${preset.name}", json))
+        statusText = "已复制预设「${preset.name}」JSON 到剪贴板"
     }
 
     private fun importPresetsFromText(text: String) {
@@ -3944,165 +4187,639 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    /** 预设 A/B 对比的临时状态。 */
-    private data class PresetCompareState(
-        val presetName: String,
-        val before: Bitmap,
-        val after: Bitmap,
-    )
-
-    /** 把当前 session 的默认候选合成一张预览位图（前景叠背景叠桌面底色）。 */
-    private fun renderPreviewSnapshot(session: GenerationSession): Bitmap? {
-        val choice = previewSelections.normalLight
-        val candidate = candidateForChoice(session, choice) ?: return null
-        val background = candidate.recbg
-        if (background.width <= 0 || background.height <= 0) {
-            return null
-        }
-        val foreground = renderCandidateForegroundBase(candidate)
-        val out = Bitmap.createBitmap(background.width, background.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-        canvas.drawColor(previewDesktopBackground.fallbackColor.toArgb())
-        canvas.drawBitmap(background, 0f, 0f, Paint(Paint.FILTER_BITMAP_FLAG))
-        canvas.drawBitmap(foreground, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
-        return out
-    }
-
-    /** 预设 A/B：同步重建当前应用在预设参数下的结果，与当前参数并排对比。 */
-    private fun comparePreset(preset: TuningPreset) {
-        val session = activeGenerationSession ?: run {
-            statusText = "先选择一个应用"
-            return
-        }
-        val app = apps.firstOrNull { it.packageName == session.packageName } ?: return
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        val before = renderPreviewSnapshot(session) ?: run {
-            statusText = "当前预览不可用"
-            return
-        }
-        val beforeParams = currentTuningParams()
-        applyTuningParams(
-            TuningParams.fromParamMap(preset.params.toParamMap(), beforeParams),
-            rebuildCandidates = false,
-            refreshPreview = false,
-            captureUndo = false,
-            persist = false,
-        )
-        val rebuilt = rebuildLocalSession(session, app)
-        val after = renderPreviewSnapshot(rebuilt)
-        applyTuningParams(beforeParams, rebuildCandidates = false, refreshPreview = false, captureUndo = false)
-        if (after == null) {
-            statusText = "对比渲染失败"
-            return
-        }
-        presetCompare = PresetCompareState(presetName = preset.name, before = before, after = after)
-        statusText = "已生成「${preset.name}」对比预览"
-    }
-
     @Composable
-    private fun PresetSettingsCard() {
+    private fun PresetStatusCard() {
         val presets = remember(presetListVersion) { presetStore.all() }
-        SectionCard(
-            title = "预设设置",
-            summary = "保存全部调参快照，可应用、对比或批量应用；批量流程只走本地。",
-        ) {
-            val activePreset = presets.firstOrNull { it.id == activePresetId }
+        val activePreset = presets.firstOrNull { it.id == activePresetId }
+        val currentParams = currentTuningParams()
+        val isPresetModified = activePreset != null && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: activePreset.params))
+
+        SectionCard {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // 单槽位点击切换：点击当前预设槽位弹出列表上下选择（Issue 反馈）
-                val presetPickerEnabled = presets.isNotEmpty() && !isBusy
-                LibraryChoiceRow(
-                    title = "当前预设",
-                    summary = activePreset?.let { "已应用「${it.name}」· 点击切换" }
-                        ?: if (presets.isEmpty()) "暂无预设 · 先保存一个" else "未应用任何预设 · 点击选择",
-                    value = activePreset?.name,
-                    icon = SettingsIconKind.Layers,
-                    enabled = presetPickerEnabled,
-                    entry = remember(presets, activePresetId, presetPickerEnabled) {
-                        DropdownEntry(
-                            items = presets.map { preset ->
-                                DropdownItem(
-                                    text = preset.name,
-                                    summary = formatPresetDate(preset.updatedAt) +
-                                        if (preset.id == activePresetId) " · 已应用" else "",
-                                    selected = preset.id == activePresetId,
-                                    onClick = { applyPreset(preset) },
-                                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (activePreset != null) {
+                                    if (isPresetModified) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.6f) else MiuixTheme.colorScheme.primaryVariant
+                                } else {
+                                    MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
+                                }
+                            ),
+                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                text = when {
+                                    activePreset != null -> "当前生效：${activePreset.name}"
+                                    else -> "当前生效：自定义调参"
+                                },
+                                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (activePreset != null && isPresetModified) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                                ) {
+                                    Text(
+                                        text = "已修改",
+                                        style = MiuixTheme.textStyles.footnote2.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 11.sp,
+                                        ),
+                                        color = MiuixTheme.colorScheme.primaryVariant,
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = when {
+                                activePreset != null && isPresetModified -> "与快照有参数差异 · ${currentParams.diffSummary(activePreset.params)}"
+                                activePreset != null -> "与快照保持一致 · 更新于 ${formatPresetDate(activePreset.updatedAt)}"
+                                else -> "未绑定预设快照 · 可保存为独立快照"
+                            },
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+
+                if (activePreset != null && isPresetModified) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TextButton(
+                                text = "覆盖更新",
+                                onClick = { overwritePreset(activePreset) },
+                                enabled = !isBusy,
+                                modifier = Modifier.weight(1f),
+                            )
+                            TextButton(
+                                text = "另存为",
+                                onClick = {
+                                    presetSaveName = "${activePreset.name} (副本)"
+                                    presetSaveDialogVisible = true
+                                },
+                                enabled = !isBusy,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        TextButton(
+                            text = "重置到快照",
+                            onClick = { resetToPreset(activePreset) },
+                            enabled = !isBusy,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                } else if (activePreset != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TextButton(
+                            text = "另存为",
+                            onClick = {
+                                presetSaveName = "${activePreset.name} (副本)"
+                                presetSaveDialogVisible = true
+                            },
+                            enabled = !isBusy,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = "恢复出厂",
+                            onClick = { resetToDefaults() },
+                            enabled = !isBusy,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        TextButton(
+                            text = "保存为预设",
+                            onClick = {
+                                presetSaveName = ""
+                                presetSaveDialogVisible = true
+                            },
+                            enabled = !isBusy,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            text = "恢复出厂",
+                            onClick = { resetToDefaults() },
+                            enabled = !isBusy,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun PresetLibraryCard() {
+        val presets = remember(presetListVersion) { presetStore.all() }
+        val activePreset = presets.firstOrNull { it.id == activePresetId }
+        val currentParams = currentTuningParams()
+
+        val filtered = remember(presets, presetSearchQuery) {
+            if (presetSearchQuery.isBlank()) presets
+            else presets.filter { it.name.contains(presetSearchQuery.trim(), ignoreCase = true) }
+        }
+
+        val displayList = remember(filtered, activePresetId, presetListExpanded, presetSearchQuery) {
+            if (presetSearchQuery.isNotBlank() || presetListExpanded || filtered.size <= 5) {
+                filtered
+            } else {
+                val result = mutableListOf<TuningPreset>()
+                val active = filtered.firstOrNull { it.id == activePresetId }
+                if (active != null) {
+                    result.add(active)
+                }
+                filtered.forEach { p ->
+                    if (p.id != activePresetId && result.size < 5) {
+                        result.add(p)
+                    }
+                }
+                result
+            }
+        }
+
+        SectionCard {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "预设快照库 (${presets.size})",
+                        style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
+                    if (presets.isNotEmpty()) {
+                        Text(
+                            text = "轻按条目套用",
+                            style = MiuixTheme.textStyles.footnote2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
+                }
+
+                if (presets.size >= 8) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Image(
+                            imageVector = Lucide.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+                        )
+                        BasicTextField(
+                            value = presetSearchQuery,
+                            onValueChange = { presetSearchQuery = it },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            textStyle = MiuixTheme.textStyles.body2.copy(
+                                color = MiuixTheme.colorScheme.onSurface,
+                            ),
+                            cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
+                            decorationBox = { innerTextField ->
+                                if (presetSearchQuery.isEmpty()) {
+                                    Text(
+                                        text = "搜索预设名称...",
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
+                                    )
+                                }
+                                innerTextField()
                             },
                         )
-                    },
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    TextButton(
-                        text = "保存为预设",
-                        onClick = {
-                            presetSaveName = ""
-                            presetSaveDialogVisible = true
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        text = "还原上一步",
-                        onClick = { restoreLastParams() },
-                        enabled = lastParamsSnapshot != null,
-                        modifier = Modifier.weight(1f),
-                    )
+                        if (presetSearchQuery.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(CircleShape)
+                                    .clickable { presetSearchQuery = "" },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Image(
+                                    imageVector = Lucide.X,
+                                    contentDescription = "清除",
+                                    modifier = Modifier.size(14.dp),
+                                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+                                )
+                            }
+                        }
+                    }
                 }
-                TextButton(
-                    text = "恢复默认配置",
-                    onClick = { resetToDefaults() },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    CompactActionButton(
-                        text = "导出到剪贴板",
-                        onClick = { exportPresetsToClipboard() },
-                        enabled = true,
-                        modifier = Modifier.weight(1f),
-                        height = 48.dp,
-                    )
-                    CompactActionButton(
-                        text = "导入",
-                        onClick = {
-                            presetImportText = ""
-                            presetImportDialogVisible = true
-                        },
-                        enabled = true,
-                        modifier = Modifier.weight(1f),
-                        height = 48.dp,
-                    )
-                }
+
                 if (presets.isEmpty()) {
-                    Text(
-                        text = "还没有预设。先在本地规则/液态玻璃/RMBG 里调好参数，再点「保存为预设」。",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Image(
+                                imageVector = Lucide.Layers,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp),
+                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
+                            )
+                            Text(
+                                text = "暂无预设快照",
+                                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                                color = MiuixTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "在「生成参数」微调好效果后，点击上方「保存为预设」即可创建",
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 24.dp),
+                            )
+                        }
+                    }
+                } else if (filtered.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "未找到包含「$presetSearchQuery」的预设",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
                 } else {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        presets.forEach { preset ->
-                            PresetRow(preset)
+                        displayList.forEach { preset ->
+                            val isActive = preset.id == activePresetId
+                            val isModified = isActive && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: preset.params))
+                            CompactPresetRow(
+                                preset = preset,
+                                isActive = isActive,
+                                isModified = isModified,
+                                onApply = { applyPreset(preset) },
+                                onMore = { presetActionMenuTarget = preset },
+                            )
+                        }
+
+                        if (presets.size > 5 && presetSearchQuery.isBlank()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { presetListExpanded = !presetListExpanded }
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = if (presetListExpanded) "收起 ▴" else "展开查看全部 (共 ${presets.size} 个) ▾",
+                                    style = MiuixTheme.textStyles.footnote1.copy(fontWeight = FontWeight.Medium),
+                                    color = MiuixTheme.colorScheme.primaryVariant,
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    @Composable
+    private fun CompactPresetRow(
+        preset: TuningPreset,
+        isActive: Boolean,
+        isModified: Boolean,
+        onApply: () -> Unit,
+        onMore: () -> Unit,
+    ) {
+        val containerBg = if (isActive) {
+            MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+        } else {
+            MiuixTheme.colorScheme.surfaceContainerHigh
+        }
+        val tags = remember(preset.params) { preset.featureTags() }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(containerBg)
+                .clickable(enabled = !isBusy) { onApply() }
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isActive) {
+                            if (isModified) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.6f) else MiuixTheme.colorScheme.primaryVariant
+                        } else {
+                            Color.Transparent
+                        }
+                    ),
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = preset.name,
+                        style = MiuixTheme.textStyles.body1.copy(
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                        ),
+                        color = if (isActive) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    tags.forEach { tag ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.12f))
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                        ) {
+                            Text(
+                                text = tag,
+                                style = MiuixTheme.textStyles.footnote2.copy(fontSize = 10.sp),
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            )
+                        }
+                    }
+                }
+
+                Text(
+                    text = formatPresetDate(preset.updatedAt) + if (isActive) (if (isModified) " · 已套用 (已修改)" else " · 已套用") else "",
+                    style = MiuixTheme.textStyles.footnote2,
+                    color = if (isActive) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.8f) else MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(enabled = !isBusy) { onMore() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    imageVector = Lucide.EllipsisVertical,
+                    contentDescription = "更多操作",
+                    modifier = Modifier.size(16.dp),
+                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun PresetActionMenuDialog(
+        target: TuningPreset,
+        onDismiss: () -> Unit,
+    ) {
+        MiuixBottomDialog(onDismissRequest = onDismiss) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "预设选项：${target.name}",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                        .padding(vertical = 8.dp),
+                ) {
+                    PresetMenuItem(
+                        title = "应用此预设",
+                        summary = "载入此快照的全部调参设置",
+                        onClick = {
+                            onDismiss()
+                            applyPreset(target)
+                        },
+                    )
+                    PresetMenuItem(
+                        title = "覆盖为此预设",
+                        summary = "将当前所有调参保存覆盖到「${target.name}」",
+                        onClick = {
+                            onDismiss()
+                            overwritePreset(target)
+                        },
+                    )
+                    PresetMenuItem(
+                        title = "重命名",
+                        summary = "修改该预设名称",
+                        onClick = {
+                            onDismiss()
+                            presetRenameTarget = target
+                        },
+                    )
+                    PresetMenuItem(
+                        title = "复制单条 JSON",
+                        summary = "导出该预设快照到剪贴板，方便分享",
+                        onClick = {
+                            onDismiss()
+                            exportSinglePresetToClipboard(target)
+                        },
+                    )
+                    PresetMenuItem(
+                        title = "删除预设",
+                        summary = "从预设库中彻底移除",
+                        onClick = {
+                            onDismiss()
+                            presetDeleteConfirmTarget = target
+                        },
+                    )
+                }
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(
+                        text = "取消",
+                        style = MiuixTheme.textStyles.button,
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun PresetMenuItem(
+        title: String,
+        summary: String,
+        onClick: () -> Unit,
+    ) {
+        val interactionSource = remember { MutableInteractionSource() }
+        val pressed by interactionSource.collectIsPressedAsState()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(if (pressed) MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f) else Color.Transparent)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    enabled = !isBusy,
+                    onClick = onClick,
+                )
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = title,
+                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.SemiBold),
+                color = MiuixTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = summary,
+                style = MiuixTheme.textStyles.footnote1,
+                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+
+    @Composable
+    private fun PresetDeleteConfirmDialog(
+        target: TuningPreset,
+        onDismiss: () -> Unit,
+    ) {
+        MiuixBottomDialog(onDismissRequest = onDismiss) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "删除预设",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = "确定要删除预设「${target.name}」吗？此操作不可撤销。",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "取消",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            onDismiss()
+                            deletePreset(target.id)
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "确认删除",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun PresetPageDialogs() {
         if (presetSaveDialogVisible) {
             PresetNameDialog(
                 title = "保存当前为预设",
@@ -4127,62 +4844,23 @@ class MainActivity : ComponentActivity() {
                 onDismiss = { presetRenameTarget = null },
             )
         }
+        presetActionMenuTarget?.let { target ->
+            PresetActionMenuDialog(
+                target = target,
+                onDismiss = { presetActionMenuTarget = null },
+            )
+        }
+        presetDeleteConfirmTarget?.let { target ->
+            PresetDeleteConfirmDialog(
+                target = target,
+                onDismiss = { presetDeleteConfirmTarget = null },
+            )
+        }
         if (presetImportDialogVisible) {
             PresetImportDialog(
                 onConfirm = { text -> importPresetsFromText(text) },
                 onDismiss = { presetImportDialogVisible = false },
             )
-        }
-    }
-
-    @Composable
-    private fun PresetRow(preset: TuningPreset) {
-        val isActive = preset.id == activePresetId
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            SettingLine(
-                title = preset.name,
-                summary = formatPresetDate(preset.updatedAt) + if (isActive) " · 已应用" else "",
-                value = if (isActive) "已应用" else "",
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TextButton(
-                    text = "应用",
-                    onClick = { applyPreset(preset) },
-                    enabled = !isBusy,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(
-                    text = "对比当前",
-                    onClick = { comparePreset(preset) },
-                    enabled = !isBusy,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TextButton(
-                    text = "重命名",
-                    onClick = { presetRenameTarget = preset },
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(
-                    text = "删除",
-                    onClick = { deletePreset(preset.id) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
         }
     }
 
@@ -4195,18 +4873,18 @@ class MainActivity : ComponentActivity() {
         onDismiss: () -> Unit,
     ) {
         var name by remember(initialName) { mutableStateOf(initialName) }
-        Dialog(onDismissRequest = onDismiss) {
+        MiuixBottomDialog(onDismissRequest = onDismiss) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
                     text = title,
-                    style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight(700)),
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -4218,19 +4896,33 @@ class MainActivity : ComponentActivity() {
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    TextButton(
-                        text = "取消",
+                    Button(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        text = confirmLabel,
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "取消",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
                         onClick = { onConfirm(name.trim()) },
                         enabled = name.trim().isNotEmpty(),
                         modifier = Modifier.weight(1f),
-                    )
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = confirmLabel,
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }
@@ -4242,18 +4934,18 @@ class MainActivity : ComponentActivity() {
         onDismiss: () -> Unit,
     ) {
         var text by remember { mutableStateOf("") }
-        Dialog(onDismissRequest = onDismiss) {
+        MiuixBottomDialog(onDismissRequest = onDismiss) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
                     text = "导入预设 JSON",
-                    style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight(700)),
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
                     color = MiuixTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -4287,19 +4979,33 @@ class MainActivity : ComponentActivity() {
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    TextButton(
-                        text = "取消",
+                    Button(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        text = "导入",
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "取消",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
                         onClick = { onConfirm(text) },
                         enabled = text.trim().isNotEmpty(),
                         modifier = Modifier.weight(1f),
-                    )
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "导入",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }
@@ -4320,7 +5026,7 @@ class MainActivity : ComponentActivity() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "全部调参参数（含本地工作流开关、分离/清理/RMBG/液态玻璃/自适应/各模式选型）。滑块改动会同步到这里，也可直接编辑 JSON 后保存。",
+                text = "全部调参参数（含本地工作流开关、分离/清理/RMBG/液态玻璃/自适应/各模式选型）。可视化改动会同步到这里，也可直接编辑 JSON 后保存。",
                 style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 maxLines = 3,
@@ -4380,19 +5086,21 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun ServiceConfirmDialog() {
         val request = pendingServiceConfirm ?: return
-        Dialog(onDismissRequest = { dismissServiceConfirm(confirmed = false) }) {
+        MiuixBottomDialog(onDismissRequest = { dismissServiceConfirm(confirmed = false) }) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
                     text = request.title,
-                    style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight(700)),
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
                     color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -4400,131 +5108,153 @@ class MainActivity : ComponentActivity() {
                     text = request.message,
                     style = MiuixTheme.textStyles.body1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 4,
+                    textAlign = TextAlign.Center,
+                    maxLines = 6,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    TextButton(
-                        text = "取消",
+                    Button(
                         onClick = { dismissServiceConfirm(confirmed = false) },
                         modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        text = request.confirmLabel,
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "取消",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
                         onClick = { dismissServiceConfirm(confirmed = true) },
                         modifier = Modifier.weight(1f),
-                    )
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = request.confirmLabel,
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
         }
     }
 
-    /** 实时拖动对比：before 覆盖在 after 上，拖动分割线切换显示比例。 */
     @Composable
-    private fun CompareSlider(
-        before: ImageBitmap,
-        after: ImageBitmap,
-        modifier: Modifier = Modifier,
-    ) {
-        var fraction by remember { mutableFloatStateOf(0.5f) }
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color.Black)
-                .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        fraction = (fraction + dragAmount.x / size.width).coerceIn(0.03f, 0.97f)
-                    }
-                },
-        ) {
-            Image(
-                bitmap = after,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .drawWithContent {
-                        clipRect(right = size.width * fraction) {
-                            this@drawWithContent.drawContent()
-                        }
-                    },
-            ) {
-                Image(
-                    bitmap = before,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .drawBehind {
-                        val x = size.width * fraction
-                        drawLine(
-                            color = Color.White,
-                            start = Offset(x, 0f),
-                            end = Offset(x, size.height),
-                            strokeWidth = 2.dp.toPx(),
-                        )
-                    },
-            )
-            Text(
-                text = "← 当前",
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color.White,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(8.dp),
-            )
-            Text(
-                text = "预设 →",
-                style = MiuixTheme.textStyles.footnote1,
-                color = Color.White,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp),
-            )
-        }
-    }
-
-    @Composable
-    private fun PresetCompareDialog() {
-        val state = presetCompare ?: return
-        Dialog(onDismissRequest = { presetCompare = null }) {
+    private fun RootWriteConfirmDialog() {
+        val request = pendingRootWriteConfirm ?: return
+        MiuixBottomDialog(onDismissRequest = { pendingRootWriteConfirm = null }) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = "A/B 对比：${state.presetName}",
-                    style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight(700)),
+                    text = "确认写入",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
                     color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                CompareSlider(
-                    before = state.before.asImageBitmap(),
-                    after = state.after.asImageBitmap(),
-                )
-                TextButton(
-                    text = "关闭",
-                    onClick = { presetCompare = null },
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                )
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "将直接把当前生成的内容写入到指定路径：",
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = request.targetPath,
+                        style = MiuixTheme.textStyles.footnote1.copy(fontWeight = FontWeight.SemiBold),
+                        color = MiuixTheme.colorScheme.primaryVariant,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "是否确认写入${request.rootWriteMode.label}？",
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(999.dp))
+                        .clickable { rootWriteConfirmRememberSkip = !rootWriteConfirmRememberSkip }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Checkbox(
+                        state = ToggleableState(rootWriteConfirmRememberSkip),
+                        onClick = { rootWriteConfirmRememberSkip = !rootWriteConfirmRememberSkip },
+                        colors = CheckboxDefaults.checkboxColors(
+                            checkedBackgroundColor = MiuixTheme.colorScheme.primaryVariant,
+                            checkedForegroundColor = MiuixTheme.colorScheme.onPrimaryVariant,
+                            uncheckedBackgroundColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
+                            uncheckedForegroundColor = Color.Transparent,
+                        ),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "以后都自动确认",
+                        style = MiuixTheme.textStyles.footnote2,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
+                        onClick = { pendingRootWriteConfirm = null },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "取消",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            val onConfirm = request.onConfirm
+                            val shouldSkip = rootWriteConfirmRememberSkip
+                            pendingRootWriteConfirm = null
+                            if (shouldSkip) {
+                                autoConfirmRootWrite = true
+                                saveUiState()
+                            }
+                            onConfirm()
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "确认写入",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
+                }
             }
         }
     }
@@ -4539,101 +5269,31 @@ class MainActivity : ComponentActivity() {
         showDots: Boolean = true,
         onValueChange: (Int) -> Unit,
     ) {
-        val density = LocalDensity.current
-        val inactiveColor = MiuixTheme.colorScheme.surfaceContainerHigh
-        val nodeColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.38f)
-        val activeColor = MiuixTheme.colorScheme.primaryVariant
-        val thumbColor = MiuixTheme.colorScheme.onPrimaryVariant
-        val disabledAlpha = if (enabled) 1f else 0.48f
-        val steps = ((max - min) / step).coerceAtLeast(1)
-        val safeIndex = (((value.coerceIn(min, max) - min).toFloat() / step.toFloat()).roundToInt())
-            .coerceIn(0, steps)
-        val currentValue by rememberUpdatedState(value)
+        val safeMin = min.toFloat()
+        val safeMax = max.coerceAtLeast(min + 1).toFloat()
+        val safeStep = step.coerceAtLeast(1)
+        val rangeSpan = (max - min).coerceAtLeast(1)
+        val stepCount = rangeSpan / safeStep
+        val steps = (stepCount - 1).coerceAtLeast(0)
+        val showKeyPoints = showDots && stepCount in 1..30
         val currentOnValueChange by rememberUpdatedState(onValueChange)
-        var widthPx by remember { mutableStateOf(0) }
-        val sideInsetPx = with(density) { 28.dp.toPx() }
 
-        fun updateFromX(x: Float) {
-            if (!enabled || widthPx <= 0) {
-                return
-            }
-            val trackStart = sideInsetPx
-            val trackEnd = (widthPx.toFloat() - sideInsetPx).coerceAtLeast(trackStart + 1f)
-            val ratio = ((x.coerceIn(trackStart, trackEnd) - trackStart) / (trackEnd - trackStart))
-                .coerceIn(0f, 1f)
-            val nextIndex = (ratio * steps).roundToInt().coerceIn(0, steps)
-            val nextValue = min + nextIndex * step
-            if (nextValue != currentValue) {
-                currentOnValueChange(nextValue)
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.58f))
-                .onGloballyPositioned { widthPx = it.size.width }
-                .pointerInput(enabled, widthPx, min, max, step) {
-                    detectTapGestures { offset -> updateFromX(offset.x) }
+        Slider(
+            value = value.coerceIn(min, max).toFloat(),
+            onValueChange = { floatVal ->
+                val rawIndex = ((floatVal - safeMin) / safeStep.toFloat()).roundToInt()
+                val nextValue = (min + rawIndex * safeStep).coerceIn(min, max)
+                if (nextValue != value) {
+                    currentOnValueChange(nextValue)
                 }
-                .pointerInput(enabled, widthPx, min, max, step) {
-                    detectDragGestures(
-                        onDragStart = { offset -> updateFromX(offset.x) },
-                        onDrag = { change, _ ->
-                            updateFromX(change.position.x)
-                            change.consume()
-                        },
-                    )
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            ComposeCanvas(modifier = Modifier.fillMaxSize()) {
-                val trackStart = sideInsetPx.coerceAtMost(size.width / 2f)
-                val trackEnd = (size.width - sideInsetPx).coerceAtLeast(trackStart + 1f)
-                val centerY = size.height / 2f
-                val trackWidth = trackEnd - trackStart
-                val selectedX = trackStart + trackWidth * (safeIndex.toFloat() / steps.toFloat())
-                val trackHeight = 34.dp.toPx()
-                val dotRadius = 3.4.dp.toPx()
-                val thumbRadius = 13.dp.toPx()
-
-                drawLine(
-                    color = inactiveColor.copy(alpha = disabledAlpha),
-                    start = Offset(trackStart, centerY),
-                    end = Offset(trackEnd, centerY),
-                    strokeWidth = trackHeight,
-                    cap = StrokeCap.Round,
-                )
-                drawLine(
-                    color = activeColor.copy(alpha = disabledAlpha),
-                    start = Offset(trackStart, centerY),
-                    end = Offset(selectedX, centerY),
-                    strokeWidth = trackHeight,
-                    cap = StrokeCap.Round,
-                )
-                if (showDots && steps <= 30) {
-                    for (index in 0..steps) {
-                        val x = trackStart + trackWidth * (index.toFloat() / steps.toFloat())
-                        drawCircle(
-                            color = if (index <= safeIndex) {
-                                thumbColor.copy(alpha = disabledAlpha * 0.42f)
-                            } else {
-                                nodeColor
-                            },
-                            radius = dotRadius,
-                            center = Offset(x, centerY),
-                        )
-                    }
-                }
-                drawCircle(
-                    color = thumbColor.copy(alpha = disabledAlpha),
-                    radius = thumbRadius,
-                    center = Offset(selectedX, centerY),
-                )
-            }
-        }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
+            valueRange = safeMin..safeMax,
+            steps = steps,
+            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+            showKeyPoints = showKeyPoints,
+        )
     }
 
     @Composable
@@ -4986,9 +5646,9 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun GenerationCard(selectedApp: AppEntry?) {
+    private fun GenerationActionCard(selectedApp: AppEntry?) {
         val canRun = selectedApp != null && !isBusy
-        SectionCard(title = "生成任务", summary = "生成 ART+ 图标包，Root 写入固定 data 分区") {
+        SectionCard {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -5002,6 +5662,7 @@ class MainActivity : ComponentActivity() {
                     Text(
                         text = "本地生成",
                         style = MiuixTheme.textStyles.button,
+                        color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -5010,10 +5671,12 @@ class MainActivity : ComponentActivity() {
                     onClick = { generateSelected(installWithRoot = false, useGpt = true) },
                     enabled = canRun,
                     modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(
                         text = "AI生成",
                         style = MiuixTheme.textStyles.button,
+                        color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -5033,9 +5696,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.weight(1f),
                 )
                 CompactActionButton(
-                    text = "写入默认",
+                    text = "写入标准",
                     onClick = {
-                        writeSelectedWithRoot(rootWriteMode = RootWriteMode.DefaultOnly)
+                        writeSelectedWithRoot(rootWriteMode = RootWriteMode.StandardOnly)
                     },
                     enabled = canRun,
                     modifier = Modifier.weight(1f),
@@ -5049,7 +5712,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.weight(1f),
                 )
             }
-            GeneratedPreviewSection()
         }
     }
 
@@ -5288,44 +5950,68 @@ class MainActivity : ComponentActivity() {
                 dialogVisible = true
             },
         )
-        OverlayDialog(
-            show = dialogVisible,
-            title = title,
-            onDismissRequest = { dialogVisible = false },
-            renderInRootScaffold = true,
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TextField(
-                    value = draft,
-                    onValueChange = { draft = it },
-                    label = inputHint,
-                    singleLine = true,
-                    visualTransformation = if (obscure) {
-                        PasswordVisualTransformation()
-                    } else {
-                        VisualTransformation.None
-                    },
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+        if (dialogVisible) {
+            MiuixBottomDialog(onDismissRequest = { dialogVisible = false }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(MiuixTheme.colorScheme.background)
+                        .padding(horizontal = 24.dp, vertical = 22.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    TextButton(
-                        text = "取消",
-                        onClick = { dialogVisible = false },
-                        modifier = Modifier.weight(1f),
+                    Text(
+                        text = title,
+                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                        color = MiuixTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    TextButton(
-                        text = "确定",
-                        onClick = {
-                            onValueChange(draft)
-                            dialogVisible = false
+                    TextField(
+                        value = draft,
+                        onValueChange = { draft = it },
+                        label = inputHint,
+                        singleLine = true,
+                        visualTransformation = if (obscure) {
+                            PasswordVisualTransformation()
+                        } else {
+                            VisualTransformation.None
                         },
-                        modifier = Modifier.weight(1f),
                     )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Button(
+                            onClick = { dialogVisible = false },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(),
+                        ) {
+                            Text(
+                                text = "取消",
+                                style = MiuixTheme.textStyles.button,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                onValueChange(draft)
+                                dialogVisible = false
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColorsPrimary(),
+                        ) {
+                            Text(
+                                text = "确定",
+                                style = MiuixTheme.textStyles.button,
+                                color = Color.White,
+                                maxLines = 1,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -5536,70 +6222,101 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
-        OverlayDialog(
-            show = rmbgDialogVisible,
-            title = "模型或组件 ZIP 地址",
-            summary = "粘贴 ZIP 地址，或从本地选择模型文件",
-            onDismissRequest = { rmbgDialogVisible = false },
-            renderInRootScaffold = true,
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                TextField(
-                    value = rmbgComponentUrl,
-                    onValueChange = {
-                        rmbgComponentUrl = it
-                        rmbgComponentSaveStatus = ""
-                    },
-                    label = "请填写 ZIP 地址",
-                    singleLine = true,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    TextButton(
-                        text = "选择 ZIP",
-                        onClick = {
-                            rmbgDialogVisible = false
-                            chooseRmbgComponentLauncher.launch(
-                                arrayOf("application/zip", "application/octet-stream", "*/*"),
-                            )
-                        },
-                        enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Button(
-                        onClick = { installRmbgComponentFromUrl() },
-                        enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(
-                            text = if (isInstallingRmbgComponent) "安装中" else "一键安装",
-                            style = MiuixTheme.textStyles.button,
-                            maxLines = 1,
-                        )
-                    }
-                }
-                Button(
-                    onClick = {
-                        rmbgDialogVisible = false
-                        clearInstalledRmbgComponent()
-                    },
-                    enabled = component != null && !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-                    colors = ButtonDefaults.buttonColors(
-                        color = MiuixTheme.colorScheme.surfaceContainerHigh,
-                        contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
+        if (rmbgDialogVisible) {
+            MiuixBottomDialog(onDismissRequest = { rmbgDialogVisible = false }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(MiuixTheme.colorScheme.background)
+                        .padding(horizontal = 24.dp, vertical = 22.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        text = "清除已安装 RMBG",
-                        style = MiuixTheme.textStyles.button,
+                        text = "模型或组件 ZIP 地址",
+                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                        color = MiuixTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
+                    Text(
+                        text = "粘贴 ZIP 地址，或从本地选择模型文件",
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    TextField(
+                        value = rmbgComponentUrl,
+                        onValueChange = {
+                            rmbgComponentUrl = it
+                            rmbgComponentSaveStatus = ""
+                        },
+                        label = "请填写 ZIP 地址",
+                        singleLine = true,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Button(
+                            onClick = {
+                                rmbgDialogVisible = false
+                                chooseRmbgComponentLauncher.launch(
+                                    arrayOf("application/zip", "application/octet-stream", "*/*"),
+                                )
+                            },
+                            enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(),
+                        ) {
+                            Text(
+                                text = "选择 ZIP",
+                                style = MiuixTheme.textStyles.button,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                rmbgDialogVisible = false
+                                installRmbgComponentFromUrl()
+                            },
+                            enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColorsPrimary(),
+                        ) {
+                            Text(
+                                text = if (isInstallingRmbgComponent) "安装中" else "一键安装",
+                                style = MiuixTheme.textStyles.button,
+                                color = Color.White,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                    if (component != null) {
+                        Button(
+                            onClick = {
+                                rmbgDialogVisible = false
+                                clearInstalledRmbgComponent()
+                            },
+                            enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
+                            colors = ButtonDefaults.buttonColors(
+                                color = MiuixTheme.colorScheme.surfaceContainerHigh,
+                                contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                text = "清除已安装 RMBG",
+                                style = MiuixTheme.textStyles.button,
+                                maxLines = 1,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -5638,6 +6355,34 @@ class MainActivity : ComponentActivity() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             LibrarySettingRow(
+                title = "自动确认写入",
+                summary = if (autoConfirmRootWrite) "点击写入时直接写入 Root 目标" else "点击写入时会弹出二次确认提示",
+                icon = SettingsIconKind.Shield,
+                showSwitch = true,
+                checked = autoConfirmRootWrite,
+                enabled = !isBusy,
+                onCheckedChange = {
+                    autoConfirmRootWrite = it
+                    saveUiState()
+                    statusText = if (autoConfirmRootWrite) "已开启自动确认写入" else "已关闭自动确认写入"
+                },
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            LibrarySettingRow(
+                title = "自动确认刷新",
+                summary = if (autoConfirmRefresh) "点击刷新按钮时直接执行刷新" else "点击刷新按钮时会弹出二次确认提示",
+                icon = SettingsIconKind.Refresh,
+                showSwitch = true,
+                checked = autoConfirmRefresh,
+                enabled = !isBusy,
+                onCheckedChange = {
+                    autoConfirmRefresh = it
+                    saveUiState()
+                    statusText = if (autoConfirmRefresh) "已开启自动确认刷新" else "已关闭自动确认刷新"
+                },
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            LibrarySettingRow(
                 title = "导出到外部目录",
                 summary = when {
                     outputTreeUri == null -> "生成后同步复制到你选择的目录"
@@ -5650,43 +6395,69 @@ class MainActivity : ComponentActivity() {
                 onClick = { exportDialogVisible = true },
             )
         }
-        OverlayDialog(
-            show = exportDialogVisible,
-            title = "导出到外部目录",
-            summary = if (outputTreeUri == null) "未选择目录时仅保存在应用私有目录" else "生成后同步复制到你选择的目录",
-            onDismissRequest = { exportDialogVisible = false },
-            renderInRootScaffold = true,
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+        if (exportDialogVisible) {
+            MiuixBottomDialog(onDismissRequest = { exportDialogVisible = false }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(MiuixTheme.colorScheme.background)
+                        .padding(horizontal = 24.dp, vertical = 22.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    TextButton(
-                        text = "选择目录",
-                        onClick = {
-                            exportDialogVisible = false
-                            chooseTreeLauncher.launch(null)
-                        },
-                        enabled = !isBusy,
-                        modifier = Modifier.weight(1f),
+                    Text(
+                        text = "导出到外部目录",
+                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                        color = MiuixTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    Button(
-                        onClick = {
-                            exportDialogVisible = false
-                            exportCurrentToExternal()
-                        },
-                        enabled = !isBusy,
-                        modifier = Modifier.weight(1f),
+                    Text(
+                        text = if (outputTreeUri == null) "未选择目录时仅保存在应用私有目录" else "生成后同步复制到你选择的目录",
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text(
-                            text = "导出到外部目录",
-                            style = MiuixTheme.textStyles.button,
-                            maxLines = 1,
-                        )
+                        Button(
+                            onClick = {
+                                exportDialogVisible = false
+                                chooseTreeLauncher.launch(null)
+                            },
+                            enabled = !isBusy,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(),
+                        ) {
+                            Text(
+                                text = "选择目录",
+                                style = MiuixTheme.textStyles.button,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                exportDialogVisible = false
+                                exportCurrentToExternal()
+                            },
+                            enabled = !isBusy,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColorsPrimary(),
+                        ) {
+                            Text(
+                                text = "导出到外部目录",
+                                style = MiuixTheme.textStyles.button,
+                                color = Color.White,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
             }
@@ -6199,8 +6970,6 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun SectionCard(
-        title: String? = null,
-        summary: String? = null,
         rowsFullBleed: Boolean = false,
         content: @Composable () -> Unit,
     ) {
@@ -6208,37 +6977,12 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxWidth(),
             insideMargin = if (rowsFullBleed) PaddingValues(0.dp) else PaddingValues(16.dp),
         ) {
-            if (!title.isNullOrBlank()) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.title4,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (!summary.isNullOrBlank()) {
-                if (!title.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(3.dp))
-                }
-                Text(
-                    text = summary,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (!title.isNullOrBlank() || !summary.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
-            }
             val bridge = remember { SectionCardPressBridge() }
-            val extendTopEdge = title.isNullOrBlank() && summary.isNullOrBlank()
             CompositionLocalProvider(LocalSectionCardPressBridge provides bridge) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .sectionPressOverlay(bridge, extendTopEdge),
+                        .sectionPressOverlay(bridge, extendTopEdge = true),
                 ) {
                     content()
                 }
@@ -6569,7 +7313,8 @@ class MainActivity : ComponentActivity() {
     private fun SettingLine(
         title: String,
         summary: String,
-        value: String,
+        value: String = "",
+        showIcon: Boolean = true,
         enabled: Boolean = true,
         onClick: (() -> Unit)? = null,
     ) {
@@ -6599,7 +7344,9 @@ class MainActivity : ComponentActivity() {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SettingsLineIcon(kind = settingsIconForTitle(title))
+            if (showIcon) {
+                SettingsLineIcon(kind = settingsIconForTitle(title))
+            }
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(5.dp),
@@ -6629,6 +7376,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun settingsIconForTitle(title: String): SettingsIconKind =
         when (title) {
+            "目标应用" -> SettingsIconKind.Grid
+            "应用预设" -> SettingsIconKind.Layers
             "应用范围" -> SettingsIconKind.Grid
             "应用列表" -> SettingsIconKind.Grid
             "显示系统应用" -> SettingsIconKind.Shield
@@ -6646,6 +7395,8 @@ class MainActivity : ComponentActivity() {
             "边缘高光宽度" -> SettingsIconKind.Glass
             "主体占比" -> SettingsIconKind.Scale
             "前景主体大小" -> SettingsIconKind.Scale
+            "预览圆角" -> SettingsIconKind.Radius
+            "预览缩放" -> SettingsIconKind.Grid
             "主体阴影等级" -> SettingsIconKind.Shadow
             "单色主体缩放" -> SettingsIconKind.Scale
             "背景剔除阈值" -> SettingsIconKind.Cutout
@@ -6664,6 +7415,8 @@ class MainActivity : ComponentActivity() {
             "边缘扩缩" -> SettingsIconKind.Scale
             "RMBG 弱透明保留" -> SettingsIconKind.Cutout
             "弱透明保留" -> SettingsIconKind.Cutout
+            "自动确认写入" -> SettingsIconKind.Shield
+            "自动确认刷新" -> SettingsIconKind.Refresh
             "单色缩放" -> SettingsIconKind.Scale
             else -> SettingsIconKind.Dot
         }
@@ -6687,6 +7440,7 @@ class MainActivity : ComponentActivity() {
         Link,
         Key,
         Prompt,
+        Refresh,
         Dot,
     }
 
@@ -6709,6 +7463,7 @@ class MainActivity : ComponentActivity() {
         SettingsIconKind.Link -> Lucide.Link
         SettingsIconKind.Key -> Lucide.KeyRound
         SettingsIconKind.Prompt -> Lucide.MessageSquareText
+        SettingsIconKind.Refresh -> Lucide.RefreshCw
         SettingsIconKind.Dot -> Lucide.Settings
     }
 
@@ -7010,6 +7765,12 @@ class MainActivity : ComponentActivity() {
         )
         previewIconSizeDp = prefs.getInt(PREF_PREVIEW_ICON_SIZE_DP, DEFAULT_PREVIEW_ICON_SIZE_DP)
             .coerceIn(MIN_PREVIEW_ICON_SIZE_DP, MAX_PREVIEW_ICON_SIZE_DP)
+        draftPreviewIconSizeDpText = previewIconSizeDp.toString()
+        previewCornerRadiusDp = prefs.getInt(PREF_PREVIEW_CORNER_RADIUS_DP, DEFAULT_PREVIEW_CORNER_RADIUS_DP)
+            .coerceIn(MIN_PREVIEW_CORNER_RADIUS_DP, MAX_PREVIEW_CORNER_RADIUS_DP)
+        draftPreviewCornerRadiusDpText = previewCornerRadiusDp.toString()
+        autoConfirmRootWrite = prefs.getBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, prefs.getBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, false))
+        autoConfirmRefresh = prefs.getBoolean(PREF_AUTO_CONFIRM_REFRESH, false)
     }
 
     private fun saveUiState() {
@@ -7030,6 +7791,10 @@ class MainActivity : ComponentActivity() {
             .putString(PREF_PREVIEW_SELECTION_MONOCHROME_DARK, previewSelections.monochromeDark.name)
             .putString(PREF_PREVIEW_DESKTOP_BACKGROUND, previewDesktopBackground.name)
             .putInt(PREF_PREVIEW_ICON_SIZE_DP, previewIconSizeDp)
+            .putInt(PREF_PREVIEW_CORNER_RADIUS_DP, previewCornerRadiusDp)
+            .putBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, autoConfirmRootWrite)
+            .putBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, autoConfirmRootWrite)
+            .putBoolean(PREF_AUTO_CONFIRM_REFRESH, autoConfirmRefresh)
             .apply()
     }
 
@@ -7803,6 +8568,7 @@ class MainActivity : ComponentActivity() {
         } else {
             storedValue.coerceIn(MIN_FOREGROUND_SUBJECT_PERCENT, MAX_FOREGROUND_SUBJECT_PERCENT)
         }
+        draftForegroundSubjectPercentText = foregroundSubjectPercent.toString()
         foregroundShadowLevel = prefs.getInt(
             PREF_FOREGROUND_SHADOW_LEVEL,
             DEFAULT_FOREGROUND_SHADOW_LEVEL,
@@ -7968,6 +8734,7 @@ class MainActivity : ComponentActivity() {
             MIN_FOREGROUND_SUBJECT_PERCENT,
             MAX_FOREGROUND_SUBJECT_PERCENT,
         )
+        draftForegroundSubjectPercentText = foregroundSubjectPercent.toString()
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, foregroundSubjectPercent)
@@ -8258,6 +9025,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         foregroundSubjectPercent = params.foregroundSubjectPercent
+        draftForegroundSubjectPercentText = foregroundSubjectPercent.toString()
         foregroundShadowLevel = params.foregroundShadowLevel
         draftForegroundShadowLevelText = foregroundShadowLevel.toString()
         monochromeThemeScale = params.monochromeThemeScale
@@ -8452,16 +9220,24 @@ class MainActivity : ComponentActivity() {
         nightSubjectLightBackgroundEnabled = enabled
         saveImageTuningSettings()
         statusText = if (enabled) {
-            "正常暗色已开启填充背景色"
+            "标准暗色已开启填充背景色"
         } else {
-            "正常暗色已关闭填充背景色"
+            "标准暗色已关闭填充背景色"
         }
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
+    }
+
+    private fun updatePreviewCornerRadiusDp(value: Int) {
+        val next = value.coerceIn(MIN_PREVIEW_CORNER_RADIUS_DP, MAX_PREVIEW_CORNER_RADIUS_DP)
+        previewCornerRadiusDp = next
+        draftPreviewCornerRadiusDpText = next.toString()
+        saveUiState()
     }
 
     private fun updatePreviewIconSizeDp(value: Int) {
         val next = value.coerceIn(MIN_PREVIEW_ICON_SIZE_DP, MAX_PREVIEW_ICON_SIZE_DP)
         previewIconSizeDp = next
+        draftPreviewIconSizeDpText = next.toString()
         saveUiState()
     }
 
@@ -8781,43 +9557,59 @@ class MainActivity : ComponentActivity() {
         if (isBusy) {
             return
         }
-        val session = activeGenerationSession?.takeIf { it.packageName == entry.packageName }
-        if (session == null) {
-            generateSelected(
-                installWithRoot = true,
-                useGpt = false,
-                rootWriteMode = rootWriteMode,
-            )
-            return
-        }
 
-        isBusy = true
-        statusText = "按当前预览写入${rootWriteMode.label}: ${entry.packageName}"
-        val selections = previewSelections
-        startUiFriendlyThread("ArtPlusPreviewRootWrite") {
-            try {
-                writePackageOutputs(session, selections)
-                if (outputTreeUri != null) {
-                    exportToTree(session.outDir)
-                }
-                installWithRoot(session.outDir, entry.packageName, rootWriteMode)
-                runOnUiThread {
-                    markPackageGenerated(entry.packageName)
-                    activeGenerationSession = session
-                    previewSelections = selections
-                    previewPackageName = entry.packageName
-                    previewDirPath = session.outDir.absolutePath
-                    previewVersion += 1
-                    saveUiState()
-                }
-                status("已按当前预览${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
-            } catch (error: Exception) {
-                status("写入失败: ${error.message ?: error.javaClass.simpleName}")
-            } finally {
-                runOnUiThread {
-                    isBusy = false
+        fun executeWrite() {
+            val session = activeGenerationSession?.takeIf { it.packageName == entry.packageName }
+            if (session == null) {
+                generateSelected(
+                    installWithRoot = true,
+                    useGpt = false,
+                    rootWriteMode = rootWriteMode,
+                )
+                return
+            }
+
+            isBusy = true
+            statusText = "按当前预览写入${rootWriteMode.label}: ${entry.packageName}"
+            val selections = previewSelections
+            startUiFriendlyThread("ArtPlusPreviewRootWrite") {
+                try {
+                    writePackageOutputs(session, selections)
+                    if (outputTreeUri != null) {
+                        exportToTree(session.outDir)
+                    }
+                    installWithRoot(session.outDir, entry.packageName, rootWriteMode)
+                    runOnUiThread {
+                        markPackageGenerated(entry.packageName)
+                        activeGenerationSession = session
+                        previewSelections = selections
+                        previewPackageName = entry.packageName
+                        previewDirPath = session.outDir.absolutePath
+                        previewVersion += 1
+                        saveUiState()
+                    }
+                    status("已按当前预览${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
+                } catch (error: Exception) {
+                    status("写入失败: ${error.message ?: error.javaClass.simpleName}")
+                } finally {
+                    runOnUiThread {
+                        isBusy = false
+                    }
                 }
             }
+        }
+
+        if (autoConfirmRootWrite) {
+            executeWrite()
+        } else {
+            rootWriteConfirmRememberSkip = false
+            val targetPath = "$ROOT_UXICONS_DIR/${entry.packageName}"
+            pendingRootWriteConfirm = RootWriteConfirmRequest(
+                packageName = entry.packageName,
+                targetPath = targetPath,
+                rootWriteMode = rootWriteMode,
+                onConfirm = { executeWrite() },
+            )
         }
     }
 
@@ -16125,7 +16917,7 @@ class MainActivity : ComponentActivity() {
             RootWriteMode.All -> """
                 find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' -exec cp -f {} ${shQuote(target)}/ \;
             """.trimIndent()
-            RootWriteMode.DefaultOnly -> """
+            RootWriteMode.StandardOnly -> """
                 find ${shQuote(target)} -maxdepth 1 -type f -name 'monochrome*.png' -delete
                 find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' ! -name 'monochrome*.png' -exec cp -f {} ${shQuote(target)}/ \;
             """.trimIndent()
@@ -17099,8 +17891,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private enum class PreviewMode(val label: String) {
-        NormalLight("正常亮色"),
-        NormalDark("正常暗色"),
+        NormalLight("标准亮色"),
+        NormalDark("标准暗色"),
         MonochromeLight("单色亮色"),
         MonochromeDark("单色暗色"),
     }
@@ -17382,9 +18174,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** 生成设置内部的「滑块 / JSON」二级切换。 */
+    /** 生成设置内部的「可视化 / JSON」二级切换。 */
     private enum class AdvancedSettingsTab(val label: String) {
-        Sliders("滑块"),
+        Sliders("可视化"),
         Json("JSON"),
     }
 
@@ -17396,12 +18188,12 @@ class MainActivity : ComponentActivity() {
 
     private enum class RootWriteMode(val value: String, val label: String) {
         All("all", "全部"),
-        DefaultOnly("default", "默认"),
+        StandardOnly("standard", "标准"),
         MonochromeOnly("monochrome", "单色");
 
         companion object {
             fun fromValue(value: String?): RootWriteMode =
-                entries.firstOrNull { it.value == value } ?: All
+                entries.firstOrNull { it.value == value || (it == StandardOnly && value == "default") } ?: All
         }
     }
 
@@ -17416,6 +18208,9 @@ class MainActivity : ComponentActivity() {
         private const val PREF_GPT_BASE_URL = "gpt_base_url"
         private const val PREF_GPT_API_KEY = "gpt_api_key"
         private const val PREF_GPT_API_KEY_ENCRYPTED = "gpt_api_key_encrypted"
+        private const val PREF_AUTO_CONFIRM_ROOT_WRITE = "auto_confirm_root_write"
+        private const val PREF_AUTO_CONFIRM_REFRESH = "auto_confirm_refresh"
+        private const val PREF_SKIP_ROOT_WRITE_CONFIRM = "skip_root_write_confirm"
         private const val PREF_RMBG_COMPONENT_URL = "rmbg_component_url"
         private const val PREF_RMBG_INPUT_SIZE = "rmbg_input_size"
         private const val PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024 = "rmbg_input_size_migrated_to_1024"
@@ -17494,6 +18289,7 @@ class MainActivity : ComponentActivity() {
         private const val PREF_PREVIEW_SELECTION_MONOCHROME_DARK = "preview_selection_monochrome_dark"
         private const val PREF_PREVIEW_DESKTOP_BACKGROUND = "preview_desktop_background"
         private const val PREF_PREVIEW_ICON_SIZE_DP = "preview_icon_size_dp"
+        private const val PREF_PREVIEW_CORNER_RADIUS_DP = "preview_corner_radius_dp"
         private const val PREF_SHOW_SYSTEM_APPS = "show_system_apps"
         private const val EXTRA_DEBUG_GENERATE_PACKAGE = "dev.artplus.mobile.DEBUG_GENERATE_PACKAGE"
         private const val EXTRA_DEBUG_GENERATE_USE_GPT = "dev.artplus.mobile.DEBUG_GENERATE_USE_GPT"
@@ -17617,6 +18413,9 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_PREVIEW_ICON_SIZE_DP = 70
         private const val MIN_PREVIEW_ICON_SIZE_DP = 42
         private const val MAX_PREVIEW_ICON_SIZE_DP = 96
+        private const val DEFAULT_PREVIEW_CORNER_RADIUS_DP = 20
+        private const val MIN_PREVIEW_CORNER_RADIUS_DP = 0
+        private const val MAX_PREVIEW_CORNER_RADIUS_DP = 36
         private const val PREVIEW_WALLPAPER_SAMPLE_SIZE = 320
         private const val CHOICE_ROW_HORIZONTAL_BLEED_DP = 16
         private val SETTINGS_ROW_INSIDE_MARGIN = PaddingValues(vertical = 6.dp)
