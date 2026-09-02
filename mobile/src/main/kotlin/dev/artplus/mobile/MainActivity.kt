@@ -149,6 +149,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -1303,8 +1304,8 @@ class MainActivity : ComponentActivity() {
     private fun PagerShellPage(
         title: String,
         navigationIcon: @Composable () -> Unit = {},
-        belowTopBar: @Composable ColumnScope.() -> Unit = {},
         actions: @Composable RowScope.() -> Unit = {},
+        showPreviewStrip: Boolean = false,
         content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
     ) {
         val pageScrollBehavior = MiuixScrollBehavior()
@@ -1319,7 +1320,15 @@ class MainActivity : ComponentActivity() {
                         navigationIcon = navigationIcon,
                         actions = actions,
                     )
-                    belowTopBar()
+                    AnimatedVisibility(
+                        visible = showPreviewStrip,
+                        enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                            expandVertically(animationSpec = tween(durationMillis = 180)),
+                        exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                            shrinkVertically(animationSpec = tween(durationMillis = 160)),
+                    ) {
+                        HomePreviewStrip()
+                    }
                 }
             },
         ) { innerPadding ->
@@ -1337,7 +1346,6 @@ class MainActivity : ComponentActivity() {
             drawRect(pageBackground)
             drawContent()
         }
-
         Box(Modifier.fillMaxSize()) {
             HorizontalPager(
                 state = pagerState,
@@ -1365,11 +1373,7 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         },
-                        belowTopBar = {
-                            if (previewStripEnabled) {
-                                HomePreviewStrip()
-                            }
-                        },
+                        showPreviewStrip = previewStripEnabled,
                     ) { innerPadding, scrollBehavior ->
                         LazyColumn(
                             modifier = Modifier
@@ -1407,11 +1411,7 @@ class MainActivity : ComponentActivity() {
 
                     1 -> PagerShellPage(
                         title = "生成参数",
-                        belowTopBar = {
-                            if (previewStripEnabled) {
-                                HomePreviewStrip()
-                            }
-                        },
+                        showPreviewStrip = previewStripEnabled,
                     ) { innerPadding, scrollBehavior ->
                         LazyColumn(
                             modifier = Modifier
@@ -1478,11 +1478,7 @@ class MainActivity : ComponentActivity() {
                                 paddingEnd = 16.dp,
                             )
                         },
-                        belowTopBar = {
-                            if (previewStripEnabled) {
-                                HomePreviewStrip()
-                            }
-                        },
+                        showPreviewStrip = previewStripEnabled,
                     ) { innerPadding, scrollBehavior ->
                         LazyColumn(
                             modifier = Modifier
@@ -2625,8 +2621,8 @@ class MainActivity : ComponentActivity() {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            insideMargin = PaddingValues(6.dp),
+                .padding(horizontal = 12.dp, vertical = 0.dp),
+            insideMargin = PaddingValues(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -6123,8 +6119,9 @@ class MainActivity : ComponentActivity() {
                         text = summary,
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        maxLines = if (expanded) Int.MAX_VALUE else 1,
+                        overflow = if (expanded) TextOverflow.Visible else TextOverflow.Ellipsis,
+                        softWrap = expanded,
                     )
                 }
                 // 输入框区域消费点击，避免误触切换折叠
