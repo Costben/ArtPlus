@@ -273,7 +273,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -446,6 +448,15 @@ class MainActivity : ComponentActivity() {
     private var multiSelectedPackageNames by mutableStateOf<Set<String>>(emptySet())
     private var batchApplyProgress by mutableStateOf<BatchApplyProgress?>(null)
     private var exportProgress by mutableStateOf<ExportProgress?>(null)
+    // 底部备份/导出弹窗与后台态
+    private var backupProgress by mutableStateOf<ExportProgress?>(null)
+    private var backupSheetVisible by mutableStateOf(false)
+    private var singleExportSheetVisible by mutableStateOf(false)
+    private var backupInBackground by mutableStateOf(false)
+    private var backupBackgroundDots by mutableStateOf(1)
+    private var backupJob: Job? = null
+    private var singleExportJob: Job? = null
+    private var backupDotJob: Job? = null
     private var isScanningGeneratedPackages by mutableStateOf(false)
     private var generatedScanFailed by mutableStateOf(false)
     private var previewPackageName by mutableStateOf<String?>(null)
@@ -976,8 +987,30 @@ class MainActivity : ComponentActivity() {
             batchApplyProgress?.let { progress ->
                 BatchApplyProgressDialog(progress)
             }
-            exportProgress?.let { progress ->
-                ExportProgressDialog(progress)
+            if (singleExportSheetVisible && exportProgress != null) {
+                val p = exportProgress!!
+                BackupProgressBottomSheet(
+                    progress = p,
+                    onStop = { cancelSingleExport() },
+                    onBackground = {
+                        // 单包导出后台：仅隐藏弹窗，任务继续（不显示设置页动效）
+                        singleExportSheetVisible = false
+                    },
+                )
+            }
+            if (backupSheetVisible && backupProgress != null) {
+                val p = backupProgress!!
+                BackupProgressBottomSheet(
+                    progress = p,
+                    onStop = { cancelBackup() },
+                    onBackground = {
+                        backupSheetVisible = false
+                        backupInBackground = true
+                        startBackupDotAnimation()
+                    },
+                )
+            } else if (!backupSheetVisible && backupInBackground && backupProgress != null) {
+                // 后台态不显示底部弹窗，但保留状态供设置页“备份中...”展示
             }
 
             ServiceConfirmDialog()
@@ -2308,6 +2341,185 @@ class MainActivity : ComponentActivity() {
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun BackupProgressBottomSheet(
+        progress: ExportProgress,
+        onStop: () -> Unit,
+        onBackground: () -> Unit,
+    ) {
+        val fraction = if (progress.total <= 0) 0f else (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
+        val infiniteTransition = rememberInfiniteTransition(label = "backupSheet")
+        val indeterminateFraction by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(animation = tween(durationMillis = 1200, easing = LinearEasing)),
+            label = "indeterminate",
+        )
+        Dialog(
+            onDismissRequest = onBackground,
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            ApplyDialogDimEffect()
+            var animateIn by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) { animateIn = true }
+            val offsetY by animateFloatAsState(
+                targetValue = if (animateIn) 0f else 320f,
+                animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f),
+                label = "BackupSheetSlideUp",
+            )
+            val alpha by animateFloatAsState(
+                targetValue = if (animateIn) 1f else 0f,
+                animationSpec = tween(durationMillis = 180),
+                label = "BackupSheetFadeIn",
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onBackground,
+                    )
+                    .imePadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            translationY = offsetY
+                            this.alpha = alpha
+                        }
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {},
+                        ),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(MiuixTheme.colorScheme.background)
+                            .padding(start = 24.dp, end = 24.dp, top = 18.dp, bottom = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = progress.title,
+                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                            color = MiuixTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth(),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        // 第一行：正在备份 + 进度分数/百分比
+                        val line1 = when {
+                            progress.isIndeterminate -> "正在备份"
+                            progress.title.contains("导出") -> "正在导出 ${progress.completed}/${progress.total}"
+                            else -> "正在备份 ${progress.completed}/${progress.total}"
+                        }
+                        Text(
+                            text = line1,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        // 第二行：包名，单行显示不换行
+                        val pkgName = remember(progress.currentLabel) {
+                            val raw = progress.currentLabel
+                            when {
+                                ":" in raw -> raw.substringAfterLast(":").trim()
+                                "：" in raw -> raw.substringAfterLast("：").trim()
+                                raw.contains("/") && raw.contains(" ") -> raw.substringAfterLast(" ").trim().takeIf { it.contains(".") } ?: ""
+                                else -> ""
+                            }.takeIf { it.isNotBlank() && it != raw.trim() } ?: ""
+                        }
+                        if (pkgName.isNotBlank()) {
+                            Text(
+                                text = pkgName,
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                softWrap = false,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        // 进度条固定位置，高度恒定不跳动
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                        ) {
+                            if (progress.isIndeterminate) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .fillMaxWidth(0.35f)
+                                        .graphicsLayer { translationX = (size.width * 1.2f * indeterminateFraction) - size.width * 0.35f }
+                                        .clip(RoundedCornerShape(999.dp))
+                                        .background(MiuixTheme.colorScheme.primaryVariant),
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .fillMaxWidth(fraction)
+                                        .clip(RoundedCornerShape(999.dp))
+                                        .background(MiuixTheme.colorScheme.primaryVariant),
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Button(
+                                onClick = onStop,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    color = Color(0xFFE53935),
+                                    contentColor = Color.White,
+                                ),
+                            ) {
+                                Text(
+                                    text = "停止备份",
+                                    style = MiuixTheme.textStyles.button,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                )
+                            }
+                            Button(
+                                onClick = onBackground,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColorsPrimary(),
+                            ) {
+                                Text(
+                                    text = "后台备份",
+                                    style = MiuixTheme.textStyles.button,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -6936,9 +7148,18 @@ class MainActivity : ComponentActivity() {
             )
             Spacer(modifier = Modifier.height(4.dp))
             val outputTreeDisplay = remember(outputTreeUri) { formatTreeUriDisplay(outputTreeUri) }
+            val isBackupActive = backupJob?.isActive == true && backupProgress != null
+            val isBackupInBg = backupInBackground && isBackupActive
+            // 后台时“备份中”省略号动效：. -> .. -> ...
+            val backupDots = remember(backupBackgroundDots) { ".".repeat(backupBackgroundDots.coerceIn(1, 3)) }
+            LaunchedEffect(isBackupInBg) {
+                if (isBackupInBg) startBackupDotAnimation() else stopBackupDotAnimation()
+            }
             LibrarySettingRow(
                 title = "备份到外部目录",
                 summary = when {
+                    isBackupInBg -> "备份中$backupDots"
+                    isBackupActive -> "正在备份..."
                     outputTreeUri == null -> "未选择 · 备份已写入系统的全部图标"
                     outputTreeDisplay != null -> "已选择：$outputTreeDisplay"
                     else -> "已选择：${outputTreeUri.toString().take(40)}"
@@ -6946,8 +7167,18 @@ class MainActivity : ComponentActivity() {
                 icon = settingsIconForTitle("备份到外部目录"),
                 showValue = false,
                 showArrowRight = true,
-                enabled = !isBusy,
-                onClick = { exportDialogVisible = true },
+                enabled = !isBusy || isBackupInBg,
+                onClick = {
+                    if (isBackupInBg || (isBackupActive && backupSheetVisible.not())) {
+                        backupInBackground = false
+                        backupSheetVisible = true
+                        stopBackupDotAnimation()
+                    } else if (isBackupActive) {
+                        backupSheetVisible = true
+                    } else {
+                        exportDialogVisible = true
+                    }
+                },
             )
         }
         if (exportDialogVisible) {
@@ -17815,6 +18046,41 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun cancelBackup() {
+        backupJob?.cancel()
+        backupJob = null
+        backupDotJob?.cancel()
+        backupDotJob = null
+        backupSheetVisible = false
+        backupInBackground = false
+        backupProgress = null
+        isBusy = false
+        toastStatus("已停止备份")
+    }
+
+    private fun cancelSingleExport() {
+        singleExportJob?.cancel()
+        singleExportJob = null
+        singleExportSheetVisible = false
+        exportProgress = null
+        toastStatus("已停止导出")
+    }
+
+    private fun startBackupDotAnimation() {
+        backupDotJob?.cancel()
+        backupDotJob = mainScope.launch {
+            while (isActive) {
+                delay(500)
+                backupBackgroundDots = if (backupBackgroundDots >= 3) 1 else backupBackgroundDots + 1
+            }
+        }
+    }
+
+    private fun stopBackupDotAnimation() {
+        backupDotJob?.cancel()
+        backupDotJob = null
+    }
+
     private fun ensureNomediaAtTreeRoot() {
         val treeUri = outputTreeUri ?: return
         // 优先尝试文件系统快速路径（su touch），失败再走 SAF
@@ -17901,14 +18167,18 @@ class MainActivity : ComponentActivity() {
             toastStatus("没有可导出的图标包")
             return
         }
+        if (isBusy) return
+        isBusy = true
         exportProgress = ExportProgress(
-            title = "正在导出",
+            title = "导出中",
             completed = 0,
             total = 1,
             currentLabel = "正在导出: ${dir.name}",
             isIndeterminate = true,
         )
-        mainScope.launch(Dispatchers.IO) {
+        singleExportSheetVisible = true
+        singleExportJob?.cancel()
+        singleExportJob = mainScope.launch(Dispatchers.IO) {
             try {
                 runCatching { ensureNomediaAtTreeRoot() }
                 // 优先尝试文件系统直拷（su cp），速度为 SAF 的 10-20 倍，失败再回退 SAF
@@ -17922,8 +18192,18 @@ class MainActivity : ComponentActivity() {
                             .onFailure { error -> toastStatus("导出失败: ${error.message ?: error.javaClass.simpleName}") }
                     }
                 }
+            } catch (e: CancellationException) {
+                withContext(Dispatchers.Main) { /* 已在 cancelSingleExport 中处理 */ }
+                throw e
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { toastStatus("导出失败: ${e.message ?: e.javaClass.simpleName}") }
             } finally {
-                withContext(Dispatchers.Main) { exportProgress = null }
+                withContext(Dispatchers.Main) {
+                    exportProgress = null
+                    singleExportSheetVisible = false
+                    singleExportJob = null
+                    isBusy = false
+                }
             }
         }
     }
@@ -17935,22 +18215,35 @@ class MainActivity : ComponentActivity() {
             return
         }
         if (isBusy) return
+        // 若已有备份任务，仅重显弹窗
+        if (backupJob?.isActive == true) {
+            backupSheetVisible = true
+            backupInBackground = false
+            stopBackupDotAnimation()
+            return
+        }
         isBusy = true
-        exportProgress = ExportProgress(
-            title = "正在备份",
+        backupInBackground = false
+        backupSheetVisible = true
+        backupBackgroundDots = 1
+        backupProgress = ExportProgress(
+            title = "备份中",
             completed = 0,
             total = 1,
             currentLabel = "正在准备...",
             isIndeterminate = true,
         )
         toastStatus("正在备份...")
-        mainScope.launch(Dispatchers.IO) {
+        backupJob?.cancel()
+        backupDotJob?.cancel()
+        backupJob = mainScope.launch(Dispatchers.IO) {
             try {
                 runCatching { ensureNomediaAtTreeRoot() }
                 val pkgs = listRootIconPackages()
                 if (pkgs.isEmpty()) {
                     withContext(Dispatchers.Main) {
-                        exportProgress = null
+                        backupProgress = null
+                        backupSheetVisible = false
                         toastStatus("没有可导出的图标包")
                     }
                     return@launch
@@ -17958,14 +18251,15 @@ class MainActivity : ComponentActivity() {
                 val treeUri = outputTreeUri
                 if (treeUri == null) {
                     withContext(Dispatchers.Main) {
-                        exportProgress = null
+                        backupProgress = null
+                        backupSheetVisible = false
                         toastStatus("还没有设置目录")
                     }
                     return@launch
                 }
                 withContext(Dispatchers.Main) {
-                    exportProgress = ExportProgress(
-                        title = "正在备份",
+                    backupProgress = ExportProgress(
+                        title = "备份中",
                         completed = 0,
                         total = pkgs.size,
                         currentLabel = "准备备份 ${pkgs.size} 个图标包",
@@ -17978,9 +18272,10 @@ class MainActivity : ComponentActivity() {
                 // 情况1：可解析为文件系统路径 -> 使用 su 直拷（一次 su per pkg，约 10ms/包），最快
                 if (destRootFast != null) {
                     for ((index, pkgName) in pkgs.withIndex()) {
+                        ensureActive()
                         withContext(Dispatchers.Main) {
-                            exportProgress = ExportProgress(
-                                title = "正在备份",
+                            backupProgress = ExportProgress(
+                                title = "备份中",
                                 completed = index,
                                 total = pkgs.size,
                                 currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
@@ -17991,8 +18286,8 @@ class MainActivity : ComponentActivity() {
                         val ok = runCatching { backupPackageFast(pkgName, destRootFast) }.getOrDefault(false)
                         if (ok) successCount++ else failCount++
                         withContext(Dispatchers.Main) {
-                            exportProgress = ExportProgress(
-                                title = "正在备份",
+                            backupProgress = ExportProgress(
+                                title = "备份中",
                                 completed = index + 1,
                                 total = pkgs.size,
                                 currentLabel = if (ok) "已完成 ${index + 1}/${pkgs.size}: $pkgName" else "失败 $pkgName",
@@ -18001,7 +18296,10 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     withContext(Dispatchers.Main) {
-                        exportProgress = null
+                        if (!backupInBackground) {
+                            backupProgress = null
+                            backupSheetVisible = false
+                        }
                         if (failCount == 0) toastStatus("已备份 $successCount 个图标包")
                         else toastStatus("已备份 $successCount 个，失败 $failCount 个")
                     }
@@ -18009,9 +18307,10 @@ class MainActivity : ComponentActivity() {
                     // 情况2：无法解析路径（SD卡/特殊 Provider）-> 回退 SAF 中转缓存方案
                     val stagingRoot = File(cacheDir, "backup_staging").also { it.mkdirs() }
                     for ((index, pkgName) in pkgs.withIndex()) {
+                        ensureActive()
                         withContext(Dispatchers.Main) {
-                            exportProgress = ExportProgress(
-                                title = "正在备份",
+                            backupProgress = ExportProgress(
+                                title = "备份中",
                                 completed = index,
                                 total = pkgs.size,
                                 currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
@@ -18029,8 +18328,8 @@ class MainActivity : ComponentActivity() {
                             val files = stagingDir.listFiles { _, name -> name.endsWith(".png") }
                             if (files == null || files.isEmpty()) {
                                 withContext(Dispatchers.Main) {
-                                    exportProgress = ExportProgress(
-                                        title = "正在备份",
+                                    backupProgress = ExportProgress(
+                                        title = "备份中",
                                         completed = index + 1,
                                         total = pkgs.size,
                                         currentLabel = "已跳过 ${pkgName}（无图标）",
@@ -18041,8 +18340,8 @@ class MainActivity : ComponentActivity() {
                             }
                             withContext(Dispatchers.Main) {
                                 runCatching { exportToTree(stagingDir) }.onSuccess { successCount++ }.onFailure { failCount++ }
-                                exportProgress = ExportProgress(
-                                    title = "正在备份",
+                                backupProgress = ExportProgress(
+                                    title = "备份中",
                                     completed = index + 1,
                                     total = pkgs.size,
                                     currentLabel = "已完成 ${index + 1}/${pkgs.size}: $pkgName",
@@ -18052,8 +18351,8 @@ class MainActivity : ComponentActivity() {
                         } catch (_: Exception) {
                             failCount++
                             withContext(Dispatchers.Main) {
-                                exportProgress = ExportProgress(
-                                    title = "正在备份",
+                                backupProgress = ExportProgress(
+                                    title = "备份中",
                                     completed = index + 1,
                                     total = pkgs.size,
                                     currentLabel = "失败 ${pkgName}",
@@ -18064,21 +18363,37 @@ class MainActivity : ComponentActivity() {
                     }
                     runCatching { stagingRoot.deleteRecursively() }
                     withContext(Dispatchers.Main) {
-                        exportProgress = null
+                        if (!backupInBackground) {
+                            backupProgress = null
+                            backupSheetVisible = false
+                        }
                         if (failCount == 0) toastStatus("已备份 $successCount 个图标包")
                         else toastStatus("已备份 $successCount 个，失败 $failCount 个")
                     }
                 }
+            } catch (e: CancellationException) {
+                withContext(Dispatchers.Main) {
+                    // 停止时已由 cancelBackup 清理
+                }
+                throw e
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    exportProgress = null
+                    backupProgress = null
+                    backupSheetVisible = false
+                    backupInBackground = false
                     toastStatus("备份失败: ${e.message ?: e.javaClass.simpleName}")
                 }
             } finally {
                 withContext(Dispatchers.Main) {
                     isBusy = false
-                    // 确保对话框关闭
-                    if (exportProgress != null) exportProgress = null
+                    backupJob = null
+                    stopBackupDotAnimation()
+                    if (!backupInBackground) {
+                        backupProgress = null
+                        backupSheetVisible = false
+                        backupInBackground = false
+                    }
+                    // 若为后台，则保留 backupProgress 供设置页“备份中...”展示
                 }
             }
         }
