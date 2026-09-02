@@ -72,9 +72,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -516,7 +514,7 @@ class MainActivity : ComponentActivity() {
         val htmlUrl: String,
     )
 
-    /** 调用 GPT/RMBG 前的二次确认请求。 */
+    /** 调用 AI/RMBG 前的二次确认请求。 */
     private data class ServiceConfirmRequest(
         val title: String,
         val message: String,
@@ -3724,7 +3722,7 @@ class MainActivity : ComponentActivity() {
                         customKind != null -> "已导入"
                         missingCandidate -> "不可用"
                         choice == PreviewChoice.Gpt && isGeneratingGptCandidate -> "正在生成"
-                        gptMissing && !canGenerateGpt -> "先填 GPT 设置"
+                        gptMissing && !canGenerateGpt -> "请填写AI提供商信息"
                         gptMissing -> "点击生成"
                         effectiveChoice.isComposedBackgroundCombination -> effectiveChoice.summary
                         else -> choice.summary
@@ -4525,7 +4523,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * 本地优先：调用 GPT/RMBG 前弹二次确认。
+     * 本地优先：调用 AI/RMBG 前弹二次确认。
      * 入口函数用 [confirmed] 参数重入，避免再次弹窗。
      */
     private fun requestServiceConfirm(
@@ -6442,7 +6440,6 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    @OptIn(ExperimentalFoundationApi::class)
     private fun GenerationActionCard(selectedApp: AppEntry?) {
         val canRun = selectedApp != null && !isBusy
         SectionCard {
@@ -6451,15 +6448,9 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Button(
-                    onClick = {},
+                    onClick = { generateSelected(installWithRoot = false, useGpt = false) },
                     enabled = canRun,
-                    modifier = Modifier
-                        .weight(1f)
-                        .combinedClickable(
-                            enabled = canRun,
-                            onClick = { generateSelected(installWithRoot = false, useGpt = false) },
-                            onLongClick = { generateSelected(installWithRoot = false, useGpt = true) },
-                        ),
+                    modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(
@@ -6950,7 +6941,7 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.height(6.dp))
             SettingsInfoRow(
                 title = "累计调用",
-                summary = "已累计调用 GPT 云端接口的次数",
+                summary = "已累计调用 AI 云端接口的次数",
                 value = "$gptRunCount 次",
                 icon = settingsIconForTitle("累计调用"),
             )
@@ -8413,8 +8404,8 @@ class MainActivity : ComponentActivity() {
             "导出引导" -> SettingsIconKind.FileUpload
             "RMBG 状态" -> SettingsIconKind.Chip
             "模型版本" -> SettingsIconKind.Layers
-            "GPT image two 生成模式" -> SettingsIconKind.Spark
-            "GPT 提示词" -> SettingsIconKind.Prompt
+            "AI image two 生成模式" -> SettingsIconKind.Spark
+            "AI 提示词" -> SettingsIconKind.Prompt
             "液态玻璃风格" -> SettingsIconKind.Glass
             "渲染方式" -> SettingsIconKind.Layers
             "圆角半径" -> SettingsIconKind.Radius
@@ -10587,14 +10578,15 @@ class MainActivity : ComponentActivity() {
             return
         }
         if (useGpt && gptApiKey.trim().isEmpty()) {
-            statusText = "先填写 GPT API key"
+            statusText = "请填写AI提供商信息"
             return
         }
         if (useGpt && gptBaseUrl.trim().isEmpty()) {
-            statusText = "先填写 GPT Base URL"
+            statusText = "请填写AI提供商信息"
             return
         }
         if (isBusy) {
+            statusText = "当前有任务在运行"
             return
         }
         if (useGpt && !confirmed) {
@@ -10638,13 +10630,25 @@ class MainActivity : ComponentActivity() {
                     runOnUiThread {
                         markPackageGenerated(entry.packageName)
                     }
-                    val sourceLabel = if (useGpt) "AI版" else "本地版"
-                    toastStatus("已生成${sourceLabel}并${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
+                    if (useGpt) {
+                        toastStatus("已生成AI版并${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
+                    } else {
+                        statusText = "已生成本地版并${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}"
+                    }
                 } else {
-                    toastStatus("已生成${if (useGpt) "AI版" else "本地版"}: ${result.outDir.absolutePath}")
+                    if (useGpt) {
+                        toastStatus("已生成AI版: ${result.outDir.absolutePath}")
+                    } else {
+                        statusText = "已生成本地版: ${result.outDir.absolutePath}"
+                    }
                 }
             } catch (error: Exception) {
-                toastStatus("失败: ${error.message ?: error.javaClass.simpleName}")
+                val msg = "失败: ${error.message ?: error.javaClass.simpleName}"
+                if (useGpt) {
+                    toastStatus(msg)
+                } else {
+                    statusText = msg
+                }
             } finally {
                 runOnUiThread {
                     isBusy = false
@@ -13793,7 +13797,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         if (choice == PreviewChoice.GptComposedBackground && session.candidates[PreviewChoice.Gpt] == null) {
-            statusText = "先生成 GPT 候选，再使用拼合背景"
+            statusText = "先生成 AI 候选，再使用拼合背景"
             return
         }
         if (choice == PreviewChoice.RmbgComposedBackground && session.candidates[PreviewChoice.Rmbg] == null) {
@@ -13822,7 +13826,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         if (choice == PreviewChoice.GptComposedBackground && session.candidates[PreviewChoice.Gpt] == null) {
-            statusText = "先生成 GPT 候选，再使用拼合背景"
+            statusText = "先生成 AI 候选，再使用拼合背景"
             return
         }
         if (choice == PreviewChoice.RmbgComposedBackground && session.candidates[PreviewChoice.Rmbg] == null) {
@@ -13850,7 +13854,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         if (choice == PreviewChoice.Gpt && (gptBaseUrl.trim().isEmpty() || gptApiKey.trim().isEmpty())) {
-            statusText = "先填写 GPT 设置"
+            statusText = "请填写AI提供商信息"
             return
         }
         if (
@@ -14084,7 +14088,7 @@ class MainActivity : ComponentActivity() {
     private fun generateGptCandidateForMode(mode: PreviewMode, confirmed: Boolean = false) {
         val session = activeGenerationSession ?: return
         if (gptBaseUrl.trim().isEmpty() || gptApiKey.trim().isEmpty()) {
-            statusText = "先填写 GPT Base URL 和 API key"
+            statusText = "请填写AI提供商信息"
             return
         }
         if (isGeneratingGptCandidate || isBusy) {
@@ -14145,7 +14149,7 @@ class MainActivity : ComponentActivity() {
     private fun generateGptCandidateForAll(confirmed: Boolean = false) {
         val session = activeGenerationSession ?: return
         if (gptBaseUrl.trim().isEmpty() || gptApiKey.trim().isEmpty()) {
-            statusText = "先填写 GPT Base URL 和 API key"
+            statusText = "请填写AI提供商信息"
             return
         }
         if (isGeneratingGptCandidate || isBusy) {
@@ -14604,12 +14608,12 @@ class MainActivity : ComponentActivity() {
                 transparentForeground
             } else {
                 usedChromaForeground = true
-                status("GPT未返回透明前景，改用纯色抠底兜底")
+                status("AI未返回透明前景，改用纯色抠底兜底")
                 gptEditImage(sourceIcon, chromaForegroundPrompt, "opaque")
             }
         } catch (error: Exception) {
             usedChromaForeground = true
-            status("GPT透明前景失败，改用纯色抠底兜底: ${error.message ?: error.javaClass.simpleName}")
+            status("AI透明前景失败，改用纯色抠底兜底: ${error.message ?: error.javaClass.simpleName}")
             gptEditImage(sourceIcon, chromaForegroundPrompt, "opaque")
         }
         status("AI生成背景...")
@@ -14724,7 +14728,7 @@ class MainActivity : ComponentActivity() {
         contentType: String,
         accept: String = "application/json",
     ): String {
-        val url = validatedRemoteUrl(urlText, "GPT")
+        val url = validatedRemoteUrl(urlText, "AI")
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = GPT_CONNECT_TIMEOUT_MS
@@ -14744,7 +14748,7 @@ class MainActivity : ComponentActivity() {
             }
             val text = stream.bufferedReader().use { it.readText() }
             if (connection.responseCode !in 200..299) {
-                error("GPT HTTP ${connection.responseCode}: ${text.take(300)}")
+                error("AI HTTP ${connection.responseCode}: ${text.take(300)}")
             }
             return text
         } finally {
@@ -14753,7 +14757,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun downloadBytes(urlText: String): ByteArray {
-        val url = validatedRemoteUrl(urlText, "GPT图片")
+        val url = validatedRemoteUrl(urlText, "AI图片")
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = GPT_CONNECT_TIMEOUT_MS
@@ -14770,7 +14774,7 @@ class MainActivity : ComponentActivity() {
             }
             val bytes = stream.use { it.readBytes() }
             if (connection.responseCode !in 200..299) {
-                error("下载GPT图片失败 HTTP ${connection.responseCode}: ${String(bytes).take(300)}")
+                error("下载AI图片失败 HTTP ${connection.responseCode}: ${String(bytes).take(300)}")
             }
             return bytes
         } finally {
@@ -14842,7 +14846,7 @@ class MainActivity : ComponentActivity() {
             findImageBytes(data)?.let { return it }
         }
         findImageBytes(JSONArray().put(json))?.let { return it }
-        error("GPT响应没有图片数据")
+        error("AI响应没有图片数据")
     }
 
     private fun findImageBytes(items: JSONArray): ByteArray? {
@@ -14885,7 +14889,7 @@ class MainActivity : ComponentActivity() {
 
     private fun decodeBitmap(bytes: ByteArray): Bitmap {
         val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        return bitmap ?: error("GPT返回的图片无法解码")
+        return bitmap ?: error("AI返回的图片无法解码")
     }
 
     private fun loadCustomImageBitmap(uri: Uri): Bitmap {
@@ -18691,7 +18695,7 @@ class MainActivity : ComponentActivity() {
         var snapshot: JSONObject? = null
         runOnMainSync {
             check(!isBusy) { "当前任务正在运行，不能修改参数" }
-            // GPT 凭据不走 TuningParams（预设不导出密钥），单独处理。
+            // AI 凭据不走 TuningParams（预设不导出密钥），单独处理。
             params["gpt_base_url"]?.let { gptBaseUrl = it }
             params["gpt_api_key"]?.let { gptApiKey = it }
             val gptCredentialChanged =
@@ -19417,9 +19421,9 @@ class MainActivity : ComponentActivity() {
         ComponentBackground("底座当背景", "底座作为背景"),
         TwoLayer("二层", "底板和主体分层"),
         Rmbg("RMBG", "模型抠图"),
-        Gpt("GPT", "GPT Image 2"),
+        Gpt("AI", "AI生成"),
         RmbgComposedBackground("拼合背景", "RMBG 主体 + 原图背景"),
-        GptComposedBackground("拼合背景", "GPT 主体 + 原图背景"),
+        GptComposedBackground("拼合背景", "AI 主体 + 原图背景"),
         CustomForeground("自定义主体", "导入主体", CustomImageKind.Foreground),
         CustomBackground("自定义背景", "导入背景", CustomImageKind.Background);
 
