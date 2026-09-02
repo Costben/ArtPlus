@@ -2803,7 +2803,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun PreviewControlCard() {
-        SectionCard {
+        SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -2847,18 +2847,15 @@ class MainActivity : ComponentActivity() {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable(enabled = !isBusy) {
-                            updatePreviewStripEnabled(!previewStripEnabled)
-                        }
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        .clickable(enabled = !isBusy) { updatePreviewStripEnabled(!previewStripEnabled) }
+                        .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 9.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     SettingsLineIcon(kind = SettingsIconKind.Palette)
                     Column(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
                         Text(
                             text = "顶部 1×4 预览条",
@@ -2881,9 +2878,11 @@ class MainActivity : ComponentActivity() {
                         enabled = !isBusy,
                     )
                 }
-                Spacer(modifier = Modifier.height(2.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
+                        .padding(bottom = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     PreviewDesktopBackground.entries.forEach { option ->
@@ -4179,7 +4178,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun LiquidGlassSurfaceCard() {
-        SectionCard {
+        SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -4261,7 +4260,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun LiquidGlassSubjectCard() {
-        SectionCard {
+        SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -4332,7 +4331,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun LocalRuleTuningCard() {
-        SectionCard {
+        SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -4429,7 +4428,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun RmbgTuningCard() {
-        SectionCard {
+        SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -6082,19 +6081,36 @@ class MainActivity : ComponentActivity() {
         icon: SettingsIconKind? = null,
     ) {
         val controlEnabled = enabled && !isBusy
+        var expanded by remember { mutableStateOf(false) }
+        val headerInteractionSource = remember { MutableInteractionSource() }
+        val headerPressed by headerInteractionSource.collectIsPressedAsState()
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            // 图1 全出血直角按压块：无 clip，直角背景由 Card 圆角裁切，左右铺满、首末补到容器边
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(libraryRowPressedColor(headerPressed))
+                    .clickable(
+                        interactionSource = headerInteractionSource,
+                        indication = null,
+                        enabled = controlEnabled,
+                        onClick = { expanded = !expanded },
+                    )
+                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 9.dp)
+                    .semantics {
+                        role = Role.Button
+                        stateDescription = if (expanded) "已展开拖动条" else "已收起拖动条"
+                    },
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     Text(
                         text = title,
@@ -6104,18 +6120,27 @@ class MainActivity : ComponentActivity() {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = "$summary · 范围 $min-$max",
+                        text = summary,
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                // 输入框区域消费点击，避免误触切换折叠
+                Box(
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = controlEnabled,
+                        onClick = {},
+                    ),
                 ) {
                     NumberInputBox(
                         value = draftText,
                         fallbackValue = value,
+                        min = min,
+                        max = max,
                         enabled = controlEnabled,
                         onValueChange = onDraftChange,
                         onDone = { submitted ->
@@ -6125,15 +6150,30 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                 }
+                KernelStyleArrow(expanded = expanded)
             }
-            SteppedPercentSlider(
-                value = value,
-                min = min,
-                max = max,
-                step = step,
-                enabled = controlEnabled,
-                onValueChange = onSave,
-            )
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                    expandVertically(animationSpec = tween(durationMillis = 180)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                    shrinkVertically(animationSpec = tween(durationMillis = 160)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                ) {
+                    SteppedPercentSlider(
+                        value = value,
+                        min = min,
+                        max = max,
+                        step = step,
+                        enabled = controlEnabled,
+                        onValueChange = onSave,
+                    )
+                }
+            }
         }
     }
 
@@ -6219,12 +6259,12 @@ class MainActivity : ComponentActivity() {
 
         Box(
             modifier = Modifier
-                .width(78.dp)
-                .height(46.dp)
+                .width(64.dp)
+                .height(36.dp)
                 .bringIntoViewRequester(bringIntoViewRequester)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(11.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 6.dp),
             contentAlignment = Alignment.Center,
         ) {
             BasicTextField(
@@ -6249,7 +6289,7 @@ class MainActivity : ComponentActivity() {
                 textStyle = MiuixTheme.textStyles.body1.copy(
                     color = MiuixTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
-                    fontSize = 16.sp,
+                    fontSize = 14.sp,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     lineHeightStyle = LineHeightStyle(
                         alignment = LineHeightStyle.Alignment.Center,
@@ -6296,6 +6336,8 @@ class MainActivity : ComponentActivity() {
     private fun NumberInputBox(
         value: String,
         fallbackValue: Int,
+        min: Int,
+        max: Int,
         enabled: Boolean,
         onValueChange: (String) -> Unit,
         onDone: (String) -> Unit,
@@ -6318,18 +6360,25 @@ class MainActivity : ComponentActivity() {
 
         Box(
             modifier = Modifier
-                .width(78.dp)
-                .height(46.dp)
+                .width(64.dp)
+                .height(36.dp)
                 .bringIntoViewRequester(bringIntoViewRequester)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(11.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 6.dp),
             contentAlignment = Alignment.Center,
         ) {
             BasicTextField(
                 value = fieldValue,
                 onValueChange = { newValue ->
-                    val digits = newValue.text.filter { it.isDigit() }.take(3)
+                    val maxLen = max.toString().length.coerceAtLeast(1).coerceAtMost(3)
+                    var digits = newValue.text.filter { it.isDigit() }.take(maxLen)
+                    // 只能填写规定范围内：实时钳到 max，min 仅在 Done 时钳制，避免输入过程中误拦（如 min 45 时输 4）
+                    if (digits.isNotEmpty()) {
+                        digits.toIntOrNull()?.let { v ->
+                            if (v > max) digits = max.toString()
+                        }
+                    }
                     if (digits != newValue.text) {
                         val sel = digits.length
                         fieldValue = TextFieldValue(digits, TextRange(sel))
@@ -6346,7 +6395,7 @@ class MainActivity : ComponentActivity() {
                 textStyle = MiuixTheme.textStyles.body1.copy(
                     color = MiuixTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
-                    fontSize = 16.sp,
+                    fontSize = 14.sp,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     lineHeightStyle = LineHeightStyle(
                         alignment = LineHeightStyle.Alignment.Center,
