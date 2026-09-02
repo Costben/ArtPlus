@@ -24,6 +24,7 @@ jobs:
       version: ${{ steps.release_meta.outputs.version }}
       tag_name: ${{ steps.release_meta.outputs.tag_name }}
       apk_name: ${{ steps.release_meta.outputs.apk_name }}
+      apk_path: ${{ steps.release_meta.outputs.apk_path }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -109,9 +110,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ needs.build.outputs.tag_name }}
           VERSION: ${{ needs.build.outputs.version }}
-          APK_PATH: release/${{ needs.build.outputs.apk_name }}
+          APK_NAME: ${{ needs.build.outputs.apk_name }}
         shell: bash
         run: |
+          APK_PATH="release/${APK_NAME}"
+          if [[ ! -f "${APK_PATH}" ]]; then
+            APK_PATH=$(find release -maxdepth 2 -type f -name "*.apk" | head -n 1)
+          fi
+          echo "Using APK: ${APK_PATH}"
           NOTES_CANDIDATE="docs/release-notes/${VERSION}.md"
           if [[ -f "${NOTES_CANDIDATE}" ]]; then
             cp "${NOTES_CANDIDATE}" release-notes.md
