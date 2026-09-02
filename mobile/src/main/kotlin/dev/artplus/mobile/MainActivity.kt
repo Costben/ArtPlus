@@ -2905,8 +2905,7 @@ class MainActivity : ComponentActivity() {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                        .padding(bottom = 12.dp),
+                        .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     PreviewDesktopBackground.entries.forEach { option ->
@@ -6108,6 +6107,7 @@ class MainActivity : ComponentActivity() {
         var expanded by remember { mutableStateOf(false) }
         val headerInteractionSource = remember { MutableInteractionSource() }
         val headerPressed by headerInteractionSource.collectIsPressedAsState()
+        val bridge = LocalSectionCardPressBridge.current
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -6116,7 +6116,8 @@ class MainActivity : ComponentActivity() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(libraryRowPressedColor(headerPressed))
+                    .trackSectionPress(bridge, headerPressed)
+                    .background(cardRowPressedColor(headerPressed))
                     .clickable(
                         interactionSource = headerInteractionSource,
                         indication = null,
@@ -6610,6 +6611,7 @@ class MainActivity : ComponentActivity() {
     ) {
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
+        val bridge = LocalSectionCardPressBridge.current
         val clickableModifier = if (onClick != null || onCheckedChange != null) {
             Modifier.clickable(
                 interactionSource = interactionSource,
@@ -6629,7 +6631,8 @@ class MainActivity : ComponentActivity() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(libraryRowPressedColor(pressed))
+                .trackSectionPress(bridge, pressed)
+                .background(cardRowPressedColor(pressed))
                 .then(clickableModifier)
                 .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -8014,7 +8017,14 @@ class MainActivity : ComponentActivity() {
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            insideMargin = if (rowsFullBleed) PaddingValues(0.dp) else PaddingValues(16.dp),
+            insideMargin = if (rowsFullBleed) {
+                PaddingValues(
+                    horizontal = 0.dp,
+                    vertical = SECTION_CARD_VERTICAL_PADDING_DP.dp,
+                )
+            } else {
+                PaddingValues(16.dp)
+            },
         ) {
             val bridge = remember { SectionCardPressBridge() }
             CompositionLocalProvider(LocalSectionCardPressBridge provides bridge) {
@@ -8068,7 +8078,8 @@ class MainActivity : ComponentActivity() {
             .drawBehind {
                 val self = containerCoords ?: return@drawBehind
                 val originY = self.positionInRoot().y
-                val insetPx = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.toPx()
+                val hInsetPx = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.toPx()
+                val vInsetPx = SECTION_CARD_VERTICAL_PADDING_DP.dp.toPx()
                 var topPressed = false
                 var bottomPressed = false
                 for ((row, _) in bridge.pressedRows) {
@@ -8080,15 +8091,15 @@ class MainActivity : ComponentActivity() {
                 if (topPressed) {
                     drawRect(
                         color = highlightColor,
-                        topLeft = Offset(-insetPx, -insetPx),
-                        size = Size(size.width + insetPx * 2f, insetPx),
+                        topLeft = Offset(-hInsetPx, -vInsetPx),
+                        size = Size(size.width + hInsetPx * 2f, vInsetPx),
                     )
                 }
                 if (bottomPressed) {
                     drawRect(
                         color = highlightColor,
-                        topLeft = Offset(-insetPx, size.height),
-                        size = Size(size.width + insetPx * 2f, insetPx),
+                        topLeft = Offset(-hInsetPx, size.height),
+                        size = Size(size.width + hInsetPx * 2f, vInsetPx),
                     )
                 }
             }
@@ -19944,6 +19955,7 @@ class MainActivity : ComponentActivity() {
         private const val MAX_PREVIEW_CORNER_RADIUS_DP = 36
         private const val PREVIEW_WALLPAPER_SAMPLE_SIZE = 320
         private const val CHOICE_ROW_HORIZONTAL_BLEED_DP = 16
+        private const val SECTION_CARD_VERTICAL_PADDING_DP = 12
         private val SETTINGS_ROW_INSIDE_MARGIN = PaddingValues(vertical = 6.dp)
         private const val ICON_CACHE_SIZE = 96
         private const val PRELOAD_ICON_COUNT = 64
