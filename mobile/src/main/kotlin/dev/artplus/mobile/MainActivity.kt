@@ -27,6 +27,7 @@ import android.net.LocalSocket
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Looper
 import android.os.Process
 import android.provider.DocumentsContract
@@ -42,6 +43,7 @@ import android.view.Gravity
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.PredictiveBackHandler
@@ -513,7 +515,7 @@ class MainActivity : ComponentActivity() {
     private val chooseTreeLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             if (uri == null) {
-                statusText = "未选择输出目录"
+                toastStatus("未选择输出目录")
                 return@registerForActivityResult
             }
             outputTreeUri = uri
@@ -1660,18 +1662,16 @@ class MainActivity : ComponentActivity() {
                     .imePadding()
                     .padding(horizontal = 12.dp),
                 contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item {
-                    Column {
-                        AppPickerControlsCard(
-                            filteredCount = filteredApps.size,
-                            totalCount = scopeCount,
-                            generatedCount = generatedCount,
-                            ungeneratedCount = ungeneratedCount,
-                            filteredApps = filteredApps,
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
+                    AppPickerControlsCard(
+                        filteredCount = filteredApps.size,
+                        totalCount = scopeCount,
+                        generatedCount = generatedCount,
+                        ungeneratedCount = ungeneratedCount,
+                        filteredApps = filteredApps,
+                    )
                 }
                 if (filteredApps.isEmpty()) {
                     item {
@@ -3234,46 +3234,59 @@ class MainActivity : ComponentActivity() {
             },
             insideMargin = PaddingValues(16.dp),
         ) {
-            Text(
-                text = "没有可显示的应用",
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.semantics { contentDescription = "没有可显示的应用" },
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = hintText,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.semantics { contentDescription = hintText },
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            if (hasHiddenSystemApps && !showSystemApps) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Image(
+                    imageVector = Lucide.Layers,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
+                )
+                Text(
+                    text = "没有可显示的应用",
+                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { contentDescription = "没有可显示的应用" },
+                )
+                Text(
+                    text = hintText,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { contentDescription = hintText },
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                if (hasHiddenSystemApps && !showSystemApps) {
+                    TextButton(
+                        text = "显示系统应用",
+                        onClick = {
+                            showSystemApps = true
+                            saveUiState()
+                        },
+                        enabled = !isBusy,
+                        modifier = Modifier.fillMaxWidth().semantics {
+                            contentDescription = "显示系统应用按钮"
+                        },
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
                 TextButton(
-                    text = "显示系统应用",
-                    onClick = {
-                        showSystemApps = true
-                        saveUiState()
-                    },
+                    text = "刷新应用列表",
+                    onClick = { loadApps() },
                     enabled = !isBusy,
                     modifier = Modifier.fillMaxWidth().semantics {
-                        contentDescription = "显示系统应用按钮"
+                        contentDescription = "刷新应用列表"
                     },
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
-            TextButton(
-                text = "刷新应用列表",
-                onClick = { loadApps() },
-                enabled = !isBusy,
-                modifier = Modifier.fillMaxWidth().semantics {
-                    contentDescription = "刷新应用列表"
-                },
-            )
         }
     }
 
@@ -3970,6 +3983,21 @@ class MainActivity : ComponentActivity() {
             statusText = "当前有任务在运行，请等待"
             return
         }
+        requestServiceConfirm(
+            title = "确认套用预设",
+            message = "将按预设「${preset.name}」批量处理 ${batchPackageNames.size} 个应用，会覆盖现有图标并写入对应分区，确认继续？",
+            confirmLabel = "确认套用",
+        ) {
+            executeApplyPresetToSelectedApps(preset, batchPackageNames)
+        }
+        return
+    }
+
+    private fun executeApplyPresetToSelectedApps(preset: TuningPreset, batchPackageNames: List<String>) {
+        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
+            statusText = "当前有任务在运行，请等待"
+            return
+        }
         isBusy = true
         previewChoiceMode = null
         batchApplyProgress = BatchApplyProgress(
@@ -4014,7 +4042,7 @@ class MainActivity : ComponentActivity() {
                     )
                     try {
                         val result = generateArtPlusPackage(app, useGpt = false)
-                        if (outputUri != null) {
+                        if (false && outputUri != null) {
                             exportToTree(result.outDir)
                         }
                         successes += packageName
@@ -4084,6 +4112,21 @@ class MainActivity : ComponentActivity() {
             statusText = "当前有任务在运行，请等待"
             return
         }
+        requestServiceConfirm(
+            title = "确认套用预设",
+            message = "将按当前调参批量处理 ${batchPackageNames.size} 个应用，会覆盖现有图标并写入对应分区，确认继续？",
+            confirmLabel = "确认套用",
+        ) {
+            executeApplyCurrentBatch(batchPackageNames)
+        }
+        return
+    }
+
+    private fun executeApplyCurrentBatch(batchPackageNames: List<String>) {
+        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
+            statusText = "当前有任务在运行，请等待"
+            return
+        }
         isBusy = true
         previewChoiceMode = null
         batchApplyProgress = BatchApplyProgress(
@@ -4121,7 +4164,7 @@ class MainActivity : ComponentActivity() {
                     )
                     try {
                         val result = generateArtPlusPackage(app, useGpt = false)
-                        if (outputUri != null) {
+                        if (false && outputUri != null) {
                             exportToTree(result.outDir)
                         }
                         successes += packageName
@@ -5668,13 +5711,13 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 Button(
-                    onClick = { generateSelected(installWithRoot = false, useGpt = true) },
-                    enabled = canRun,
+                    onClick = { exportSelectedToExternal() },
+                    enabled = !isBusy,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(
-                        text = "AI生成",
+                        text = "本地导出",
                         style = MiuixTheme.textStyles.button,
                         color = Color.White,
                         maxLines = 1,
@@ -6407,7 +6450,7 @@ class MainActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        text = "导出到外部目录",
+                        text = "备份到外部目录",
                         style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
                         color = MiuixTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
@@ -6415,12 +6458,19 @@ class MainActivity : ComponentActivity() {
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = if (outputTreeUri == null) "未选择目录时仅保存在应用私有目录" else "生成后同步复制到你选择的目录",
+                        text = if (outputTreeUri == null) "将把 /data/oplus/uxicons 内的全部图标（含官方与已写入）备份到你选择的目录" else "将把已写入系统的全部图标备份到你选择的目录",
                         style = MiuixTheme.textStyles.body1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         textAlign = TextAlign.Center,
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
+                    )
+                    TextField(
+                        value = draftExportPath,
+                        onValueChange = { draftExportPath = it },
+                        label = "备份路径",
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = false,
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -6465,20 +6515,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun exportCurrentToExternal() {
-        if (outputTreeUri == null) {
-            statusText = "先在上方选择外部导出目录"
-            return
-        }
-        val dir = activeGenerationSession?.outDir
-            ?: previewDirPath?.let { File(it) }?.takeIf { it.isDirectory }
-            ?: selectedPackageName?.let { artPlusPackageDir(it) }?.takeIf { hasGeneratedPackageBaseAssets(it) }
-        if (dir == null || !dir.isDirectory) {
-            statusText = "没有可导出的图标包，请先生成"
-            return
-        }
-        runCatching { exportToTree(dir) }
-            .onSuccess { statusText = "已导出到外部目录: ${dir.name}" }
-            .onFailure { error -> statusText = "导出失败: ${error.message ?: error.javaClass.simpleName}" }
+        // 保留兼容：设置页旧入口，委托到全量备份
+        backupAllToExternal()
     }
 
     @Composable
@@ -6773,7 +6811,7 @@ class MainActivity : ComponentActivity() {
         val allFilteredSelected = hasFiltered && filteredPackageNames.all { it in multiSelectedPackageNames }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             CompactActionButton(
                 text = if (allFilteredSelected) "取消当前" else "选择当前",
@@ -6798,21 +6836,21 @@ class MainActivity : ComponentActivity() {
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             CompactActionButton(
                 text = "添加光影 $selectedCount",
                 onClick = { addLiquidGlassToMultiSelectedGenerated() },
                 enabled = !isBusy && selectedCount > 0,
                 modifier = Modifier.weight(1f),
-                height = 50.dp,
+                height = 48.dp,
             )
             CompactActionButton(
                 text = "套用当前预设",
                 onClick = { applyCurrentPresetBatch() },
                 enabled = !isBusy && selectedCount > 0,
                 modifier = Modifier.weight(1f),
-                height = 50.dp,
+                height = 48.dp,
             )
         }
     }
@@ -6856,23 +6894,45 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        Card(
+        val containerBg = when {
+            selected -> MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+            multiSelected -> MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+            else -> MiuixTheme.colorScheme.surfaceContainerHigh
+        }
+        // Card 本身无 colors 参数（miuix 0.9.1），用外层背景 + clip 模拟 CompactPresetRow 的选中态
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp),
-            insideMargin = PaddingValues(start = 10.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-            showIndication = true,
-            onClick = onClick,
+                .clip(RoundedCornerShape(14.dp))
+                .background(containerBg)
+                .clickable(onClick = onClick),
         ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+                showIndication = false,
+            ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                // 复选框：多选清单语义，去掉旧的"选择/已选"文字按钮与箭头
+                Checkbox(
+                    state = ToggleableState(multiSelected),
+                    onClick = onToggleMultiSelect,
+                    enabled = !isBusy,
+                    colors = CheckboxDefaults.checkboxColors(
+                        checkedBackgroundColor = MiuixTheme.colorScheme.primaryVariant,
+                        checkedForegroundColor = MiuixTheme.colorScheme.onPrimaryVariant,
+                        uncheckedBackgroundColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
+                        uncheckedForegroundColor = Color.Transparent,
+                    ),
+                )
                 AppIcon(
                     entry = entry,
                     size = 48.dp,
                 )
-                Spacer(modifier = Modifier.width(10.dp))
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(1.dp),
@@ -6881,7 +6941,7 @@ class MainActivity : ComponentActivity() {
                         text = entry.label,
                         modifier = Modifier.basicMarquee(),
                         style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight(550)),
-                        color = MiuixTheme.colorScheme.onSurface,
+                        color = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurface,
                         maxLines = 1,
                         softWrap = false,
                     )
@@ -6899,7 +6959,7 @@ class MainActivity : ComponentActivity() {
                 }
                 if (tags.isNotEmpty()) {
                     Column(
-                        modifier = Modifier.padding(start = 16.dp),
+                        modifier = Modifier.padding(start = 8.dp),
                         horizontalAlignment = Alignment.End,
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
@@ -6908,12 +6968,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                TextButton(
-                    text = if (multiSelected) "已选" else "选择",
-                    onClick = onToggleMultiSelect,
-                    enabled = !isBusy,
-                )
-                KernelStyleArrow()
+            }
             }
         }
     }
@@ -7385,6 +7440,9 @@ class MainActivity : ComponentActivity() {
             "使用情况访问" -> SettingsIconKind.Shield
             "Root 目标" -> SettingsIconKind.Shield
             "外部导出" -> SettingsIconKind.FileUpload
+            "导出到外部目录" -> SettingsIconKind.FileUpload
+            "备份到外部目录" -> SettingsIconKind.FileUpload
+            "导出引导" -> SettingsIconKind.FileUpload
             "RMBG 状态" -> SettingsIconKind.Chip
             "模型版本" -> SettingsIconKind.Layers
             "GPT image two 生成模式" -> SettingsIconKind.Spark
@@ -7795,6 +7853,7 @@ class MainActivity : ComponentActivity() {
             .putBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, autoConfirmRootWrite)
             .putBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, autoConfirmRootWrite)
             .putBoolean(PREF_AUTO_CONFIRM_REFRESH, autoConfirmRefresh)
+            .putString(PREF_OUTPUT_TREE_URI, outputTreeUri?.toString())
             .apply()
     }
 
@@ -9522,7 +9581,7 @@ class MainActivity : ComponentActivity() {
                     previewVersion += 1
                     saveUiState()
                 }
-                if (outputTreeUri != null) {
+                if (false && outputTreeUri != null) {
                     exportToTree(result.outDir)
                 }
                 if (installWithRoot) {
@@ -9531,12 +9590,12 @@ class MainActivity : ComponentActivity() {
                         markPackageGenerated(entry.packageName)
                     }
                     val sourceLabel = if (useGpt) "AI版" else "本地版"
-                    status("已生成${sourceLabel}并${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
+                    toastStatus("已生成${sourceLabel}并${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
                 } else {
-                    status("已生成${if (useGpt) "AI版" else "本地版"}: ${result.outDir.absolutePath}")
+                    toastStatus("已生成${if (useGpt) "AI版" else "本地版"}: ${result.outDir.absolutePath}")
                 }
             } catch (error: Exception) {
-                status("失败: ${error.message ?: error.javaClass.simpleName}")
+                toastStatus("失败: ${error.message ?: error.javaClass.simpleName}")
             } finally {
                 runOnUiThread {
                     isBusy = false
@@ -9575,7 +9634,7 @@ class MainActivity : ComponentActivity() {
             startUiFriendlyThread("ArtPlusPreviewRootWrite") {
                 try {
                     writePackageOutputs(session, selections)
-                    if (outputTreeUri != null) {
+                    if (false && outputTreeUri != null) {
                         exportToTree(session.outDir)
                     }
                     installWithRoot(session.outDir, entry.packageName, rootWriteMode)
@@ -9588,9 +9647,9 @@ class MainActivity : ComponentActivity() {
                         previewVersion += 1
                         saveUiState()
                     }
-                    status("已按当前预览${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
+                    toastStatus("已按当前预览${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
                 } catch (error: Exception) {
-                    status("写入失败: ${error.message ?: error.javaClass.simpleName}")
+                    toastStatus("写入失败: ${error.message ?: error.javaClass.simpleName}")
                 } finally {
                     runOnUiThread {
                         isBusy = false
@@ -9715,6 +9774,20 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        requestServiceConfirm(
+            title = "确认添加光影",
+            message = "将为 ${packageNames.size} 个已选项添加光影并写入 data 分区，耗时较长且会覆盖现有图标，确认继续？",
+            confirmLabel = "确认添加",
+        ) {
+            executeAddLiquidGlassToMultiSelectedGenerated(packageNames)
+        }
+        return
+    }
+
+    private fun executeAddLiquidGlassToMultiSelectedGenerated(packageNames: List<String>) {
+        if (isBusy) {
+            return
+        }
         isBusy = true
         statusText = "正在批量添加光影: ${packageNames.size} 个"
         val selectedAtStart = selectedPackageName
@@ -12787,7 +12860,7 @@ class MainActivity : ComponentActivity() {
                     )
                     try {
                         val result = generatePackageForPreviewChoice(app, choice)
-                        if (outputUri != null) {
+                        if (false && outputUri != null) {
                             exportToTree(result.outDir)
                         }
                         installWithRoot(result.outDir, packageName, RootWriteMode.All)
@@ -12943,7 +13016,7 @@ class MainActivity : ComponentActivity() {
                 )
                 val selections = previewSelections
                 writePackageOutputs(updatedSession, selections)
-                if (outputTreeUri != null) {
+                if (false && outputTreeUri != null) {
                     exportToTree(updatedSession.outDir)
                 }
                 runOnUiThread {
@@ -12997,18 +13070,20 @@ class MainActivity : ComponentActivity() {
                         ),
                 )
                 writePackageOutputs(updatedSession, selections)
-                if (outputTreeUri != null) {
+                if (false && outputTreeUri != null) {
                     exportToTree(updatedSession.outDir)
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
                     previewSelections = selections
                     previewVersion += 1
-                    statusText = "AI候选已生成并应用到 ${mode.label}"
+                    val msg = "AI候选已生成并应用到 ${mode.label}"
+                    statusText = msg
+                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     saveUiState()
                 }
             } catch (error: Exception) {
-                status("AI候选失败: ${error.message ?: error.javaClass.simpleName}")
+                toastStatus("AI候选失败: ${error.message ?: error.javaClass.simpleName}")
             } finally {
                 runOnUiThread {
                     isGeneratingGptCandidate = false
@@ -13056,7 +13131,7 @@ class MainActivity : ComponentActivity() {
                         ),
                 )
                 writePackageOutputs(updatedSession, selections)
-                if (outputTreeUri != null) {
+                if (false && outputTreeUri != null) {
                     exportToTree(updatedSession.outDir)
                 }
                 runOnUiThread {
@@ -13064,11 +13139,13 @@ class MainActivity : ComponentActivity() {
                     previewSelections = selections
                     previewChoiceMode = null
                     previewVersion += 1
-                    statusText = "AI候选已生成并应用到全部"
+                    val msg = "AI候选已生成并应用到全部"
+                    statusText = msg
+                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     saveUiState()
                 }
             } catch (error: Exception) {
-                status("AI候选失败: ${error.message ?: error.javaClass.simpleName}")
+                toastStatus("AI候选失败: ${error.message ?: error.javaClass.simpleName}")
             } finally {
                 runOnUiThread {
                     isGeneratingGptCandidate = false
@@ -13131,7 +13208,7 @@ class MainActivity : ComponentActivity() {
                     candidates = session.candidates + (PreviewChoice.Rmbg to candidate),
                 )
                 writePackageOutputs(updatedSession, selections)
-                if (outputTreeUri != null) {
+                if (false && outputTreeUri != null) {
                     exportToTree(updatedSession.outDir)
                 }
                 runOnUiThread {
@@ -13142,11 +13219,13 @@ class MainActivity : ComponentActivity() {
                     lastRmbgInferenceReport = inferenceReport
                     rmbgCandidateFailurePackageName = null
                     rmbgCandidateFailureMode = null
-                    statusText = if (result.validationWarning != null) {
+                    val msg = if (result.validationWarning != null) {
                         "${result.validationWarning}，已应用到 ${mode.label}: ${formatRmbgInferenceReport(inferenceReport)}"
                     } else {
                         "RMBG候选已生成并应用到 ${mode.label}: ${formatRmbgInferenceReport(inferenceReport)}"
                     }
+                    statusText = msg
+                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     saveUiState()
                 }
             } catch (error: Throwable) {
@@ -13155,7 +13234,9 @@ class MainActivity : ComponentActivity() {
                     lastRmbgCandidateError = message
                     rmbgCandidateFailurePackageName = session.packageName
                     rmbgCandidateFailureMode = mode
-                    statusText = "RMBG候选失败(${RmbgInferenceBackend.Cpu.label}): $message"
+                    val msg = "RMBG候选失败(${RmbgInferenceBackend.Cpu.label}): $message"
+                    statusText = msg
+                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } finally {
                 rmbgGenerationGate.set(false)
@@ -13222,7 +13303,7 @@ class MainActivity : ComponentActivity() {
                     candidates = session.candidates + (PreviewChoice.Rmbg to candidate),
                 )
                 writePackageOutputs(updatedSession, selections)
-                if (outputTreeUri != null) {
+                if (false && outputTreeUri != null) {
                     exportToTree(updatedSession.outDir)
                 }
                 runOnUiThread {
@@ -13234,11 +13315,13 @@ class MainActivity : ComponentActivity() {
                     lastRmbgInferenceReport = inferenceReport
                     rmbgCandidateFailurePackageName = null
                     rmbgCandidateFailureMode = null
-                    statusText = if (result.validationWarning != null) {
+                    val msg = if (result.validationWarning != null) {
                         "${result.validationWarning}，已应用到全部: ${formatRmbgInferenceReport(inferenceReport)}"
                     } else {
                         "RMBG候选已生成并应用到全部: ${formatRmbgInferenceReport(inferenceReport)}"
                     }
+                    statusText = msg
+                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     saveUiState()
                 }
             } catch (error: Throwable) {
@@ -13247,7 +13330,9 @@ class MainActivity : ComponentActivity() {
                     lastRmbgCandidateError = message
                     rmbgCandidateFailurePackageName = session.packageName
                     rmbgCandidateFailureMode = null
-                    statusText = "RMBG候选失败(${RmbgInferenceBackend.Cpu.label}): $message"
+                    val msg = "RMBG候选失败(${RmbgInferenceBackend.Cpu.label}): $message"
+                    statusText = msg
+                    Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } finally {
                 rmbgGenerationGate.set(false)
@@ -13341,7 +13426,7 @@ class MainActivity : ComponentActivity() {
                 }
                 val selections = normalizePreviewSelections(updatedSession, retargetedSelections)
                 writePackageOutputs(updatedSession, selections)
-                if (outputUri != null) {
+                if (false && outputUri != null) {
                     exportToTree(updatedSession.outDir)
                 }
                 withContext(Dispatchers.Main) {
@@ -13423,7 +13508,7 @@ class MainActivity : ComponentActivity() {
             try {
                 delay(PREVIEW_OUTPUT_DEBOUNCE_MS)
                 writePackageOutputs(session, selections)
-                if (outputUri != null) {
+                if (false && outputUri != null) {
                     exportToTree(session.outDir)
                 }
                 withContext(Dispatchers.Main) {
