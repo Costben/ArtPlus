@@ -124,6 +124,7 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -177,13 +178,18 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -5983,15 +5989,19 @@ class MainActivity : ComponentActivity() {
         onValueChange: (String) -> Unit,
         onDone: (String) -> Unit,
     ) {
-        val textColor = MiuixTheme.colorScheme.onSurface.toArgb()
-        val cursorColor = MiuixTheme.colorScheme.primaryVariant.toArgb()
         val bringIntoViewRequester = remember { BringIntoViewRequester() }
-        var bringIntoViewRequest by remember { mutableStateOf(0) }
-
-        LaunchedEffect(bringIntoViewRequest) {
-            if (bringIntoViewRequest > 0) {
+        var focused by remember { mutableStateOf(false) }
+        val focusManager = LocalFocusManager.current
+        LaunchedEffect(focused) {
+            if (focused) {
                 delay(260)
                 bringIntoViewRequester.bringIntoView()
+            }
+        }
+        var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+        LaunchedEffect(value) {
+            if (value != fieldValue.text) {
+                fieldValue = TextFieldValue(value, TextRange(value.length))
             }
         }
 
@@ -6005,85 +6015,67 @@ class MainActivity : ComponentActivity() {
                 .padding(horizontal = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { context ->
-                    EditText(context).apply {
-                        background = null
-                        gravity = Gravity.CENTER
-                        includeFontPadding = false
-                        isSingleLine = true
-                        filters = arrayOf(InputFilter.LengthFilter(8))
-                        inputType = InputType.TYPE_CLASS_NUMBER or
-                            InputType.TYPE_NUMBER_FLAG_DECIMAL or
-                            InputType.TYPE_NUMBER_FLAG_SIGNED
-                        imeOptions = EditorInfo.IME_ACTION_DONE or
-                            EditorInfo.IME_FLAG_NO_EXTRACT_UI or
-                            EditorInfo.IME_FLAG_NO_FULLSCREEN
-                        setSelectAllOnFocus(true)
-                        setPadding(0, 0, 0, 0)
-                        setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
-                        setOnClickListener {
-                            bringIntoViewRequest++
-                            requestFocus()
-                            post {
-                                selectAll()
-                                showKeyboardFor(this)
-                            }
-                        }
-                        setOnFocusChangeListener { _, hasFocus ->
-                            if (hasFocus) {
-                                bringIntoViewRequest++
-                                post {
-                                    selectAll()
-                                    showKeyboardFor(this)
-                                }
-                            } else if (text.isEmpty()) {
-                                setText(fallbackValue)
+            BasicTextField(
+                value = fieldValue,
+                onValueChange = { newValue ->
+                    val raw = newValue.text
+                    val filtered = filterDecimalInput(raw)
+                    if (filtered != raw) {
+                        val sel = filtered.length.coerceIn(0, 8)
+                        fieldValue = TextFieldValue(filtered, TextRange(sel))
+                        onValueChange(filtered)
+                    } else {
+                        // clamp selection to filtered length (filterDecimalInput already limits to 8)
+                        val selStart = newValue.selection.start.coerceIn(0, filtered.length)
+                        val selEnd = newValue.selection.end.coerceIn(0, filtered.length)
+                        fieldValue = newValue.copy(text = filtered, selection = TextRange(selStart, selEnd))
+                        onValueChange(filtered)
+                    }
+                },
+                enabled = enabled,
+                singleLine = true,
+                textStyle = MiuixTheme.textStyles.body1.copy(
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    fontSize = 16.sp,
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                    lineHeightStyle = LineHeightStyle(
+                        alignment = LineHeightStyle.Alignment.Center,
+                        trim = LineHeightStyle.Trim.None,
+                    ),
+                ),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        onDone(fieldValue.text)
+                        focusManager.clearFocus()
+                    },
+                ),
+                cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onFocusChanged { state ->
+                        focused = state.isFocused
+                        if (state.isFocused) {
+                            fieldValue = fieldValue.copy(selection = TextRange(0, fieldValue.text.length))
+                        } else {
+                            if (fieldValue.text.isEmpty()) {
+                                fieldValue = TextFieldValue(fallbackValue, TextRange(fallbackValue.length))
                                 onValueChange(fallbackValue)
                             }
                         }
-                        setOnEditorActionListener { _, actionId, _ ->
-                            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                                onDone(text.toString())
-                                clearFocus()
-                                true
-                            } else {
-                                false
-                            }
-                        }
+                    },
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        innerTextField()
                     }
                 },
-                update = { editText ->
-                    editText.isEnabled = enabled
-                    editText.setTextColor(textColor)
-                    editText.setHintTextColor(textColor)
-                    editText.textCursorDrawable?.setTint(cursorColor)
-                    editText.imeOptions = EditorInfo.IME_ACTION_DONE or
-                        EditorInfo.IME_FLAG_NO_EXTRACT_UI or
-                        EditorInfo.IME_FLAG_NO_FULLSCREEN
-                    (editText.tag as? TextWatcher)?.let { editText.removeTextChangedListener(it) }
-                    if (editText.text.toString() != value) {
-                        editText.setText(value)
-                        editText.setSelection(editText.text.length)
-                    }
-                    val watcher = object : TextWatcher {
-                        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                            val raw = s?.toString().orEmpty()
-                            val filtered = filterDecimalInput(raw)
-                            if (filtered != raw) {
-                                editText.setText(filtered)
-                                editText.setSelection(editText.text.length)
-                                return
-                            }
-                            onValueChange(filtered)
-                        }
-                        override fun afterTextChanged(s: Editable?) = Unit
-                    }
-                    editText.tag = watcher
-                    editText.addTextChangedListener(watcher)
-                }
             )
         }
     }
@@ -6096,15 +6088,19 @@ class MainActivity : ComponentActivity() {
         onValueChange: (String) -> Unit,
         onDone: (String) -> Unit,
     ) {
-        val textColor = MiuixTheme.colorScheme.onSurface.toArgb()
-        val cursorColor = MiuixTheme.colorScheme.primaryVariant.toArgb()
         val bringIntoViewRequester = remember { BringIntoViewRequester() }
-        var bringIntoViewRequest by remember { mutableStateOf(0) }
-
-        LaunchedEffect(bringIntoViewRequest) {
-            if (bringIntoViewRequest > 0) {
+        var focused by remember { mutableStateOf(false) }
+        val focusManager = LocalFocusManager.current
+        LaunchedEffect(focused) {
+            if (focused) {
                 delay(260)
                 bringIntoViewRequester.bringIntoView()
+            }
+        }
+        var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+        LaunchedEffect(value) {
+            if (value != fieldValue.text) {
+                fieldValue = TextFieldValue(value, TextRange(value.length))
             }
         }
 
@@ -6118,87 +6114,72 @@ class MainActivity : ComponentActivity() {
                 .padding(horizontal = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { context ->
-                    EditText(context).apply {
-                        background = null
-                        gravity = Gravity.CENTER
-                        includeFontPadding = false
-                        isSingleLine = true
-                        filters = arrayOf(InputFilter.LengthFilter(3))
-                        inputType = InputType.TYPE_CLASS_NUMBER
-                        imeOptions = EditorInfo.IME_ACTION_DONE or
-                            EditorInfo.IME_FLAG_NO_EXTRACT_UI or
-                            EditorInfo.IME_FLAG_NO_FULLSCREEN
-                        setSelectAllOnFocus(true)
-                        setPadding(0, 0, 0, 0)
-                        setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 16f)
-                        setOnClickListener {
-                            bringIntoViewRequest++
-                            requestFocus()
-                            post {
-                                selectAll()
-                                showKeyboardFor(this)
-                            }
-                        }
-                        setOnFocusChangeListener { _, hasFocus ->
-                            if (hasFocus) {
-                                bringIntoViewRequest++
-                                post {
-                                    selectAll()
-                                    showKeyboardFor(this)
-                                }
-                            } else if (text.isEmpty()) {
-                                setText(fallbackValue.toString())
-                                onValueChange(fallbackValue.toString())
-                            }
-                        }
-                        setOnEditorActionListener { _, actionId, _ ->
-                            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                                onDone(text.toString())
-                                clearFocus()
-                                true
-                            } else {
-                                false
-                            }
-                        }
+            BasicTextField(
+                value = fieldValue,
+                onValueChange = { newValue ->
+                    val digits = newValue.text.filter { it.isDigit() }.take(3)
+                    if (digits != newValue.text) {
+                        val sel = digits.length
+                        fieldValue = TextFieldValue(digits, TextRange(sel))
+                        onValueChange(digits)
+                    } else {
+                        val selStart = newValue.selection.start.coerceIn(0, digits.length)
+                        val selEnd = newValue.selection.end.coerceIn(0, digits.length)
+                        fieldValue = newValue.copy(text = digits, selection = TextRange(selStart, selEnd))
+                        onValueChange(digits)
                     }
                 },
-                update = { editText ->
-                    editText.isEnabled = enabled
-                    editText.setTextColor(textColor)
-                    editText.setHintTextColor(textColor)
-                    editText.textCursorDrawable?.setTint(cursorColor)
-                    editText.imeOptions = EditorInfo.IME_ACTION_DONE or
-                        EditorInfo.IME_FLAG_NO_EXTRACT_UI or
-                        EditorInfo.IME_FLAG_NO_FULLSCREEN
-                    (editText.tag as? TextWatcher)?.let { editText.removeTextChangedListener(it) }
-                    if (editText.text.toString() != value) {
-                        editText.setText(value)
-                        editText.setSelection(editText.text.length)
-                    }
-                    val watcher = object : TextWatcher {
-                        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                            val digits = s?.filter { it.isDigit() }?.take(3)?.toString() ?: ""
-                            if (digits != s.toString()) {
-                                editText.setText(digits)
-                                editText.setSelection(editText.text.length)
-                                return
+                enabled = enabled,
+                singleLine = true,
+                textStyle = MiuixTheme.textStyles.body1.copy(
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    fontSize = 16.sp,
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                    lineHeightStyle = LineHeightStyle(
+                        alignment = LineHeightStyle.Alignment.Center,
+                        trim = LineHeightStyle.Trim.None,
+                    ),
+                ),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        onDone(fieldValue.text)
+                        focusManager.clearFocus()
+                    },
+                ),
+                cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .onFocusChanged { state ->
+                        focused = state.isFocused
+                        if (state.isFocused) {
+                            fieldValue = fieldValue.copy(selection = TextRange(0, fieldValue.text.length))
+                        } else {
+                            if (fieldValue.text.isEmpty()) {
+                                val fb = fallbackValue.toString()
+                                fieldValue = TextFieldValue(fb, TextRange(fb.length))
+                                onValueChange(fb)
                             }
-                            onValueChange(digits)
                         }
-                        override fun afterTextChanged(s: Editable?) = Unit
+                    },
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        innerTextField()
                     }
-                    editText.tag = watcher
-                    editText.addTextChangedListener(watcher)
-                }
+                },
             )
         }
     }
 
     @Composable
+    @OptIn(ExperimentalFoundationApi::class)
     private fun GenerationActionCard(selectedApp: AppEntry?) {
         val canRun = selectedApp != null && !isBusy
         SectionCard {
