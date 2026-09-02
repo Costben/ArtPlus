@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -25,13 +27,46 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val keystoreFile = file("release.jks")
+            val localProperties = Properties().apply {
+                val propFile = rootProject.file("local.properties")
+                if (propFile.exists()) {
+                    propFile.inputStream().use { load(it) }
+                }
+            }
+            val storePass = System.getenv("KEYSTORE_PASSWORD")
+                ?: localProperties.getProperty("KEYSTORE_PASSWORD")
+            val keyPass = System.getenv("KEY_PASSWORD")
+                ?: localProperties.getProperty("KEY_PASSWORD")
+                ?: storePass
+            val resolvedKeyAlias = System.getenv("KEY_ALIAS")
+                ?: localProperties.getProperty("KEY_ALIAS")
+                ?: "artplus"
+
+            if (keystoreFile.exists() && !storePass.isNullOrBlank()) {
+                storeFile = keystoreFile
+                storePassword = storePass
+                keyAlias = resolvedKeyAlias
+                keyPassword = keyPass
+            } else {
+                val debug = getByName("debug")
+                storeFile = debug.storeFile
+                storePassword = debug.storePassword
+                keyAlias = debug.keyAlias
+                keyPassword = debug.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
         }
 
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             isDebuggable = false
             manifestPlaceholders["usesCleartextTraffic"] = "false"

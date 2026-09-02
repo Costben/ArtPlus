@@ -44,3 +44,5 @@ platform_tools/
 .gradle/
 local.properties
 mobile/build/
+*.jks
+*.keystore
