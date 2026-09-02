@@ -278,7 +278,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.popup.OverlayDropdownPopup
+import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -5223,7 +5223,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** 库标准选择行：整行按压 + 库悬浮列表弹窗（OverlayDropdownPopup）。 */
+    /** 库标准选择行：整行按压 + 窗口级列表弹窗（WindowDropdownPopup），保证层级在 FloatingBottomBar 之上。 */
     @Composable
     private fun LibraryChoiceRow(
         title: String,
@@ -5234,25 +5234,26 @@ class MainActivity : ComponentActivity() {
         enabled: Boolean,
     ) {
         var expanded by remember { mutableStateOf(false) }
-        LibrarySettingRow(
-            title = title,
-            summary = summary,
-            value = value,
-            icon = icon,
-            showArrowUpDown = true,
-            enabled = enabled,
-            onClick = { expanded = true },
-        )
-        OverlayDropdownPopup(
-            entry = entry,
-            show = expanded,
-            onDismiss = { expanded = false },
-            onDismissFinished = { },
-            maxHeight = null,
-            dropdownColors = settingsDropdownColors(),
-            renderInRootScaffold = true,
-            collapseOnSelection = true,
-        )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            LibrarySettingRow(
+                title = title,
+                summary = summary,
+                value = value,
+                icon = icon,
+                showArrowUpDown = true,
+                enabled = enabled,
+                onClick = { expanded = true },
+            )
+            WindowDropdownPopup(
+                entry = entry,
+                show = expanded,
+                onDismiss = { expanded = false },
+                onDismissFinished = { },
+                maxHeight = null,
+                dropdownColors = settingsDropdownColors(),
+                collapseOnSelection = true,
+            )
+        }
     }
 
     @Composable
