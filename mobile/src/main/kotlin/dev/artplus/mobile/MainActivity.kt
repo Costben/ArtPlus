@@ -6146,11 +6146,12 @@ class MainActivity : ComponentActivity() {
                     )
                     Text(
                         text = summary,
+                        modifier = if (expanded) Modifier.basicMarquee() else Modifier,
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = if (expanded) Int.MAX_VALUE else 1,
-                        overflow = if (expanded) TextOverflow.Visible else TextOverflow.Ellipsis,
-                        softWrap = expanded,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        softWrap = false,
                     )
                 }
                 // 输入框区域消费点击，避免误触切换折叠
