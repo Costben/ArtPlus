@@ -42,6 +42,26 @@ data class TuningPreset(
                 )
             }.getOrNull()
     }
+
+    /** 提取该预设的 1~2 个关键视觉风格特征标签。 */
+    fun featureTags(): List<String> {
+        val tags = mutableListOf<String>()
+        if (params.liquidGlassEnabled) {
+            tags += "玻璃 ${params.liquidGlassRadius}dp"
+        } else {
+            tags += "经典"
+        }
+        if (params.localBackgroundSeparationEnabled) {
+            tags += "本地分离"
+        }
+        if (params.rmbgAlphaStrengthPercent > 0) {
+            tags += "RMBG"
+        }
+        if (params.monochromeThemeScale > 0.05f) {
+            tags += "单色 ${(params.monochromeThemeScale * 100).toInt()}%"
+        }
+        return tags.take(2)
+    }
 }
 
 /** 导入结果摘要。 */
@@ -121,6 +141,13 @@ class PresetStore(private val prefs: SharedPreferences) {
         set(value) {
             prefs.edit().putString(PREF_ACTIVE_PRESET_ID, value).apply()
         }
+
+    /** 导出单条预设为 `{"schemaVersion":1,"presets":[...]}`。 */
+    fun exportSingleJson(preset: TuningPreset): String =
+        JSONObject()
+            .put("schemaVersion", PRESET_SCHEMA_VERSION)
+            .put("presets", JSONArray().also { it.put(preset.toJson()) })
+            .toString()
 
     /** 导出全部预设为 `{"schemaVersion":1,"presets":[...]}`。 */
     fun exportJson(): String =
