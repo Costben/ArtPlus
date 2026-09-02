@@ -1310,6 +1310,7 @@ class MainActivity : ComponentActivity() {
     ) {
         val pageScrollBehavior = MiuixScrollBehavior()
         Scaffold(
+            containerColor = Color.Transparent,
             topBar = {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     TopAppBar(
