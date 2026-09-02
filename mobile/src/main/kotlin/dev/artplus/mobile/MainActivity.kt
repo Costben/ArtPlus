@@ -1312,28 +1312,32 @@ class MainActivity : ComponentActivity() {
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    TopAppBar(
-                        title = title,
-                        scrollBehavior = pageScrollBehavior,
-                        navigationIconPadding = 0.dp,
-                        actionIconPadding = 0.dp,
-                        navigationIcon = navigationIcon,
-                        actions = actions,
-                    )
-                    AnimatedVisibility(
-                        visible = showPreviewStrip,
-                        enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                            expandVertically(animationSpec = tween(durationMillis = 180)),
-                        exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                            shrinkVertically(animationSpec = tween(durationMillis = 160)),
-                    ) {
-                        HomePreviewStrip()
-                    }
-                }
+                TopAppBar(
+                    title = title,
+                    scrollBehavior = pageScrollBehavior,
+                    navigationIconPadding = 0.dp,
+                    actionIconPadding = 0.dp,
+                    navigationIcon = navigationIcon,
+                    actions = actions,
+                )
             },
         ) { innerPadding ->
-            content(innerPadding, pageScrollBehavior)
+            Box(modifier = Modifier.fillMaxSize()) {
+                content(innerPadding, pageScrollBehavior)
+                AnimatedVisibility(
+                    visible = showPreviewStrip,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                        expandVertically(animationSpec = tween(durationMillis = 180)),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                        shrinkVertically(animationSpec = tween(durationMillis = 160)),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = innerPadding.calculateTopPadding())
+                        .zIndex(1f),
+                ) {
+                    HomePreviewStrip()
+                }
+            }
         }
     }
 
