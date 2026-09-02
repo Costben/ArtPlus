@@ -68,10 +68,13 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas as ComposeCanvas
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -436,6 +439,7 @@ class MainActivity : ComponentActivity() {
     private var generatedPackageNames by mutableStateOf<Set<String>>(emptySet())
     private var multiSelectedPackageNames by mutableStateOf<Set<String>>(emptySet())
     private var batchApplyProgress by mutableStateOf<BatchApplyProgress?>(null)
+    private var exportProgress by mutableStateOf<ExportProgress?>(null)
     private var isScanningGeneratedPackages by mutableStateOf(false)
     private var generatedScanFailed by mutableStateOf(false)
     private var previewPackageName by mutableStateOf<String?>(null)
@@ -472,6 +476,7 @@ class MainActivity : ComponentActivity() {
     private var rmbgDialogVisible by mutableStateOf(false)
     private var exportDialogVisible by mutableStateOf(false)
     private var resetDefaultsDialogVisible by mutableStateOf(false)
+    private var onboardingVisible by mutableStateOf(false)
     private var rmbgComponentUrl by mutableStateOf("")
     private var rmbgComponentSaveStatus by mutableStateOf("")
     private var lastRmbgInferenceReport by mutableStateOf<RmbgInferenceReport?>(null)
@@ -481,6 +486,17 @@ class MainActivity : ComponentActivity() {
     private var debugHttpServer: DebugHttpServer? = null
     private var rmbgRuntime: DynamicRmbgRuntime? = null
     private var rmbgComponentStatus by mutableStateOf("")
+    private var isCheckingUpdate by mutableStateOf(false)
+    private var updateAvailableInfo by mutableStateOf<UpdateInfo?>(null)
+    private var updateUpToDateDialogVisible by mutableStateOf(false)
+    private var mitLicenseDialogVisible by mutableStateOf(false)
+    private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    private data class UpdateInfo(
+        val latestVersion: String,
+        val tagName: String,
+        val htmlUrl: String,
+    )
 
     /** 调用 GPT/RMBG 前的二次确认请求。 */
     private data class ServiceConfirmRequest(
@@ -506,6 +522,14 @@ class MainActivity : ComponentActivity() {
         val failures: Int,
     )
 
+    private data class ExportProgress(
+        val title: String,
+        val completed: Int,
+        val total: Int,
+        val currentLabel: String,
+        val isIndeterminate: Boolean = false,
+    )
+
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             refreshPermissionState()
@@ -525,8 +549,17 @@ class MainActivity : ComponentActivity() {
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
                 )
             }
-            statusText = "已选择输出目录"
+            // 自动在根目录创建 .nomedia，避免出现在相册
+            runCatching { ensureNomediaAtTreeRoot() }
+            toastStatus("已选择输出目录")
             saveUiState()
+            // 若来自首次引导，自动执行全量备份
+            if (onboardingVisible) {
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                    .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
+                onboardingVisible = false
+                backupAllToExternal(isFromOnboarding = true)
+            }
         }
 
     private val chooseRmbgComponentLauncher =
@@ -927,6 +960,8 @@ class MainActivity : ComponentActivity() {
                             ungeneratedCount = ungeneratedCount,
                         )
 
+                        AppPage.About -> AboutPage(pageBackground = pageBackground)
+
                         AppPage.Home -> Unit
                     }
                 }
@@ -935,11 +970,92 @@ class MainActivity : ComponentActivity() {
             batchApplyProgress?.let { progress ->
                 BatchApplyProgressDialog(progress)
             }
+            exportProgress?.let { progress ->
+                ExportProgressDialog(progress)
+            }
 
             ServiceConfirmDialog()
             RootWriteConfirmDialog()
             RefreshConfirmDialog()
             PresetPageDialogs()
+            OnboardingDialog()
+        }
+    }
+
+    @Composable
+    private fun OnboardingDialog() {
+        if (!onboardingVisible) return
+        MiuixBottomDialog(onDismissRequest = {
+            // 允许通过外部点击关闭视为跳过
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
+            onboardingVisible = false
+            toastStatus("已跳过，可在设置-导出引导中重新进入")
+        }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "设置备份目录",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "首次使用建议先选择一个外部目录，用于备份已写入系统的全部图标（含官方图标）。选择后将自动执行一次全量备份，并在该目录创建 .nomedia 避免出现在相册。",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 5,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
+                        onClick = {
+                            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                                .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
+                            onboardingVisible = false
+                            toastStatus("已跳过，可在设置-导出引导中重新进入")
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "跳过",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            // 不在此关闭，等待 chooseTreeLauncher 回调中关闭
+                            chooseTreeLauncher.launch(null)
+                        },
+                        enabled = !isBusy,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "选择目录",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -1619,6 +1735,25 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }
+                        SectionCard(rowsFullBleed = true) {
+                            LibrarySettingRow(
+                                title = "导出引导",
+                                summary = "首次引导与全量备份入口",
+                                icon = settingsIconForTitle("导出引导"),
+                                showArrowRight = true,
+                                enabled = !isBusy,
+                                onClick = { onboardingVisible = true },
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            LibrarySettingRow(
+                                title = "关于",
+                                summary = "源码、开源协议与更新",
+                                icon = SettingsIconKind.Link,
+                                showArrowRight = true,
+                                enabled = !isBusy,
+                                onClick = { currentPage = AppPage.About },
+                            )
+                        }
                     }
                 }
         }
@@ -1693,6 +1828,301 @@ class MainActivity : ComponentActivity() {
                                 currentPage = AppPage.Home
                             },
                             onToggleMultiSelect = { toggleMultiSelectedPackage(entry.packageName) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun AboutPage(pageBackground: Color) {
+        val scrollBehavior = MiuixScrollBehavior()
+        val versionName = currentVersionName()
+        val versionCode = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageManager.getPackageInfo(packageName, 0).longVersionCode.toString()
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, 0).versionCode.toString()
+            }
+        } catch (_: Exception) {
+            ""
+        }
+
+        Scaffold(
+            containerColor = pageBackground,
+            topBar = {
+                TopAppBar(
+                    title = "关于",
+                    scrollBehavior = scrollBehavior,
+                    navigationIconPadding = 0.dp,
+                    navigationIcon = {
+                        TitleBarIconButton(
+                            icon = Lucide.ChevronLeft,
+                            contentDescription = "返回",
+                            enabled = !isBusy,
+                            dimWhenDisabled = false,
+                            onClick = { currentPage = AppPage.Home },
+                        )
+                    },
+                )
+            },
+        ) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(pageBackground)
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .padding(innerPadding)
+                    .padding(horizontal = 12.dp),
+                contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item {
+                    Card {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_launcher),
+                                contentDescription = "ArtPlus",
+                                modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)),
+                            )
+                            Text(
+                                text = "ArtPlus Mobile",
+                                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                                color = MiuixTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                            )
+                            Text(
+                                text = if (versionCode.isNotBlank()) "$versionName ($versionCode)" else versionName,
+                                style = MiuixTheme.textStyles.body2,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                textAlign = TextAlign.Center,
+                            )
+                            Text(
+                                text = "ColorOS ART+ 图标生成与预览工具",
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                }
+                item {
+                    SectionCard(rowsFullBleed = true) {
+                        LibrarySettingRow(
+                            title = "GitHub 仓库",
+                            summary = GITHUB_REPO_URL,
+                            icon = SettingsIconKind.Link,
+                            showArrowRight = true,
+                            enabled = !isBusy,
+                            onClick = { openExternalLink(GITHUB_REPO_URL) },
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LibrarySettingRow(
+                            title = "开源协议",
+                            summary = "MIT License",
+                            icon = SettingsIconKind.Shield,
+                            showArrowRight = true,
+                            enabled = !isBusy,
+                            onClick = { mitLicenseDialogVisible = true },
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LibrarySettingRow(
+                            title = "检查更新",
+                            summary = if (isCheckingUpdate) "检查中..." else "当前 $versionName",
+                            icon = SettingsIconKind.Grid,
+                            showArrowRight = !isCheckingUpdate,
+                            enabled = !isBusy && !isCheckingUpdate,
+                            onClick = { checkForUpdate() },
+                        )
+                    }
+                }
+                item {
+                    Text(
+                        text = "© 2026 Costben · MIT License",
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    )
+                }
+            }
+        }
+
+        if (mitLicenseDialogVisible) {
+            MiuixBottomDialog(onDismissRequest = { mitLicenseDialogVisible = false }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(MiuixTheme.colorScheme.background)
+                        .padding(horizontal = 24.dp, vertical = 22.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "开源协议",
+                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                        color = MiuixTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = "MIT License",
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 80.dp, max = 360.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                            .verticalScroll(rememberScrollState())
+                            .padding(12.dp),
+                    ) {
+                        Text(
+                            text = MIT_LICENSE_TEXT,
+                            style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                            color = MiuixTheme.colorScheme.onSurface,
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Button(
+                            onClick = { mitLicenseDialogVisible = false },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(),
+                        ) {
+                            Text(
+                                text = "关闭",
+                                style = MiuixTheme.textStyles.button,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                mitLicenseDialogVisible = false
+                                openExternalLink(GITHUB_LICENSE_URL)
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColorsPrimary(),
+                        ) {
+                            Text(
+                                text = "在 GitHub 查看",
+                                style = MiuixTheme.textStyles.button,
+                                color = Color.White,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        updateAvailableInfo?.let { info ->
+            MiuixBottomDialog(onDismissRequest = { updateAvailableInfo = null }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(MiuixTheme.colorScheme.background)
+                        .padding(horizontal = 24.dp, vertical = 22.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "发现新版本",
+                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                        color = MiuixTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = "最新 ${info.tagName} · 当前 $versionName\n点击前往下载页查看更新内容。",
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Button(
+                            onClick = { updateAvailableInfo = null },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(),
+                        ) {
+                            Text(
+                                text = "稍后",
+                                style = MiuixTheme.textStyles.button,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                val url = info.htmlUrl
+                                updateAvailableInfo = null
+                                openExternalLink(url)
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColorsPrimary(),
+                        ) {
+                            Text(
+                                text = "前往下载",
+                                style = MiuixTheme.textStyles.button,
+                                color = Color.White,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (updateUpToDateDialogVisible) {
+            MiuixBottomDialog(onDismissRequest = { updateUpToDateDialogVisible = false }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(MiuixTheme.colorScheme.background)
+                        .padding(horizontal = 24.dp, vertical = 22.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "已是最新版本",
+                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                        color = MiuixTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = "当前 $versionName 已是最新，无需更新。",
+                        style = MiuixTheme.textStyles.body1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        textAlign = TextAlign.Center,
+                    )
+                    Button(
+                        onClick = { updateUpToDateDialogVisible = false },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "知道了",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
                         )
                     }
                 }
@@ -1793,6 +2223,86 @@ class MainActivity : ComponentActivity() {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun ExportProgressDialog(progress: ExportProgress) {
+        val fraction = if (progress.total <= 0) 0f else (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
+        val infiniteTransition = rememberInfiniteTransition(label = "exportProgress")
+        val indeterminateFraction by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(animation = tween(durationMillis = 1200, easing = LinearEasing)),
+            label = "indeterminate",
+        )
+        Dialog(onDismissRequest = {}) {
+            ApplyDialogDimEffect()
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(18.dp),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = progress.title,
+                        style = MiuixTheme.textStyles.title4,
+                        color = MiuixTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = progress.currentLabel,
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (progress.isIndeterminate) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth(0.35f)
+                                    .graphicsLayer { translationX = (size.width * 1.2f * indeterminateFraction) - size.width * 0.35f }
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(MiuixTheme.colorScheme.primaryVariant),
+                            )
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth(fraction)
+                                    .clip(RoundedCornerShape(999.dp))
+                                    .background(MiuixTheme.colorScheme.primaryVariant),
+                            )
+                        }
+                        Text(
+                            text = "${progress.completed}/${progress.total}",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }
@@ -5697,9 +6207,15 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Button(
-                    onClick = { generateSelected(installWithRoot = false, useGpt = false) },
+                    onClick = {},
                     enabled = canRun,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .combinedClickable(
+                            enabled = canRun,
+                            onClick = { generateSelected(installWithRoot = false, useGpt = false) },
+                            onLongClick = { generateSelected(installWithRoot = false, useGpt = true) },
+                        ),
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(
@@ -6387,6 +6903,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun formatTreeUriDisplay(uri: Uri?): String? {
+        if (uri == null) return null
+        // 优先用 treeDocumentId（如 primary:Download/ArtPlusOutput），比 raw Uri 更可读
+        val fromId = runCatching { DocumentsContract.getTreeDocumentId(uri) }.getOrNull()
+        if (!fromId.isNullOrBlank()) {
+            // 形如 primary:Download/xxx -> 取冒号后路径，未含冒号则直接解码
+            val raw = if (":" in fromId) fromId.substringAfter(":") else fromId
+            val decoded = runCatching { URLDecoder.decode(raw, "UTF-8") }.getOrNull() ?: raw
+            if (decoded.isNotBlank()) return decoded
+        }
+        return uri.lastPathSegment?.let { runCatching { URLDecoder.decode(it, "UTF-8") }.getOrNull() ?: it }
+    }
+
     @Composable
     private fun OutputCard() {
         SectionCard(rowsFullBleed = true) {
@@ -6425,13 +6954,15 @@ class MainActivity : ComponentActivity() {
                 },
             )
             Spacer(modifier = Modifier.height(4.dp))
+            val outputTreeDisplay = remember(outputTreeUri) { formatTreeUriDisplay(outputTreeUri) }
             LibrarySettingRow(
-                title = "导出到外部目录",
+                title = "备份到外部目录",
                 summary = when {
-                    outputTreeUri == null -> "生成后同步复制到你选择的目录"
-                    else -> "会同步复制到你选择的目录"
+                    outputTreeUri == null -> "未选择 · 备份已写入系统的全部图标"
+                    outputTreeDisplay != null -> "已选择：$outputTreeDisplay"
+                    else -> "已选择：${outputTreeUri.toString().take(40)}"
                 },
-                icon = settingsIconForTitle("导出到外部目录"),
+                icon = settingsIconForTitle("备份到外部目录"),
                 showValue = false,
                 showArrowRight = true,
                 enabled = !isBusy,
@@ -6439,6 +6970,20 @@ class MainActivity : ComponentActivity() {
             )
         }
         if (exportDialogVisible) {
+            val dialogTreeDisplay = remember(outputTreeUri) { formatTreeUriDisplay(outputTreeUri) }
+            var draftExportPath by remember(outputTreeUri) {
+                mutableStateOf(dialogTreeDisplay ?: outputTreeUri?.toString() ?: "")
+            }
+            // 保持与 treeUri 同步：当外部选择目录后，刷新输入框
+            LaunchedEffect(dialogTreeDisplay, outputTreeUri) {
+                val current = dialogTreeDisplay ?: outputTreeUri?.toString() ?: ""
+                if (current != draftExportPath && (draftExportPath.isBlank() || outputTreeUri != null)) {
+                    // 仅在空输入或已选状态下自动同步，避免覆盖用户正在输入的内容
+                    if (draftExportPath.isBlank() || dialogTreeDisplay != null) {
+                        draftExportPath = current
+                    }
+                }
+            }
             MiuixBottomDialog(onDismissRequest = { exportDialogVisible = false }) {
                 Column(
                     modifier = Modifier
@@ -6495,14 +7040,14 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = {
                                 exportDialogVisible = false
-                                exportCurrentToExternal()
+                                backupAllToExternal()
                             },
                             enabled = !isBusy,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColorsPrimary(),
                         ) {
                             Text(
-                                text = "导出到外部目录",
+                                text = "备份当前所有图标",
                                 style = MiuixTheme.textStyles.button,
                                 color = Color.White,
                                 maxLines = 1,
@@ -6730,53 +7275,130 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppPickerControlsCard(
+    private fun AppPickerStatusCard(
         filteredCount: Int,
         totalCount: Int,
         generatedCount: Int,
         ungeneratedCount: Int,
-        filteredApps: List<AppEntry>,
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(16.dp),
-        ) {
+        val multiCount = multiSelectedPackageNames.size
+        val statusText = buildString {
+            append("$filteredCount/$totalCount")
+            append(" · 已生成 $generatedCount")
+            append(" · 未生成 $ungeneratedCount")
+            if (isScanningGeneratedPackages) {
+                append(" · 扫描中")
+            } else if (generatedScanFailed) {
+                append(" · 无法读取 data 路径")
+            }
+            if (multiCount > 0) {
+                append(" · 多选 $multiCount")
+            }
+        }
+        SectionCard {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text(
-                        text = "应用列表",
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onSurface,
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (multiCount > 0) MiuixTheme.colorScheme.primaryVariant
+                                else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
+                            ),
                     )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                text = "应用列表 $filteredCount/$totalCount",
+                                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
+                                color = MiuixTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (multiCount > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                                ) {
+                                    Text(
+                                        text = "多选 $multiCount",
+                                        style = MiuixTheme.textStyles.footnote2.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontSize = 11.sp,
+                                        ),
+                                        color = MiuixTheme.colorScheme.primaryVariant,
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = statusText,
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     TextButton(
-                        text = "刷新",
+                        text = "刷新生成",
                         onClick = { refreshGeneratedPackages() },
                         enabled = !isBusy && apps.isNotEmpty(),
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        text = "更新列表",
+                        onClick = { loadApps() },
+                        enabled = !isBusy,
+                        modifier = Modifier.weight(1f),
                     )
                 }
-                Text(
-                    text = buildString {
-                        append("$filteredCount/$totalCount")
-                        append(" · 已生成 $generatedCount")
-                        append(" · 未生成 $ungeneratedCount")
-                        if (isScanningGeneratedPackages) {
-                            append(" · 扫描中")
-                        } else if (generatedScanFailed) {
-                            append(" · 无法读取 data 路径")
-                        }
-                    },
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            }
+        }
+    }
+
+    @Composable
+    private fun AppPickerFilterCard() {
+        SectionCard(rowsFullBleed = true) {
+            LibrarySettingRow(
+                title = "显示系统应用",
+                summary = if (showSystemApps) "已包含系统应用，可搜索和批量选择" else "仅显示用户应用；系统应用已隐藏",
+                icon = SettingsIconKind.Shield,
+                showSwitch = true,
+                checked = showSystemApps,
+                enabled = !isBusy,
+                onCheckedChange = {
+                    showSystemApps = !showSystemApps
+                    saveUiState()
+                },
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 12.dp),
+            ) {
                 val filters = GeneratedFilter.entries
                 SegmentedControl(
                     labels = filters.map { it.label },
@@ -6785,21 +7407,104 @@ class MainActivity : ComponentActivity() {
                         generatedFilter = filters[index]
                         queryText = ""
                         saveUiState()
-                    }
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                ShowSystemAppsToggleRow()
-                Spacer(modifier = Modifier.height(4.dp))
-                InlineInputField(
-                    value = queryText,
-                    onValueChange = {
-                        queryText = it
-                        saveUiState()
                     },
-                    label = "搜索应用或包名",
                 )
+            }
+        }
+    }
+
+    @Composable
+    private fun AppPickerSearchCard(filteredApps: List<AppEntry>) {
+        SectionCard {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // 标准搜索条：复刻 PresetLibraryCard 的搜索实现，高度与按钮对齐 48dp
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                        .padding(horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Image(
+                        imageVector = Lucide.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+                    )
+                    BasicTextField(
+                        value = queryText,
+                        onValueChange = {
+                            queryText = it
+                            saveUiState()
+                        },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        textStyle = MiuixTheme.textStyles.body2.copy(
+                            color = MiuixTheme.colorScheme.onSurface,
+                        ),
+                        cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
+                        decorationBox = { innerTextField ->
+                            if (queryText.isEmpty()) {
+                                Text(
+                                    text = "搜索应用或包名...",
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
+                                )
+                            }
+                            innerTextField()
+                        },
+                    )
+                    if (queryText.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    queryText = ""
+                                    saveUiState()
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Image(
+                                imageVector = Lucide.X,
+                                contentDescription = "清除",
+                                modifier = Modifier.size(14.dp),
+                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+                            )
+                        }
+                    }
+                }
                 AppMultiSelectActions(filteredApps)
             }
+        }
+    }
+
+    @Composable
+    private fun AppPickerControlsCard(
+        filteredCount: Int,
+        totalCount: Int,
+        generatedCount: Int,
+        ungeneratedCount: Int,
+        filteredApps: List<AppEntry>,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            AppPickerStatusCard(
+                filteredCount = filteredCount,
+                totalCount = totalCount,
+                generatedCount = generatedCount,
+                ungeneratedCount = ungeneratedCount,
+            )
+            AppPickerFilterCard()
+            AppPickerSearchCard(filteredApps = filteredApps)
         }
     }
 
@@ -7829,6 +8534,13 @@ class MainActivity : ComponentActivity() {
         draftPreviewCornerRadiusDpText = previewCornerRadiusDp.toString()
         autoConfirmRootWrite = prefs.getBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, prefs.getBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, false))
         autoConfirmRefresh = prefs.getBoolean(PREF_AUTO_CONFIRM_REFRESH, false)
+        outputTreeUri = prefs.getString(PREF_OUTPUT_TREE_URI, null)?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
+            ?: contentResolver.persistedUriPermissions.firstOrNull { it.isReadPermission && it.isWritePermission }?.uri
+        // onboarding: if not completed and no dir, show guide
+        val hasCompleted = prefs.getBoolean(PREF_HAS_COMPLETED_ONBOARDING, false)
+        if (!hasCompleted && outputTreeUri == null) {
+            onboardingVisible = true
+        }
     }
 
     private fun saveUiState() {
@@ -8057,6 +8769,80 @@ class MainActivity : ComponentActivity() {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }.onFailure {
             statusText = "无法打开使用情况访问设置: ${it.message ?: it.javaClass.simpleName}"
+        }
+    }
+
+    private fun openExternalLink(url: String) {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }.onFailure {
+            statusText = "无法打开链接: ${it.message ?: it.javaClass.simpleName}"
+        }
+    }
+
+    private fun currentVersionName(): String = try {
+        packageManager.getPackageInfo(packageName, 0).versionName ?: "1.4.0"
+    } catch (_: Exception) {
+        "1.4.0"
+    }
+
+    private fun isNewerVersion(latest: String, current: String): Boolean {
+        val latestParts = latest.trim().removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
+        val currentParts = current.trim().removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
+        val len = maxOf(latestParts.size, currentParts.size)
+        for (i in 0 until len) {
+            val l = latestParts.getOrElse(i) { 0 }
+            val c = currentParts.getOrElse(i) { 0 }
+            if (l != c) return l > c
+        }
+        return false
+    }
+
+    private fun checkForUpdate() {
+        if (isCheckingUpdate) return
+        isCheckingUpdate = true
+        statusText = "正在检查更新..."
+        mainScope.launch(Dispatchers.IO) {
+            try {
+                val url = validatedRemoteUrl(
+                    "https://api.github.com/repos/Costben/ArtPlus/releases/latest",
+                    "检查更新",
+                )
+                val connection = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "GET"
+                    connectTimeout = 10_000
+                    readTimeout = 10_000
+                    setRequestProperty("Accept", "application/vnd.github+json")
+                    setRequestProperty("User-Agent", "ArtPlus-Android")
+                }
+                val code = connection.responseCode
+                val body = (if (code in 200..299) connection.inputStream else connection.errorStream)
+                    ?.bufferedReader()?.use { it.readText() } ?: ""
+                connection.disconnect()
+                if (code !in 200..299) error("HTTP $code ${body.take(200)}")
+                val json = JSONObject(body)
+                val tagName = json.optString("tag_name", "")
+                val htmlUrl = json.optString("html_url", GITHUB_REPO_URL + "/releases")
+                val latest = tagName.removePrefix("v").trim()
+                val current = currentVersionName().trim()
+                withContext(Dispatchers.Main) {
+                    if (latest.isBlank()) {
+                        statusText = "检查失败：未获取到版本信息"
+                    } else if (isNewerVersion(latest, current)) {
+                        updateAvailableInfo = UpdateInfo(latest, tagName.ifBlank { "v$latest" }, htmlUrl)
+                        statusText = "发现新版本 $tagName"
+                    } else {
+                        updateUpToDateDialogVisible = true
+                        statusText = "已是最新版本 $current"
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    statusText = "检查更新失败: ${e.message ?: e.javaClass.simpleName}"
+                }
+            } finally {
+                withContext(Dispatchers.Main) { isCheckingUpdate = false }
+            }
         }
     }
 
@@ -17041,6 +17827,282 @@ class MainActivity : ComponentActivity() {
         runOnUiThread { statusText = message }
     }
 
+    private fun toastStatus(message: String) {
+        runOnUiThread {
+            statusText = message
+            Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun ensureNomediaAtTreeRoot() {
+        val treeUri = outputTreeUri ?: return
+        // 优先尝试文件系统快速路径（su touch），失败再走 SAF
+        resolveTreeUriToFilePath(treeUri)?.let { path ->
+            runCatching {
+                runRootCommand("mkdir -p ${shQuote(path)} && touch ${shQuote("$path/.nomedia")} && chmod 0644 ${shQuote("$path/.nomedia")} 2>/dev/null; echo ok", 3000)
+            }.onSuccess { if (it.contains("ok")) return }
+        }
+        val rootDoc = DocumentsContract.buildDocumentUriUsingTree(
+            treeUri,
+            DocumentsContract.getTreeDocumentId(treeUri),
+        )
+        if (findChild(treeUri, rootDoc, ".nomedia") != null) return
+        runCatching {
+            val doc = DocumentsContract.createDocument(
+                contentResolver,
+                rootDoc,
+                "application/octet-stream",
+                ".nomedia",
+            ) ?: return@runCatching
+            contentResolver.openOutputStream(doc, "w")?.use { it.write(ByteArray(0)) }
+        }
+    }
+
+    private fun resolveTreeUriToFilePath(treeUri: Uri): String? {
+        return try {
+            val docId = DocumentsContract.getTreeDocumentId(treeUri) // e.g. primary:Download/ArtPlus
+            val colon = docId.indexOf(':')
+            if (colon <= 0) return null
+            val volume = docId.substring(0, colon)
+            val rel = java.net.URLDecoder.decode(docId.substring(colon + 1), "UTF-8")
+            val base = when (volume) {
+                "primary" -> Environment.getExternalStorageDirectory().absolutePath // /storage/emulated/0
+                "home" -> Environment.getExternalStorageDirectory().absolutePath + "/Documents"
+                else -> "/storage/$volume" // 外置 SD 卡: 1234-5678
+            }
+            if (rel.isBlank()) base else "$base/$rel"
+        } catch (_: Exception) { null }
+    }
+
+    private fun exportToTreeFast(packageDir: File): Boolean {
+        val treeUri = outputTreeUri ?: return false
+        val destRoot = resolveTreeUriToFilePath(treeUri) ?: return false
+        val destPkg = "$destRoot/${packageDir.name}"
+        val src = packageDir.absolutePath
+        // 单次 su 完成：建目录 + 拷贝 + 权限
+        val cmd = "mkdir -p ${shQuote(destPkg)} && cp -f ${shQuote(src)}/*.png ${shQuote(destPkg)}/ 2>/dev/null && chmod 0644 ${shQuote(destPkg)}/*.png 2>/dev/null && echo ok"
+        return try {
+            val out = runRootCommand(cmd, 8000)
+            out.contains("ok")
+        } catch (_: Exception) { false }
+    }
+
+    private fun backupPackageFast(pkgName: String, destRoot: String): Boolean {
+        val src = "$ROOT_UXICONS_DIR/$pkgName"
+        val destPkg = "$destRoot/$pkgName"
+        val cmd = "mkdir -p ${shQuote(destPkg)} && cp -f ${shQuote(src)}/*.png ${shQuote(destPkg)}/ 2>/dev/null && chmod 0644 ${shQuote(destPkg)}/*.png 2>/dev/null && echo ok"
+        return try {
+            val out = runRootCommand(cmd, 6000)
+            out.contains("ok")
+        } catch (_: Exception) { false }
+    }
+
+    private fun listRootIconPackages(): List<String> {
+        val cmd = "ls -1 ${shQuote(ROOT_UXICONS_DIR)} 2>/dev/null || echo ''"
+        val output = try {
+            runRootCommand(cmd, timeoutMs = 3000)
+        } catch (_: Exception) {
+            return emptyList()
+        }
+        return output.lines().map { it.trim() }.filter { it.isNotEmpty() }
+    }
+
+    private fun exportSelectedToExternal() {
+        if (outputTreeUri == null) {
+            toastStatus("还没有设置目录")
+            exportDialogVisible = true
+            return
+        }
+        val dir = activeGenerationSession?.outDir
+            ?: previewDirPath?.let { File(it) }?.takeIf { it.isDirectory && hasGeneratedPackageBaseAssets(it) }
+            ?: selectedPackageName?.let { artPlusPackageDir(it) }?.takeIf { hasGeneratedPackageBaseAssets(it) }
+        if (dir == null || !hasGeneratedPackageBaseAssets(dir)) {
+            toastStatus("没有可导出的图标包")
+            return
+        }
+        exportProgress = ExportProgress(
+            title = "正在导出",
+            completed = 0,
+            total = 1,
+            currentLabel = "正在导出: ${dir.name}",
+            isIndeterminate = true,
+        )
+        mainScope.launch(Dispatchers.IO) {
+            try {
+                runCatching { ensureNomediaAtTreeRoot() }
+                // 优先尝试文件系统直拷（su cp），速度为 SAF 的 10-20 倍，失败再回退 SAF
+                val fastOk = runCatching { exportToTreeFast(dir) }.getOrDefault(false)
+                if (fastOk) {
+                    withContext(Dispatchers.Main) { toastStatus("已导出到外部目录: ${dir.name}") }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        runCatching { exportToTree(dir) }
+                            .onSuccess { toastStatus("已导出到外部目录: ${dir.name}") }
+                            .onFailure { error -> toastStatus("导出失败: ${error.message ?: error.javaClass.simpleName}") }
+                    }
+                }
+            } finally {
+                withContext(Dispatchers.Main) { exportProgress = null }
+            }
+        }
+    }
+
+    private fun backupAllToExternal(isFromOnboarding: Boolean = false) {
+        if (outputTreeUri == null) {
+            toastStatus("还没有设置目录")
+            exportDialogVisible = true
+            return
+        }
+        if (isBusy) return
+        isBusy = true
+        exportProgress = ExportProgress(
+            title = "正在备份",
+            completed = 0,
+            total = 1,
+            currentLabel = "正在准备...",
+            isIndeterminate = true,
+        )
+        toastStatus("正在备份...")
+        mainScope.launch(Dispatchers.IO) {
+            try {
+                runCatching { ensureNomediaAtTreeRoot() }
+                val pkgs = listRootIconPackages()
+                if (pkgs.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        exportProgress = null
+                        toastStatus("没有可导出的图标包")
+                    }
+                    return@launch
+                }
+                val treeUri = outputTreeUri
+                if (treeUri == null) {
+                    withContext(Dispatchers.Main) {
+                        exportProgress = null
+                        toastStatus("还没有设置目录")
+                    }
+                    return@launch
+                }
+                withContext(Dispatchers.Main) {
+                    exportProgress = ExportProgress(
+                        title = "正在备份",
+                        completed = 0,
+                        total = pkgs.size,
+                        currentLabel = "准备备份 ${pkgs.size} 个图标包",
+                        isIndeterminate = false,
+                    )
+                }
+                var successCount = 0
+                var failCount = 0
+                val destRootFast = resolveTreeUriToFilePath(treeUri)
+                // 情况1：可解析为文件系统路径 -> 使用 su 直拷（一次 su per pkg，约 10ms/包），最快
+                if (destRootFast != null) {
+                    for ((index, pkgName) in pkgs.withIndex()) {
+                        withContext(Dispatchers.Main) {
+                            exportProgress = ExportProgress(
+                                title = "正在备份",
+                                completed = index,
+                                total = pkgs.size,
+                                currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
+                                isIndeterminate = false,
+                            )
+                            statusText = "正在备份 ${index + 1}/${pkgs.size}: $pkgName"
+                        }
+                        val ok = runCatching { backupPackageFast(pkgName, destRootFast) }.getOrDefault(false)
+                        if (ok) successCount++ else failCount++
+                        withContext(Dispatchers.Main) {
+                            exportProgress = ExportProgress(
+                                title = "正在备份",
+                                completed = index + 1,
+                                total = pkgs.size,
+                                currentLabel = if (ok) "已完成 ${index + 1}/${pkgs.size}: $pkgName" else "失败 $pkgName",
+                                isIndeterminate = false,
+                            )
+                        }
+                    }
+                    withContext(Dispatchers.Main) {
+                        exportProgress = null
+                        if (failCount == 0) toastStatus("已备份 $successCount 个图标包")
+                        else toastStatus("已备份 $successCount 个，失败 $failCount 个")
+                    }
+                } else {
+                    // 情况2：无法解析路径（SD卡/特殊 Provider）-> 回退 SAF 中转缓存方案
+                    val stagingRoot = File(cacheDir, "backup_staging").also { it.mkdirs() }
+                    for ((index, pkgName) in pkgs.withIndex()) {
+                        withContext(Dispatchers.Main) {
+                            exportProgress = ExportProgress(
+                                title = "正在备份",
+                                completed = index,
+                                total = pkgs.size,
+                                currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
+                                isIndeterminate = false,
+                            )
+                            statusText = "正在备份 ${index + 1}/${pkgs.size}: $pkgName"
+                        }
+                        val stagingDir = File(stagingRoot, pkgName)
+                        try {
+                            if (stagingDir.exists()) stagingDir.deleteRecursively()
+                            stagingDir.mkdirs()
+                            val src = "$ROOT_UXICONS_DIR/$pkgName"
+                            val cmd = "cp -f ${shQuote(src)}/*.png ${shQuote(stagingDir.absolutePath)}/ 2>/dev/null; echo done"
+                            runRootCommand(cmd, timeoutMs = 8000)
+                            val files = stagingDir.listFiles { _, name -> name.endsWith(".png") }
+                            if (files == null || files.isEmpty()) {
+                                withContext(Dispatchers.Main) {
+                                    exportProgress = ExportProgress(
+                                        title = "正在备份",
+                                        completed = index + 1,
+                                        total = pkgs.size,
+                                        currentLabel = "已跳过 ${pkgName}（无图标）",
+                                        isIndeterminate = false,
+                                    )
+                                }
+                                continue
+                            }
+                            withContext(Dispatchers.Main) {
+                                runCatching { exportToTree(stagingDir) }.onSuccess { successCount++ }.onFailure { failCount++ }
+                                exportProgress = ExportProgress(
+                                    title = "正在备份",
+                                    completed = index + 1,
+                                    total = pkgs.size,
+                                    currentLabel = "已完成 ${index + 1}/${pkgs.size}: $pkgName",
+                                    isIndeterminate = false,
+                                )
+                            }
+                        } catch (_: Exception) {
+                            failCount++
+                            withContext(Dispatchers.Main) {
+                                exportProgress = ExportProgress(
+                                    title = "正在备份",
+                                    completed = index + 1,
+                                    total = pkgs.size,
+                                    currentLabel = "失败 ${pkgName}",
+                                    isIndeterminate = false,
+                                )
+                            }
+                        }
+                    }
+                    runCatching { stagingRoot.deleteRecursively() }
+                    withContext(Dispatchers.Main) {
+                        exportProgress = null
+                        if (failCount == 0) toastStatus("已备份 $successCount 个图标包")
+                        else toastStatus("已备份 $successCount 个，失败 $failCount 个")
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    exportProgress = null
+                    toastStatus("备份失败: ${e.message ?: e.javaClass.simpleName}")
+                }
+            } finally {
+                withContext(Dispatchers.Main) {
+                    isBusy = false
+                    // 确保对话框关闭
+                    if (exportProgress != null) exportProgress = null
+                }
+            }
+        }
+    }
+
     private fun startDebugHttpServerIfNeeded() {
         if (!isDebugBuild()) {
             return
@@ -18117,6 +19179,7 @@ class MainActivity : ComponentActivity() {
     private enum class AppPage(val order: Int) {
         Home(0),
         AppPicker(1),
+        About(2),
     }
 
     private data class Bounds(
@@ -18376,6 +19439,8 @@ class MainActivity : ComponentActivity() {
         private const val PREF_PREVIEW_ICON_SIZE_DP = "preview_icon_size_dp"
         private const val PREF_PREVIEW_CORNER_RADIUS_DP = "preview_corner_radius_dp"
         private const val PREF_SHOW_SYSTEM_APPS = "show_system_apps"
+        private const val PREF_OUTPUT_TREE_URI = "output_tree_uri"
+        private const val PREF_HAS_COMPLETED_ONBOARDING = "has_completed_onboarding"
         private const val EXTRA_DEBUG_GENERATE_PACKAGE = "dev.artplus.mobile.DEBUG_GENERATE_PACKAGE"
         private const val EXTRA_DEBUG_GENERATE_USE_GPT = "dev.artplus.mobile.DEBUG_GENERATE_USE_GPT"
         private const val EXTRA_DEBUG_GENERATE_INSTALL_ROOT = "dev.artplus.mobile.DEBUG_GENERATE_INSTALL_ROOT"
@@ -18524,6 +19589,27 @@ class MainActivity : ComponentActivity() {
         private const val BACK_GESTURE_COMMIT_PROGRESS = 0.28f
         private const val BACK_GESTURE_PROGRESS_DISTANCE_RATIO = 1.0f
         private const val BACK_GESTURE_PAGE_TRANSLATION_RATIO = 1.0f
+        private const val GITHUB_REPO_URL = "https://github.com/Costben/ArtPlus"
+        private const val GITHUB_LICENSE_URL = "https://github.com/Costben/ArtPlus/blob/main/LICENSE"
+        private const val GITHUB_RELEASES_URL = "https://github.com/Costben/ArtPlus/releases"
+        private const val MIT_LICENSE_TEXT =
+            "MIT License\n\n" +
+                "Copyright (c) 2026 Costben\n\n" +
+                "Permission is hereby granted, free of charge, to any person obtaining a copy\n" +
+                "of this software and associated documentation files (the \"Software\"), to deal\n" +
+                "in the Software without restriction, including without limitation the rights\n" +
+                "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n" +
+                "copies of the Software, and to permit persons to whom the Software is\n" +
+                "furnished to do so, subject to the following conditions:\n\n" +
+                "The above copyright notice and this permission notice shall be included in all\n" +
+                "copies or substantial portions of the Software.\n\n" +
+                "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n" +
+                "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n" +
+                "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n" +
+                "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n" +
+                "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n" +
+                "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n" +
+                "SOFTWARE."
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
         ) {
