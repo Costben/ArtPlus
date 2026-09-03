@@ -337,6 +337,20 @@ const val COLOROS_UXICON_ARTPLUS_MASK = 0x07L shl COLOROS_UXICON_ARTPLUS_SHIFT
 const val FALLBACK_ARTPLUS_INSPIRATION_UXICON_CONFIG = 2314313028685793584L
 
 /**
+ * GPT 管线（pipeline/ 与 MainActivity 共用）。
+ *
+ * 从 MainActivity companion object 迁移而来（P4 拆分）：原为 private，
+ * 现为顶层公开常量，数值与类型未变。同包直接引用，Activity 内原有调用点零改动。
+ * GPT_SOURCE_SIZE 留 companion（slice2 生成管线用，到时再迁）。
+ */
+const val GPT_RESPONSE_MODEL = "gpt-5.4-mini"
+const val GPT_IMAGE_MODEL = "gpt-image-2"
+const val GPT_IMAGE_SIZE = "1024x1024"
+const val GPT_IMAGE_QUALITY = "low"
+const val GPT_CONNECT_TIMEOUT_MS = 30_000
+const val GPT_READ_TIMEOUT_MS = 360_000
+
+/**
  * 全部可调参数的不可变快照（预设/撤销/批量传输用）。
  *
  * 数字与布尔为强类型；模式（LocalSeparationMode / AdaptiveForegroundMode /

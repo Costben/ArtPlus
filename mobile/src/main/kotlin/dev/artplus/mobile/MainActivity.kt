@@ -9829,6 +9829,7 @@ class MainActivity : ComponentActivity() {
                 val url = validatedRemoteUrl(
                     "https://api.github.com/repos/Costben/ArtPlus/releases/latest",
                     "检查更新",
+                    isDebugBuild(),
                 )
                 val connection = (url.openConnection() as HttpURLConnection).apply {
                     requestMethod = "GET"
@@ -12213,7 +12214,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun downloadRmbgFile(urlText: String, target: File, minBytes: Long, label: String) {
-        val url = validatedRemoteUrl(urlText, label)
+        val url = validatedRemoteUrl(urlText, label, isDebugBuild())
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = RMBG_DOWNLOAD_CONNECT_TIMEOUT_MS
@@ -14654,394 +14655,20 @@ class MainActivity : ComponentActivity() {
         return IconLayers(recfg, recbg)
     }
 
+    // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
     private fun gptEditImage(source: Bitmap, prompt: String, background: String): Bitmap =
-        when (gptImageMode) {
-            GptImageMode.Responses -> responsesEditImage(source, prompt, background)
-            GptImageMode.Images -> imagesEditImage(source, prompt, background)
-        }
+        gptEditImage(source, prompt, background, gptImageMode, gptModelId, gptBaseUrl, gptApiKey, isDebugBuild())
 
-    private fun responsesEditImage(source: Bitmap, prompt: String, background: String): Bitmap {
-        val model = gptModelId.trim().ifBlank { GPT_RESPONSE_MODEL }
-        val body = JSONObject()
-            .put("model", model)
-            .put(
-                "input",
-                JSONArray().put(
-                    JSONObject()
-                        .put("role", "user")
-                        .put(
-                            "content",
-                            JSONArray()
-                                .put(JSONObject().put("type", "input_text").put("text", prompt))
-                                .put(
-                                    JSONObject()
-                                        .put("type", "input_image")
-                                        .put("image_url", bitmapToDataUrl(source)),
-                                ),
-                        ),
-                ),
-            )
-            .put(
-                "tools",
-                JSONArray().put(
-                    JSONObject()
-                        .put("type", "image_generation")
-                        .put("size", "auto")
-                        .put("quality", GPT_IMAGE_QUALITY)
-                        .put("background", background)
-                        .put("output_format", "png"),
-                ),
-            )
-            .put("tool_choice", JSONObject().put("type", "image_generation"))
-            .put("stream", true)
+    // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
+    private fun loadCustomImageBitmap(uri: Uri): Bitmap = loadCustomImageBitmap(contentResolver, uri)
 
-        val response = postJson(normalizeResponsesUrl(gptBaseUrl), body)
-        val parsed = if (response.trimStart().startsWith("data:") || response.trimStart().startsWith("event:")) {
-            parseResponsesStream(response)
-        } else {
-            JSONObject(response)
-        }
-        return decodeBitmap(extractImageBytes(parsed))
-    }
-
-    private fun imagesEditImage(source: Bitmap, prompt: String, background: String): Bitmap {
-        val boundary = "----ArtPlusMobile${UUID.randomUUID().toString().replace("-", "")}"
-        val pngBytes = bitmapToPngBytes(source)
-        val body = ByteArrayOutputStream()
-
-        fun field(name: String, value: String) {
-            body.writeString("--$boundary\r\n")
-            body.writeString("Content-Disposition: form-data; name=\"$name\"\r\n\r\n")
-            body.writeString(value)
-            body.writeString("\r\n")
-        }
-
-        field("model", gptModelId.trim().ifBlank { GPT_IMAGE_MODEL })
-        field("prompt", prompt)
-        field("size", GPT_IMAGE_SIZE)
-        field("quality", GPT_IMAGE_QUALITY)
-        field("background", background)
-        field("output_format", "png")
-        body.writeString("--$boundary\r\n")
-        body.writeString("Content-Disposition: form-data; name=\"image\"; filename=\"artplus_source_icon.png\"\r\n")
-        body.writeString("Content-Type: image/png\r\n\r\n")
-        body.write(pngBytes)
-        body.writeString("\r\n--$boundary--\r\n")
-
-        val response = postBytes(
-            urlText = normalizeImagesEditUrl(gptBaseUrl),
-            body = body.toByteArray(),
-            contentType = "multipart/form-data; boundary=$boundary",
-        )
-        return decodeBitmap(extractImageBytes(JSONObject(response)))
-    }
-
-    private fun postJson(urlText: String, body: JSONObject): String =
-        postBytes(urlText, body.toString().toByteArray(Charsets.UTF_8), "application/json", accept = "text/event-stream, application/json")
-
-    private fun postBytes(
-        urlText: String,
-        body: ByteArray,
-        contentType: String,
-        accept: String = "application/json",
-    ): String {
-        val url = validatedRemoteUrl(urlText, "AI")
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            connectTimeout = GPT_CONNECT_TIMEOUT_MS
-            readTimeout = GPT_READ_TIMEOUT_MS
-            doOutput = true
-            setRequestProperty("Accept", accept)
-            setRequestProperty("Authorization", "Bearer ${gptApiKey.trim()}")
-            setRequestProperty("Content-Type", contentType)
-            setRequestProperty("Content-Length", body.size.toString())
-        }
-        try {
-            connection.outputStream.use { it.write(body) }
-            val stream = if (connection.responseCode in 200..299) {
-                connection.inputStream
-            } else {
-                connection.errorStream ?: connection.inputStream
-            }
-            val text = stream.bufferedReader().use { it.readText() }
-            if (connection.responseCode !in 200..299) {
-                error("AI HTTP ${connection.responseCode}: ${text.take(300)}")
-            }
-            return text
-        } finally {
-            connection.disconnect()
-        }
-    }
-
-    private fun downloadBytes(urlText: String): ByteArray {
-        val url = validatedRemoteUrl(urlText, "AI图片")
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = GPT_CONNECT_TIMEOUT_MS
-            readTimeout = GPT_READ_TIMEOUT_MS
-            if (gptApiKey.trim().isNotEmpty()) {
-                setRequestProperty("Authorization", "Bearer ${gptApiKey.trim()}")
-            }
-        }
-        try {
-            val stream = if (connection.responseCode in 200..299) {
-                connection.inputStream
-            } else {
-                connection.errorStream ?: connection.inputStream
-            }
-            val bytes = stream.use { it.readBytes() }
-            if (connection.responseCode !in 200..299) {
-                error("下载AI图片失败 HTTP ${connection.responseCode}: ${String(bytes).take(300)}")
-            }
-            return bytes
-        } finally {
-            connection.disconnect()
-        }
-    }
-
-    private fun validatedRemoteUrl(urlText: String, label: String): URL {
-        val url = URL(urlText)
-        val protocol = url.protocol.lowercase(Locale.US)
-        if (protocol != "http" && protocol != "https") {
-            error("$label URL 只支持 HTTP/HTTPS")
-        }
-        if (protocol == "http" && !isDebugBuild()) {
-            error("$label URL 在正式版中必须使用 HTTPS")
-        }
-        return url
-    }
-
-    private fun parseResponsesStream(text: String): JSONObject {
-        val output = JSONArray()
-        var response: JSONObject? = null
-        for (block in text.split("\n\n")) {
-            val data = block.lineSequence()
-                .map { it.trimEnd() }
-                .filter { it.startsWith("data:") }
-                .joinToString("\n") { it.removePrefix("data:").trimStart() }
-                .trim()
-            if (data.isEmpty() || data == "[DONE]") {
-                continue
-            }
-            val event = runCatching { JSONObject(data) }.getOrNull() ?: continue
-            event.optJSONObject("response")?.let {
-                response = it
-                val existing = it.optJSONArray("output")
-                if (existing != null) {
-                    for (i in 0 until existing.length()) {
-                        output.put(existing.get(i))
-                    }
-                }
-            }
-            val item = event.optJSONObject("item")
-            if (
-                item != null &&
-                (event.optString("type") == "response.output_item.done" ||
-                    event.optString("type") == "response.output_item.added")
-            ) {
-                output.put(item)
-            }
-            if (event.optString("type") == "response.image_generation_call.partial_image") {
-                val partial = event.optString("partial_image_b64")
-                if (partial.isNotBlank()) {
-                    output.put(
-                        JSONObject()
-                            .put("type", "image_generation_call")
-                            .put("image_base64", partial),
-                    )
-                }
-            }
-        }
-        return (response ?: JSONObject()).put("output", output)
-    }
-
-    private fun extractImageBytes(json: JSONObject): ByteArray {
-        json.optJSONArray("output")?.let { output ->
-            findImageBytes(output)?.let { return it }
-        }
-        json.optJSONArray("data")?.let { data ->
-            findImageBytes(data)?.let { return it }
-        }
-        findImageBytes(JSONArray().put(json))?.let { return it }
-        error("AI响应没有图片数据")
-    }
-
-    private fun findImageBytes(items: JSONArray): ByteArray? {
-        for (i in 0 until items.length()) {
-            val item = items.optJSONObject(i) ?: continue
-            decodeImageReference(item.opt("b64_json"))?.let { return it }
-            decodeImageReference(item.opt("b64"))?.let { return it }
-            decodeImageReference(item.opt("image_base64"))?.let { return it }
-            decodeImageReference(item.opt("base64"))?.let { return it }
-            decodeImageReference(item.opt("result"))?.let { return it }
-            decodeImageReference(item.opt("url"))?.let { return it }
-            decodeImageReference(item.opt("imageUrl"))?.let { return it }
-            decodeImageReference(item.opt("remoteImageUrl"))?.let { return it }
-            val imageUrl = item.optJSONObject("image_url")
-            if (imageUrl != null) {
-                decodeImageReference(imageUrl.opt("url"))?.let { return it }
-            }
-        }
-        return null
-    }
-
-    private fun decodeImageReference(value: Any?): ByteArray? {
-        val text = (value as? String)?.trim().orEmpty()
-        if (text.isEmpty()) {
-            return null
-        }
-        if (text.startsWith("http://") || text.startsWith("https://")) {
-            return downloadBytes(text)
-        }
-        val b64 = if (text.startsWith("data:image/")) {
-            text.substringAfter("base64,", "")
-        } else {
-            text
-        }.replace("\\s".toRegex(), "")
-        if (b64.length < 128) {
-            return null
-        }
-        return runCatching { Base64.decode(b64, Base64.DEFAULT) }.getOrNull()
-    }
-
-    private fun decodeBitmap(bytes: ByteArray): Bitmap {
-        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        return bitmap ?: error("AI返回的图片无法解码")
-    }
-
-    private fun loadCustomImageBitmap(uri: Uri): Bitmap {
-        val mime = contentResolver.getType(uri).orEmpty().lowercase(Locale.US)
-        val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            ?: error("无法打开图片")
-        val bitmap = if (mime.contains("svg") || looksLikeSvg(bytes)) {
-            decodeSvgBitmap(bytes)
-        } else {
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                ?: error("图片无法解码；请选择 PNG 或 SVG")
-        }
-        return fitBitmapOnTransparentCanvas(bitmap, SIZE_1X1, SIZE_1X1)
-    }
-
-    private fun looksLikeSvg(bytes: ByteArray): Boolean {
-        val prefix = String(bytes, 0, minOf(bytes.size, 256), Charsets.UTF_8).trimStart()
-        return prefix.startsWith("<svg", ignoreCase = true) ||
-            prefix.startsWith("<?xml", ignoreCase = true) && "<svg" in prefix.lowercase(Locale.US)
-    }
-
-    private fun decodeSvgBitmap(bytes: ByteArray): Bitmap {
-        val svg = SVG.getFromInputStream(bytes.inputStream())
-        val width = svg.documentWidth.takeIf { it > 0f } ?: SIZE_1X1.toFloat()
-        val height = svg.documentHeight.takeIf { it > 0f } ?: SIZE_1X1.toFloat()
-        svg.setDocumentWidth(width)
-        svg.setDocumentHeight(height)
-        val bitmap = Bitmap.createBitmap(width.roundToInt().coerceAtLeast(1), height.roundToInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawColor(AndroidColor.TRANSPARENT)
-        svg.renderToCanvas(canvas)
-        return bitmap
-    }
-
-    private fun fitBitmapOnTransparentCanvas(source: Bitmap, width: Int, height: Int): Bitmap {
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-        canvas.drawColor(AndroidColor.TRANSPARENT)
-        val scale = minOf(
-            width.toFloat() / source.width.toFloat(),
-            height.toFloat() / source.height.toFloat(),
-        )
-        val targetWidth = (source.width * scale).roundToInt().coerceAtLeast(1)
-        val targetHeight = (source.height * scale).roundToInt().coerceAtLeast(1)
-        val resized = Bitmap.createScaledBitmap(source, targetWidth, targetHeight, true)
-        canvas.drawBitmap(resized, (width - targetWidth) / 2f, (height - targetHeight) / 2f, null)
-        return out
-    }
-
-    private fun customCandidateForPreview(
-        mode: PreviewMode,
-        kind: CustomImageKind,
-        session: GenerationSession,
-    ): IconCandidate? {
-        val foreground = session.customForegrounds[mode]
-        val background = session.customBackgrounds[mode]
-        val transparent = solidBitmap(SIZE_1X1, SIZE_1X1, AndroidColor.TRANSPARENT)
-        return when (kind) {
-            CustomImageKind.Foreground -> foreground?.let {
-                IconCandidate(
-                    recfgRaw = it,
-                    recbg = background ?: session.baseRecbg,
-                    monochromeRaw = it,
-                    preserveGeometry = true,
-                    isLocal = false,
-                )
-            }
-            CustomImageKind.Background -> background?.let {
-                IconCandidate(
-                    recfgRaw = foreground ?: transparent,
-                    recbg = it,
-                    monochromeRaw = foreground,
-                    preserveGeometry = true,
-                    isLocal = false,
-                )
-            }
-        }
-    }
-
-    private fun bitmapToDataUrl(bitmap: Bitmap): String =
-        "data:image/png;base64,${Base64.encodeToString(bitmapToPngBytes(bitmap), Base64.NO_WRAP)}"
-
-    private fun bitmapToPngBytes(bitmap: Bitmap): ByteArray {
-        val output = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
-        return output.toByteArray()
-    }
-
-    private fun ByteArrayOutputStream.writeString(value: String) {
-        write(value.toByteArray(Charsets.UTF_8))
-    }
-
-    private fun normalizeResponsesUrl(baseUrl: String): String {
-        val normalized = baseUrl.trim().trimEnd('/')
-        return when {
-            normalized.endsWith("/responses") -> normalized
-            normalized.endsWith("/v1") -> "$normalized/responses"
-            "/v1/" in "$normalized/" -> "$normalized/responses"
-            else -> "$normalized/v1/responses"
-        }
-    }
-
-    private fun normalizeImagesEditUrl(baseUrl: String): String {
-        val normalized = baseUrl.trim().trimEnd('/')
-        return when {
-            normalized.endsWith("/images/edits") -> normalized
-            normalized.endsWith("/v1") -> "$normalized/images/edits"
-            "/v1/" in "$normalized/" -> "$normalized/images/edits"
-            else -> "$normalized/v1/images/edits"
-        }
-    }
-
-    private fun activeGptForegroundPrompt(): String {
-        val custom = gptCustomPrompt.trim()
-        val base = if (gptPromptPreset == GptPromptPreset.Custom && custom.isNotBlank()) {
-            custom
-        } else {
-            gptPromptPreset.foregroundPrompt.ifBlank { GptPromptPreset.StableCutout.foregroundPrompt }
-        }
-        return base.trim().trimEnd('.') +
-            ". Scale the subject/logo so its visible bounding box is about $foregroundSubjectPercent% of the final square canvas."
-    }
-
+    // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
     private fun buildTransparentForegroundPrompt(): String =
-        activeGptForegroundPrompt() + " Return the extracted subject on a real transparent background with alpha channel."
+        buildTransparentForegroundPrompt(gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent)
 
+    // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
     private fun buildChromaForegroundPrompt(chromaHex: String): String =
-        activeGptForegroundPrompt() +
-            " Place the extracted subject on a perfectly flat solid $chromaHex chroma-key background. " +
-            "The chroma-key background must be one uniform color, with no checkerboard, no transparency preview pattern, " +
-            "no shadows, no gradients, no texture, and no lighting variation. " +
-            "Do not use $chromaHex anywhere in the subject/logo."
-
-    private fun buildBackgroundPrompt(): String =
-        "Remove the app icon main subject/logo. Rebuild only the clean original background plate. No logo, no text, no symbol."
+        buildChromaForegroundPrompt(chromaHex, gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
     private fun buildLocalIconLayers(
@@ -16526,20 +16153,6 @@ class MainActivity : ComponentActivity() {
         val background: IconCandidate?,
     )
 
-    private data class GenerationSession(
-        val packageName: String,
-        val outDir: File,
-        val sourceIcon: Bitmap,
-        val baseRecfg: Bitmap,
-        val baseRecbg: Bitmap,
-        val monochromeRaw: Bitmap?,
-        val candidates: Map<PreviewChoice, IconCandidate>,
-        val customForegrounds: Map<PreviewMode, Bitmap> = emptyMap(),
-        val customBackgrounds: Map<PreviewMode, Bitmap> = emptyMap(),
-        val autoLocalChoice: PreviewChoice,
-        val canRebuildLocalCandidates: Boolean = true,
-    )
-
     private data class ForegroundShadowParams(
         val alpha: Int,
         val blurRadius: Float,
@@ -16577,13 +16190,6 @@ class MainActivity : ComponentActivity() {
         monochromeLight?.prepareToDraw()
         monochromeDark?.prepareToDraw()
         return this
-    }
-
-    private enum class PreviewMode(val label: String) {
-        NormalLight("标准亮色"),
-        NormalDark("标准暗色"),
-        MonochromeLight("单色亮色"),
-        MonochromeDark("单色暗色"),
     }
 
     private enum class PreviewDesktopBackground(val label: String, val fallbackColor: Color) {
@@ -16690,61 +16296,6 @@ class MainActivity : ComponentActivity() {
         AppPicker(1),
         About(2),
         BatchPreview(3),
-    }
-
-    private enum class GptImageMode(val value: String, val label: String) {
-        Responses("responses", "Codex Image Gen"),
-        Images("images", "API 调用");
-
-        companion object {
-            fun fromValue(value: String?): GptImageMode =
-                entries.firstOrNull { it.value == value } ?: Responses
-        }
-    }
-
-    private enum class GptPromptPreset(
-        val value: String,
-        val label: String,
-        val summary: String,
-        val foregroundPrompt: String,
-    ) {
-        Default(
-            "default",
-            "默认",
-            "保留主体颜色和细节",
-            "Keep only the app icon main subject/logo. Remove the original background. " +
-                "Return the remaining subject/logo on a transparent background. " +
-                "Do not add any new circle, glow, outline, shadow, halo, plate, or filled backdrop behind the subject. " +
-                "Preserve the subject shape, position, colors, face details, highlights, and internal shading.",
-        ),
-        StableCutout(
-            "stable_cutout",
-            "镂空稳定",
-            "优先保留孔洞和负形",
-            "Extract only the visible foreground subject/logo from the app icon with a precise alpha mask. " +
-                "Preserve all cutouts, counters, holes, transparent gaps, negative-space shapes, inner openings, and thin strokes exactly as in the source. " +
-                "Do not fill enclosed holes or bridge gaps. Do not invent a backing plate, outline, halo, shadow, glow, circle, rounded square, or extra background. " +
-                "Keep antialiasing on the true subject edge and preserve the original colors, gradients, highlights, shadows, and internal details of the subject.",
-        ),
-        CleanLayers(
-            "clean_layers",
-            "干净分层",
-            "主体与背景分离更强",
-            "Separate the app icon into a clean foreground subject/logo only. " +
-                "Remove every background plate, wallpaper, rounded square, circle, glow, halo, cast shadow, and decorative backdrop. " +
-                "Keep the subject/logo centered and preserve its original colors, gradients, highlights, and internal shading without redrawing it.",
-        ),
-        Custom(
-            "custom",
-            "自定义",
-            "使用下面输入的前景提示词",
-            "",
-        );
-
-        companion object {
-            fun fromValue(value: String?): GptPromptPreset =
-                entries.firstOrNull { it.value == value } ?: StableCutout
-        }
     }
 
     private data class RmbgModelPreset(
@@ -16997,12 +16548,6 @@ class MainActivity : ComponentActivity() {
         private val RMBG_NORMALIZE_MEAN = floatArrayOf(0.485f, 0.456f, 0.406f)
         private val RMBG_NORMALIZE_STD = floatArrayOf(0.229f, 0.224f, 0.225f)
         private const val LEGACY_DEFAULT_GPT_BASE_URL = "http://192.168.31.179:3002/v1"
-        private const val GPT_RESPONSE_MODEL = "gpt-5.4-mini"
-        private const val GPT_IMAGE_MODEL = "gpt-image-2"
-        private const val GPT_IMAGE_SIZE = "1024x1024"
-        private const val GPT_IMAGE_QUALITY = "low"
-        private const val GPT_CONNECT_TIMEOUT_MS = 30_000
-        private const val GPT_READ_TIMEOUT_MS = 360_000
         private const val DEBUG_HTTP_PORT = 3964
         private const val DEBUG_HTTP_ABSTRACT_NAME = "artplus-debug-http"
         private const val DEBUG_HTTP_READ_TIMEOUT_MS = 4_000
