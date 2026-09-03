@@ -142,6 +142,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.lifecycle.ViewModelProvider
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -427,8 +428,9 @@ class MainActivity : ComponentActivity() {
     private var localEdgePolishEnabled by mutableStateOf(true)
     private var nightSubjectLightBackgroundEnabled by mutableStateOf(false)
     private var lastParamsSnapshot by mutableStateOf<TuningParams?>(null)
-    private val tuningHistory = mutableStateListOf<TuningParams>()
-    private var tuningHistoryIndex by mutableStateOf(-1)
+    // P2 交界：历史单源已收敛进 MainViewModel（state/），Activity 不再持有 tuningHistory 栈；
+    // 186 live vars 与 currentTuningParams() 不动（P5 重写），同步一律走快照显式调用。
+    private val mainViewModel: MainViewModel by lazy { ViewModelProvider(this)[MainViewModel::class.java] }
     private var activePresetId by mutableStateOf<String?>(null)
     private var activePresetBaseParams by mutableStateOf<TuningParams?>(null)
     private var presetListVersion by mutableStateOf(0)
@@ -4860,48 +4862,38 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun saveCurrentAsPreset(rawName: String) {
-        val name = rawName.trim()
-        if (name.isBlank()) {
-            statusText = "预设名称不能为空"
-            return
+        // P2 交界：预设域收敛进 MainViewModel，这里只做 UI 状态（文案/镜像/版本/弹窗）。
+        when (val outcome = mainViewModel.savePreset(presetStore, currentTuningParams(), rawName)) {
+            SavePresetOutcome.BlankName -> {
+                statusText = "预设名称不能为空"
+                return
+            }
+            is SavePresetOutcome.DuplicateName -> {
+                statusText = "预设「${outcome.name}」已存在，请换一个名称"
+                return
+            }
+            is SavePresetOutcome.Saved -> {
+                val preset = outcome.preset
+                activePresetId = preset.id
+                activePresetBaseParams = preset.params
+                presetListVersion += 1
+                presetSaveDialogVisible = false
+                statusText = "已保存预设「${preset.name}」（${preset.params.toParamMap().size} 项参数）"
+            }
         }
-        val now = System.currentTimeMillis()
-        val current = currentTuningParams()
-        val preset = TuningPreset(
-            id = UUID.randomUUID().toString(),
-            name = name,
-            params = current,
-            createdAt = now,
-            updatedAt = now,
-        )
-        if (!presetStore.save(preset)) {
-            statusText = "预设「$name」已存在，请换一个名称"
-            return
-        }
-        presetStore.activePresetId = preset.id
-        activePresetId = preset.id
-        activePresetBaseParams = current
-        presetListVersion += 1
-        presetSaveDialogVisible = false
-        statusText = "已保存预设「$name」（${preset.params.toParamMap().size} 项参数）"
     }
 
     private fun overwritePreset(preset: TuningPreset) {
-        val now = System.currentTimeMillis()
+        // P2 交界：预设域收敛进 MainViewModel，这里只做 UI 状态。
         val current = currentTuningParams()
-        val updated = preset.copy(
-            params = current,
-            updatedAt = now,
-        )
-        if (!presetStore.save(updated)) {
+        if (!mainViewModel.overwritePreset(presetStore, preset, current)) {
             statusText = "更新预设失败"
             return
         }
-        presetStore.activePresetId = updated.id
-        activePresetId = updated.id
+        activePresetId = preset.id
         activePresetBaseParams = current
         presetListVersion += 1
-        statusText = "已覆盖更新预设「${updated.name}」"
+        statusText = "已覆盖更新预设「${preset.name}」"
     }
 
     private fun resetToPreset(preset: TuningPreset) {
@@ -4910,7 +4902,8 @@ class MainActivity : ComponentActivity() {
             return
         }
         val before = currentTuningParams()
-        val merged = TuningParams.fromParamMap(preset.params.toParamMap(), before)
+        // P2 交界：预设合并收敛进 MainViewModel。
+        val merged = mainViewModel.mergedPresetParams(preset, before)
         applyTuningParams(merged, rebuildCandidates = true)
         presetStore.activePresetId = preset.id
         activePresetId = preset.id
@@ -4924,7 +4917,8 @@ class MainActivity : ComponentActivity() {
             return
         }
         val before = currentTuningParams()
-        val merged = TuningParams.fromParamMap(preset.params.toParamMap(), before)
+        // P2 交界：预设合并收敛进 MainViewModel。
+        val merged = mainViewModel.mergedPresetParams(preset, before)
         applyTuningParams(merged, rebuildCandidates = true)
         presetStore.activePresetId = preset.id
         activePresetId = preset.id
@@ -4941,7 +4935,8 @@ class MainActivity : ComponentActivity() {
                 currentPage = AppPage.Home
             }
         }
-        presetStore.delete(id)
+        // P2 交界：store 删除收敛进 MainViewModel；BatchPreview/页面/UI 状态留 Activity。
+        mainViewModel.deletePreset(presetStore, id)
         if (activePresetId == id) {
             activePresetId = null
             activePresetBaseParams = null
@@ -4951,17 +4946,21 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun renamePreset(id: String, rawName: String) {
-        val name = rawName.trim()
-        if (name.isBlank()) {
-            statusText = "预设名称不能为空"
-            return
+        // P2 交界：预设域收敛进 MainViewModel，这里只做 UI 状态。
+        when (val outcome = mainViewModel.renamePreset(presetStore, id, rawName)) {
+            RenamePresetOutcome.BlankName -> {
+                statusText = "预设名称不能为空"
+                return
+            }
+            RenamePresetOutcome.Failed -> {
+                statusText = "重命名失败：名称与现有预设重复"
+                return
+            }
+            is RenamePresetOutcome.Renamed -> {
+                presetListVersion += 1
+                statusText = "已重命名为「${outcome.name}」"
+            }
         }
-        if (!presetStore.rename(id, name)) {
-            statusText = "重命名失败：名称与现有预设重复"
-            return
-        }
-        presetListVersion += 1
-        statusText = "已重命名为「$name」"
     }
 
     private fun exportPresetsToClipboard() {
@@ -11087,23 +11086,10 @@ class MainActivity : ComponentActivity() {
         val before = currentTuningParams()
         if (captureUndo) {
             lastParamsSnapshot = before
-            // 历史栈：冷启动基线为起点，支持前进/后退
-            if (tuningHistory.isEmpty()) {
-                tuningHistory.add(before)
-                tuningHistoryIndex = 0
-            }
-            if (!params.sameAs(before)) {
-                if (tuningHistoryIndex < tuningHistory.size - 1) {
-                    tuningHistory.subList(tuningHistoryIndex + 1, tuningHistory.size).clear()
-                }
-                tuningHistory.add(params)
-                tuningHistoryIndex = tuningHistory.size - 1
-                if (tuningHistory.size > 50) {
-                    tuningHistory.removeAt(0)
-                    tuningHistoryIndex--
-                }
-            }
         }
+        // P2 交界：历史/快照单源在 MainViewModel，用快照显式同步（VM 不读 Activity 字段）；
+        // 186 live vars 仍是 UI 真源（P5 重写），applied 传本函数收到的快照参数。
+        mainViewModel.onParamsApplied(before = before, applied = params, captureUndo = captureUndo)
         foregroundSubjectPercent = params.foregroundSubjectPercent
         draftForegroundSubjectPercentText = foregroundSubjectPercent.toString()
         foregroundShadowLevel = params.foregroundShadowLevel
@@ -11241,27 +11227,25 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun initTuningHistory() {
-        val current = currentTuningParams()
-        tuningHistory.clear()
-        tuningHistory.add(current)
-        tuningHistoryIndex = 0
+        // P2 交界：历史基线进 MainViewModel（冷启动时快照显式同步一次）。
+        mainViewModel.resetHistory(currentTuningParams())
     }
 
-    private fun canUndoTuning(): Boolean = tuningHistoryIndex > 0 && tuningHistory.isNotEmpty()
+    private fun canUndoTuning(): Boolean = mainViewModel.canUndo()
 
-    private fun canRedoTuning(): Boolean = tuningHistoryIndex >= 0 && tuningHistoryIndex < tuningHistory.size - 1
+    private fun canRedoTuning(): Boolean = mainViewModel.canRedo()
 
     private fun undoTuning() {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
             statusText = "当前有任务在运行，请等待"
             return
         }
-        if (!canUndoTuning()) {
+        // P2 交界：取栈顶目标由 MainViewModel 判定（null 即已到最早），UI 状态留 Activity。
+        val target = mainViewModel.undo()
+        if (target == null) {
             statusText = "已到最早的配置"
             return
         }
-        tuningHistoryIndex--
-        val target = tuningHistory[tuningHistoryIndex]
         applyTuningParams(target, captureUndo = false)
         presetStore.activePresetId = null
         activePresetId = null
@@ -11273,12 +11257,12 @@ class MainActivity : ComponentActivity() {
             statusText = "当前有任务在运行，请等待"
             return
         }
-        if (!canRedoTuning()) {
+        // P2 交界：取栈顶目标由 MainViewModel 判定（null 即已到最新），UI 状态留 Activity。
+        val target = mainViewModel.redo()
+        if (target == null) {
             statusText = "已到最新的配置"
             return
         }
-        tuningHistoryIndex++
-        val target = tuningHistory[tuningHistoryIndex]
         applyTuningParams(target, captureUndo = false)
         presetStore.activePresetId = null
         activePresetId = null
