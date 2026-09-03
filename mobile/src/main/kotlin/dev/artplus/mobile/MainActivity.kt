@@ -57,6 +57,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
@@ -64,6 +65,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -74,7 +76,6 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -118,6 +119,9 @@ import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -133,6 +137,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -176,11 +181,14 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
@@ -209,6 +217,7 @@ import com.composables.icons.lucide.Cpu
 import com.composables.icons.lucide.Download
 import com.composables.icons.lucide.EllipsisVertical
 import com.composables.icons.lucide.Eraser
+import com.composables.icons.lucide.Eye
 import com.composables.icons.lucide.FileUp
 import com.composables.icons.lucide.GlassWater
 import com.composables.icons.lucide.Grid2x2
@@ -294,6 +303,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
 import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.TabRow
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
@@ -431,6 +441,19 @@ class MainActivity : ComponentActivity() {
     private var presetDeleteConfirmTarget by mutableStateOf<TuningPreset?>(null)
     private var presetSearchQuery by mutableStateOf("")
     private var presetListExpanded by mutableStateOf(false)
+    private var presetBatchPreviewConfirmTarget by mutableStateOf<TuningPreset?>(null)
+    private var activeBatchPreviewPreset by mutableStateOf<TuningPreset?>(null)
+    private var showBatchPreviewRefreshConfirm by mutableStateOf(false)
+    private var batchPreviewProgress by mutableStateOf<BatchPreviewProgress?>(null)
+    private var batchPreviewResult by mutableStateOf<BatchPreviewResult?>(null)
+    private var batchPreviewCancelled by mutableStateOf(false)
+    private var isGeneratingBatchPreview by mutableStateOf(false)
+    private var batchPreviewCount by mutableIntStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT)
+    private var draftBatchPreviewCountText by mutableStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT.toString())
+    private var batchPreviewColumns by mutableIntStateOf(4)
+    private var batchPreviewIconSizeDp by mutableIntStateOf(54)
+    private var batchPreviewCornerRadiusDp by mutableIntStateOf(20)
+    private var batchPreviewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
     private var pendingServiceConfirm by mutableStateOf<ServiceConfirmRequest?>(null)
     private var autoConfirmRootWrite by mutableStateOf(false)
     private var pendingRootWriteConfirm by mutableStateOf<RootWriteConfirmRequest?>(null)
@@ -748,11 +771,7 @@ class MainActivity : ComponentActivity() {
         val launcherCount by remember {
             derivedStateOf { apps.count { it.launchable } }
         }
-        val density = LocalDensity.current
-        val edgeBackWidthPx = with(density) { BACK_GESTURE_EDGE_WIDTH_DP.dp.toPx() }
-        val commitBackDistancePx = with(density) { BACK_GESTURE_COMMIT_DISTANCE_DP.dp.toPx() }
         var systemBackProgress by remember { mutableStateOf(0f) }
-        var dragBackProgress by remember { mutableStateOf(0f) }
         val completingBackProgress = remember { Animatable(0f) }
         val cancellingBackProgress = remember { Animatable(0f) }
         val childEnterProgress = remember { Animatable(1f) }
@@ -760,7 +779,6 @@ class MainActivity : ComponentActivity() {
         val screenScope = rememberCoroutineScope()
         val backProgress = maxOf(
             systemBackProgress,
-            dragBackProgress,
             completingBackProgress.value,
             cancellingBackProgress.value,
         )
@@ -828,7 +846,6 @@ class MainActivity : ComponentActivity() {
                 currentPage = AppPage.Home
                 delay(40)
                 systemBackProgress = 0f
-                dragBackProgress = 0f
                 completingBackProgress.snapTo(0f)
                 cancellingBackProgress.snapTo(0f)
                 isCompletingBackGesture = false
@@ -840,7 +857,6 @@ class MainActivity : ComponentActivity() {
             if (currentPage != AppPage.Home) {
                 if (!isCompletingBackGesture) {
                     systemBackProgress = 0f
-                    dragBackProgress = 0f
                     completingBackProgress.snapTo(0f)
                     cancellingBackProgress.snapTo(0f)
                     childEnterProgress.snapTo(1f)
@@ -854,14 +870,12 @@ class MainActivity : ComponentActivity() {
                 delay(90)
                 if (!isCompletingBackGesture) {
                     systemBackProgress = 0f
-                    dragBackProgress = 0f
                     completingBackProgress.snapTo(0f)
                     cancellingBackProgress.snapTo(0f)
                     skipNextHomeReturnAnimation = false
                 }
             } else {
                 systemBackProgress = 0f
-                dragBackProgress = 0f
                 completingBackProgress.snapTo(0f)
                 cancellingBackProgress.snapTo(0f)
                 childEnterProgress.snapTo(1f)
@@ -893,8 +907,34 @@ class MainActivity : ComponentActivity() {
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
+            val overlayPage = currentPage.takeIf { it != AppPage.Home }
+            val dimReveal = if (skipNextHomeReturnAnimation || isCompletingBackGesture || backProgress > 0f) {
+                backProgress.coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+            val overlayDimTarget = ((1f - childEnterProgress.value) * (1f - dimReveal)).coerceIn(0f, 1f)
+            // 返回主页时平滑回弹（修主页抖动）；进入动画与返回手势跟手时保持实时
+            val overlayDimSpec: FiniteAnimationSpec<Float> =
+                if (overlayPage == null || (backProgress == 0f && !isCompletingBackGesture && childEnterProgress.value == 0f)) {
+                    tween(durationMillis = 280)
+                } else {
+                    snap()
+                }
+            val overlayDim by animateFloatAsState(
+                targetValue = overlayDimTarget,
+                animationSpec = overlayDimSpec,
+                label = "OverlayDim",
+            )
+            val overlayShadowPx = with(LocalDensity.current) { 24.dp.toPx() }
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        val homeScale = 1f - 0.04f * overlayDim
+                        scaleX = homeScale
+                        scaleY = homeScale
+                    },
             ) {
                 HomePage(
                     pageBackground = pageBackground,
@@ -904,16 +944,24 @@ class MainActivity : ComponentActivity() {
                     generatedCount = generatedCount,
                 )
             }
+            if (overlayPage != null && overlayDim > 0.01f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.45f * overlayDim)),
+                )
+            }
 
-            val overlayPage = currentPage.takeIf { it != AppPage.Home }
             if (overlayPage != null) {
-                val isActivePage = !isCompletingBackGesture
                 val isCompletingBack = skipNextHomeReturnAnimation || isCompletingBackGesture
                 val reveal = if (isCompletingBack || backProgress > 0f) {
                     backProgress.coerceIn(0f, 1f)
                 } else {
                     0f
                 }
+                val overlayCover = ((1f - childEnterProgress.value) * (1f - reveal)).coerceIn(0f, 1f)
+                val overlayCorner = (40f * overlayCover).dp
+                val overlayShape = RoundedCornerShape(topStart = overlayCorner, bottomStart = overlayCorner)
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -921,50 +969,9 @@ class MainActivity : ComponentActivity() {
                             val enteringOffset = size.width * childEnterProgress.value
                             val leavingOffset = size.width * reveal * BACK_GESTURE_PAGE_TRANSLATION_RATIO
                             translationX = enteringOffset + leavingOffset
-                        }
-                        .pointerInput(overlayPage, currentPage, isBusy, edgeBackWidthPx, commitBackDistancePx) {
-                            if (!isActivePage) {
-                                return@pointerInput
-                            }
-                            var activeEdge = 0
-                            var dragDistance = 0f
-                            detectHorizontalDragGestures(
-                                onDragStart = { offset ->
-                                    activeEdge = when {
-                                        isBusy -> 0
-                                        offset.x <= edgeBackWidthPx -> 1
-                                        offset.x >= size.width - edgeBackWidthPx -> -1
-                                        else -> 0
-                                    }
-                                    dragDistance = 0f
-                                    dragBackProgress = 0f
-                                },
-                                onHorizontalDrag = { _, dragAmount ->
-                                    if (activeEdge == 0) {
-                                        return@detectHorizontalDragGestures
-                                    }
-                                    dragDistance = (dragDistance + dragAmount * activeEdge).coerceAtLeast(0f)
-                                    dragBackProgress =
-                                        (dragDistance / (size.width * BACK_GESTURE_PROGRESS_DISTANCE_RATIO))
-                                            .coerceIn(0f, 1f)
-                                },
-                                onDragCancel = {
-                                    activeEdge = 0
-                                    dragDistance = 0f
-                                    dragBackProgress = 0f
-                                },
-                                onDragEnd = {
-                                    if (
-                                        activeEdge != 0 &&
-                                        (dragBackProgress >= BACK_GESTURE_COMMIT_PROGRESS ||
-                                            dragDistance >= commitBackDistancePx)
-                                    ) {
-                                        completeBackFrom(dragBackProgress)
-                                    }
-                                    activeEdge = 0
-                                    dragDistance = 0f
-                                },
-                            )
+                            shadowElevation = overlayShadowPx * overlayCover
+                            shape = overlayShape
+                            clip = true
                         },
                 ) {
                     when (overlayPage) {
@@ -977,6 +984,8 @@ class MainActivity : ComponentActivity() {
                         )
 
                         AppPage.About -> AboutPage(pageBackground = pageBackground)
+
+                        AppPage.BatchPreview -> BatchPreviewPage(pageBackground = pageBackground)
 
                         AppPage.Home -> Unit
                     }
@@ -1517,6 +1526,7 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     PresetStatusCard()
                                     PresetLibraryCard()
+                                    BatchPreviewSettingsCard()
                                 }
                             }
                         }
@@ -2180,6 +2190,404 @@ class MainActivity : ComponentActivity() {
                             color = Color.White,
                             maxLines = 1,
                         )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun BatchPreviewPage(pageBackground: Color) {
+        val scrollBehavior = MiuixScrollBehavior()
+        val result = batchPreviewResult
+        val preset = result?.preset ?: activeBatchPreviewPreset
+        val coroutineScope = rememberCoroutineScope()
+        val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+        val isDark = isSystemInDarkTheme()
+
+        val modes = remember {
+            listOf(
+                PreviewMode.NormalLight,
+                PreviewMode.NormalDark,
+                PreviewMode.MonochromeLight,
+                PreviewMode.MonochromeDark,
+            )
+        }
+        val tabTitles = remember {
+            listOf("正常亮色", "正常暗色", "单色亮色", "单色暗色")
+        }
+
+        var showTuningControls by remember { mutableStateOf(true) }
+
+        Scaffold(
+            containerColor = pageBackground,
+            topBar = {
+                TopAppBar(
+                    title = preset?.name ?: "批量预览",
+                    scrollBehavior = scrollBehavior,
+                    navigationIconPadding = 0.dp,
+                    navigationIcon = {
+                        TitleBarIconButton(
+                            icon = Lucide.ChevronLeft,
+                            contentDescription = "返回",
+                            enabled = !isBusy,
+                            dimWhenDisabled = false,
+                            onClick = { currentPage = AppPage.Home },
+                        )
+                    },
+                    actions = {
+                        TitleBarIconButton(
+                            icon = Lucide.RefreshCw,
+                            contentDescription = "重新生成",
+                            enabled = !isBusy && !isGeneratingBatchPreview && preset != null,
+                            dimWhenDisabled = true,
+                            paddingStart = 0.dp,
+                            paddingEnd = 16.dp,
+                            onClick = { showBatchPreviewRefreshConfirm = true },
+                        )
+                    },
+                )
+            },
+            bottomBar = {
+                if (preset != null && result != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(pageBackground),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                                .navigationBarsPadding(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = preset.name,
+                                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Bold),
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = "共 ${result.items.size} 个应用 · 4 风格 · ${batchPreviewColumns} 列排版",
+                                    style = MiuixTheme.textStyles.footnote2,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    maxLines = 1,
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    applyPreset(preset)
+                                },
+                                colors = ButtonDefaults.buttonColorsPrimary(),
+                            ) {
+                                Text(
+                                    text = "套用此预设",
+                                    style = MiuixTheme.textStyles.button,
+                                    color = Color.White,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+        ) { innerPadding ->
+            val previewFrameHeight = LocalConfiguration.current.screenHeightDp.dp
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(bottom = 12.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // 1. 桌面控制卡：背景一行 + 列数拖动条 + 微调（默认展开）
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                ) {
+                    SectionCard(rowsFullBleed = true) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            PreviewDesktopBackground.entries.forEach { bgOption ->
+                                PreviewBackgroundOption(
+                                    option = bgOption,
+                                    selected = batchPreviewDesktopBackground == bgOption,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { updateBatchPreviewDesktopBackground(bgOption) },
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Text(
+                                text = "列数: ${batchPreviewColumns}列",
+                                style = MiuixTheme.textStyles.footnote2,
+                                color = MiuixTheme.colorScheme.onSurface,
+                                modifier = Modifier.width(96.dp),
+                            )
+                            Box(modifier = Modifier.weight(1f)) {
+                                SteppedPercentSlider(
+                                    value = batchPreviewColumns,
+                                    min = 2,
+                                    max = 5,
+                                    step = 1,
+                                    enabled = true,
+                                    showDots = false,
+                                    onValueChange = { updateBatchPreviewColumns(it) },
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showTuningControls = !showTuningControls }
+                                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Image(
+                                imageVector = Lucide.SlidersHorizontal,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "桌面微调",
+                                    style = MiuixTheme.textStyles.body1,
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = "图标大小 ${batchPreviewIconSizeDp}dp · 图标圆角 ${batchPreviewCornerRadiusDp}dp",
+                                    style = MiuixTheme.textStyles.footnote1,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            KernelStyleArrow(expanded = showTuningControls)
+                        }
+
+                        AnimatedVisibility(
+                            visible = showTuningControls,
+                            enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                                expandVertically(animationSpec = tween(durationMillis = 180)),
+                            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                                shrinkVertically(animationSpec = tween(durationMillis = 160)),
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Text(
+                                        text = "图标大小: ${batchPreviewIconSizeDp}dp",
+                                        style = MiuixTheme.textStyles.footnote2,
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                        modifier = Modifier.width(96.dp),
+                                    )
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        SteppedPercentSlider(
+                                            value = batchPreviewIconSizeDp,
+                                            min = 40,
+                                            max = 84,
+                                            step = 2,
+                                            enabled = true,
+                                            showDots = false,
+                                            onValueChange = { updateBatchPreviewIconSizeDp(it) },
+                                        )
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                ) {
+                                    Text(
+                                        text = "图标圆角: ${batchPreviewCornerRadiusDp}dp",
+                                        style = MiuixTheme.textStyles.footnote2,
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                        modifier = Modifier.width(96.dp),
+                                    )
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        SteppedPercentSlider(
+                                            value = batchPreviewCornerRadiusDp,
+                                            min = 0,
+                                            max = 36,
+                                            step = 1,
+                                            enabled = true,
+                                            showDots = false,
+                                            onValueChange = { updateBatchPreviewCornerRadiusDp(it) },
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                }
+
+                // 2. 4 风格切换栏（控制卡下方、预览框上方）
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    tabTitles.forEachIndexed { index, title ->
+                        val selected = pagerState.currentPage == index
+                        val bg = if (selected) {
+                            MiuixTheme.colorScheme.primaryVariant
+                        } else {
+                            if (isDark) MiuixTheme.colorScheme.surfaceContainerHigh else Color.White
+                        }
+                        val textColor = if (selected) Color.White else MiuixTheme.colorScheme.onSurface
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(bg)
+                                .clickable {
+                                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = title,
+                                style = MiuixTheme.textStyles.body2.copy(
+                                    fontSize = 13.sp,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                ),
+                                color = textColor,
+                                maxLines = 1,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                }
+
+                // 3. 桌面展示框：一屏高的 Card，内部完整桌面
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                ) {
+                    Card(
+                        cornerRadius = 20.dp,
+                        insideMargin = PaddingValues(0.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(previewFrameHeight)
+                                .clip(RoundedCornerShape(20.dp)),
+                        ) {
+                            PreviewDesktopBackgroundSurface(
+                                option = batchPreviewDesktopBackground,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+
+                            if (result == null || result.items.isEmpty()) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "暂无预览数据",
+                                        style = MiuixTheme.textStyles.body2,
+                                        color = Color.White.copy(alpha = 0.8f),
+                                    )
+                                }
+                            } else {
+                                HorizontalPager(
+                                    state = pagerState,
+                                    modifier = Modifier.fillMaxSize(),
+                                ) { page ->
+                                    val currentMode = modes[page]
+                                    val isLightBg = batchPreviewDesktopBackground == PreviewDesktopBackground.LightGray
+                                    val labelColor = if (isLightBg) Color(0xFF222222) else Color.White
+                                    val shadowColor = if (isLightBg) Color.White.copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.85f)
+
+                                    LazyVerticalGrid(
+                                        columns = GridCells.Fixed(batchPreviewColumns),
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 18.dp),
+                                        verticalArrangement = Arrangement.spacedBy(18.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        items(result.items, key = { it.packageName }) { item ->
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                                modifier = Modifier.fillMaxWidth(),
+                                            ) {
+                                                if (item.assets.missingMessage(currentMode) == null) {
+                                                    GeneratedIconPreview(
+                                                        assets = item.assets,
+                                                        mode = currentMode,
+                                                        modifier = Modifier.size(batchPreviewIconSizeDp.dp),
+                                                        cornerRadiusDp = batchPreviewCornerRadiusDp,
+                                                    )
+                                                } else {
+                                                    MissingIconPreview(
+                                                        modifier = Modifier.size(batchPreviewIconSizeDp.dp),
+                                                        mode = currentMode,
+                                                        compact = true,
+                                                        cornerRadiusDp = batchPreviewCornerRadiusDp,
+                                                    )
+                                                }
+                                                Text(
+                                                    text = item.label,
+                                                    style = TextStyle(
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Medium,
+                                                        shadow = Shadow(
+                                                            color = shadowColor,
+                                                            offset = Offset(0f, 1f),
+                                                            blurRadius = 3f,
+                                                        ),
+                                                    ),
+                                                    color = labelColor,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    textAlign = TextAlign.Center,
+                                                    modifier = Modifier.padding(horizontal = 2.dp),
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -3126,7 +3534,7 @@ class MainActivity : ComponentActivity() {
     ) {
         val wallpaper = remember(option) {
             if (option == PreviewDesktopBackground.Wallpaper) {
-                loadPreviewWallpaperBitmap()
+                loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
             } else {
                 null
             }
@@ -3140,32 +3548,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                 )
-            } else if (option == PreviewDesktopBackground.Wallpaper) {
-                ComposeCanvas(modifier = Modifier.fillMaxSize()) {
-                    val w = size.width
-                    val h = size.height
-                    drawRect(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF25262E),
-                                Color(0xFF4B5968),
-                                Color(0xFFB7A68D),
-                            ),
-                            start = Offset.Zero,
-                            end = Offset(w, h),
-                        ),
-                    )
-                    drawCircle(
-                        color = Color(0xFFEAE2D3).copy(alpha = 0.28f),
-                        radius = maxOf(w, h) * 0.34f,
-                        center = Offset(w * 0.22f, h * 0.18f),
-                    )
-                    drawCircle(
-                        color = Color(0xFF6A8FBD).copy(alpha = 0.24f),
-                        radius = maxOf(w, h) * 0.32f,
-                        center = Offset(w * 0.82f, h * 0.76f),
-                    )
-                }
             }
         }
     }
@@ -4646,6 +5028,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun deletePreset(id: String) {
+        BatchPreviewStore.deleteSnapshot(filesDir, id)
+        if (activeBatchPreviewPreset?.id == id || batchPreviewResult?.preset?.id == id) {
+            activeBatchPreviewPreset = null
+            batchPreviewResult = null
+            if (currentPage == AppPage.BatchPreview) {
+                currentPage = AppPage.Home
+            }
+        }
         presetStore.delete(id)
         if (activePresetId == id) {
             activePresetId = null
@@ -4716,6 +5106,171 @@ class MainActivity : ComponentActivity() {
         }
         applyTuningParams(params, rebuildCandidates = true)
         statusText = "已应用 JSON 参数"
+    }
+
+    private fun startBatchPreview(preset: TuningPreset) {
+        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate || isGeneratingBatchPreview) {
+            statusText = "当前有任务在运行，请等待"
+            return
+        }
+        val sampledApps = BatchPreviewSampler.sample(
+            candidates = apps,
+            generatedPackageNames = generatedPackageNames,
+            count = batchPreviewCount,
+            selfPackageName = packageName,
+        )
+        if (sampledApps.isEmpty()) {
+            statusText = "未找到可供预览的启动器应用"
+            return
+        }
+
+        isBusy = true
+        isGeneratingBatchPreview = true
+        batchPreviewCancelled = false
+
+        val originalParams = currentTuningParams()
+        val merged = TuningParams.fromParamMap(preset.params.toParamMap(), originalParams)
+        applyTuningParams(merged, rebuildCandidates = false, persist = false, captureUndo = false, refreshPreview = false)
+        val pipeline = currentLocalPipelineConfig()
+
+        batchPreviewProgress = BatchPreviewProgress(
+            presetName = preset.name,
+            completed = 0,
+            total = sampledApps.size,
+            currentLabel = "准备渲染 ${sampledApps.size} 个应用",
+        )
+        statusText = "预设「${preset.name}」批量预览渲染中..."
+
+        startUiFriendlyThread("ArtPlusBatchPreview") {
+            val items = mutableListOf<BatchPreviewItem>()
+            var wasCancelled = false
+            try {
+                for ((index, app) in sampledApps.withIndex()) {
+                    if (batchPreviewCancelled) {
+                        wasCancelled = true
+                        break
+                    }
+                    runOnUiThread {
+                        batchPreviewProgress = BatchPreviewProgress(
+                            presetName = preset.name,
+                            completed = index,
+                            total = sampledApps.size,
+                            currentLabel = "渲染中: ${app.label}",
+                        )
+                    }
+                    try {
+                        val assets = generateMemoryPreviewAssetsForApp(app, pipeline)
+                        items.add(BatchPreviewItem(packageName = app.packageName, label = app.label, assets = assets))
+                    } catch (e: Throwable) {
+                        // 跳过单应用渲染异常
+                    }
+                    runOnUiThread {
+                        batchPreviewProgress = BatchPreviewProgress(
+                            presetName = preset.name,
+                            completed = index + 1,
+                            total = sampledApps.size,
+                            currentLabel = "已完成: ${app.label}",
+                        )
+                    }
+                }
+                runOnUiThread {
+                    if (!wasCancelled && items.isNotEmpty()) {
+                        val result = BatchPreviewResult(preset = preset, items = items)
+                        batchPreviewResult = result
+                        activeBatchPreviewPreset = preset
+
+                        // 持久化保存快照到磁盘
+                        val dataList = items.map { item ->
+                            BatchPreviewItemData(
+                                packageName = item.packageName,
+                                label = item.label,
+                                recbg = item.assets.recbg,
+                                recfg = item.assets.recfg,
+                                recNight = item.assets.recNight,
+                                monochromeLight = item.assets.monochromeLight,
+                                monochromeDark = item.assets.monochromeDark,
+                            )
+                        }
+                        BatchPreviewStore.saveSnapshot(filesDir, preset, dataList)
+
+                        currentPage = AppPage.BatchPreview
+                        statusText = "已生成预设「${preset.name}」批量预览并保存快照 (${items.size} 个应用)"
+                    } else if (wasCancelled) {
+                        statusText = "已取消批量预览"
+                    } else {
+                        statusText = "批量预览生成失败"
+                    }
+                }
+            } finally {
+                runOnUiThread {
+                    applyTuningParams(originalParams, rebuildCandidates = true, persist = false, captureUndo = false, refreshPreview = true)
+                    isBusy = false
+                    isGeneratingBatchPreview = false
+                    batchPreviewProgress = null
+                    batchPreviewCancelled = false
+                }
+            }
+        }
+    }
+
+    private fun loadBatchPreviewSnapshot(preset: TuningPreset): BatchPreviewResult? {
+        val datas = BatchPreviewStore.loadSnapshot(filesDir, preset) ?: return null
+        val items = datas.map { data ->
+            BatchPreviewItem(
+                packageName = data.packageName,
+                label = data.label,
+                assets = PreviewAssets(
+                    recbg = data.recbg,
+                    recfg = data.recfg,
+                    recNight = data.recNight,
+                    monochromeLight = data.monochromeLight,
+                    monochromeDark = data.monochromeDark,
+                ).preparedForDraw(),
+            )
+        }
+        return BatchPreviewResult(preset = preset, items = items)
+    }
+
+    private fun openBatchPreviewForPreset(preset: TuningPreset) {
+        activeBatchPreviewPreset = preset
+        if (BatchPreviewStore.hasSnapshot(filesDir, preset.id)) {
+            val cached = loadBatchPreviewSnapshot(preset)
+            if (cached != null) {
+                batchPreviewResult = cached
+                currentPage = AppPage.BatchPreview
+                statusText = "已加载预设「${preset.name}」批量预览快照"
+                return
+            }
+        }
+        presetBatchPreviewConfirmTarget = preset
+    }
+
+    private fun generateMemoryPreviewAssetsForApp(
+        app: AppEntry,
+        pipeline: LocalPipelineConfig,
+    ): PreviewAssets {
+        val icon = app.applicationInfo.loadIcon(packageManager)
+        val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
+        val localSource = buildLocalIconLayers(icon, pipeline)
+        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, pipeline)
+        val localCandidates = localCandidateSet.candidates
+        val defaultChoice = defaultPreviewChoiceForMode(localSeparationMode, localCandidateSet.autoChoice)
+            .takeIf { localCandidates.containsKey(it) }
+            ?: localCandidateSet.autoChoice.takeIf { localCandidates.containsKey(it) }
+            ?: PreviewChoice.Original
+        val selections = PreviewSelections.default(defaultChoice)
+        val dummyOutDir = File(cacheDir, "preview_tmp")
+        val session = GenerationSession(
+            packageName = app.packageName,
+            outDir = dummyOutDir,
+            sourceIcon = localSourceIcon,
+            baseRecfg = localSource.recfg,
+            baseRecbg = localSource.recbg,
+            monochromeRaw = localSource.monochrome,
+            candidates = localCandidates,
+            autoLocalChoice = localCandidateSet.autoChoice,
+        )
+        return previewAssetsForSelections(session, selections).preparedForDraw()
     }
 
     private fun applyPresetToSelectedApps(preset: TuningPreset) {
@@ -5303,6 +5858,7 @@ class MainActivity : ComponentActivity() {
                                 isActive = isActive,
                                 isModified = isModified,
                                 onApply = { applyPreset(preset) },
+                                onPreview = { openBatchPreviewForPreset(preset) },
                                 onMore = { presetActionMenuTarget = preset },
                             )
                         }
@@ -5330,11 +5886,30 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun BatchPreviewSettingsCard() {
+        SectionCard(rowsFullBleed = true) {
+            NumberParameterControl(
+                title = "批量预览数量",
+                summary = "预设四风格宫格预览时随机抓取的应用数量（默认 20，优先未生成图标应用）",
+                value = batchPreviewCount,
+                draftText = draftBatchPreviewCountText,
+                min = MIN_BATCH_PREVIEW_COUNT,
+                max = MAX_BATCH_PREVIEW_COUNT,
+                step = 1,
+                onDraftChange = { draftBatchPreviewCountText = it },
+                onSave = { updateBatchPreviewCount(it) },
+                icon = SettingsIconKind.Grid,
+            )
+        }
+    }
+
+    @Composable
     private fun CompactPresetRow(
         preset: TuningPreset,
         isActive: Boolean,
         isModified: Boolean,
         onApply: () -> Unit,
+        onPreview: () -> Unit,
         onMore: () -> Unit,
     ) {
         val containerBg = if (isActive) {
@@ -5414,6 +5989,21 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .size(32.dp)
                     .clip(RoundedCornerShape(8.dp))
+                    .clickable(enabled = !isBusy) { onPreview() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    imageVector = Lucide.Eye,
+                    contentDescription = "批量预览",
+                    modifier = Modifier.size(16.dp),
+                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
                     .clickable(enabled = !isBusy) { onMore() },
                 contentAlignment = Alignment.Center,
             ) {
@@ -5464,6 +6054,14 @@ class MainActivity : ComponentActivity() {
                         onClick = {
                             onDismiss()
                             applyPreset(target)
+                        },
+                    )
+                    PresetMenuItem(
+                        title = "批量四风格预览",
+                        summary = "随机抓取应用，四种风格宫格预览",
+                        onClick = {
+                            onDismiss()
+                            openBatchPreviewForPreset(target)
                         },
                     )
                     PresetMenuItem(
@@ -5654,6 +6252,216 @@ class MainActivity : ComponentActivity() {
                 onConfirm = { text -> importPresetsFromText(text) },
                 onDismiss = { presetImportDialogVisible = false },
             )
+        }
+        presetBatchPreviewConfirmTarget?.let { target ->
+            PresetBatchPreviewConfirmDialog(
+                preset = target,
+                onConfirm = {
+                    presetBatchPreviewConfirmTarget = null
+                    startBatchPreview(target)
+                },
+                onDismiss = { presetBatchPreviewConfirmTarget = null },
+            )
+        }
+        PresetBatchPreviewProgressDialog()
+        if (showBatchPreviewRefreshConfirm) {
+            val targetPreset = activeBatchPreviewPreset ?: batchPreviewResult?.preset
+            if (targetPreset != null) {
+                BatchPreviewRefreshConfirmDialog(
+                    preset = targetPreset,
+                    onConfirm = {
+                        showBatchPreviewRefreshConfirm = false
+                        startBatchPreview(targetPreset)
+                    },
+                    onDismiss = { showBatchPreviewRefreshConfirm = false },
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun PresetBatchPreviewConfirmDialog(
+        preset: TuningPreset,
+        onConfirm: () -> Unit,
+        onDismiss: () -> Unit,
+    ) {
+        MiuixBottomDialog(onDismissRequest = onDismiss) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "生成批量预览",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "将根据预设「${preset.name}」随机抽取 ${batchPreviewCount} 个应用（优先未生成图标），批量生成正常亮色、正常暗色、单色亮色与单色暗色共 ${batchPreviewCount * 4} 个图标供宫格预览。\n\n此过程仅在内存中生成预览，绝不写入分区或更改任何文件。确认开始？",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 8,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "取消",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "开始生成",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun PresetBatchPreviewProgressDialog() {
+        val progress = batchPreviewProgress ?: return
+        val fraction = if (progress.total <= 0) 0f else (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
+        MiuixBottomDialog(onDismissRequest = { batchPreviewCancelled = true }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "正在生成批量预览",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "预设「${progress.presetName}」· 进度 ${progress.completed}/${progress.total}",
+                    style = MiuixTheme.textStyles.body2,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = progress.currentLabel,
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                LinearProgressIndicator(
+                    progress = fraction,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(999.dp)),
+                )
+                Button(
+                    onClick = { batchPreviewCancelled = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(),
+                ) {
+                    Text(
+                        text = "取消",
+                        style = MiuixTheme.textStyles.button,
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun BatchPreviewRefreshConfirmDialog(
+        preset: TuningPreset,
+        onConfirm: () -> Unit,
+        onDismiss: () -> Unit,
+    ) {
+        MiuixBottomDialog(onDismissRequest = onDismiss) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "重新生成批量预览",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "是否重新随机抽取 ${batchPreviewCount} 个应用，重新生成预设「${preset.name}」的四风格预览？\n\n此操作将重新渲染并覆盖现有的快照数据。",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                    maxLines = 8,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "取消",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "确认重新生成",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -7359,6 +8167,18 @@ class MainActivity : ComponentActivity() {
                 enabled = !isBusy,
                 onCheckedChange = { updatePreviewStripEnabled(it) },
             )
+            NumberParameterControl(
+                title = "批量预览数量",
+                summary = "预设四风格宫格预览时随机抓取的应用数量（默认 20，优先未生成图标应用）",
+                value = batchPreviewCount,
+                draftText = draftBatchPreviewCountText,
+                min = MIN_BATCH_PREVIEW_COUNT,
+                max = MAX_BATCH_PREVIEW_COUNT,
+                step = 1,
+                onDraftChange = { draftBatchPreviewCountText = it },
+                onSave = { updateBatchPreviewCount(it) },
+                icon = SettingsIconKind.Grid,
+            )
         }
     }
 
@@ -8603,6 +9423,23 @@ class MainActivity : ComponentActivity() {
             ).also { it.prepareToDraw() }
         }.getOrNull()
 
+    private fun loadBundledPreviewWallpaperBitmap(): Bitmap? =
+        runCatching {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeResource(resources, R.drawable.preview_wallpaper, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+                return null
+            }
+            val shortEdge = minOf(bounds.outWidth, bounds.outHeight)
+            var sampleSize = 1
+            while (shortEdge / (sampleSize * 2) >= PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE) {
+                sampleSize *= 2
+            }
+            val opts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+            BitmapFactory.decodeResource(resources, R.drawable.preview_wallpaper, opts)
+                ?.also { it.prepareToDraw() }
+        }.getOrNull()
+
     @Composable
     private fun BrandMark(size: Dp, text: String) {
         Box(
@@ -8823,6 +9660,15 @@ class MainActivity : ComponentActivity() {
         previewCornerRadiusDp = prefs.getInt(PREF_PREVIEW_CORNER_RADIUS_DP, DEFAULT_PREVIEW_CORNER_RADIUS_DP)
             .coerceIn(MIN_PREVIEW_CORNER_RADIUS_DP, MAX_PREVIEW_CORNER_RADIUS_DP)
         draftPreviewCornerRadiusDpText = previewCornerRadiusDp.toString()
+        batchPreviewCount = prefs.getInt(PREF_BATCH_PREVIEW_COUNT, DEFAULT_BATCH_PREVIEW_COUNT)
+            .coerceIn(MIN_BATCH_PREVIEW_COUNT, MAX_BATCH_PREVIEW_COUNT)
+        draftBatchPreviewCountText = batchPreviewCount.toString()
+        batchPreviewColumns = prefs.getInt(PREF_BATCH_PREVIEW_COLUMNS, 4).coerceIn(2, 5)
+        batchPreviewIconSizeDp = prefs.getInt(PREF_BATCH_PREVIEW_ICON_SIZE_DP, 54).coerceIn(40, 84)
+        batchPreviewCornerRadiusDp = prefs.getInt(PREF_BATCH_PREVIEW_CORNER_RADIUS_DP, previewCornerRadiusDp).coerceIn(0, 36)
+        batchPreviewDesktopBackground = PreviewDesktopBackground.fromName(
+            prefs.getString(PREF_BATCH_PREVIEW_DESKTOP_BG, PreviewDesktopBackground.DarkGray.name),
+        )
         autoConfirmRootWrite = prefs.getBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, prefs.getBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, false))
         autoConfirmRefresh = prefs.getBoolean(PREF_AUTO_CONFIRM_REFRESH, false)
         outputTreeUri = prefs.getString(PREF_OUTPUT_TREE_URI, null)?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
@@ -8853,6 +9699,11 @@ class MainActivity : ComponentActivity() {
             .putString(PREF_PREVIEW_DESKTOP_BACKGROUND, previewDesktopBackground.name)
             .putInt(PREF_PREVIEW_ICON_SIZE_DP, previewIconSizeDp)
             .putInt(PREF_PREVIEW_CORNER_RADIUS_DP, previewCornerRadiusDp)
+            .putInt(PREF_BATCH_PREVIEW_COUNT, batchPreviewCount)
+            .putInt(PREF_BATCH_PREVIEW_COLUMNS, batchPreviewColumns)
+            .putInt(PREF_BATCH_PREVIEW_ICON_SIZE_DP, batchPreviewIconSizeDp)
+            .putInt(PREF_BATCH_PREVIEW_CORNER_RADIUS_DP, batchPreviewCornerRadiusDp)
+            .putString(PREF_BATCH_PREVIEW_DESKTOP_BG, batchPreviewDesktopBackground.name)
             .putBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, autoConfirmRootWrite)
             .putBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, autoConfirmRootWrite)
             .putBoolean(PREF_AUTO_CONFIRM_REFRESH, autoConfirmRefresh)
@@ -10374,6 +11225,47 @@ class MainActivity : ComponentActivity() {
         val next = value.coerceIn(MIN_PREVIEW_ICON_SIZE_DP, MAX_PREVIEW_ICON_SIZE_DP)
         previewIconSizeDp = next
         draftPreviewIconSizeDpText = next.toString()
+        saveUiState()
+    }
+
+    private fun updateBatchPreviewCount(value: Int) {
+        val next = value.coerceIn(MIN_BATCH_PREVIEW_COUNT, MAX_BATCH_PREVIEW_COUNT)
+        batchPreviewCount = next
+        draftBatchPreviewCountText = next.toString()
+        saveUiState()
+    }
+
+    private fun updateBatchPreviewColumns(value: Int) {
+        val next = value.coerceIn(2, 5)
+        batchPreviewColumns = next
+        val autoSize = when (next) {
+            2 -> 72
+            3 -> 64
+            4 -> 54
+            5 -> 46
+            else -> 54
+        }
+        batchPreviewIconSizeDp = autoSize
+        saveUiState()
+    }
+
+    private fun updateBatchPreviewIconSizeDp(value: Int) {
+        val next = value.coerceIn(40, 84)
+        batchPreviewIconSizeDp = next
+        saveUiState()
+    }
+
+    private fun updateBatchPreviewCornerRadiusDp(value: Int) {
+        val next = value.coerceIn(0, 36)
+        batchPreviewCornerRadiusDp = next
+        saveUiState()
+    }
+
+    private fun updateBatchPreviewDesktopBackground(option: PreviewDesktopBackground) {
+        if (batchPreviewDesktopBackground == option) {
+            return
+        }
+        batchPreviewDesktopBackground = option
         saveUiState()
     }
 
@@ -19280,10 +20172,28 @@ class MainActivity : ComponentActivity() {
 
     private data class AppEntry(
         val label: String,
-        val packageName: String,
+        override val packageName: String,
         val applicationInfo: ApplicationInfo,
-        val launchable: Boolean,
+        override val launchable: Boolean,
         val iconKey: String,
+    ) : BatchSampleTarget
+
+    private data class BatchPreviewProgress(
+        val presetName: String,
+        val completed: Int,
+        val total: Int,
+        val currentLabel: String,
+    )
+
+    private data class BatchPreviewItem(
+        val packageName: String,
+        val label: String,
+        val assets: PreviewAssets,
+    )
+
+    private data class BatchPreviewResult(
+        val preset: TuningPreset,
+        val items: List<BatchPreviewItem>,
     )
 
     private data class IconLayers(
@@ -19568,6 +20478,7 @@ class MainActivity : ComponentActivity() {
         Home(0),
         AppPicker(1),
         About(2),
+        BatchPreview(3),
     }
 
     private data class Bounds(
@@ -19819,6 +20730,11 @@ class MainActivity : ComponentActivity() {
         private const val PREF_PREVIEW_PACKAGE_NAME = "preview_package_name"
         private const val PREF_PREVIEW_DIR_PATH = "preview_dir_path"
         private const val PREF_PREVIEW_STRIP_ENABLED = "preview_strip_enabled"
+        private const val PREF_BATCH_PREVIEW_COUNT = "batch_preview_count"
+        private const val PREF_BATCH_PREVIEW_COLUMNS = "batch_preview_columns"
+        private const val PREF_BATCH_PREVIEW_ICON_SIZE_DP = "batch_preview_icon_size_dp"
+        private const val PREF_BATCH_PREVIEW_CORNER_RADIUS_DP = "batch_preview_corner_radius_dp"
+        private const val PREF_BATCH_PREVIEW_DESKTOP_BG = "batch_preview_desktop_bg"
         private const val PREF_PREVIEW_SELECTION_NORMAL_LIGHT = "preview_selection_normal_light"
         private const val PREF_PREVIEW_SELECTION_NORMAL_DARK = "preview_selection_normal_dark"
         private const val PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT = "preview_selection_monochrome_light"
@@ -19954,7 +20870,11 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_PREVIEW_CORNER_RADIUS_DP = 20
         private const val MIN_PREVIEW_CORNER_RADIUS_DP = 0
         private const val MAX_PREVIEW_CORNER_RADIUS_DP = 36
+        private const val DEFAULT_BATCH_PREVIEW_COUNT = BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT
+        private const val MIN_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MIN_BATCH_PREVIEW_COUNT
+        private const val MAX_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MAX_BATCH_PREVIEW_COUNT
         private const val PREVIEW_WALLPAPER_SAMPLE_SIZE = 320
+        private const val PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE = 480
         private const val CHOICE_ROW_HORIZONTAL_BLEED_DP = 16
         private const val SECTION_CARD_VERTICAL_PADDING_DP = 12
         private val SETTINGS_ROW_INSIDE_MARGIN = PaddingValues(vertical = 6.dp)
@@ -19973,10 +20893,7 @@ class MainActivity : ComponentActivity() {
         private const val COLOROS_UXICON_THEME_MASK = 0x0fL shl COLOROS_UXICON_THEME_SHIFT
         private const val COLOROS_UXICON_ARTPLUS_MASK = 0x07L shl COLOROS_UXICON_ARTPLUS_SHIFT
         private const val FALLBACK_ARTPLUS_INSPIRATION_UXICON_CONFIG = 2314313028685793584L
-        private const val BACK_GESTURE_EDGE_WIDTH_DP = 88
-        private const val BACK_GESTURE_COMMIT_DISTANCE_DP = 96
         private const val BACK_GESTURE_COMMIT_PROGRESS = 0.28f
-        private const val BACK_GESTURE_PROGRESS_DISTANCE_RATIO = 1.0f
         private const val BACK_GESTURE_PAGE_TRANSLATION_RATIO = 1.0f
         private const val GITHUB_REPO_URL = "https://github.com/Costben/ArtPlus"
         private const val GITHUB_LICENSE_URL = "https://github.com/Costben/ArtPlus/blob/main/LICENSE"
