@@ -16575,9 +16575,6 @@ class MainActivity : ComponentActivity() {
         return !hasAutoCropRisk(bounds, source.width, source.height)
     }
 
-    private fun ratioPercent(percent: Int): Double =
-        percent.coerceIn(0, 100).toDouble() / 100.0
-
     private fun effectiveBackgroundSeparationDistance(): Double =
         lerpDouble(LEGACY_BACKGROUND_SEPARATION_MIN, LEGACY_BACKGROUND_SEPARATION_MAX, ratioPercent(backgroundSeparationPercent))
 
@@ -16610,9 +16607,6 @@ class MainActivity : ComponentActivity() {
         lerpDouble(SHADOW_MIN_LUMA_DROP_MAX, SHADOW_MIN_LUMA_DROP_MIN, ratioPercent(shadowRemovalPercent))
             .roundToInt()
             .coerceAtLeast(0)
-
-    private fun lerpDouble(start: Double, end: Double, ratio: Double): Double =
-        start + (end - start) * ratio.coerceIn(0.0, 1.0)
 
     private fun subtractBackground(
         composed: Bitmap,
@@ -16704,31 +16698,6 @@ class MainActivity : ComponentActivity() {
             uncompositeChannel(AndroidColor.green(visiblePixel), AndroidColor.green(backgroundPixel), alpha),
             uncompositeChannel(AndroidColor.blue(visiblePixel), AndroidColor.blue(backgroundPixel), alpha),
         )
-    }
-
-    private fun centerOffsetRatio(bounds: Bounds, width: Int, height: Int): Double {
-        val dx = bounds.left + bounds.width() / 2.0 - width / 2.0
-        val dy = bounds.top + bounds.height() / 2.0 - height / 2.0
-        return kotlin.math.sqrt(dx * dx + dy * dy) / maxOf(width, height).toDouble()
-    }
-
-    private fun solidBitmap(width: Int, height: Int, color: Int): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        Canvas(bitmap).drawColor(color)
-        return bitmap
-    }
-
-    private fun resizeBitmap(source: Bitmap, width: Int, height: Int): Bitmap =
-        Bitmap.createScaledBitmap(source, width, height, true)
-
-    private fun centerOnCanvas(source: Bitmap, width: Int, height: Int): Bitmap {
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-        canvas.drawColor(AndroidColor.TRANSPARENT)
-        val x = (width - source.width) / 2f
-        val y = (height - source.height) / 2f
-        canvas.drawBitmap(source, x, y, null)
-        return out
     }
 
     private fun separateLocalForeground(
@@ -16994,41 +16963,6 @@ class MainActivity : ComponentActivity() {
         val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         out.setPixels(cleaned, 0, width, 0, 0, width, height)
         return repairLocalTransparentEdgeColors(out, pipeline)
-    }
-
-    private fun isNearWhite(pixel: Int): Boolean =
-        AndroidColor.red(pixel) >= CORNER_MASK_WHITE_THRESHOLD &&
-            AndroidColor.green(pixel) >= CORNER_MASK_WHITE_THRESHOLD &&
-            AndroidColor.blue(pixel) >= CORNER_MASK_WHITE_THRESHOLD
-
-    private fun isCornerMaskResidueCandidate(
-        pixel: Int,
-        backgroundPixel: Int,
-        removeNearWhite: Boolean,
-    ): Boolean {
-        val alpha = AndroidColor.alpha(pixel)
-        if (alpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-            return false
-        }
-
-        val backgroundDistance = colorDistance(pixel, backgroundPixel)
-        val subjectLike = alpha >= CORNER_MASK_SUBJECT_ALPHA &&
-            backgroundDistance >= CORNER_MASK_SUBJECT_BACKGROUND_DISTANCE
-        if (subjectLike) {
-            return false
-        }
-
-        val nearBackground = backgroundDistance <= CORNER_MASK_BACKGROUND_DISTANCE
-        val weakMaskEdge = alpha < CORNER_MASK_OPAQUE_ALPHA && nearBackground
-        val nearWhiteMaskEdge = removeNearWhite &&
-            isNearWhite(pixel) &&
-            (nearBackground || alpha < CORNER_MASK_WHITE_EDGE_ALPHA)
-        return nearBackground || weakMaskEdge || nearWhiteMaskEdge
-    }
-
-    private fun isInCornerMaskZone(x: Int, y: Int, width: Int, height: Int): Boolean {
-        val zone = minOf(CORNER_MASK_ZONE_SIZE, width / 2, height / 2).coerceAtLeast(1)
-        return (x < zone || x >= width - zone) && (y < zone || y >= height - zone)
     }
 
     private fun removeBackgroundColoredResidue(source: Bitmap, backgroundColor: Int): Bitmap {
@@ -17417,34 +17351,6 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun distanceToNearbyMaskPixel(
-        mask: BooleanArray,
-        width: Int,
-        height: Int,
-        x: Int,
-        y: Int,
-        maxRadius: Int,
-    ): Double? {
-        var bestSquared = Int.MAX_VALUE
-        for (dy in -maxRadius..maxRadius) {
-            for (dx in -maxRadius..maxRadius) {
-                val nx = x + dx
-                val ny = y + dy
-                if (nx !in 0 until width || ny !in 0 until height) {
-                    continue
-                }
-                val squared = dx * dx + dy * dy
-                if (squared > maxRadius * maxRadius || squared >= bestSquared) {
-                    continue
-                }
-                if (mask[ny * width + nx]) {
-                    bestSquared = squared
-                }
-            }
-        }
-        return if (bestSquared == Int.MAX_VALUE) null else kotlin.math.sqrt(bestSquared.toDouble())
-    }
-
     private fun trimForegroundEdge(
         source: Bitmap,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
@@ -17531,78 +17437,6 @@ class MainActivity : ComponentActivity() {
         return repairLocalTransparentEdgeColors(out, pipeline)
     }
 
-    private fun isInEdgeBand(x: Int, y: Int, bounds: Bounds, band: Int): Boolean =
-        y < bounds.top + band ||
-            y >= bounds.bottom - band ||
-            x < bounds.left + band ||
-            x >= bounds.right - band
-
-    private fun hasNearbyMaskPixel(mask: BooleanArray, width: Int, height: Int, x: Int, y: Int, radius: Int): Boolean {
-        val radiusSquared = radius * radius
-        for (dy in -radius..radius) {
-            for (dx in -radius..radius) {
-                if (dx * dx + dy * dy > radiusSquared) {
-                    continue
-                }
-                val nx = x + dx
-                val ny = y + dy
-                if (nx in 0 until width && ny in 0 until height && mask[ny * width + nx]) {
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
-    private fun hasNearbyTransparentPixel(
-        pixels: IntArray,
-        width: Int,
-        height: Int,
-        x: Int,
-        y: Int,
-        radius: Int,
-    ): Boolean {
-        for (dy in -radius..radius) {
-            for (dx in -radius..radius) {
-                if (dx == 0 && dy == 0) {
-                    continue
-                }
-                val nx = x + dx
-                val ny = y + dy
-                if (nx !in 0 until width || ny !in 0 until height) {
-                    return true
-                }
-                if (AndroidColor.alpha(pixels[ny * width + nx]) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
-    private fun uncompositeChannel(value: Int, plateValue: Int, alpha: Double): Int =
-        (plateValue + (value - plateValue) / alpha).toInt().coerceIn(0, 255)
-
-    private fun median(values: MutableList<Int>): Int {
-        if (values.isEmpty()) {
-            return 0
-        }
-        values.sort()
-        return values[values.size / 2]
-    }
-
-    private fun percentText(value: Double): String =
-        "${(value * 100.0).toInt().coerceIn(0, 100)}%"
-
-    private fun saturation(pixel: Int): Double {
-        val max = maxOf(AndroidColor.red(pixel), AndroidColor.green(pixel), AndroidColor.blue(pixel))
-        if (max <= 0) {
-            return 0.0
-        }
-        val min = minOf(AndroidColor.red(pixel), AndroidColor.green(pixel), AndroidColor.blue(pixel))
-        return (max - min).toDouble() / max.toDouble()
-    }
-
     private fun normalizeForegroundSubjectSize(source: Bitmap): Bitmap {
         val bounds = meaningfulAlphaBounds(source) ?: return source
         val originalCenter = meaningfulAlphaCentroid(source)
@@ -17628,172 +17462,6 @@ class MainActivity : ComponentActivity() {
         val dy = originalCenterY - scaledCenter.second
         canvas.drawBitmap(scaled, dx, dy, null)
         return out
-    }
-
-    private fun scaleBitmapAroundAlphaCenter(source: Bitmap, scale: Float): Bitmap {
-        val normalizedScale = scale.coerceIn(0.2f, 1.5f)
-        if (normalizedScale in 0.97f..1.03f) {
-            return source
-        }
-        val bounds = meaningfulAlphaBounds(source) ?: return source
-        val originalCenter = meaningfulAlphaCentroid(source)
-        val scaledWidth = (source.width * normalizedScale).toInt().coerceAtLeast(1)
-        val scaledHeight = (source.height * normalizedScale).toInt().coerceAtLeast(1)
-        val scaled = Bitmap.createScaledBitmap(source, scaledWidth, scaledHeight, true)
-        val scaledCenter = meaningfulAlphaCentroid(scaled) ?: return source
-        val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-        canvas.drawColor(AndroidColor.TRANSPARENT)
-        val originalCenterX = originalCenter?.first ?: (bounds.left + bounds.width() / 2f)
-        val originalCenterY = originalCenter?.second ?: (bounds.top + bounds.height() / 2f)
-        canvas.drawBitmap(scaled, originalCenterX - scaledCenter.first, originalCenterY - scaledCenter.second, null)
-        return out
-    }
-
-    private fun meaningfulAlphaBounds(source: Bitmap): Bounds? =
-        alphaBounds(source, NORMALIZE_ALPHA_BOUNDS_THRESHOLD)
-            ?: alphaBounds(source, LOCAL_ALPHA_VISIBLE_THRESHOLD)
-
-    private fun meaningfulAlphaCentroid(source: Bitmap): Pair<Float, Float>? =
-        alphaCentroid(source, NORMALIZE_ALPHA_BOUNDS_THRESHOLD)
-            ?: alphaCentroid(source, LOCAL_ALPHA_VISIBLE_THRESHOLD)
-
-    private fun alphaCentroid(source: Bitmap, threshold: Int): Pair<Float, Float>? {
-        var weight = 0.0
-        var xSum = 0.0
-        var ySum = 0.0
-        for (y in 0 until source.height) {
-            for (x in 0 until source.width) {
-                val alpha = AndroidColor.alpha(source.getPixel(x, y))
-                if (alpha <= threshold) {
-                    continue
-                }
-                weight += alpha.toDouble()
-                xSum += x * alpha.toDouble()
-                ySum += y * alpha.toDouble()
-            }
-        }
-        if (weight <= 0.0) {
-            return null
-        }
-        return Pair((xSum / weight).toFloat(), (ySum / weight).toFloat())
-    }
-
-    private fun alphaBounds(source: Bitmap, threshold: Int): Bounds? {
-        var left = source.width
-        var top = source.height
-        var right = -1
-        var bottom = -1
-        for (y in 0 until source.height) {
-            for (x in 0 until source.width) {
-                if (AndroidColor.alpha(source.getPixel(x, y)) > threshold) {
-                    if (x < left) left = x
-                    if (x > right) right = x
-                    if (y < top) top = y
-                    if (y > bottom) bottom = y
-                }
-            }
-        }
-        return if (right >= left && bottom >= top) {
-            Bounds(left, top, right + 1, bottom + 1)
-        } else {
-            null
-        }
-    }
-
-    private fun hasRealAlpha(source: Bitmap): Boolean {
-        var transparent = 0
-        var samples = 0
-        for (y in 0 until source.height step maxOf(1, source.height / 128)) {
-            for (x in 0 until source.width step maxOf(1, source.width / 128)) {
-                samples++
-                if (AndroidColor.alpha(source.getPixel(x, y)) < 8) {
-                    transparent++
-                }
-            }
-        }
-        return samples > 0 && transparent.toDouble() / samples.toDouble() >= 0.05
-    }
-
-    private fun alphaCoverage(source: Bitmap): Double {
-        var visible = 0
-        val total = source.width * source.height
-        for (y in 0 until source.height) {
-            for (x in 0 until source.width) {
-                if (AndroidColor.alpha(source.getPixel(x, y)) > 8) {
-                    visible++
-                }
-            }
-        }
-        return if (total == 0) 0.0 else visible.toDouble() / total.toDouble()
-    }
-
-    private fun alphaCoverage(source: Bitmap, threshold: Int): Double {
-        var visible = 0
-        val total = source.width * source.height
-        for (y in 0 until source.height) {
-            for (x in 0 until source.width) {
-                if (AndroidColor.alpha(source.getPixel(x, y)) > threshold) {
-                    visible++
-                }
-            }
-        }
-        return if (total == 0) 0.0 else visible.toDouble() / total.toDouble()
-    }
-
-    private fun meaningfulAlphaCoverage(source: Bitmap): Double {
-        val strongCoverage = alphaCoverage(source, NORMALIZE_ALPHA_BOUNDS_THRESHOLD)
-        return if (strongCoverage > 0.0) strongCoverage else alphaCoverage(source)
-    }
-
-    private fun removeChromaKeyBackground(source: Bitmap, keyColor: Int): Bitmap {
-        val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-        for (y in 0 until source.height) {
-            for (x in 0 until source.width) {
-                val pixel = source.getPixel(x, y)
-                val distance = colorDistance(pixel, keyColor)
-                val originalAlpha = AndroidColor.alpha(pixel)
-                val alpha = when {
-                    distance <= CHROMA_TRANSPARENT_THRESHOLD -> 0
-                    distance >= CHROMA_OPAQUE_THRESHOLD -> originalAlpha
-                    else -> {
-                        val factor = (distance - CHROMA_TRANSPARENT_THRESHOLD) /
-                            (CHROMA_OPAQUE_THRESHOLD - CHROMA_TRANSPARENT_THRESHOLD)
-                        (factor.coerceIn(0.0, 1.0) * originalAlpha).toInt()
-                    }
-                }
-                out.setPixel(x, y, (alpha shl 24) or (pixel and 0x00ffffff))
-            }
-        }
-        return out
-    }
-
-    private fun chooseChromaKey(source: Bitmap): Int {
-        var best = CHROMA_KEY_CANDIDATES.first()
-        var bestScore = -1.0
-        for (candidate in CHROMA_KEY_CANDIDATES) {
-            var minDistance = Double.MAX_VALUE
-            for (y in 0 until source.height step maxOf(1, source.height / 64)) {
-                for (x in 0 until source.width step maxOf(1, source.width / 64)) {
-                    val pixel = source.getPixel(x, y)
-                    if (AndroidColor.alpha(pixel) >= 64) {
-                        minDistance = minOf(minDistance, colorDistance(candidate, pixel))
-                    }
-                }
-            }
-            if (minDistance > bestScore) {
-                best = candidate
-                bestScore = minDistance
-            }
-        }
-        return best
-    }
-
-    private fun colorDistance(a: Int, b: Int): Double {
-        val dr = AndroidColor.red(a) - AndroidColor.red(b)
-        val dg = AndroidColor.green(a) - AndroidColor.green(b)
-        val db = AndroidColor.blue(a) - AndroidColor.blue(b)
-        return kotlin.math.sqrt((dr * dr + dg * dg + db * db).toDouble())
     }
 
     private fun normalDarkForeground(source: Bitmap, darkBackground: Bitmap): Bitmap {
@@ -17871,11 +17539,6 @@ class MainActivity : ComponentActivity() {
             NIGHT_EDGE_SMOOTH_STRENGTH,
         )
     }
-
-    private fun blendChannel(base: Int, target: Int, blend: Double): Int =
-        (base * (1.0 - blend) + target * blend)
-            .roundToInt()
-            .coerceIn(0, 255)
 
     private fun nightForeground(
         source: Bitmap,
@@ -18314,138 +17977,6 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
-    private fun repairTransparentEdgeColors(sourcePixels: IntArray, width: Int, height: Int): IntArray {
-        val repaired = sourcePixels.copyOf()
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val index = y * width + x
-                val pixel = sourcePixels[index]
-                val alpha = AndroidColor.alpha(pixel)
-                if (alpha >= MONO_EDGE_ALPHA_REPAIR_THRESHOLD || alpha <= MONO_EDGE_ALPHA_DROP_THRESHOLD) {
-                    continue
-                }
-                val neighbor = nearestOpaqueNeighborColor(sourcePixels, width, height, x, y)
-                if (neighbor != null) {
-                    repaired[index] = AndroidColor.argb(
-                        alpha,
-                        AndroidColor.red(neighbor),
-                        AndroidColor.green(neighbor),
-                        AndroidColor.blue(neighbor),
-                    )
-                }
-            }
-        }
-        return repaired
-    }
-
-    private fun repairLocalTransparentEdgeColors(
-        source: Bitmap,
-        pipeline: LocalPipelineConfig,
-    ): Bitmap =
-        if (pipeline.alphaEdgeColorRepairEnabled) repairTransparentEdgeColors(source) else source
-
-    private fun repairTransparentEdgeColors(source: Bitmap): Bitmap {
-        val width = source.width
-        val height = source.height
-        val pixels = IntArray(width * height)
-        source.getPixels(pixels, 0, width, 0, 0, width, height)
-        val repaired = repairTransparentEdgeColors(pixels, width, height)
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        out.setPixels(repaired, 0, width, 0, 0, width, height)
-        return out
-    }
-
-    private fun nearestOpaqueNeighborColor(sourcePixels: IntArray, width: Int, height: Int, x: Int, y: Int): Int? {
-        for (radius in 1..MONO_EDGE_REPAIR_RADIUS) {
-            var red = 0
-            var green = 0
-            var blue = 0
-            var count = 0
-            for (dy in -radius..radius) {
-                for (dx in -radius..radius) {
-                    if (maxOf(abs(dx), abs(dy)) != radius) {
-                        continue
-                    }
-                    val nx = x + dx
-                    val ny = y + dy
-                    if (nx !in 0 until width || ny !in 0 until height) {
-                        continue
-                    }
-                    val candidate = sourcePixels[ny * width + nx]
-                    if (AndroidColor.alpha(candidate) < MONO_EDGE_ALPHA_REPAIR_THRESHOLD) {
-                        continue
-                    }
-                    red += AndroidColor.red(candidate)
-                    green += AndroidColor.green(candidate)
-                    blue += AndroidColor.blue(candidate)
-                    count += 1
-                }
-            }
-            if (count > 0) {
-                return AndroidColor.rgb(red / count, green / count, blue / count)
-            }
-        }
-        return null
-    }
-
-    private fun featherVisibleEdges(source: Bitmap, blend: Double): Bitmap {
-        val width = source.width
-        val height = source.height
-        val pixels = IntArray(width * height)
-        val outPixels = IntArray(width * height)
-        source.getPixels(pixels, 0, width, 0, 0, width, height)
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val index = y * width + x
-                val pixel = pixels[index]
-                val alpha = AndroidColor.alpha(pixel)
-                if (alpha <= 0) {
-                    outPixels[index] = AndroidColor.TRANSPARENT
-                    continue
-                }
-                var transparentNeighbors = 0
-                var totalNeighbors = 0
-                for (dy in -1..1) {
-                    for (dx in -1..1) {
-                        if (dx == 0 && dy == 0) {
-                            continue
-                        }
-                        val nx = x + dx
-                        val ny = y + dy
-                        totalNeighbors += 1
-                        if (nx !in 0 until width || ny !in 0 until height) {
-                            transparentNeighbors += 1
-                            continue
-                        }
-                        if (AndroidColor.alpha(pixels[ny * width + nx]) <= MONO_EDGE_ALPHA_DROP_THRESHOLD) {
-                            transparentNeighbors += 1
-                        }
-                    }
-                }
-                if (transparentNeighbors == 0 || totalNeighbors == 0) {
-                    outPixels[index] = pixel
-                    continue
-                }
-                val edgeRatio = transparentNeighbors.toDouble() / totalNeighbors.toDouble()
-                val alphaScale = (1.0 - edgeRatio * blend).coerceIn(0.0, 1.0)
-                val outAlpha = (alpha * alphaScale).toInt().coerceIn(0, 255)
-                outPixels[index] = if (outAlpha <= MONO_EDGE_ALPHA_DROP_THRESHOLD) {
-                    AndroidColor.TRANSPARENT
-                } else {
-                    AndroidColor.argb(
-                        outAlpha,
-                        AndroidColor.red(pixel),
-                        AndroidColor.green(pixel),
-                        AndroidColor.blue(pixel),
-                    )
-                }
-            }
-        }
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        out.setPixels(outPixels, 0, width, 0, 0, width, height)
-        return out
-    }
-
     private fun smoothAlphaEdges(
         source: Bitmap,
         strength: Double,
@@ -18807,60 +18338,6 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun hasTransparentNeighbor(
-        pixels: IntArray,
-        width: Int,
-        height: Int,
-        x: Int,
-        y: Int,
-        radius: Int,
-    ): Boolean {
-        for (dy in -radius..radius) {
-            for (dx in -radius..radius) {
-                if (dx == 0 && dy == 0) {
-                    continue
-                }
-                val nx = x + dx
-                val ny = y + dy
-                if (nx !in 0 until width || ny !in 0 until height) {
-                    return true
-                }
-                if (AndroidColor.alpha(pixels[ny * width + nx]) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
-    private fun visibleNeighborCoverage(
-        pixels: IntArray,
-        width: Int,
-        height: Int,
-        x: Int,
-        y: Int,
-        radius: Int,
-        threshold: Int,
-    ): Double {
-        var total = 0
-        var visible = 0.0
-        for (dy in -radius..radius) {
-            for (dx in -radius..radius) {
-                val nx = x + dx
-                val ny = y + dy
-                total += 1
-                if (nx !in 0 until width || ny !in 0 until height) {
-                    continue
-                }
-                val alpha = AndroidColor.alpha(pixels[ny * width + nx])
-                if (alpha > threshold) {
-                    visible += alpha.toDouble() / 255.0
-                }
-            }
-        }
-        return if (total == 0) 0.0 else (visible / total.toDouble()).coerceIn(0.0, 1.0)
-    }
-
     private fun foregroundEdgePolishStrength(): Double =
         EDGE_POLISH_FOREGROUND_MIN_STRENGTH +
             ratioPercent(edgePolishPercent) * (EDGE_POLISH_FOREGROUND_MAX_STRENGTH - EDGE_POLISH_FOREGROUND_MIN_STRENGTH)
@@ -18868,108 +18345,6 @@ class MainActivity : ComponentActivity() {
     private fun monochromeEdgePolishStrength(): Double =
         EDGE_POLISH_MONO_MIN_STRENGTH +
             ratioPercent(edgePolishPercent) * (EDGE_POLISH_MONO_MAX_STRENGTH - EDGE_POLISH_MONO_MIN_STRENGTH)
-
-    private fun percentile(values: MutableList<Int>, ratio: Double): Int {
-        if (values.isEmpty()) {
-            return 0
-        }
-        values.sort()
-        val index = ((values.size - 1) * ratio)
-            .toInt()
-            .coerceIn(0, values.size - 1)
-        return values[index]
-    }
-
-    private fun luma(pixel: Int): Int =
-        (AndroidColor.red(pixel) * 0.299 +
-            AndroidColor.green(pixel) * 0.587 +
-            AndroidColor.blue(pixel) * 0.114).toInt()
-
-    private fun luma(red: Double, green: Double, blue: Double): Double =
-        red * 0.299 + green * 0.587 + blue * 0.114
-
-    private fun sampleColor(bitmap: Bitmap): Int {
-        val center = bitmap.getPixel(bitmap.width / 2, bitmap.height / 2)
-        if (
-            AndroidColor.alpha(center) > 32 &&
-            AndroidColor.red(center) + AndroidColor.green(center) + AndroidColor.blue(center) >= 120
-        ) {
-            return AndroidColor.rgb(
-                AndroidColor.red(center),
-                AndroidColor.green(center),
-                AndroidColor.blue(center),
-            )
-        }
-
-        var red = 0L
-        var green = 0L
-        var blue = 0L
-        var count = 0L
-        for (y in 0 until bitmap.height step 8) {
-            for (x in 0 until bitmap.width step 8) {
-                val pixel = bitmap.getPixel(x, y)
-                if (AndroidColor.alpha(pixel) >= 128) {
-                    red += AndroidColor.red(pixel)
-                    green += AndroidColor.green(pixel)
-                    blue += AndroidColor.blue(pixel)
-                    count++
-                }
-            }
-        }
-        if (count == 0L) {
-            return AndroidColor.rgb(216, 224, 253)
-        }
-        return AndroidColor.rgb((red / count).toInt(), (green / count).toInt(), (blue / count).toInt())
-    }
-
-    private fun adjustColor(source: Bitmap, saturation: Float, brightness: Float): Bitmap {
-        val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        val saturationMatrix = ColorMatrix()
-        saturationMatrix.setSaturation(saturation)
-        val brightnessMatrix = ColorMatrix(
-            floatArrayOf(
-                brightness, 0f, 0f, 0f, 0f,
-                0f, brightness, 0f, 0f, 0f,
-                0f, 0f, brightness, 0f, 0f,
-                0f, 0f, 0f, 1f, 0f,
-            ),
-        )
-        saturationMatrix.postConcat(brightnessMatrix)
-        paint.colorFilter = ColorMatrixColorFilter(saturationMatrix)
-        canvas.drawBitmap(source, 0f, 0f, paint)
-        return out
-    }
-
-    private fun savePng(bitmap: Bitmap, file: File) {
-        val parent = file.parentFile
-        if (parent != null && !parent.exists() && !parent.mkdirs()) {
-            error("无法创建目录: $parent")
-        }
-        FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-        }
-    }
-
-    private fun ensureCleanDir(dir: File) {
-        if (!dir.exists()) {
-            dir.mkdirs()
-            return
-        }
-        dir.listFiles()
-            ?.filter { it.isFile && it.name.endsWith(".png") }
-            ?.forEach { it.delete() }
-    }
-
-    private fun ensureFreshDir(dir: File) {
-        if (dir.exists()) {
-            dir.deleteRecursively()
-        }
-        if (!dir.mkdirs()) {
-            error("无法创建目录: $dir")
-        }
-    }
 
     private fun bitmapStatsJson(bitmap: Bitmap): JSONObject {
         val visibleBounds = alphaBounds(bitmap, LOCAL_ALPHA_VISIBLE_THRESHOLD)
@@ -20578,16 +19953,6 @@ class MainActivity : ComponentActivity() {
         BatchPreview(3),
     }
 
-    private data class Bounds(
-        val left: Int,
-        val top: Int,
-        val right: Int,
-        val bottom: Int,
-    ) {
-        fun width(): Int = right - left
-        fun height(): Int = bottom - top
-    }
-
     private enum class GptImageMode(val value: String, val label: String) {
         Responses("responses", "Codex Image Gen"),
         Images("images", "API 调用");
@@ -21081,8 +20446,6 @@ class MainActivity : ComponentActivity() {
         private const val ORIGINAL_CLEANUP_MIN_BOUNDS_RATIO = 0.25
         private const val AUTO_EDGE_TOUCH_MARGIN_PX = 1
         private const val AUTO_EDGE_TOUCH_COUNT_LIMIT = 2
-        private const val LOCAL_ALPHA_VISIBLE_THRESHOLD = 8
-        private const val NORMALIZE_ALPHA_BOUNDS_THRESHOLD = 48
         private const val MONOCHROME_MIN_COVERAGE = 0.004
         private const val ADAPTIVE_DIRECT_MIN_COVERAGE = 0.02
         private const val ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE = 0.72
@@ -21152,13 +20515,6 @@ class MainActivity : ComponentActivity() {
         private const val PLAIN_ICON_BACKGROUND_ALPHA_THRESHOLD = 32
         private const val PLAIN_ICON_MIN_BACKGROUND_SAMPLES = 20
         private const val CORNER_MASK_SEED_SIZE = 56
-        private const val CORNER_MASK_ZONE_SIZE = 68
-        private const val CORNER_MASK_OPAQUE_ALPHA = 250
-        private const val CORNER_MASK_BACKGROUND_DISTANCE = 90.0
-        private const val CORNER_MASK_SUBJECT_ALPHA = 32
-        private const val CORNER_MASK_SUBJECT_BACKGROUND_DISTANCE = 130.0
-        private const val CORNER_MASK_WHITE_THRESHOLD = 220
-        private const val CORNER_MASK_WHITE_EDGE_ALPHA = 180
         private const val CORNER_MASK_MAX_REMOVED_RATIO = 0.45
         private const val SHADOW_HIGH_ALPHA_THRESHOLD = 160
         private const val SHADOW_MAX_SATURATION_MIN = 0.08
@@ -21183,15 +20539,6 @@ class MainActivity : ComponentActivity() {
         private const val EDGE_POLISH_FOREGROUND_MAX_STRENGTH = 0.82
         private const val EDGE_POLISH_MONO_MIN_STRENGTH = 0.16
         private const val EDGE_POLISH_MONO_MAX_STRENGTH = 0.92
-        private const val CHROMA_TRANSPARENT_THRESHOLD = 36.0
-        private const val CHROMA_OPAQUE_THRESHOLD = 170.0
-        private val CHROMA_KEY_CANDIDATES = intArrayOf(
-            AndroidColor.rgb(0, 255, 0),
-            AndroidColor.rgb(255, 0, 255),
-            AndroidColor.rgb(0, 255, 255),
-            AndroidColor.rgb(0, 0, 255),
-            AndroidColor.rgb(255, 255, 0),
-        )
     }
 }
 

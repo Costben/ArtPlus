@@ -127,6 +127,31 @@ const val MIN_ADAPTIVE_CENTER_EPSILON_PERCENT = 0
 const val MAX_ADAPTIVE_CENTER_EPSILON_PERCENT = 50
 
 /**
+ * Alpha 几何与抠像阈值（imaging/ 纯函数与 MainActivity 共用）。
+ *
+ * 从 MainActivity companion object 迁移而来（P1 拆分）：原为 private，
+ * 现为顶层公开常量，数值未变。
+ */
+const val LOCAL_ALPHA_VISIBLE_THRESHOLD = 8
+const val NORMALIZE_ALPHA_BOUNDS_THRESHOLD = 48
+const val CORNER_MASK_ZONE_SIZE = 68
+const val CORNER_MASK_OPAQUE_ALPHA = 250
+const val CORNER_MASK_BACKGROUND_DISTANCE = 90.0
+const val CORNER_MASK_SUBJECT_ALPHA = 32
+const val CORNER_MASK_SUBJECT_BACKGROUND_DISTANCE = 130.0
+const val CORNER_MASK_WHITE_THRESHOLD = 220
+const val CORNER_MASK_WHITE_EDGE_ALPHA = 180
+const val CHROMA_TRANSPARENT_THRESHOLD = 36.0
+const val CHROMA_OPAQUE_THRESHOLD = 170.0
+val CHROMA_KEY_CANDIDATES = intArrayOf(
+    android.graphics.Color.rgb(0, 255, 0),
+    android.graphics.Color.rgb(255, 0, 255),
+    android.graphics.Color.rgb(0, 255, 255),
+    android.graphics.Color.rgb(0, 0, 255),
+    android.graphics.Color.rgb(255, 255, 0),
+)
+
+/**
  * 全部可调参数的不可变快照（预设/撤销/批量传输用）。
  *
  * 数字与布尔为强类型；模式（LocalSeparationMode / AdaptiveForegroundMode /
