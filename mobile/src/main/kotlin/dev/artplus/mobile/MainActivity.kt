@@ -16575,38 +16575,33 @@ class MainActivity : ComponentActivity() {
         return !hasAutoCropRisk(bounds, source.width, source.height)
     }
 
+    // 调参映射委托到 imaging/PipelineTuning.kt（显式传参版本），本体重构期间保留无参 wrapper。
     private fun effectiveBackgroundSeparationDistance(): Double =
-        lerpDouble(LEGACY_BACKGROUND_SEPARATION_MIN, LEGACY_BACKGROUND_SEPARATION_MAX, ratioPercent(backgroundSeparationPercent))
+        effectiveBackgroundSeparationDistance(backgroundSeparationPercent)
 
     private fun effectivePlateRemovalDistance(): Double =
-        lerpDouble(LEGACY_PLATE_REMOVAL_MIN, LEGACY_PLATE_REMOVAL_MAX, ratioPercent(plateRemovalPercent))
+        effectivePlateRemovalDistance(plateRemovalPercent)
 
     private fun effectiveShadowRemovalAlpha(): Int =
-        lerpDouble(LEGACY_SHADOW_REMOVAL_MIN, LEGACY_SHADOW_REMOVAL_MAX, ratioPercent(shadowRemovalPercent))
-            .toInt()
-            .coerceIn(0, 255)
+        effectiveShadowRemovalAlpha(shadowRemovalPercent)
 
     private fun effectiveShadowMaxSaturation(): Double =
-        lerpDouble(SHADOW_MAX_SATURATION_MIN, SHADOW_MAX_SATURATION_MAX, ratioPercent(shadowRemovalPercent))
+        effectiveShadowMaxSaturation(shadowRemovalPercent)
 
     private fun effectiveShadowMaxLuminance(): Int =
-        lerpDouble(SHADOW_MAX_LUMINANCE_MIN, SHADOW_MAX_LUMINANCE_MAX, ratioPercent(shadowRemovalPercent))
-            .roundToInt()
-            .coerceIn(0, 255)
+        effectiveShadowMaxLuminance(shadowRemovalPercent)
 
     private fun effectiveShadowMinVisibleRatio(): Double =
-        lerpDouble(SHADOW_MIN_VISIBLE_RATIO_MAX, SHADOW_MIN_VISIBLE_RATIO_MIN, ratioPercent(shadowRemovalPercent))
+        effectiveShadowMinVisibleRatio(shadowRemovalPercent)
 
     private fun effectiveShadowMinOffset(): Double =
-        lerpDouble(SHADOW_MIN_OFFSET_MAX, SHADOW_MIN_OFFSET_MIN, ratioPercent(shadowRemovalPercent))
+        effectiveShadowMinOffset(shadowRemovalPercent)
 
     private fun effectiveShadowMinDownOffset(): Double =
-        lerpDouble(SHADOW_MIN_DOWN_OFFSET_MAX, SHADOW_MIN_DOWN_OFFSET_MIN, ratioPercent(shadowRemovalPercent))
+        effectiveShadowMinDownOffset(shadowRemovalPercent)
 
     private fun effectiveShadowMinLumaDrop(): Int =
-        lerpDouble(SHADOW_MIN_LUMA_DROP_MAX, SHADOW_MIN_LUMA_DROP_MIN, ratioPercent(shadowRemovalPercent))
-            .roundToInt()
-            .coerceAtLeast(0)
+        effectiveShadowMinLumaDrop(shadowRemovalPercent)
 
     private fun subtractBackground(
         composed: Bitmap,
@@ -17001,12 +16996,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun residueDistanceThreshold(): Double =
-        (effectivePlateRemovalDistance() * RESIDUE_DISTANCE_SCALE)
-            .coerceIn(RESIDUE_MIN_DISTANCE, RESIDUE_MAX_DISTANCE)
+        residueDistanceThreshold(plateRemovalPercent)
 
     private fun edgeConnectedResidueDistanceThreshold(): Double =
-        (effectivePlateRemovalDistance() * RESIDUE_CONNECTED_DISTANCE_SCALE)
-            .coerceIn(RESIDUE_CONNECTED_MIN_DISTANCE, RESIDUE_CONNECTED_MAX_DISTANCE)
+        edgeConnectedResidueDistanceThreshold(plateRemovalPercent)
 
     private fun removeEdgeConnectedColorResidue(
         pixels: IntArray,
@@ -18339,12 +18332,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun foregroundEdgePolishStrength(): Double =
-        EDGE_POLISH_FOREGROUND_MIN_STRENGTH +
-            ratioPercent(edgePolishPercent) * (EDGE_POLISH_FOREGROUND_MAX_STRENGTH - EDGE_POLISH_FOREGROUND_MIN_STRENGTH)
+        foregroundEdgePolishStrength(edgePolishPercent)
 
     private fun monochromeEdgePolishStrength(): Double =
-        EDGE_POLISH_MONO_MIN_STRENGTH +
-            ratioPercent(edgePolishPercent) * (EDGE_POLISH_MONO_MAX_STRENGTH - EDGE_POLISH_MONO_MIN_STRENGTH)
+        monochromeEdgePolishStrength(edgePolishPercent)
 
     private fun bitmapStatsJson(bitmap: Bitmap): JSONObject {
         val visibleBounds = alphaBounds(bitmap, LOCAL_ALPHA_VISIBLE_THRESHOLD)
@@ -20501,44 +20492,6 @@ class MainActivity : ComponentActivity() {
         private const val PLATE_MIN_SAFE_REMAINING_COVERAGE = 0.01
         private const val PLATE_MIN_SAFE_KEEP_RATIO = 0.18
         private const val PLATE_MIN_SAFE_BOUNDS_RATIO = 0.28
-        private const val RESIDUE_MAX_ALPHA = 190
-        private const val RESIDUE_BACKGROUND_MIN_SATURATION = 0.18
-        private const val RESIDUE_DISTANCE_SCALE = 1.45
-        private const val RESIDUE_MIN_DISTANCE = 64.0
-        private const val RESIDUE_MAX_DISTANCE = 190.0
-        private const val RESIDUE_CONNECTED_MAX_ALPHA = 248
-        private const val RESIDUE_CONNECTED_DISTANCE_SCALE = 2.15
-        private const val RESIDUE_CONNECTED_MIN_DISTANCE = 96.0
-        private const val RESIDUE_CONNECTED_MAX_DISTANCE = 260.0
-        private const val RESIDUE_CONNECTED_TRANSPARENT_RADIUS = 2
-        private const val PLAIN_ICON_EDGE_BAND_RATIO = 0.06f
-        private const val PLAIN_ICON_BACKGROUND_ALPHA_THRESHOLD = 32
-        private const val PLAIN_ICON_MIN_BACKGROUND_SAMPLES = 20
-        private const val CORNER_MASK_SEED_SIZE = 56
-        private const val CORNER_MASK_MAX_REMOVED_RATIO = 0.45
-        private const val SHADOW_HIGH_ALPHA_THRESHOLD = 160
-        private const val SHADOW_MAX_SATURATION_MIN = 0.08
-        private const val SHADOW_MAX_SATURATION_MAX = 0.42
-        private const val SHADOW_MAX_LUMINANCE_MIN = 120.0
-        private const val SHADOW_MAX_LUMINANCE_MAX = 245.0
-        private const val SHADOW_MIN_VISIBLE_RATIO_MIN = 0.012
-        private const val SHADOW_MIN_VISIBLE_RATIO_MAX = 0.085
-        private const val SHADOW_MIN_OFFSET_MIN = 2.0
-        private const val SHADOW_MIN_OFFSET_MAX = 16.0
-        private const val SHADOW_MIN_DOWN_OFFSET_MIN = -2.0
-        private const val SHADOW_MIN_DOWN_OFFSET_MAX = 6.0
-        private const val SHADOW_MIN_LUMA_DROP_MIN = 2.0
-        private const val SHADOW_MIN_LUMA_DROP_MAX = 18.0
-        private const val SHADOW_EDGE_ANTIALIAS_RADIUS = 2
-        private const val SHADOW_EDGE_REPAIR_MAX_ALPHA = 96
-        private const val SHADOW_PRESERVE_EDGE_RADIUS = 3
-        private const val SHADOW_FADE_RADIUS = 13
-        private const val FOREGROUND_EDGE_FEATHER_ALPHA_SCALE = 0.18
-        private const val FOREGROUND_EDGE_POLISH_RADIUS = 1
-        private const val EDGE_POLISH_FOREGROUND_MIN_STRENGTH = 0.12
-        private const val EDGE_POLISH_FOREGROUND_MAX_STRENGTH = 0.82
-        private const val EDGE_POLISH_MONO_MIN_STRENGTH = 0.16
-        private const val EDGE_POLISH_MONO_MAX_STRENGTH = 0.92
     }
 }
 
