@@ -15,6 +15,69 @@ import kotlin.math.pow
  * P1.2-c 范围内，暂留 MainActivity。
  */
 
+/**
+ * 前景边缘抛光：Phase 2 漏搬，Phase 3 slice0 fix-forward。
+ * 原 `private fun` 经 `foregroundEdgePolishStrength()` 直读 Activity 状态
+ * `edgePolishPercent`，新版本显式收参；Activity 内保留同名 wrapper 委托
+ * （重构期间保留，P5 后删除），调用点零改动。
+ */
+internal fun polishForegroundEdges(source: Bitmap, edgePolishPercent: Int): Bitmap {
+    val width = source.width
+    val height = source.height
+    if (width <= 2 || height <= 2) {
+        return source
+    }
+    val pixels = IntArray(width * height)
+    val outPixels = IntArray(width * height)
+    source.getPixels(pixels, 0, width, 0, 0, width, height)
+    val repairedPixels = repairTransparentEdgeColors(pixels, width, height)
+
+    for (y in 0 until height) {
+        for (x in 0 until width) {
+            val index = y * width + x
+            val pixel = repairedPixels[index]
+            val alpha = AndroidColor.alpha(pixel)
+            if (alpha <= 0) {
+                outPixels[index] = AndroidColor.TRANSPARENT
+                continue
+            }
+            val edge = hasTransparentNeighbor(pixels, width, height, x, y, FOREGROUND_EDGE_POLISH_RADIUS)
+            if (!edge) {
+                outPixels[index] = pixel
+                continue
+            }
+            val coverage = visibleNeighborCoverage(
+                pixels = pixels,
+                width = width,
+                height = height,
+                x = x,
+                y = y,
+                radius = FOREGROUND_EDGE_POLISH_RADIUS,
+                threshold = LOCAL_ALPHA_VISIBLE_THRESHOLD,
+            )
+            val targetAlpha = (coverage * 255.0).toInt().coerceIn(0, 255)
+            val strength = foregroundEdgePolishStrength(edgePolishPercent)
+            val smoothedAlpha = (alpha * (1.0 - strength) + targetAlpha * strength)
+                .toInt()
+                .coerceIn(0, 255)
+            outPixels[index] = if (smoothedAlpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                AndroidColor.TRANSPARENT
+            } else {
+                AndroidColor.argb(
+                    smoothedAlpha,
+                    AndroidColor.red(pixel),
+                    AndroidColor.green(pixel),
+                    AndroidColor.blue(pixel),
+                )
+            }
+        }
+    }
+
+    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    out.setPixels(outPixels, 0, width, 0, 0, width, height)
+    return out
+}
+
 internal fun monochromeAlpha(source: Bitmap, invertLuma: Boolean): Bitmap {
     val width = source.width
     val height = source.height

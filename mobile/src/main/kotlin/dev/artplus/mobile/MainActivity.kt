@@ -15452,62 +15452,9 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun polishForegroundEdges(source: Bitmap): Bitmap {
-        val width = source.width
-        val height = source.height
-        if (width <= 2 || height <= 2) {
-            return source
-        }
-        val pixels = IntArray(width * height)
-        val outPixels = IntArray(width * height)
-        source.getPixels(pixels, 0, width, 0, 0, width, height)
-        val repairedPixels = repairTransparentEdgeColors(pixels, width, height)
-
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val index = y * width + x
-                val pixel = repairedPixels[index]
-                val alpha = AndroidColor.alpha(pixel)
-                if (alpha <= 0) {
-                    outPixels[index] = AndroidColor.TRANSPARENT
-                    continue
-                }
-                val edge = hasTransparentNeighbor(pixels, width, height, x, y, FOREGROUND_EDGE_POLISH_RADIUS)
-                if (!edge) {
-                    outPixels[index] = pixel
-                    continue
-                }
-                val coverage = visibleNeighborCoverage(
-                    pixels = pixels,
-                    width = width,
-                    height = height,
-                    x = x,
-                    y = y,
-                    radius = FOREGROUND_EDGE_POLISH_RADIUS,
-                    threshold = LOCAL_ALPHA_VISIBLE_THRESHOLD,
-                )
-                val targetAlpha = (coverage * 255.0).toInt().coerceIn(0, 255)
-                val strength = foregroundEdgePolishStrength()
-                val smoothedAlpha = (alpha * (1.0 - strength) + targetAlpha * strength)
-                    .toInt()
-                    .coerceIn(0, 255)
-                outPixels[index] = if (smoothedAlpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                    AndroidColor.TRANSPARENT
-                } else {
-                    AndroidColor.argb(
-                        smoothedAlpha,
-                        AndroidColor.red(pixel),
-                        AndroidColor.green(pixel),
-                        AndroidColor.blue(pixel),
-                    )
-                }
-            }
-        }
-
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        out.setPixels(outPixels, 0, width, 0, 0, width, height)
-        return out
-    }
+    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P5 状态收敛后删除。
+    private fun polishForegroundEdges(source: Bitmap): Bitmap =
+        polishForegroundEdges(source, edgePolishPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
     private fun polishMonochromeEdges(source: Bitmap): Bitmap =
