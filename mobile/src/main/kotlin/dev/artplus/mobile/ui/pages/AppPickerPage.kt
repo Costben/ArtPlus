@@ -324,87 +324,78 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.caverock.androidsvg.SVG
 
-internal data class UpdateInfo(
-    val latestVersion: String,
-    val tagName: String,
-    val htmlUrl: String,
-)
+@Composable
+internal fun MainActivity.AppPickerPage(
+    pageBackground: Color,
+    filteredApps: List<AppEntry>,
+    scopeCount: Int,
+    generatedCount: Int,
+    ungeneratedCount: Int,
+) {
+    val scrollBehavior = MiuixScrollBehavior()
 
-/** 调用 AI/RMBG 前的二次确认请求。 */
-internal data class ServiceConfirmRequest(
-    val title: String,
-    val message: String,
-    val confirmLabel: String,
-    val onConfirm: () -> Unit,
-)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = "选择 APK",
+                scrollBehavior = scrollBehavior,
+                navigationIconPadding = 0.dp,
+                navigationIcon = {
+                    TitleBarIconButton(
+                        icon = Lucide.ChevronLeft,
+                        contentDescription = "返回",
+                        enabled = !isBusy,
+                        dimWhenDisabled = false,
+                        onClick = { currentPage = AppPage.Home },
+                    )
+                },
+            )
+        },
 
-/** 写入 Root 目标目录前的二次确认请求。 */
-internal data class RootWriteConfirmRequest(
-    val packageName: String,
-    val targetPath: String,
-    val rootWriteMode: RootWriteMode,
-    val onConfirm: () -> Unit,
-)
-
-internal data class BatchApplyProgress(
-    val title: String,
-    val completed: Int,
-    val total: Int,
-    val currentLabel: String,
-    val failures: Int,
-)
-
-internal data class ExportProgress(
-    val title: String,
-    val completed: Int,
-    val total: Int,
-    val currentLabel: String,
-    val isIndeterminate: Boolean = false,
-)
-
-
-internal enum class AdvancedSettingsCategory(val label: String) {
-    LiquidGlass("液态玻璃"),
-    Local("稳定规则"),
-    Rmbg("RMBG");
-
-    companion object {
-        fun fromName(name: String?): AdvancedSettingsCategory =
-            entries.firstOrNull { it.name == name } ?: LiquidGlass
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(pageBackground)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(innerPadding)
+                .imePadding()
+                .padding(horizontal = 12.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                AppPickerControlsCard(
+                    filteredCount = filteredApps.size,
+                    totalCount = scopeCount,
+                    generatedCount = generatedCount,
+                    ungeneratedCount = ungeneratedCount,
+                    filteredApps = filteredApps,
+                )
+            }
+            if (filteredApps.isEmpty()) {
+                item {
+                    EmptyAppListCard()
+                }
+            } else {
+                items(
+                    items = filteredApps,
+                    key = { it.packageName },
+                    contentType = { "app" },
+                ) { entry ->
+                    AppRow(
+                        entry = entry,
+                        selected = entry.packageName == selectedPackageName,
+                        multiSelected = entry.packageName in multiSelectedPackageNames,
+                        generated = entry.packageName in generatedPackageNames,
+                        onClick = {
+                            selectAppAndRestoreGeneratedPreview(entry)
+                            currentPage = AppPage.Home
+                        },
+                        onToggleMultiSelect = { toggleMultiSelectedPackage(entry.packageName) },
+                    )
+                }
+            }
+        }
     }
-}
-
-internal enum class PreviewDesktopBackground(val label: String, val fallbackColor: Color) {
-    LightGray("浅灰", Color(0xFFE8E8E8)),
-    DarkGray("深灰", Color(0xFF4A4A4A)),
-    Black("纯黑", Color(0xFF050505)),
-    Wallpaper("桌面", Color(0xFF30333A));
-
-    companion object {
-        fun fromName(name: String?): PreviewDesktopBackground =
-            entries.firstOrNull { it.name == name } ?: DarkGray
-    }
-}
-
-internal enum class AppPage(val order: Int) {
-    Home(0),
-    AppPicker(1),
-    About(2),
-    BatchPreview(3),
-}
-
-internal enum class GeneratedFilter(val label: String) {
-    All("全部"),
-    Generated("已生成"),
-    Ungenerated("未生成");
-
-    companion object {
-        fun fromName(name: String?): GeneratedFilter =
-            entries.firstOrNull { it.name == name } ?: All
-    }
-}
-
-internal enum class AdvancedSettingsTab(val label: String) {
-    Sliders("可视化"),
-    Json("JSON"),
 }

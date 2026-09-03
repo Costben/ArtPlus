@@ -324,87 +324,297 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.caverock.androidsvg.SVG
 
-internal data class UpdateInfo(
-    val latestVersion: String,
-    val tagName: String,
-    val htmlUrl: String,
-)
-
-/** 调用 AI/RMBG 前的二次确认请求。 */
-internal data class ServiceConfirmRequest(
-    val title: String,
-    val message: String,
-    val confirmLabel: String,
-    val onConfirm: () -> Unit,
-)
-
-/** 写入 Root 目标目录前的二次确认请求。 */
-internal data class RootWriteConfirmRequest(
-    val packageName: String,
-    val targetPath: String,
-    val rootWriteMode: RootWriteMode,
-    val onConfirm: () -> Unit,
-)
-
-internal data class BatchApplyProgress(
-    val title: String,
-    val completed: Int,
-    val total: Int,
-    val currentLabel: String,
-    val failures: Int,
-)
-
-internal data class ExportProgress(
-    val title: String,
-    val completed: Int,
-    val total: Int,
-    val currentLabel: String,
-    val isIndeterminate: Boolean = false,
-)
-
-
-internal enum class AdvancedSettingsCategory(val label: String) {
-    LiquidGlass("液态玻璃"),
-    Local("稳定规则"),
-    Rmbg("RMBG");
-
-    companion object {
-        fun fromName(name: String?): AdvancedSettingsCategory =
-            entries.firstOrNull { it.name == name } ?: LiquidGlass
+@Composable
+internal fun MainActivity.AboutPage(pageBackground: Color) {
+    val scrollBehavior = MiuixScrollBehavior()
+    val versionName = currentVersionName()
+    val versionCode = try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageManager.getPackageInfo(packageName, 0).longVersionCode.toString()
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, 0).versionCode.toString()
+        }
+    } catch (_: Exception) {
+        ""
     }
-}
 
-internal enum class PreviewDesktopBackground(val label: String, val fallbackColor: Color) {
-    LightGray("浅灰", Color(0xFFE8E8E8)),
-    DarkGray("深灰", Color(0xFF4A4A4A)),
-    Black("纯黑", Color(0xFF050505)),
-    Wallpaper("桌面", Color(0xFF30333A));
-
-    companion object {
-        fun fromName(name: String?): PreviewDesktopBackground =
-            entries.firstOrNull { it.name == name } ?: DarkGray
+    Scaffold(
+        containerColor = pageBackground,
+        topBar = {
+            TopAppBar(
+                title = "关于",
+                scrollBehavior = scrollBehavior,
+                navigationIconPadding = 0.dp,
+                navigationIcon = {
+                    TitleBarIconButton(
+                        icon = Lucide.ChevronLeft,
+                        contentDescription = "返回",
+                        enabled = !isBusy,
+                        dimWhenDisabled = false,
+                        onClick = { currentPage = AppPage.Home },
+                    )
+                },
+            )
+        },
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(pageBackground)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(innerPadding)
+                .padding(horizontal = 12.dp),
+            contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Card {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_launcher),
+                            contentDescription = "ArtPlus",
+                            modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)),
+                        )
+                        Text(
+                            text = "ArtPlus Mobile",
+                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                            color = MiuixTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            text = if (versionCode.isNotBlank()) "$versionName ($versionCode)" else versionName,
+                            style = MiuixTheme.textStyles.body2,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            text = "ColorOS ART+ 图标生成与预览工具",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
+            item {
+                SectionCard(rowsFullBleed = true) {
+                    LibrarySettingRow(
+                        title = "GitHub 仓库",
+                        summary = GITHUB_REPO_URL,
+                        icon = SettingsIconKind.Link,
+                        showArrowRight = true,
+                        enabled = !isBusy,
+                        onClick = { openExternalLink(GITHUB_REPO_URL) },
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LibrarySettingRow(
+                        title = "开源协议",
+                        summary = "MIT License",
+                        icon = SettingsIconKind.Shield,
+                        showArrowRight = true,
+                        enabled = !isBusy,
+                        onClick = { mitLicenseDialogVisible = true },
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LibrarySettingRow(
+                        title = "检查更新",
+                        summary = if (isCheckingUpdate) "检查中..." else "当前 $versionName",
+                        icon = SettingsIconKind.Grid,
+                        showArrowRight = !isCheckingUpdate,
+                        enabled = !isBusy && !isCheckingUpdate,
+                        onClick = { checkForUpdate() },
+                    )
+                }
+            }
+            item {
+                Text(
+                    text = "© 2026 Costben · MIT License",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                )
+            }
+        }
     }
-}
 
-internal enum class AppPage(val order: Int) {
-    Home(0),
-    AppPicker(1),
-    About(2),
-    BatchPreview(3),
-}
-
-internal enum class GeneratedFilter(val label: String) {
-    All("全部"),
-    Generated("已生成"),
-    Ungenerated("未生成");
-
-    companion object {
-        fun fromName(name: String?): GeneratedFilter =
-            entries.firstOrNull { it.name == name } ?: All
+    if (mitLicenseDialogVisible) {
+        MiuixBottomDialog(onDismissRequest = { mitLicenseDialogVisible = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "开源协议",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "MIT License",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 80.dp, max = 360.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+                        .verticalScroll(rememberScrollState())
+                        .padding(12.dp),
+                ) {
+                    Text(
+                        text = MIT_LICENSE_TEXT,
+                        style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                        color = MiuixTheme.colorScheme.onSurface,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
+                        onClick = { mitLicenseDialogVisible = false },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "关闭",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            mitLicenseDialogVisible = false
+                            openExternalLink(GITHUB_LICENSE_URL)
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "在 GitHub 查看",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
     }
-}
 
-internal enum class AdvancedSettingsTab(val label: String) {
-    Sliders("可视化"),
-    Json("JSON"),
+    updateAvailableInfo?.let { info ->
+        MiuixBottomDialog(onDismissRequest = { updateAvailableInfo = null }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "发现新版本",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "最新 ${info.tagName} · 当前 $versionName\n点击前往下载页查看更新内容。",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Button(
+                        onClick = { updateAvailableInfo = null },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(),
+                    ) {
+                        Text(
+                            text = "稍后",
+                            style = MiuixTheme.textStyles.button,
+                            color = MiuixTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            val url = info.htmlUrl
+                            updateAvailableInfo = null
+                            openExternalLink(url)
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColorsPrimary(),
+                    ) {
+                        Text(
+                            text = "前往下载",
+                            style = MiuixTheme.textStyles.button,
+                            color = Color.White,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (updateUpToDateDialogVisible) {
+        MiuixBottomDialog(onDismissRequest = { updateUpToDateDialogVisible = false }) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MiuixTheme.colorScheme.background)
+                    .padding(horizontal = 24.dp, vertical = 22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = "已是最新版本",
+                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                    color = MiuixTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "当前 $versionName 已是最新，无需更新。",
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
+                )
+                Button(
+                    onClick = { updateUpToDateDialogVisible = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColorsPrimary(),
+                ) {
+                    Text(
+                        text = "知道了",
+                        style = MiuixTheme.textStyles.button,
+                        color = Color.White,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
 }

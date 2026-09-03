@@ -325,8 +325,8 @@ import kotlinx.coroutines.withContext
 import com.caverock.androidsvg.SVG
 
 class MainActivity : ComponentActivity() {
-    private val rmbgGenerationGate = AtomicBoolean(false)
-    private val previewWorkerDispatcher = Executors.newSingleThreadExecutor { task ->
+    internal val rmbgGenerationGate = AtomicBoolean(false)
+    internal val previewWorkerDispatcher = Executors.newSingleThreadExecutor { task ->
         Thread({
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
             task.run()
@@ -334,225 +334,225 @@ class MainActivity : ComponentActivity() {
             priority = Thread.MIN_PRIORITY
         }
     }.asCoroutineDispatcher()
-    private val previewWorkerScope = CoroutineScope(SupervisorJob() + previewWorkerDispatcher)
-    private val apps = mutableStateListOf<AppEntry>()
-    private var queryText by mutableStateOf("")
-    private var selectedPackageName by mutableStateOf<String?>(null)
-    private var statusText by mutableStateOf("加载应用列表中...")
-    private var packageListPermissionGranted by mutableStateOf(true)
-    private var usageAccessGranted by mutableStateOf(false)
-    private var outputTreeUri by mutableStateOf<Uri?>(null)
-    private var isBusy by mutableStateOf(false)
-    private var didRequestAppLoad = false
-    private var gptImageMode by mutableStateOf(GptImageMode.Images)
-    private var gptPromptPreset by mutableStateOf(GptPromptPreset.StableCutout)
-    private var gptCustomPrompt by mutableStateOf("")
-    private var gptModelId by mutableStateOf("")
-    private var gptBaseUrl by mutableStateOf("")
-    private var gptApiKey by mutableStateOf("")
-    private var gptSettingsSaveStatus by mutableStateOf("")
-    private var localSeparationMode by mutableStateOf(LocalSeparationMode.Auto)
-    private var foregroundSubjectPercent by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT)
-    private var draftForegroundSubjectPercentText by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT.toString())
-    private var foregroundShadowLevel by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL)
-    private var draftForegroundShadowLevelText by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL.toString())
-    private var monochromeThemeScale by mutableStateOf(DEFAULT_MONOCHROME_THEME_SCALE)
-    private var draftMonochromeThemeScaleText by mutableStateOf((DEFAULT_MONOCHROME_THEME_SCALE * 100).roundToInt().toString())
-    private var advancedSettingsCategory by mutableStateOf(AdvancedSettingsCategory.LiquidGlass)
-    private var advancedSettingsTab by mutableStateOf(AdvancedSettingsTab.Sliders)
-    private var backgroundSeparationPercent by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT)
-    private var draftBackgroundSeparationText by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT.toString())
-    private var plateRemovalPercent by mutableStateOf(DEFAULT_PLATE_REMOVAL_PERCENT)
-    private var draftPlateRemovalText by mutableStateOf(DEFAULT_PLATE_REMOVAL_PERCENT.toString())
-    private var shadowRemovalPercent by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT)
-    private var draftShadowRemovalText by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT.toString())
-    private var edgePolishPercent by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT)
-    private var draftEdgePolishText by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT.toString())
-    private var rmbgAlphaStrengthPercent by mutableStateOf(DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT)
-    private var draftRmbgAlphaStrengthText by mutableStateOf(DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT.toString())
-    private var rmbgEdgeFeatherPercent by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT)
-    private var draftRmbgEdgeFeatherText by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT.toString())
-    private var rmbgEdgeAdjustPercent by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT)
-    private var draftRmbgEdgeAdjustText by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT.toString())
-    private var rmbgWeakAlphaKeepPercent by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT)
-    private var draftRmbgWeakAlphaKeepText by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT.toString())
-    private var liquidGlassEnabled by mutableStateOf(false)
-    private var liquidGlassBottomBarEnabled by mutableStateOf(true)
-    private var liquidGlassBottomBarBlurEnabled by mutableStateOf(true)
-    private var liquidGlassRadius by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS)
-    private var draftLiquidGlassRadiusText by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS.toString())
-    private var liquidGlassOuterWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH)
-    private var draftLiquidGlassOuterWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH.toString())
-    private var liquidGlassTopAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA)
-    private var draftLiquidGlassTopAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA.toString())
-    private var liquidGlassBottomAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA)
-    private var draftLiquidGlassBottomAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA.toString())
-    private var liquidGlassBackgroundMistAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA)
-    private var draftLiquidGlassBackgroundMistAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA.toString())
-    private var liquidGlassBottomDarkAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
-    private var draftLiquidGlassBottomDarkAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA.toString())
-    private var liquidGlassSubjectScalePercent by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
-    private var draftLiquidGlassSubjectScaleText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT.toString())
-    private var liquidGlassSubjectOutlineWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
-    private var draftLiquidGlassSubjectOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH.toString())
-    private var liquidGlassSubjectInnerOutlineWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH)
-    private var draftLiquidGlassSubjectInnerOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH.toString())
-    private var liquidGlassSubjectShadowAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
-    private var draftLiquidGlassSubjectShadowAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA.toString())
-    private var liquidGlassSubjectOpacityPercent by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
-    private var draftLiquidGlassSubjectOpacityText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT.toString())
-    private var adaptiveForegroundMode by mutableStateOf(AdaptiveForegroundMode.Auto)
-    private var adaptiveDirectMaxCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT)
-    private var adaptiveDirectMaxCoverageIncreasePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT)
-    private var adaptiveMaskEdgeCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT)
-    private var adaptiveMaskMinCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT)
-    private var adaptiveCenterEpsilonPercent by mutableStateOf(DEFAULT_ADAPTIVE_CENTER_EPSILON_PERCENT)
-    private var originalForegroundCleanupMode by mutableStateOf(OriginalForegroundCleanupMode.Auto)
-    private var localBackgroundSeparationEnabled by mutableStateOf(true)
-    private var localAdaptiveSelectionEnabled by mutableStateOf(true)
-    private var localCornerMaskCleanupEnabled by mutableStateOf(true)
-    private var localAlphaEdgeColorRepairEnabled by mutableStateOf(true)
-    private var localPlainBackgroundEstimationEnabled by mutableStateOf(true)
-    private var localOriginalCleanupEnabled by mutableStateOf(true)
-    private var localPlateCleanupEnabled by mutableStateOf(true)
-    private var localPlateEdgeRepairEnabled by mutableStateOf(true)
-    private var localPlateResidueCleanupEnabled by mutableStateOf(true)
-    private var localShadowCleanupEnabled by mutableStateOf(true)
-    private var localShadowEdgeRepairEnabled by mutableStateOf(true)
-    private var localEdgeTrimEnabled by mutableStateOf(true)
-    private var localComposedBackgroundEnabled by mutableStateOf(true)
-    private var localTwoLayerCandidateEnabled by mutableStateOf(true)
-    private var localComponentCandidatesEnabled by mutableStateOf(true)
-    private var localTextSafeCandidateEnabled by mutableStateOf(true)
-    private var localAutoSelectionEnabled by mutableStateOf(true)
-    private var localEdgePolishEnabled by mutableStateOf(true)
-    private var nightSubjectLightBackgroundEnabled by mutableStateOf(false)
-    private var lastParamsSnapshot by mutableStateOf<TuningParams?>(null)
+    internal val previewWorkerScope = CoroutineScope(SupervisorJob() + previewWorkerDispatcher)
+    internal val apps = mutableStateListOf<AppEntry>()
+    internal var queryText by mutableStateOf("")
+    internal var selectedPackageName by mutableStateOf<String?>(null)
+    internal var statusText by mutableStateOf("加载应用列表中...")
+    internal var packageListPermissionGranted by mutableStateOf(true)
+    internal var usageAccessGranted by mutableStateOf(false)
+    internal var outputTreeUri by mutableStateOf<Uri?>(null)
+    internal var isBusy by mutableStateOf(false)
+    internal var didRequestAppLoad = false
+    internal var gptImageMode by mutableStateOf(GptImageMode.Images)
+    internal var gptPromptPreset by mutableStateOf(GptPromptPreset.StableCutout)
+    internal var gptCustomPrompt by mutableStateOf("")
+    internal var gptModelId by mutableStateOf("")
+    internal var gptBaseUrl by mutableStateOf("")
+    internal var gptApiKey by mutableStateOf("")
+    internal var gptSettingsSaveStatus by mutableStateOf("")
+    internal var localSeparationMode by mutableStateOf(LocalSeparationMode.Auto)
+    internal var foregroundSubjectPercent by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT)
+    internal var draftForegroundSubjectPercentText by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT.toString())
+    internal var foregroundShadowLevel by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL)
+    internal var draftForegroundShadowLevelText by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL.toString())
+    internal var monochromeThemeScale by mutableStateOf(DEFAULT_MONOCHROME_THEME_SCALE)
+    internal var draftMonochromeThemeScaleText by mutableStateOf((DEFAULT_MONOCHROME_THEME_SCALE * 100).roundToInt().toString())
+    internal var advancedSettingsCategory by mutableStateOf(AdvancedSettingsCategory.LiquidGlass)
+    internal var advancedSettingsTab by mutableStateOf(AdvancedSettingsTab.Sliders)
+    internal var backgroundSeparationPercent by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT)
+    internal var draftBackgroundSeparationText by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT.toString())
+    internal var plateRemovalPercent by mutableStateOf(DEFAULT_PLATE_REMOVAL_PERCENT)
+    internal var draftPlateRemovalText by mutableStateOf(DEFAULT_PLATE_REMOVAL_PERCENT.toString())
+    internal var shadowRemovalPercent by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT)
+    internal var draftShadowRemovalText by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT.toString())
+    internal var edgePolishPercent by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT)
+    internal var draftEdgePolishText by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT.toString())
+    internal var rmbgAlphaStrengthPercent by mutableStateOf(DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT)
+    internal var draftRmbgAlphaStrengthText by mutableStateOf(DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT.toString())
+    internal var rmbgEdgeFeatherPercent by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT)
+    internal var draftRmbgEdgeFeatherText by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT.toString())
+    internal var rmbgEdgeAdjustPercent by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT)
+    internal var draftRmbgEdgeAdjustText by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT.toString())
+    internal var rmbgWeakAlphaKeepPercent by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT)
+    internal var draftRmbgWeakAlphaKeepText by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT.toString())
+    internal var liquidGlassEnabled by mutableStateOf(false)
+    internal var liquidGlassBottomBarEnabled by mutableStateOf(true)
+    internal var liquidGlassBottomBarBlurEnabled by mutableStateOf(true)
+    internal var liquidGlassRadius by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS)
+    internal var draftLiquidGlassRadiusText by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS.toString())
+    internal var liquidGlassOuterWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH)
+    internal var draftLiquidGlassOuterWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH.toString())
+    internal var liquidGlassTopAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA)
+    internal var draftLiquidGlassTopAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA.toString())
+    internal var liquidGlassBottomAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA)
+    internal var draftLiquidGlassBottomAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA.toString())
+    internal var liquidGlassBackgroundMistAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA)
+    internal var draftLiquidGlassBackgroundMistAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA.toString())
+    internal var liquidGlassBottomDarkAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
+    internal var draftLiquidGlassBottomDarkAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA.toString())
+    internal var liquidGlassSubjectScalePercent by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
+    internal var draftLiquidGlassSubjectScaleText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT.toString())
+    internal var liquidGlassSubjectOutlineWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
+    internal var draftLiquidGlassSubjectOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH.toString())
+    internal var liquidGlassSubjectInnerOutlineWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH)
+    internal var draftLiquidGlassSubjectInnerOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH.toString())
+    internal var liquidGlassSubjectShadowAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
+    internal var draftLiquidGlassSubjectShadowAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA.toString())
+    internal var liquidGlassSubjectOpacityPercent by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
+    internal var draftLiquidGlassSubjectOpacityText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT.toString())
+    internal var adaptiveForegroundMode by mutableStateOf(AdaptiveForegroundMode.Auto)
+    internal var adaptiveDirectMaxCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT)
+    internal var adaptiveDirectMaxCoverageIncreasePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT)
+    internal var adaptiveMaskEdgeCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT)
+    internal var adaptiveMaskMinCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT)
+    internal var adaptiveCenterEpsilonPercent by mutableStateOf(DEFAULT_ADAPTIVE_CENTER_EPSILON_PERCENT)
+    internal var originalForegroundCleanupMode by mutableStateOf(OriginalForegroundCleanupMode.Auto)
+    internal var localBackgroundSeparationEnabled by mutableStateOf(true)
+    internal var localAdaptiveSelectionEnabled by mutableStateOf(true)
+    internal var localCornerMaskCleanupEnabled by mutableStateOf(true)
+    internal var localAlphaEdgeColorRepairEnabled by mutableStateOf(true)
+    internal var localPlainBackgroundEstimationEnabled by mutableStateOf(true)
+    internal var localOriginalCleanupEnabled by mutableStateOf(true)
+    internal var localPlateCleanupEnabled by mutableStateOf(true)
+    internal var localPlateEdgeRepairEnabled by mutableStateOf(true)
+    internal var localPlateResidueCleanupEnabled by mutableStateOf(true)
+    internal var localShadowCleanupEnabled by mutableStateOf(true)
+    internal var localShadowEdgeRepairEnabled by mutableStateOf(true)
+    internal var localEdgeTrimEnabled by mutableStateOf(true)
+    internal var localComposedBackgroundEnabled by mutableStateOf(true)
+    internal var localTwoLayerCandidateEnabled by mutableStateOf(true)
+    internal var localComponentCandidatesEnabled by mutableStateOf(true)
+    internal var localTextSafeCandidateEnabled by mutableStateOf(true)
+    internal var localAutoSelectionEnabled by mutableStateOf(true)
+    internal var localEdgePolishEnabled by mutableStateOf(true)
+    internal var nightSubjectLightBackgroundEnabled by mutableStateOf(false)
+    internal var lastParamsSnapshot by mutableStateOf<TuningParams?>(null)
     // P2 交界：历史单源已收敛进 MainViewModel（state/），Activity 不再持有 tuningHistory 栈；
     // 186 live vars 与 currentTuningParams() 不动（P5 重写），同步一律走快照显式调用。
-    private val mainViewModel: MainViewModel by lazy { ViewModelProvider(this)[MainViewModel::class.java] }
-    private var activePresetId by mutableStateOf<String?>(null)
-    private var activePresetBaseParams by mutableStateOf<TuningParams?>(null)
-    private var presetListVersion by mutableStateOf(0)
-    private var batchOutputMode by mutableStateOf(BatchOutputMode.Root)
-    private var gptRunCount by mutableStateOf(0)
-    private var rmbgRunCount by mutableStateOf(0)
-    private var presetSaveDialogVisible by mutableStateOf(false)
-    private var presetSaveName by mutableStateOf("")
-    private var presetImportDialogVisible by mutableStateOf(false)
-    private var presetImportText by mutableStateOf("")
-    private var presetRenameTarget by mutableStateOf<TuningPreset?>(null)
-    private var presetActionMenuTarget by mutableStateOf<TuningPreset?>(null)
-    private var presetDeleteConfirmTarget by mutableStateOf<TuningPreset?>(null)
-    private var presetSearchQuery by mutableStateOf("")
-    private var presetListExpanded by mutableStateOf(false)
-    private var presetBatchPreviewConfirmTarget by mutableStateOf<TuningPreset?>(null)
-    private var activeBatchPreviewPreset by mutableStateOf<TuningPreset?>(null)
-    private var showBatchPreviewRefreshConfirm by mutableStateOf(false)
-    private var batchPreviewProgress by mutableStateOf<BatchPreviewProgress?>(null)
-    private var batchPreviewResult by mutableStateOf<BatchPreviewResult?>(null)
-    private var batchPreviewCancelled by mutableStateOf(false)
-    private var isGeneratingBatchPreview by mutableStateOf(false)
-    private var batchPreviewCount by mutableIntStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT)
-    private var draftBatchPreviewCountText by mutableStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT.toString())
-    private var batchPreviewColumns by mutableIntStateOf(4)
-    private var draftBatchPreviewColumnsText by mutableStateOf("4")
-    private var batchPreviewIconSizeDp by mutableIntStateOf(54)
-    private var draftBatchPreviewIconSizeDpText by mutableStateOf("54")
-    private var batchPreviewCornerRadiusDp by mutableIntStateOf(20)
-    private var draftBatchPreviewCornerRadiusDpText by mutableStateOf("20")
-    private var batchPreviewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
-    private var customWallpaperPath by mutableStateOf<String?>(null)
-    private var customWallpaperInfo by mutableStateOf("")
-    private var pendingServiceConfirm by mutableStateOf<ServiceConfirmRequest?>(null)
-    private var autoConfirmRootWrite by mutableStateOf(false)
-    private var pendingRootWriteConfirm by mutableStateOf<RootWriteConfirmRequest?>(null)
-    private var rootWriteConfirmRememberSkip by mutableStateOf(false)
-    private var draftJsonParamsText by mutableStateOf("")
-    private var refreshConfirmVisible by mutableStateOf(false)
-    private var autoConfirmRefresh by mutableStateOf(false)
-    private var refreshConfirmRememberAuto by mutableStateOf(false)
-    private val presetStore by lazy { PresetStore(getSharedPreferences(PREFS_NAME, MODE_PRIVATE)) }
-    private var currentPage by mutableStateOf(AppPage.Home)
-    private var showSystemApps by mutableStateOf(false)
-    private var generatedFilter by mutableStateOf(GeneratedFilter.All)
-    private var generatedPackageNames by mutableStateOf<Set<String>>(emptySet())
-    private var multiSelectedPackageNames by mutableStateOf<Set<String>>(emptySet())
-    private var batchApplyProgress by mutableStateOf<BatchApplyProgress?>(null)
-    private var exportProgress by mutableStateOf<ExportProgress?>(null)
+    internal val mainViewModel: MainViewModel by lazy { ViewModelProvider(this)[MainViewModel::class.java] }
+    internal var activePresetId by mutableStateOf<String?>(null)
+    internal var activePresetBaseParams by mutableStateOf<TuningParams?>(null)
+    internal var presetListVersion by mutableStateOf(0)
+    internal var batchOutputMode by mutableStateOf(BatchOutputMode.Root)
+    internal var gptRunCount by mutableStateOf(0)
+    internal var rmbgRunCount by mutableStateOf(0)
+    internal var presetSaveDialogVisible by mutableStateOf(false)
+    internal var presetSaveName by mutableStateOf("")
+    internal var presetImportDialogVisible by mutableStateOf(false)
+    internal var presetImportText by mutableStateOf("")
+    internal var presetRenameTarget by mutableStateOf<TuningPreset?>(null)
+    internal var presetActionMenuTarget by mutableStateOf<TuningPreset?>(null)
+    internal var presetDeleteConfirmTarget by mutableStateOf<TuningPreset?>(null)
+    internal var presetSearchQuery by mutableStateOf("")
+    internal var presetListExpanded by mutableStateOf(false)
+    internal var presetBatchPreviewConfirmTarget by mutableStateOf<TuningPreset?>(null)
+    internal var activeBatchPreviewPreset by mutableStateOf<TuningPreset?>(null)
+    internal var showBatchPreviewRefreshConfirm by mutableStateOf(false)
+    internal var batchPreviewProgress by mutableStateOf<BatchPreviewProgress?>(null)
+    internal var batchPreviewResult by mutableStateOf<BatchPreviewResult?>(null)
+    internal var batchPreviewCancelled by mutableStateOf(false)
+    internal var isGeneratingBatchPreview by mutableStateOf(false)
+    internal var batchPreviewCount by mutableIntStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT)
+    internal var draftBatchPreviewCountText by mutableStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT.toString())
+    internal var batchPreviewColumns by mutableIntStateOf(4)
+    internal var draftBatchPreviewColumnsText by mutableStateOf("4")
+    internal var batchPreviewIconSizeDp by mutableIntStateOf(54)
+    internal var draftBatchPreviewIconSizeDpText by mutableStateOf("54")
+    internal var batchPreviewCornerRadiusDp by mutableIntStateOf(20)
+    internal var draftBatchPreviewCornerRadiusDpText by mutableStateOf("20")
+    internal var batchPreviewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
+    internal var customWallpaperPath by mutableStateOf<String?>(null)
+    internal var customWallpaperInfo by mutableStateOf("")
+    internal var pendingServiceConfirm by mutableStateOf<ServiceConfirmRequest?>(null)
+    internal var autoConfirmRootWrite by mutableStateOf(false)
+    internal var pendingRootWriteConfirm by mutableStateOf<RootWriteConfirmRequest?>(null)
+    internal var rootWriteConfirmRememberSkip by mutableStateOf(false)
+    internal var draftJsonParamsText by mutableStateOf("")
+    internal var refreshConfirmVisible by mutableStateOf(false)
+    internal var autoConfirmRefresh by mutableStateOf(false)
+    internal var refreshConfirmRememberAuto by mutableStateOf(false)
+    internal val presetStore by lazy { PresetStore(getSharedPreferences(PREFS_NAME, MODE_PRIVATE)) }
+    internal var currentPage by mutableStateOf(AppPage.Home)
+    internal var showSystemApps by mutableStateOf(false)
+    internal var generatedFilter by mutableStateOf(GeneratedFilter.All)
+    internal var generatedPackageNames by mutableStateOf<Set<String>>(emptySet())
+    internal var multiSelectedPackageNames by mutableStateOf<Set<String>>(emptySet())
+    internal var batchApplyProgress by mutableStateOf<BatchApplyProgress?>(null)
+    internal var exportProgress by mutableStateOf<ExportProgress?>(null)
     // 底部备份/导出弹窗与后台态
-    private var backupProgress by mutableStateOf<ExportProgress?>(null)
-    private var backupSheetVisible by mutableStateOf(false)
-    private var singleExportSheetVisible by mutableStateOf(false)
-    private var backupInBackground by mutableStateOf(false)
-    private var backupBackgroundDots by mutableStateOf(1)
-    private var backupJob: Job? = null
-    private var singleExportJob: Job? = null
-    private var backupDotJob: Job? = null
-    private var isScanningGeneratedPackages by mutableStateOf(false)
-    private var generatedScanFailed by mutableStateOf(false)
-    private var previewPackageName by mutableStateOf<String?>(null)
-    private var previewDirPath by mutableStateOf<String?>(null)
-    private var previewVersion by mutableStateOf(0)
-    private var previewStripEnabled by mutableStateOf(false)
-    private var sharedPreviewAssets by mutableStateOf<PreviewAssets?>(null)
-    private var activeGenerationSession by mutableStateOf<GenerationSession?>(null)
-    private var previewSelections by mutableStateOf(PreviewSelections.default(PreviewChoice.Full))
-    private var previewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
-    private var previewCornerRadiusDp by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP)
-    private var draftPreviewCornerRadiusDpText by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP.toString())
-    private var previewIconSizeDp by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP)
-    private var draftPreviewIconSizeDpText by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP.toString())
-    private var previewChoiceMode by mutableStateOf<PreviewMode?>(null)
-    private var isGptPreviewLoading by mutableStateOf(false)
-    private var isGeneratingGptCandidate by mutableStateOf(false)
-    private var isGeneratingRmbgCandidate by mutableStateOf(false)
-    private var isRefreshingArtPlusIcons by mutableStateOf(false)
-    private var isPreviewAssetsRefreshing by mutableStateOf(false)
-    private var isPreviewOutputRefreshing by mutableStateOf(false)
-    private var lastRmbgCandidateError by mutableStateOf<String?>(null)
-    private var rmbgCandidatePackageName by mutableStateOf<String?>(null)
-    private var rmbgCandidateMode by mutableStateOf<PreviewMode?>(null)
-    private var rmbgCandidateStatusText by mutableStateOf("")
-    private var rmbgCandidateFailurePackageName by mutableStateOf<String?>(null)
-    private var rmbgCandidateFailureMode by mutableStateOf<PreviewMode?>(null)
-    private var skipNextHomeReturnAnimation by mutableStateOf(false)
-    private var pendingCustomImageMode by mutableStateOf<PreviewMode?>(null)
-    private var pendingCustomImageKind by mutableStateOf<CustomImageKind?>(null)
-    private var isInstallingRmbgComponent by mutableStateOf(false)
-    private var rmbgInstallStage by mutableStateOf("")
-    private var rmbgInstallProgress by mutableStateOf<Float?>(null)
-    private var rmbgDialogVisible by mutableStateOf(false)
-    private var exportDialogVisible by mutableStateOf(false)
-    private var resetDefaultsDialogVisible by mutableStateOf(false)
-    private var onboardingVisible by mutableStateOf(false)
-    private var rmbgComponentUrl by mutableStateOf("")
-    private var rmbgComponentSaveStatus by mutableStateOf("")
-    private var lastRmbgInferenceReport by mutableStateOf<RmbgInferenceReport?>(null)
-    private var previewOutputJob: Job? = null
-    private var previewOutputRevision = 0
-    private var generatedPreviewRestoreRevision = 0
-    private var debugHttpServer: DebugHttpServer? = null
-    private var rmbgRuntime: DynamicRmbgRuntime? = null
-    private var rmbgComponentStatus by mutableStateOf("")
-    private var isCheckingUpdate by mutableStateOf(false)
-    private var updateAvailableInfo by mutableStateOf<UpdateInfo?>(null)
-    private var updateUpToDateDialogVisible by mutableStateOf(false)
-    private var mitLicenseDialogVisible by mutableStateOf(false)
-    private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    internal var backupProgress by mutableStateOf<ExportProgress?>(null)
+    internal var backupSheetVisible by mutableStateOf(false)
+    internal var singleExportSheetVisible by mutableStateOf(false)
+    internal var backupInBackground by mutableStateOf(false)
+    internal var backupBackgroundDots by mutableStateOf(1)
+    internal var backupJob: Job? = null
+    internal var singleExportJob: Job? = null
+    internal var backupDotJob: Job? = null
+    internal var isScanningGeneratedPackages by mutableStateOf(false)
+    internal var generatedScanFailed by mutableStateOf(false)
+    internal var previewPackageName by mutableStateOf<String?>(null)
+    internal var previewDirPath by mutableStateOf<String?>(null)
+    internal var previewVersion by mutableStateOf(0)
+    internal var previewStripEnabled by mutableStateOf(false)
+    internal var sharedPreviewAssets by mutableStateOf<PreviewAssets?>(null)
+    internal var activeGenerationSession by mutableStateOf<GenerationSession?>(null)
+    internal var previewSelections by mutableStateOf(PreviewSelections.default(PreviewChoice.Full))
+    internal var previewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
+    internal var previewCornerRadiusDp by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP)
+    internal var draftPreviewCornerRadiusDpText by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP.toString())
+    internal var previewIconSizeDp by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP)
+    internal var draftPreviewIconSizeDpText by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP.toString())
+    internal var previewChoiceMode by mutableStateOf<PreviewMode?>(null)
+    internal var isGptPreviewLoading by mutableStateOf(false)
+    internal var isGeneratingGptCandidate by mutableStateOf(false)
+    internal var isGeneratingRmbgCandidate by mutableStateOf(false)
+    internal var isRefreshingArtPlusIcons by mutableStateOf(false)
+    internal var isPreviewAssetsRefreshing by mutableStateOf(false)
+    internal var isPreviewOutputRefreshing by mutableStateOf(false)
+    internal var lastRmbgCandidateError by mutableStateOf<String?>(null)
+    internal var rmbgCandidatePackageName by mutableStateOf<String?>(null)
+    internal var rmbgCandidateMode by mutableStateOf<PreviewMode?>(null)
+    internal var rmbgCandidateStatusText by mutableStateOf("")
+    internal var rmbgCandidateFailurePackageName by mutableStateOf<String?>(null)
+    internal var rmbgCandidateFailureMode by mutableStateOf<PreviewMode?>(null)
+    internal var skipNextHomeReturnAnimation by mutableStateOf(false)
+    internal var pendingCustomImageMode by mutableStateOf<PreviewMode?>(null)
+    internal var pendingCustomImageKind by mutableStateOf<CustomImageKind?>(null)
+    internal var isInstallingRmbgComponent by mutableStateOf(false)
+    internal var rmbgInstallStage by mutableStateOf("")
+    internal var rmbgInstallProgress by mutableStateOf<Float?>(null)
+    internal var rmbgDialogVisible by mutableStateOf(false)
+    internal var exportDialogVisible by mutableStateOf(false)
+    internal var resetDefaultsDialogVisible by mutableStateOf(false)
+    internal var onboardingVisible by mutableStateOf(false)
+    internal var rmbgComponentUrl by mutableStateOf("")
+    internal var rmbgComponentSaveStatus by mutableStateOf("")
+    internal var lastRmbgInferenceReport by mutableStateOf<RmbgInferenceReport?>(null)
+    internal var previewOutputJob: Job? = null
+    internal var previewOutputRevision = 0
+    internal var generatedPreviewRestoreRevision = 0
+    internal var debugHttpServer: DebugHttpServer? = null
+    internal var rmbgRuntime: DynamicRmbgRuntime? = null
+    internal var rmbgComponentStatus by mutableStateOf("")
+    internal var isCheckingUpdate by mutableStateOf(false)
+    internal var updateAvailableInfo by mutableStateOf<UpdateInfo?>(null)
+    internal var updateUpToDateDialogVisible by mutableStateOf(false)
+    internal var mitLicenseDialogVisible by mutableStateOf(false)
+    internal val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
 
 
 
 
 
-    private val permissionLauncher =
+    internal val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             refreshPermissionState()
             loadApps()
         }
 
-    private val chooseTreeLauncher =
+    internal val chooseTreeLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
             if (uri == null) {
                 toastStatus("未选择输出目录")
@@ -578,7 +578,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    private val chooseRmbgComponentLauncher =
+    internal val chooseRmbgComponentLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) {
                 statusText = "未选择 RMBG 组件"
@@ -587,7 +587,7 @@ class MainActivity : ComponentActivity() {
             installRmbgComponent(uri)
         }
 
-    private val chooseCustomImageLauncher =
+    internal val chooseCustomImageLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             val mode = pendingCustomImageMode
             val kind = pendingCustomImageKind
@@ -604,7 +604,7 @@ class MainActivity : ComponentActivity() {
             importCustomPreviewImage(mode, kind, uri)
         }
 
-    private val chooseWallpaperLauncher =
+    internal val chooseWallpaperLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) {
                 statusText = "未选择壁纸"
@@ -698,7 +698,7 @@ class MainActivity : ComponentActivity() {
         handleDebugGenerateIntent(intent)
     }
 
-    private fun startUiFriendlyThread(name: String, block: () -> Unit) {
+    internal fun startUiFriendlyThread(name: String, block: () -> Unit) {
         Thread({
             Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
             block()
@@ -708,321 +708,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun ArtPlusScreen() {
-        val pageBackground = if (isSystemInDarkTheme()) {
-            Color.Black
-        } else {
-            Color(0xFFF7F7F7)
-        }
-        val selectedApp by remember {
-            derivedStateOf { apps.firstOrNull { it.packageName == selectedPackageName } }
-        }
-        val scopedApps by remember {
-            derivedStateOf { apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, showSystemApps, packageName) } }
-        }
-        val generatedCount by remember {
-            derivedStateOf { scopedApps.count { it.packageName in generatedPackageNames } }
-        }
-        val ungeneratedCount by remember {
-            derivedStateOf { scopedApps.size - generatedCount }
-        }
-        val filteredApps by remember {
-            derivedStateOf {
-                val query = queryText.trim().lowercase(Locale.ROOT)
-                val stateScopedApps = when (generatedFilter) {
-                    GeneratedFilter.All -> scopedApps
-                    GeneratedFilter.Generated -> scopedApps.filter { it.packageName in generatedPackageNames }
-                    GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in generatedPackageNames }
-                }
-                if (query.isEmpty()) {
-                    stateScopedApps
-                } else {
-                    stateScopedApps.filter { entry ->
-                        entry.label.lowercase(Locale.ROOT).contains(query) ||
-                            entry.packageName.lowercase(Locale.ROOT).contains(query)
-                    }
-                }
-            }
-        }
-        val scopeCount by remember {
-            derivedStateOf {
-                when (generatedFilter) {
-                    GeneratedFilter.All -> scopedApps.size
-                    GeneratedFilter.Generated -> generatedCount
-                    GeneratedFilter.Ungenerated -> ungeneratedCount
-                }
-            }
-        }
-        val launcherCount by remember {
-            derivedStateOf { apps.count { it.launchable } }
-        }
-        var systemBackProgress by remember { mutableStateOf(0f) }
-        val completingBackProgress = remember { Animatable(0f) }
-        val cancellingBackProgress = remember { Animatable(0f) }
-        val childEnterProgress = remember { Animatable(1f) }
-        var isCompletingBackGesture by remember { mutableStateOf(false) }
-        val screenScope = rememberCoroutineScope()
-        val backProgress = maxOf(
-            systemBackProgress,
-            completingBackProgress.value,
-            cancellingBackProgress.value,
-        )
-        val sharedPreviewSession = activeGenerationSession?.takeIf {
-            it.packageName == previewPackageName && it.outDir.absolutePath == previewDirPath
-        }
-        val sharedPreviewTuning = currentTuningParams()
-
-        LaunchedEffect(
-            previewPackageName,
-            previewDirPath,
-            sharedPreviewSession,
-            previewSelections,
-            previewVersion,
-            sharedPreviewTuning,
-        ) {
-            val dirPath = previewDirPath
-            val packageName = previewPackageName
-            if (dirPath.isNullOrBlank() || packageName.isNullOrBlank()) {
-                sharedPreviewAssets = null
-                isPreviewAssetsRefreshing = false
-                return@LaunchedEffect
-            }
-            isPreviewAssetsRefreshing = true
-            try {
-                delay(PREVIEW_LIVE_ASSET_DEBOUNCE_MS)
-                val diskAssets = withContext(Dispatchers.IO) {
-                    loadPreviewAssets(File(dirPath)).preparedForDraw()
-                }
-                val liveAssets = sharedPreviewSession?.let { session ->
-                    try {
-                        withContext(previewWorkerDispatcher) {
-                            previewAssetsForSelections(session, previewSelections).preparedForDraw()
-                        }
-                    } catch (_: CancellationException) {
-                        throw CancellationException()
-                    } catch (_: Throwable) {
-                        null
-                    }
-                }
-                sharedPreviewAssets = liveAssets ?: diskAssets
-            } catch (_: CancellationException) {
-                throw CancellationException()
-            } catch (_: Throwable) {
-                sharedPreviewAssets = null
-            } finally {
-                isPreviewAssetsRefreshing = false
-            }
-        }
-
-        fun completeBackFrom(progress: Float) {
-            if (isCompletingBackGesture) {
-                return
-            }
-            val start = progress.coerceIn(0f, 1f)
-            isCompletingBackGesture = true
-            skipNextHomeReturnAnimation = true
-            screenScope.launch {
-                completingBackProgress.snapTo(start)
-                cancellingBackProgress.snapTo(0f)
-                completingBackProgress.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = ((1f - start) * 220f).roundToInt().coerceIn(90, 220)),
-                )
-                currentPage = AppPage.Home
-                delay(40)
-                systemBackProgress = 0f
-                completingBackProgress.snapTo(0f)
-                cancellingBackProgress.snapTo(0f)
-                isCompletingBackGesture = false
-                skipNextHomeReturnAnimation = false
-            }
-        }
-
-        LaunchedEffect(currentPage, skipNextHomeReturnAnimation, isCompletingBackGesture) {
-            if (currentPage != AppPage.Home) {
-                if (!isCompletingBackGesture) {
-                    systemBackProgress = 0f
-                    completingBackProgress.snapTo(0f)
-                    cancellingBackProgress.snapTo(0f)
-                    childEnterProgress.snapTo(1f)
-                    childEnterProgress.animateTo(
-                        targetValue = 0f,
-                        animationSpec = tween(durationMillis = 300),
-                    )
-                }
-                skipNextHomeReturnAnimation = false
-            } else if (skipNextHomeReturnAnimation || isCompletingBackGesture) {
-                delay(90)
-                if (!isCompletingBackGesture) {
-                    systemBackProgress = 0f
-                    completingBackProgress.snapTo(0f)
-                    cancellingBackProgress.snapTo(0f)
-                    skipNextHomeReturnAnimation = false
-                }
-            } else {
-                systemBackProgress = 0f
-                completingBackProgress.snapTo(0f)
-                cancellingBackProgress.snapTo(0f)
-                childEnterProgress.snapTo(1f)
-            }
-        }
-
-        PredictiveBackHandler(enabled = currentPage != AppPage.Home && !isCompletingBackGesture) { backEvents ->
-            var latestProgress = systemBackProgress
-            try {
-                backEvents.collect { backEvent ->
-                    latestProgress = backEvent.progress.coerceIn(0f, 1f)
-                    cancellingBackProgress.snapTo(0f)
-                    systemBackProgress = latestProgress
-                }
-                completeBackFrom(maxOf(latestProgress, systemBackProgress, BACK_GESTURE_COMMIT_PROGRESS))
-            } catch (_: CancellationException) {
-                val start = maxOf(latestProgress, systemBackProgress).coerceIn(0f, 1f)
-                systemBackProgress = 0f
-                if (start > 0f && currentPage != AppPage.Home && !isCompletingBackGesture) {
-                    cancellingBackProgress.snapTo(start)
-                    cancellingBackProgress.animateTo(
-                        targetValue = 0f,
-                        animationSpec = tween(durationMillis = (start * 180f).roundToInt().coerceIn(70, 180)),
-                    )
-                } else {
-                    cancellingBackProgress.snapTo(0f)
-                }
-            }
-        }
-
-        Box(modifier = Modifier.fillMaxSize()) {
-            val overlayPage = currentPage.takeIf { it != AppPage.Home }
-            val dimReveal = if (skipNextHomeReturnAnimation || isCompletingBackGesture || backProgress > 0f) {
-                backProgress.coerceIn(0f, 1f)
-            } else {
-                0f
-            }
-            val overlayDimTarget = ((1f - childEnterProgress.value) * (1f - dimReveal)).coerceIn(0f, 1f)
-            // 返回主页时平滑回弹（修主页抖动）；进入动画与返回手势跟手时保持实时
-            val overlayDimSpec: FiniteAnimationSpec<Float> =
-                if (overlayPage == null || (backProgress == 0f && !isCompletingBackGesture && childEnterProgress.value == 0f)) {
-                    tween(durationMillis = 280)
-                } else {
-                    snap()
-                }
-            val overlayDim by animateFloatAsState(
-                targetValue = overlayDimTarget,
-                animationSpec = overlayDimSpec,
-                label = "OverlayDim",
-            )
-            val overlayShadowPx = with(LocalDensity.current) { 24.dp.toPx() }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        val homeScale = 1f - 0.04f * overlayDim
-                        scaleX = homeScale
-                        scaleY = homeScale
-                    },
-            ) {
-                HomePage(
-                    pageBackground = pageBackground,
-                    selectedApp = selectedApp,
-                    launcherCount = launcherCount,
-                    totalCount = apps.size,
-                    generatedCount = generatedCount,
-                )
-            }
-            if (overlayPage != null && overlayDim > 0.01f) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.45f * overlayDim)),
-                )
-            }
-
-            if (overlayPage != null) {
-                val isCompletingBack = skipNextHomeReturnAnimation || isCompletingBackGesture
-                val reveal = if (isCompletingBack || backProgress > 0f) {
-                    backProgress.coerceIn(0f, 1f)
-                } else {
-                    0f
-                }
-                val overlayCover = ((1f - childEnterProgress.value) * (1f - reveal)).coerceIn(0f, 1f)
-                val overlayCorner = (40f * overlayCover).dp
-                val overlayShape = RoundedCornerShape(topStart = overlayCorner, bottomStart = overlayCorner)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .graphicsLayer {
-                            val enteringOffset = size.width * childEnterProgress.value
-                            val leavingOffset = size.width * reveal * BACK_GESTURE_PAGE_TRANSLATION_RATIO
-                            translationX = enteringOffset + leavingOffset
-                            shadowElevation = overlayShadowPx * overlayCover
-                            shape = overlayShape
-                            clip = true
-                        },
-                ) {
-                    when (overlayPage) {
-                        AppPage.AppPicker -> AppPickerPage(
-                            pageBackground = pageBackground,
-                            filteredApps = filteredApps,
-                            scopeCount = scopeCount,
-                            generatedCount = generatedCount,
-                            ungeneratedCount = ungeneratedCount,
-                        )
-
-                        AppPage.About -> AboutPage(pageBackground = pageBackground)
-
-                        AppPage.BatchPreview -> BatchPreviewPage(pageBackground = pageBackground)
-
-                        AppPage.Home -> Unit
-                    }
-                }
-            }
-
-            batchApplyProgress?.let { progress ->
-                BatchApplyProgressDialog(progress)
-            }
-            if (singleExportSheetVisible && exportProgress != null) {
-                val p = exportProgress!!
-                BackupProgressBottomSheet(
-                    progress = p,
-                    onStop = { cancelSingleExport() },
-                    onBackground = {
-                        // 单包导出后台：仅隐藏弹窗，任务继续（不显示设置页动效）
-                        singleExportSheetVisible = false
-                    },
-                )
-            }
-            if (backupSheetVisible && backupProgress != null) {
-                val p = backupProgress!!
-                BackupProgressBottomSheet(
-                    progress = p,
-                    onStop = { cancelBackup() },
-                    onBackground = {
-                        backupSheetVisible = false
-                        backupInBackground = true
-                        startBackupDotAnimation()
-                    },
-                )
-            } else if (!backupSheetVisible && backupInBackground && backupProgress != null) {
-                // 后台态不显示底部弹窗，但保留状态供设置页“备份中...”展示
-            }
-
-            pendingServiceConfirm?.let { request ->
-                ServiceConfirmDialog(
-                    request = request,
-                    onConfirm = { dismissServiceConfirm(confirmed = true) },
-                    onDismiss = { dismissServiceConfirm(confirmed = false) },
-                )
-            }
-            RootWriteConfirmDialog()
-            RefreshConfirmDialog()
-            PresetPageDialogs()
-            OnboardingDialog()
-        }
-    }
 
     @Composable
-    private fun OnboardingDialog() {
+    internal fun OnboardingDialog() {
         if (!onboardingVisible) return
         MiuixBottomDialog(onDismissRequest = {
             // 允许通过外部点击关闭视为跳过
@@ -1101,7 +789,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun RefreshConfirmDialog() {
+    internal fun RefreshConfirmDialog() {
         if (!refreshConfirmVisible) return
         MiuixBottomDialog(onDismissRequest = { refreshConfirmVisible = false }) {
             Column(
@@ -1196,1190 +884,14 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    /**
-     * KernelSU 式的分页壳：每页拥有独立的 TopAppBar（标题+按钮随本页左右滑动），
-     * 页面滚动命中该页自身的 scrollBehavior 折叠顶栏。
-     */
-    @Composable
-    private fun PagerShellPage(
-        title: String,
-        navigationIcon: @Composable () -> Unit = {},
-        actions: @Composable RowScope.() -> Unit = {},
-        showPreviewStrip: Boolean = false,
-        content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
-    ) {
-        val pageScrollBehavior = MiuixScrollBehavior()
-        var stripHeight by remember { mutableStateOf(0.dp) }
-        val isDark = isSystemInDarkTheme()
-        val targetExtra = if (showPreviewStrip) {
-            if (stripHeight > 0.dp) stripHeight else 84.dp
-        } else 0.dp
-        val animatedExtra by animateDpAsState(
-            targetValue = targetExtra,
-            animationSpec = tween(durationMillis = 180),
-            label = "previewStripExtra",
-        )
-        Scaffold(
-            containerColor = Color.Transparent,
-            topBar = {
-                TopAppBar(
-                    title = title,
-                    scrollBehavior = pageScrollBehavior,
-                    navigationIconPadding = 0.dp,
-                    actionIconPadding = 0.dp,
-                    navigationIcon = navigationIcon,
-                    actions = actions,
-                )
-            },
-        ) { innerPadding ->
-            Box(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(top = animatedExtra),
-                ) {
-                    content(innerPadding, pageScrollBehavior)
-                }
-                AnimatedVisibility(
-                    visible = showPreviewStrip,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                        expandVertically(animationSpec = tween(durationMillis = 180)),
-                    exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                        shrinkVertically(animationSpec = tween(durationMillis = 160)),
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = innerPadding.calculateTopPadding())
-                        .zIndex(1f),
-                ) {
-                    HomePreviewStrip(
-                        onHeightMeasured = { h -> if (h > 0.dp) stripHeight = h },
-                    )
-                }
-            }
-        }
-    }
+
+
+
+
+
 
     @Composable
-    private fun HomePage(pageBackground: Color, selectedApp: AppEntry?, launcherCount: Int, totalCount: Int, generatedCount: Int) {
-        val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
-        val scope = rememberCoroutineScope()
-        val isDark = isSystemInDarkTheme()
-        val containerColor = if (isDark) Color(0xFF121212).copy(alpha = 0.4f) else Color(0xFFFAFAFA).copy(alpha = 0.4f)
-        val backdrop = rememberLayerBackdrop {
-            drawRect(pageBackground)
-            drawContent()
-        }
-        Box(Modifier.fillMaxSize()) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(pageBackground)
-                    .layerBackdrop(backdrop),
-            ) { page ->
-                when (page) {
-                    0 -> PagerShellPage(
-                        title = "ArtPlus",
-                        navigationIcon = {
-                            TitleBarIconButton(
-                                icon = Lucide.RefreshCw,
-                                contentDescription = "刷新",
-                                enabled = !isBusy && !isRefreshingArtPlusIcons,
-                                dimWhenDisabled = false,
-                                onClick = {
-                                    if (autoConfirmRefresh) {
-                                        refreshArtPlusIcons()
-                                    } else {
-                                        refreshConfirmRememberAuto = false
-                                        refreshConfirmVisible = true
-                                    }
-                                },
-                            )
-                        },
-                        showPreviewStrip = previewStripEnabled,
-                    ) { innerPadding, scrollBehavior ->
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                                .imePadding()
-                                .padding(innerPadding)
-                                .padding(horizontal = 12.dp),
-                            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-                        ) {
-                            item {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                ) {
-                                    if (!packageListPermissionGranted || !usageAccessGranted) {
-                                        PermissionCard()
-                                    }
-                                    StatusCard(
-                                        selectedApp = selectedApp,
-                                        launcherCount = launcherCount,
-                                        totalCount = apps.size,
-                                        generatedCount = generatedCount,
-                                    )
-                                    GenerationActionCard(selectedApp)
-                                    if (previewDirPath != null && previewPackageName != null) {
-                                        GeneratedPreviewCard()
-                                    }
-                                    PreviewControlCard()
-                                    LayerDebugCard()
-                                }
-                            }
-                        }
-                    }
-
-                    1 -> PagerShellPage(
-                        title = "生成参数",
-                        showPreviewStrip = previewStripEnabled,
-                    ) { innerPadding, scrollBehavior ->
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                                .imePadding()
-                                .padding(innerPadding)
-                                .padding(horizontal = 12.dp),
-                            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-                        ) {
-                            item {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                ) {
-                                    GenerationNavCard()
-                                    when (advancedSettingsTab) {
-                                        AdvancedSettingsTab.Sliders -> when (advancedSettingsCategory) {
-                                            AdvancedSettingsCategory.LiquidGlass -> {
-                                                LiquidGlassToggleCard()
-                                                LiquidGlassSurfaceCard()
-                                                LiquidGlassSubjectCard()
-                                            }
-                                            AdvancedSettingsCategory.Local -> {
-                                                LocalRuleTuningCard()
-                                                LocalWorkflowPipelineCard()
-                                            }
-                                            AdvancedSettingsCategory.Rmbg -> {
-                                                RmbgTuningCard()
-                                            }
-                                        }
-                                        AdvancedSettingsTab.Json -> {
-                                            JsonSettingsEditorCard()
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    2 -> PagerShellPage(
-                        title = "预设",
-                        actions = {
-                            val presetCount = remember(presetListVersion) { presetStore.all().size }
-                            TitleBarIconButton(
-                                icon = Lucide.Download,
-                                contentDescription = "导入预设",
-                                enabled = !isBusy,
-                                dimWhenDisabled = false,
-                                onClick = {
-                                    presetImportText = ""
-                                    presetImportDialogVisible = true
-                                },
-                                paddingStart = 0.dp,
-                                paddingEnd = 8.dp,
-                            )
-                            TitleBarIconButton(
-                                icon = Lucide.Upload,
-                                contentDescription = "导出全部预设",
-                                enabled = !isBusy && presetCount > 0,
-                                dimWhenDisabled = true,
-                                onClick = { exportPresetsToClipboard() },
-                                paddingStart = 0.dp,
-                                paddingEnd = 16.dp,
-                            )
-                        },
-                        showPreviewStrip = previewStripEnabled,
-                    ) { innerPadding, scrollBehavior ->
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                                .imePadding()
-                                .padding(innerPadding)
-                                .padding(horizontal = 12.dp),
-                            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-                        ) {
-                            item {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                ) {
-                                    PresetStatusCard()
-                                    PresetLibraryCard()
-                                    BatchPreviewSettingsCard()
-                                }
-                            }
-                        }
-                    }
-
-                    3 -> PagerShellPage(
-                        title = "设置",
-                        actions = {
-                            TitleBarIconButton(
-                                icon = Lucide.Save,
-                                contentDescription = null,
-                                enabled = !isBusy,
-                                dimWhenDisabled = false,
-                                onClick = { saveSettingsPage() },
-                                paddingStart = 0.dp,
-                                paddingEnd = 16.dp,
-                            )
-                        },
-                    ) { innerPadding, scrollBehavior ->
-                        SettingsPage(
-                            innerPadding = innerPadding,
-                            scrollBehavior = scrollBehavior,
-                            launcherCount = launcherCount,
-                            totalCount = totalCount,
-                            generatedCount = generatedCount,
-                        )
-                    }
-                }
-            }
-
-            // 液态玻璃底栏（KernelSU FloatingBottomBar 1:1：vibrancy+blur4dp+lens24dp 三层玻璃+拖拽阻尼+高光镜面）
-            val isBlurEnabled = liquidGlassBottomBarEnabled && liquidGlassBottomBarBlurEnabled
-            if (liquidGlassBottomBarEnabled) {
-                FloatingBottomBar(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                        .fillMaxWidth(),
-                    selectedIndex = { pagerState.currentPage },
-                    onSelected = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
-                    backdrop = backdrop,
-                    tabsCount = 4,
-                    isBlurEnabled = isBlurEnabled,
-                ) {
-                    listOf(
-                        Triple(Lucide.Grid2x2, "主页", 0),
-                        Triple(Lucide.SlidersHorizontal, "生成参数", 1),
-                        Triple(Lucide.Layers, "预设", 2),
-                        Triple(Lucide.Settings, "设置", 3),
-                    ).forEach { (icon, label, index) ->
-                        FloatingBottomBarItem(
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                            modifier = Modifier.defaultMinSize(minWidth = 76.dp),
-                        ) {
-                            val selected = pagerState.currentPage == index
-                            val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            val tint = if (isBusy) baseTint.copy(alpha = 0.45f) else baseTint
-                            Image(
-                                imageVector = icon,
-                                contentDescription = label,
-                                modifier = Modifier.size(20.dp),
-                                colorFilter = ColorFilter.tint(tint),
-                            )
-                            Text(
-                                text = label,
-                                style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
-                                color = tint,
-                                maxLines = 1,
-                                softWrap = false,
-                            )
-                        }
-                    }
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .background(containerColor.copy(alpha = 0.92f))
-                        .height(64.dp)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        listOf(
-                            Triple(Lucide.Grid2x2, "主页", 0),
-                            Triple(Lucide.SlidersHorizontal, "生成参数", 1),
-                            Triple(Lucide.Layers, "预设", 2),
-                            Triple(Lucide.Settings, "设置", 3),
-                        ).forEach { (icon, label, index) ->
-                            val selected = pagerState.currentPage == index
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(
-                                        if (selected) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.22f)
-                                        else Color.Transparent,
-                                    )
-                                    .clickable { scope.launch { pagerState.animateScrollToPage(index) } },
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                                ) {
-                                    val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
-                                    val tint = if (isBusy) baseTint.copy(alpha = 0.45f) else baseTint
-                                    Image(
-                                        imageVector = icon,
-                                        contentDescription = label,
-                                        modifier = Modifier.size(20.dp),
-                                        colorFilter = ColorFilter.tint(tint),
-                                    )
-                                    Text(
-                                        text = label,
-                                        style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
-                                        color = tint,
-                                        maxLines = 1,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun SettingsPage(
-        innerPadding: PaddingValues,
-        scrollBehavior: ScrollBehavior,
-        launcherCount: Int,
-        totalCount: Int,
-        generatedCount: Int,
-    ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .padding(innerPadding)
-                .imePadding()
-                .padding(horizontal = 12.dp),
-            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-                item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        InputSettingsCard(
-                            launcherCount = launcherCount,
-                            totalCount = totalCount,
-                            generatedCount = generatedCount,
-                        )
-                        OutputCard()
-                        PreviewStripSettingsCard()
-                        WallpaperSettingsCard()
-                        GptSettingsCard()
-                        RmbgComponentCard()
-                        SectionCard(rowsFullBleed = true) {
-                            LibrarySettingRow(
-                                title = "悬浮底栏",
-                                summary = if (liquidGlassBottomBarEnabled) "已开启" else "已关闭",
-                                icon = SettingsIconKind.Glass,
-                                showSwitch = true,
-                                checked = liquidGlassBottomBarEnabled,
-                                enabled = !isBusy,
-                                onCheckedChange = {
-                                    liquidGlassBottomBarEnabled = it
-                                    saveLiquidGlassSettings()
-                                    statusText = if (liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭"
-                                },
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            LibrarySettingRow(
-                                title = "底栏模糊",
-                                summary = when {
-                                    !liquidGlassBottomBarEnabled -> "需先开启悬浮底栏"
-                                    liquidGlassBottomBarBlurEnabled -> "已开启"
-                                    else -> "已关闭"
-                                },
-                                icon = SettingsIconKind.Glass,
-                                showSwitch = true,
-                                checked = liquidGlassBottomBarBlurEnabled,
-                                enabled = !isBusy && liquidGlassBottomBarEnabled,
-                                onCheckedChange = {
-                                    liquidGlassBottomBarBlurEnabled = it
-                                    saveLiquidGlassSettings()
-                                    statusText = if (liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭"
-                                },
-                            )
-                        }
-                        SectionCard(rowsFullBleed = true) {
-                            LibrarySettingRow(
-                                title = "恢复默认配置",
-                                summary = "恢复后可通过首页预设卡片的「还原上一步」撤销",
-                                icon = settingsIconForTitle("恢复默认配置"),
-                                showValue = false,
-                                showArrowRight = true,
-                                enabled = !isBusy,
-                                onClick = { resetDefaultsDialogVisible = true },
-                            )
-                            if (resetDefaultsDialogVisible) {
-                                MiuixBottomDialog(onDismissRequest = { resetDefaultsDialogVisible = false }) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(28.dp))
-                                            .background(MiuixTheme.colorScheme.background)
-                                            .padding(horizontal = 24.dp, vertical = 22.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                                    ) {
-                                        Text(
-                                            text = "恢复默认配置",
-                                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                                            color = MiuixTheme.colorScheme.onSurface,
-                                            textAlign = TextAlign.Center,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                        Text(
-                                            text = "一键恢复全部调参到出厂默认值，不会删除本地 RMBG 模型与已生成的图标包。恢复后可通过预设卡片的「还原上一步」撤销。",
-                                            style = MiuixTheme.textStyles.body1,
-                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            textAlign = TextAlign.Center,
-                                            maxLines = 5,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        ) {
-                                            Button(
-                                                onClick = { resetDefaultsDialogVisible = false },
-                                                modifier = Modifier.weight(1f),
-                                                colors = ButtonDefaults.buttonColors(),
-                                            ) {
-                                                Text(
-                                                    text = "取消",
-                                                    style = MiuixTheme.textStyles.button,
-                                                    color = MiuixTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                )
-                                            }
-                                            Button(
-                                                onClick = {
-                                                    resetDefaultsDialogVisible = false
-                                                    resetToDefaults()
-                                                },
-                                                enabled = !isBusy,
-                                                modifier = Modifier.weight(1f),
-                                                colors = ButtonDefaults.buttonColorsPrimary(),
-                                            ) {
-                                                Text(
-                                                    text = "恢复默认",
-                                                    style = MiuixTheme.textStyles.button,
-                                                    color = Color.White,
-                                                    maxLines = 1,
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        SectionCard(rowsFullBleed = true) {
-                            LibrarySettingRow(
-                                title = "导出引导",
-                                summary = "首次引导与全量备份入口",
-                                icon = settingsIconForTitle("导出引导"),
-                                showArrowRight = true,
-                                enabled = !isBusy,
-                                onClick = { onboardingVisible = true },
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            LibrarySettingRow(
-                                title = "关于",
-                                summary = "源码、开源协议与更新",
-                                icon = SettingsIconKind.Link,
-                                showArrowRight = true,
-                                enabled = !isBusy,
-                                onClick = { currentPage = AppPage.About },
-                            )
-                        }
-                    }
-                }
-        }
-    }
-
-    @Composable
-    private fun AppPickerPage(
-        pageBackground: Color,
-        filteredApps: List<AppEntry>,
-        scopeCount: Int,
-        generatedCount: Int,
-        ungeneratedCount: Int,
-    ) {
-        val scrollBehavior = MiuixScrollBehavior()
-
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = "选择 APK",
-                    scrollBehavior = scrollBehavior,
-                    navigationIconPadding = 0.dp,
-                    navigationIcon = {
-                        TitleBarIconButton(
-                            icon = Lucide.ChevronLeft,
-                            contentDescription = "返回",
-                            enabled = !isBusy,
-                            dimWhenDisabled = false,
-                            onClick = { currentPage = AppPage.Home },
-                        )
-                    },
-                )
-            },
-
-        ) { innerPadding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(pageBackground)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .padding(innerPadding)
-                    .imePadding()
-                    .padding(horizontal = 12.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item {
-                    AppPickerControlsCard(
-                        filteredCount = filteredApps.size,
-                        totalCount = scopeCount,
-                        generatedCount = generatedCount,
-                        ungeneratedCount = ungeneratedCount,
-                        filteredApps = filteredApps,
-                    )
-                }
-                if (filteredApps.isEmpty()) {
-                    item {
-                        EmptyAppListCard()
-                    }
-                } else {
-                    items(
-                        items = filteredApps,
-                        key = { it.packageName },
-                        contentType = { "app" },
-                    ) { entry ->
-                        AppRow(
-                            entry = entry,
-                            selected = entry.packageName == selectedPackageName,
-                            multiSelected = entry.packageName in multiSelectedPackageNames,
-                            generated = entry.packageName in generatedPackageNames,
-                            onClick = {
-                                selectAppAndRestoreGeneratedPreview(entry)
-                                currentPage = AppPage.Home
-                            },
-                            onToggleMultiSelect = { toggleMultiSelectedPackage(entry.packageName) },
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun AboutPage(pageBackground: Color) {
-        val scrollBehavior = MiuixScrollBehavior()
-        val versionName = currentVersionName()
-        val versionCode = try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                packageManager.getPackageInfo(packageName, 0).longVersionCode.toString()
-            } else {
-                @Suppress("DEPRECATION")
-                packageManager.getPackageInfo(packageName, 0).versionCode.toString()
-            }
-        } catch (_: Exception) {
-            ""
-        }
-
-        Scaffold(
-            containerColor = pageBackground,
-            topBar = {
-                TopAppBar(
-                    title = "关于",
-                    scrollBehavior = scrollBehavior,
-                    navigationIconPadding = 0.dp,
-                    navigationIcon = {
-                        TitleBarIconButton(
-                            icon = Lucide.ChevronLeft,
-                            contentDescription = "返回",
-                            enabled = !isBusy,
-                            dimWhenDisabled = false,
-                            onClick = { currentPage = AppPage.Home },
-                        )
-                    },
-                )
-            },
-        ) { innerPadding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(pageBackground)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .padding(innerPadding)
-                    .padding(horizontal = 12.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item {
-                    Card {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_launcher),
-                                contentDescription = "ArtPlus",
-                                modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)),
-                            )
-                            Text(
-                                text = "ArtPlus Mobile",
-                                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                                color = MiuixTheme.colorScheme.onSurface,
-                                textAlign = TextAlign.Center,
-                            )
-                            Text(
-                                text = if (versionCode.isNotBlank()) "$versionName ($versionCode)" else versionName,
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                textAlign = TextAlign.Center,
-                            )
-                            Text(
-                                text = "ColorOS ART+ 图标生成与预览工具",
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
-                item {
-                    SectionCard(rowsFullBleed = true) {
-                        LibrarySettingRow(
-                            title = "GitHub 仓库",
-                            summary = GITHUB_REPO_URL,
-                            icon = SettingsIconKind.Link,
-                            showArrowRight = true,
-                            enabled = !isBusy,
-                            onClick = { openExternalLink(GITHUB_REPO_URL) },
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        LibrarySettingRow(
-                            title = "开源协议",
-                            summary = "MIT License",
-                            icon = SettingsIconKind.Shield,
-                            showArrowRight = true,
-                            enabled = !isBusy,
-                            onClick = { mitLicenseDialogVisible = true },
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        LibrarySettingRow(
-                            title = "检查更新",
-                            summary = if (isCheckingUpdate) "检查中..." else "当前 $versionName",
-                            icon = SettingsIconKind.Grid,
-                            showArrowRight = !isCheckingUpdate,
-                            enabled = !isBusy && !isCheckingUpdate,
-                            onClick = { checkForUpdate() },
-                        )
-                    }
-                }
-                item {
-                    Text(
-                        text = "© 2026 Costben · MIT License",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    )
-                }
-            }
-        }
-
-        if (mitLicenseDialogVisible) {
-            MiuixBottomDialog(onDismissRequest = { mitLicenseDialogVisible = false }) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(MiuixTheme.colorScheme.background)
-                        .padding(horizontal = 24.dp, vertical = 22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = "开源协议",
-                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        text = "MIT License",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 80.dp, max = 360.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                            .verticalScroll(rememberScrollState())
-                            .padding(12.dp),
-                    ) {
-                        Text(
-                            text = MIT_LICENSE_TEXT,
-                            style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
-                            color = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Button(
-                            onClick = { mitLicenseDialogVisible = false },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(),
-                        ) {
-                            Text(
-                                text = "关闭",
-                                style = MiuixTheme.textStyles.button,
-                                color = MiuixTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                            )
-                        }
-                        Button(
-                            onClick = {
-                                mitLicenseDialogVisible = false
-                                openExternalLink(GITHUB_LICENSE_URL)
-                            },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                        ) {
-                            Text(
-                                text = "在 GitHub 查看",
-                                style = MiuixTheme.textStyles.button,
-                                color = Color.White,
-                                maxLines = 1,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        updateAvailableInfo?.let { info ->
-            MiuixBottomDialog(onDismissRequest = { updateAvailableInfo = null }) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(MiuixTheme.colorScheme.background)
-                        .padding(horizontal = 24.dp, vertical = 22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = "发现新版本",
-                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        text = "最新 ${info.tagName} · 当前 $versionName\n点击前往下载页查看更新内容。",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Button(
-                            onClick = { updateAvailableInfo = null },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(),
-                        ) {
-                            Text(
-                                text = "稍后",
-                                style = MiuixTheme.textStyles.button,
-                                color = MiuixTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                            )
-                        }
-                        Button(
-                            onClick = {
-                                val url = info.htmlUrl
-                                updateAvailableInfo = null
-                                openExternalLink(url)
-                            },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                        ) {
-                            Text(
-                                text = "前往下载",
-                                style = MiuixTheme.textStyles.button,
-                                color = Color.White,
-                                maxLines = 1,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        if (updateUpToDateDialogVisible) {
-            MiuixBottomDialog(onDismissRequest = { updateUpToDateDialogVisible = false }) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(MiuixTheme.colorScheme.background)
-                        .padding(horizontal = 24.dp, vertical = 22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = "已是最新版本",
-                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        text = "当前 $versionName 已是最新，无需更新。",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                    )
-                    Button(
-                        onClick = { updateUpToDateDialogVisible = false },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "知道了",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun BatchPreviewPage(pageBackground: Color) {
-        val scrollBehavior = MiuixScrollBehavior()
-        val result = batchPreviewResult
-        val preset = result?.preset ?: activeBatchPreviewPreset
-        val coroutineScope = rememberCoroutineScope()
-        val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
-        val isDark = isSystemInDarkTheme()
-
-        val modes = remember {
-            listOf(
-                PreviewMode.NormalLight,
-                PreviewMode.NormalDark,
-                PreviewMode.MonochromeLight,
-                PreviewMode.MonochromeDark,
-            )
-        }
-        val tabTitles = remember {
-            listOf("正常亮色", "正常暗色", "单色亮色", "单色暗色")
-        }
-
-        Scaffold(
-            containerColor = pageBackground,
-            topBar = {
-                TopAppBar(
-                    title = preset?.name ?: "批量预览",
-                    scrollBehavior = scrollBehavior,
-                    navigationIconPadding = 0.dp,
-                    actionIconPadding = 0.dp,
-                    navigationIcon = {
-                        TitleBarIconButton(
-                            icon = Lucide.ChevronLeft,
-                            contentDescription = "返回",
-                            enabled = !isBusy,
-                            dimWhenDisabled = false,
-                            onClick = { currentPage = AppPage.Home },
-                        )
-                    },
-                    actions = {
-                        TitleBarIconButton(
-                            icon = Lucide.RefreshCw,
-                            contentDescription = "重新生成",
-                            enabled = !isBusy && !isGeneratingBatchPreview && preset != null,
-                            dimWhenDisabled = true,
-                            paddingStart = 0.dp,
-                            paddingEnd = 16.dp,
-                            onClick = { showBatchPreviewRefreshConfirm = true },
-                        )
-                    },
-                )
-            },
-        ) { innerPadding ->
-            // 预览框高度锁死：内容行数 + 1 行，框内无滚动可抢，所有纵向手势归页面
-            val previewContentRows = result?.items?.size?.let { count ->
-                if (count <= 0) 0 else (count + batchPreviewColumns - 1) / batchPreviewColumns
-            } ?: 0
-            val previewDisplayRows = previewContentRows + 1
-            val previewRowHeight = batchPreviewIconSizeDp.dp + 6.dp + PREVIEW_LABEL_HEIGHT_DP.dp
-            val previewFrameHeight = 18.dp + previewRowHeight * previewDisplayRows +
-                18.dp * (previewDisplayRows - 1) + 18.dp
-            val overscrollEffect = rememberOverscrollEffect()
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(pageBackground)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .overscroll(overscrollEffect)
-                    .padding(innerPadding)
-                    .imePadding()
-                    .padding(bottom = 12.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // 1. 桌面控制卡：背景一行 + 三个主页化参数行（无图标、默认展开）
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                ) {
-                    SectionCard(rowsFullBleed = true) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            PreviewDesktopBackground.entries.forEach { bgOption ->
-                                PreviewBackgroundOption(
-                                    option = bgOption,
-                                    selected = batchPreviewDesktopBackground == bgOption,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { updateBatchPreviewDesktopBackground(bgOption) },
-                                )
-                            }
-                        }
-
-                        NumberParameterControl(
-                            busy = isBusy,
-                            title = "列数",
-                            summary = "控制桌面每行图标数量，切换列数会自动适配图标大小",
-                            value = batchPreviewColumns,
-                            draftText = draftBatchPreviewColumnsText,
-                            min = 2,
-                            max = 5,
-                            step = 1,
-                            onDraftChange = { draftBatchPreviewColumnsText = it },
-                            onSave = { updateBatchPreviewColumns(it) },
-                            showIcon = false,
-                            initiallyExpanded = false,
-                        )
-
-                        NumberParameterControl(
-                            busy = isBusy,
-                            title = "图标大小",
-                            summary = "控制预览图标的显示大小",
-                            value = batchPreviewIconSizeDp,
-                            draftText = draftBatchPreviewIconSizeDpText,
-                            min = 40,
-                            max = 84,
-                            step = 2,
-                            onDraftChange = { draftBatchPreviewIconSizeDpText = it },
-                            onSave = { updateBatchPreviewIconSizeDp(it) },
-                            showIcon = false,
-                            initiallyExpanded = false,
-                        )
-
-                        NumberParameterControl(
-                            busy = isBusy,
-                            title = "图标圆角",
-                            summary = "控制预览图标的圆角大小",
-                            value = batchPreviewCornerRadiusDp,
-                            draftText = draftBatchPreviewCornerRadiusDpText,
-                            min = 0,
-                            max = 36,
-                            step = 1,
-                            onDraftChange = { draftBatchPreviewCornerRadiusDpText = it },
-                            onSave = { updateBatchPreviewCornerRadiusDp(it) },
-                            showIcon = false,
-                            initiallyExpanded = false,
-                        )
-                    }
-                }
-                }
-
-                // 2. 4 风格切换栏（控制卡下方、预览框上方）
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    tabTitles.forEachIndexed { index, title ->
-                        val selected = pagerState.currentPage == index
-                        val bg = if (selected) {
-                            MiuixTheme.colorScheme.primaryVariant
-                        } else {
-                            if (isDark) MiuixTheme.colorScheme.surfaceContainerHigh else Color.White
-                        }
-                        val textColor = if (selected) Color.White else MiuixTheme.colorScheme.onSurface
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(38.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(bg)
-                                .clickable {
-                                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                                },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = title,
-                                style = MiuixTheme.textStyles.body2.copy(
-                                    fontSize = 13.sp,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                ),
-                                color = textColor,
-                                maxLines = 1,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
-                    }
-                }
-
-                // 3. 桌面展示框：高度锁死为内容行数 + 1 行，框内不滚动
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                ) {
-                    Card(
-                        cornerRadius = 20.dp,
-                        insideMargin = PaddingValues(0.dp),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(previewFrameHeight)
-                                .clip(RoundedCornerShape(20.dp)),
-                        ) {
-                            PreviewDesktopBackgroundSurface(
-                                option = batchPreviewDesktopBackground,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-
-                            if (result == null || result.items.isEmpty()) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        text = "暂无预览数据",
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = Color.White.copy(alpha = 0.8f),
-                                    )
-                                }
-                            } else {
-                                HorizontalPager(
-                                    state = pagerState,
-                                    modifier = Modifier.fillMaxSize(),
-                                ) { page ->
-                                    val currentMode = modes[page]
-                                    val isLightBg = batchPreviewDesktopBackground == PreviewDesktopBackground.LightGray
-                                    val labelColor = if (isLightBg) Color(0xFF222222) else Color.White
-                                    val shadowColor = if (isLightBg) Color.White.copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.85f)
-
-                                    LazyVerticalGrid(
-                                        columns = GridCells.Fixed(batchPreviewColumns),
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 18.dp),
-                                        verticalArrangement = Arrangement.spacedBy(18.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                        userScrollEnabled = false,
-                                    ) {
-                                        items(result.items, key = { it.packageName }) { item ->
-                                            Column(
-                                                horizontalAlignment = Alignment.CenterHorizontally,
-                                                verticalArrangement = Arrangement.spacedBy(6.dp),
-                                                modifier = Modifier.fillMaxWidth(),
-                                            ) {
-                                                if (item.assets.missingMessage(currentMode) == null) {
-                                                    GeneratedIconPreview(
-                                                        assets = item.assets,
-                                                        mode = currentMode,
-                                                        modifier = Modifier.size(batchPreviewIconSizeDp.dp),
-                                                        cornerRadiusDp = batchPreviewCornerRadiusDp,
-                                                    )
-                                                } else {
-                                                    MissingIconPreview(
-                                                        modifier = Modifier.size(batchPreviewIconSizeDp.dp),
-                                                        mode = currentMode,
-                                                        compact = true,
-                                                        cornerRadiusDp = batchPreviewCornerRadiusDp,
-                                                    )
-                                                }
-                                                Text(
-                                                    text = item.label,
-                                                    style = TextStyle(
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Medium,
-                                                        shadow = Shadow(
-                                                            color = shadowColor,
-                                                            offset = Offset(0f, 1f),
-                                                            blurRadius = 3f,
-                                                        ),
-                                                    ),
-                                                    color = labelColor,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    textAlign = TextAlign.Center,
-                                                    modifier = Modifier.padding(horizontal = 2.dp),
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun PermissionCard() {
+    internal fun PermissionCard() {
         SectionCard {
             SettingLine(
                 title = "应用列表",
@@ -2417,7 +929,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun GeneratedPreviewCard() {
+    internal fun GeneratedPreviewCard() {
         val dirPath = previewDirPath ?: return
         val packageName = previewPackageName ?: return
         val session = activeGenerationSession?.takeIf {
@@ -2507,45 +1019,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** 主页面顶栏的紧凑 1×4 预览；设置页和应用选择页不会组合此组件。 */
-    @Composable
-    private fun HomePreviewStrip(
-        onHeightMeasured: (androidx.compose.ui.unit.Dp) -> Unit = {},
-    ) {
-        val density = LocalDensity.current
-        val assets = sharedPreviewAssets
-        val loading = isPreviewAssetsRefreshing || isPreviewOutputRefreshing || isGptPreviewLoading
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 0.dp)
-                .onGloballyPositioned { coords ->
-                    val h = with(density) { coords.size.height.toDp() }
-                    if (h > 0.dp) onHeightMeasured(h)
-                },
-            insideMargin = PaddingValues(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                PreviewMode.entries.forEach { mode ->
-                    TopPreviewStripTile(
-                        assets = assets,
-                        mode = mode,
-                        loading = loading,
-                        desktopBackground = previewDesktopBackground,
-                        iconSizeDp = previewIconSizeDp,
-                        cornerRadiusDp = previewCornerRadiusDp,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-    }
 
     @Composable
-    private fun TopPreviewStripTile(
+    internal fun TopPreviewStripTile(
         assets: PreviewAssets?,
         mode: PreviewMode,
         loading: Boolean,
@@ -2612,7 +1088,7 @@ class MainActivity : ComponentActivity() {
 
     /** 调试图层卡片：前景 / 背景 / alpha 蒙版小图。 */
     @Composable
-    private fun LayerDebugCard() {
+    internal fun LayerDebugCard() {
         val dirPath = previewDirPath ?: return
         val packageName = previewPackageName ?: return
         val session = activeGenerationSession?.takeIf {
@@ -2657,7 +1133,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun PreviewControlCard() {
+    internal fun PreviewControlCard() {
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -2756,7 +1232,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PreviewBackgroundOption(
+    internal fun PreviewBackgroundOption(
         option: PreviewDesktopBackground,
         selected: Boolean,
         modifier: Modifier = Modifier,
@@ -2807,7 +1283,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PreviewTile(
+    internal fun PreviewTile(
         label: String,
         assets: PreviewAssets?,
         mode: PreviewMode,
@@ -2884,7 +1360,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun DesktopIconPreview(
+    internal fun DesktopIconPreview(
         desktopBackground: PreviewDesktopBackground,
         iconSize: Dp,
         content: @Composable () -> Unit,
@@ -2910,7 +1386,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PreviewDesktopBackgroundSurface(
+    internal fun PreviewDesktopBackgroundSurface(
         option: PreviewDesktopBackground,
         modifier: Modifier = Modifier,
     ) {
@@ -2935,7 +1411,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun GeneratedIconPreview(
+    internal fun GeneratedIconPreview(
         assets: PreviewAssets?,
         mode: PreviewMode,
         modifier: Modifier = Modifier.size(72.dp),
@@ -3015,7 +1491,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun MissingIconPreview(
+    internal fun MissingIconPreview(
         modifier: Modifier = Modifier.size(72.dp),
         mode: PreviewMode? = null,
         compact: Boolean = false,
@@ -3071,7 +1547,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun PreviewNightFillBackgroundRow() {
+    internal fun PreviewNightFillBackgroundRow() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -3109,7 +1585,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PreviewChoiceDialog(mode: PreviewMode, session: GenerationSession) {
+    internal fun PreviewChoiceDialog(mode: PreviewMode, session: GenerationSession) {
         val defaultChoices = listOf(
             PreviewChoice.Original,
             PreviewChoice.ComposedBackground,
@@ -3238,7 +1714,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun shouldShowPreviewChoiceRow(choice: PreviewChoice, session: GenerationSession): Boolean =
+    internal fun shouldShowPreviewChoiceRow(choice: PreviewChoice, session: GenerationSession): Boolean =
         when {
             choice.isCustom -> true
             choice == PreviewChoice.Full -> session.candidates[PreviewChoice.Full] != null ||
@@ -3247,7 +1723,7 @@ class MainActivity : ComponentActivity() {
         }
 
     @Composable
-    private fun MoreRulesGroupRow(
+    internal fun MoreRulesGroupRow(
         selectedRule: PreviewChoice?,
         expanded: Boolean,
         onToggle: () -> Unit,
@@ -3307,7 +1783,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PreviewChoiceRow(mode: PreviewMode, choice: PreviewChoice, session: GenerationSession) {
+    internal fun PreviewChoiceRow(mode: PreviewMode, choice: PreviewChoice, session: GenerationSession) {
         val currentChoice = previewSelections.choiceFor(mode)
         val effectiveChoice = effectiveChoiceForPreviewRow(mode, choice, session)
         val selected = currentChoice == effectiveChoice ||
@@ -3444,7 +1920,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun CandidateIconPreview(candidate: IconCandidate, mode: PreviewMode) {
+    internal fun CandidateIconPreview(candidate: IconCandidate, mode: PreviewMode) {
         var assets by remember(
             candidate,
             mode,
@@ -3513,7 +1989,7 @@ class MainActivity : ComponentActivity() {
             GeneratedIconPreview(readyAssets, mode)
         }
     }
-    private fun systemMaterialColor(resourceName: String, fallback: Color): Color {
+    internal fun systemMaterialColor(resourceName: String, fallback: Color): Color {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             return fallback
         }
@@ -3525,7 +2001,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun StatusCard(
+    internal fun StatusCard(
         selectedApp: AppEntry?,
         launcherCount: Int,
         totalCount: Int,
@@ -3622,7 +2098,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun EmptyAppListCard() {
+    internal fun EmptyAppListCard() {
         val hasHiddenSystemApps = !showSystemApps && apps.any { isSystemApp(it.applicationInfo) && it.packageName != packageName }
         val hintText = when {
             queryText.isNotBlank() && !showSystemApps && hasHiddenSystemApps ->
@@ -3697,7 +2173,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LocalSeparationModeControl() {
+    internal fun LocalSeparationModeControl() {
         val modes = LocalSeparationMode.entries.filterNot { it == LocalSeparationMode.Plate }
         val selectedMode = if (localSeparationMode == LocalSeparationMode.Plate) {
             LocalSeparationMode.Full
@@ -3717,7 +2193,7 @@ class MainActivity : ComponentActivity() {
 
     /** 第二层级「生成设置」：顶部「滑块 / JSON」切换 + 保存成预设 + 滑块分类导航。 */
     @Composable
-    private fun GenerationNavCard() {
+    internal fun GenerationNavCard() {
         SectionCard {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -3756,7 +2232,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun LiquidGlassToggleCard() {
+    internal fun LiquidGlassToggleCard() {
         SectionCard(rowsFullBleed = true) {
             LibrarySettingRow(
                 title = "液态玻璃风格",
@@ -3771,7 +2247,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LiquidGlassSurfaceCard() {
+    internal fun LiquidGlassSurfaceCard() {
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -3859,7 +2335,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LiquidGlassSubjectCard() {
+    internal fun LiquidGlassSubjectCard() {
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -3935,7 +2411,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LocalRuleTuningCard() {
+    internal fun LocalRuleTuningCard() {
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -3994,7 +2470,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LocalWorkflowPipelineCard() {
+    internal fun LocalWorkflowPipelineCard() {
         SectionCard(rowsFullBleed = true) {
             LocalWorkflowToggleRow("背景估计与相减", "普通图标和 Adaptive 图标的背景分离", localBackgroundSeparationEnabled, "background")
             LocalWorkflowToggleRow("Adaptive 自动选层", "在合成前景与直接前景之间自动判断", localAdaptiveSelectionEnabled, "adaptive")
@@ -4018,7 +2494,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LocalWorkflowToggleRow(
+    internal fun LocalWorkflowToggleRow(
         title: String,
         summary: String,
         checked: Boolean,
@@ -4036,7 +2512,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun RmbgTuningCard() {
+    internal fun RmbgTuningCard() {
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -4095,7 +2571,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun JsonSettingsEditorCard() {
+    internal fun JsonSettingsEditorCard() {
         SectionCard {
             JsonSettingsEditor()
         }
@@ -4103,7 +2579,7 @@ class MainActivity : ComponentActivity() {
 
     // ---------- 预设：保存 / 应用 / 批量 / 导入导出 ----------
 
-    private fun refreshPresets() {
+    internal fun refreshPresets() {
         presetListVersion += 1
         val stored = presetStore.activePresetId
         val preset = if (stored != null) presetStore.get(stored) else null
@@ -4111,7 +2587,7 @@ class MainActivity : ComponentActivity() {
         activePresetBaseParams = preset?.params
     }
 
-    private fun loadPresetState() {
+    internal fun loadPresetState() {
         refreshPresets()
         batchOutputMode = runCatching {
             BatchOutputMode.valueOf(getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(PREF_BATCH_OUTPUT_MODE, BatchOutputMode.Root.name) ?: BatchOutputMode.Root.name)
@@ -4120,7 +2596,7 @@ class MainActivity : ComponentActivity() {
         rmbgRunCount = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getInt(PREF_RMBG_RUN_COUNT, 0)
     }
 
-    private fun incrementGptRunCount() {
+    internal fun incrementGptRunCount() {
         gptRunCount += 1
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
@@ -4128,7 +2604,7 @@ class MainActivity : ComponentActivity() {
             .apply()
     }
 
-    private fun incrementRmbgRunCount() {
+    internal fun incrementRmbgRunCount() {
         rmbgRunCount += 1
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
@@ -4140,7 +2616,7 @@ class MainActivity : ComponentActivity() {
      * 本地优先：调用 AI/RMBG 前弹二次确认。
      * 入口函数用 [confirmed] 参数重入，避免再次弹窗。
      */
-    private fun requestServiceConfirm(
+    internal fun requestServiceConfirm(
         title: String,
         message: String,
         confirmLabel: String,
@@ -4154,7 +2630,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun dismissServiceConfirm(confirmed: Boolean) {
+    internal fun dismissServiceConfirm(confirmed: Boolean) {
         val request = pendingServiceConfirm ?: return
         pendingServiceConfirm = null
         if (confirmed) {
@@ -4162,7 +2638,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun saveCurrentAsPreset(rawName: String) {
+    internal fun saveCurrentAsPreset(rawName: String) {
         // P2 交界：预设域收敛进 MainViewModel，这里只做 UI 状态（文案/镜像/版本/弹窗）。
         when (val outcome = mainViewModel.savePreset(presetStore, currentTuningParams(), rawName)) {
             SavePresetOutcome.BlankName -> {
@@ -4184,7 +2660,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun overwritePreset(preset: TuningPreset) {
+    internal fun overwritePreset(preset: TuningPreset) {
         // P2 交界：预设域收敛进 MainViewModel，这里只做 UI 状态。
         val current = currentTuningParams()
         if (!mainViewModel.overwritePreset(presetStore, preset, current)) {
@@ -4197,7 +2673,7 @@ class MainActivity : ComponentActivity() {
         statusText = "已覆盖更新预设「${preset.name}」"
     }
 
-    private fun resetToPreset(preset: TuningPreset) {
+    internal fun resetToPreset(preset: TuningPreset) {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
             statusText = "当前有任务在运行，请等待"
             return
@@ -4212,7 +2688,7 @@ class MainActivity : ComponentActivity() {
         statusText = "已重置回预设「${preset.name}」初始参数"
     }
 
-    private fun applyPreset(preset: TuningPreset) {
+    internal fun applyPreset(preset: TuningPreset) {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
             statusText = "当前有任务在运行，请等待"
             return
@@ -4227,7 +2703,7 @@ class MainActivity : ComponentActivity() {
         statusText = "已应用预设「${preset.name}」，${before.diffSummary(merged)}"
     }
 
-    private fun deletePreset(id: String) {
+    internal fun deletePreset(id: String) {
         BatchPreviewStore.deleteSnapshot(filesDir, id)
         if (activeBatchPreviewPreset?.id == id || batchPreviewResult?.preset?.id == id) {
             activeBatchPreviewPreset = null
@@ -4246,7 +2722,7 @@ class MainActivity : ComponentActivity() {
         statusText = "已删除预设"
     }
 
-    private fun renamePreset(id: String, rawName: String) {
+    internal fun renamePreset(id: String, rawName: String) {
         // P2 交界：预设域收敛进 MainViewModel，这里只做 UI 状态。
         when (val outcome = mainViewModel.renamePreset(presetStore, id, rawName)) {
             RenamePresetOutcome.BlankName -> {
@@ -4264,7 +2740,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun exportPresetsToClipboard() {
+    internal fun exportPresetsToClipboard() {
         val json = presetStore.exportJson()
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         if (clipboard == null) {
@@ -4275,7 +2751,7 @@ class MainActivity : ComponentActivity() {
         statusText = "已复制 ${presetStore.all().size} 条预设 JSON 到剪贴板"
     }
 
-    private fun exportSinglePresetToClipboard(preset: TuningPreset) {
+    internal fun exportSinglePresetToClipboard(preset: TuningPreset) {
         val json = presetStore.exportSingleJson(preset)
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         if (clipboard == null) {
@@ -4286,7 +2762,7 @@ class MainActivity : ComponentActivity() {
         statusText = "已复制预设「${preset.name}」JSON 到剪贴板"
     }
 
-    private fun importPresetsFromText(text: String) {
+    internal fun importPresetsFromText(text: String) {
         val result = presetStore.importJson(text)
         presetImportDialogVisible = false
         presetImportText = ""
@@ -4299,7 +2775,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /** JSON 编辑器：解析文本为 TuningParams 并应用（缺失键保持当前值）。 */
-    private fun saveJsonParamsFromText(text: String) {
+    internal fun saveJsonParamsFromText(text: String) {
         val json = runCatching { JSONObject(text) }.getOrElse { error ->
             statusText = "JSON 解析失败：${error.message ?: error.javaClass.simpleName}"
             return
@@ -4313,7 +2789,7 @@ class MainActivity : ComponentActivity() {
         statusText = "已应用 JSON 参数"
     }
 
-    private fun startBatchPreview(preset: TuningPreset) {
+    internal fun startBatchPreview(preset: TuningPreset) {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate || isGeneratingBatchPreview) {
             statusText = "当前有任务在运行，请等待"
             return
@@ -4418,7 +2894,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openBatchPreviewForPreset(preset: TuningPreset) {
+    internal fun openBatchPreviewForPreset(preset: TuningPreset) {
         activeBatchPreviewPreset = preset
         if (BatchPreviewStore.hasSnapshot(filesDir, preset.id)) {
             // P4 交界：快照读取收敛进 pipeline/，显式传 filesDir。
@@ -4433,7 +2909,7 @@ class MainActivity : ComponentActivity() {
         presetBatchPreviewConfirmTarget = preset
     }
 
-    private fun generateMemoryPreviewAssetsForApp(
+    internal fun generateMemoryPreviewAssetsForApp(
         app: AppEntry,
         pipeline: LocalPipelineConfig,
     ): PreviewAssets {
@@ -4461,7 +2937,7 @@ class MainActivity : ComponentActivity() {
         return previewAssetsForSelections(session, selections).preparedForDraw()
     }
 
-    private fun applyPresetToSelectedApps(preset: TuningPreset) {
+    internal fun applyPresetToSelectedApps(preset: TuningPreset) {
         val session = activeGenerationSession
         val batchPackageNames = if (multiSelectedPackageNames.isNotEmpty()) {
             multiSelectedPackageNames.toList().sorted()
@@ -4486,7 +2962,7 @@ class MainActivity : ComponentActivity() {
         return
     }
 
-    private fun executeApplyPresetToSelectedApps(preset: TuningPreset, batchPackageNames: List<String>) {
+    internal fun executeApplyPresetToSelectedApps(preset: TuningPreset, batchPackageNames: List<String>) {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
             statusText = "当前有任务在运行，请等待"
             return
@@ -4589,7 +3065,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /** 在 APK 选择页多选态下套用当前预设/当前调参批量生成（本地）。 */
-    private fun applyCurrentPresetBatch() {
+    internal fun applyCurrentPresetBatch() {
         val preset = activePresetId?.let { presetStore.get(it) }
         if (preset != null) {
             applyPresetToSelectedApps(preset)
@@ -4615,7 +3091,7 @@ class MainActivity : ComponentActivity() {
         return
     }
 
-    private fun executeApplyCurrentBatch(batchPackageNames: List<String>) {
+    internal fun executeApplyCurrentBatch(batchPackageNames: List<String>) {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
             statusText = "当前有任务在运行，请等待"
             return
@@ -4712,7 +3188,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun PresetStatusCard() {
+    internal fun PresetStatusCard() {
         val presets = remember(presetListVersion) { presetStore.all() }
         val activePreset = presets.firstOrNull { it.id == activePresetId }
         val currentParams = currentTuningParams()
@@ -4870,7 +3346,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PresetLibraryCard() {
+    internal fun PresetLibraryCard() {
         val presets = remember(presetListVersion) { presetStore.all() }
         val activePreset = presets.firstOrNull { it.id == activePresetId }
         val currentParams = currentTuningParams()
@@ -5063,7 +3539,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun WallpaperSettingsCard() {
+    internal fun WallpaperSettingsCard() {
         val hasCustom = customWallpaperPath != null
         SectionCard(rowsFullBleed = true) {
             LibrarySettingRow(
@@ -5096,7 +3572,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun BatchPreviewSettingsCard() {
+    internal fun BatchPreviewSettingsCard() {
         SectionCard(rowsFullBleed = true) {
             NumberParameterControl(
                 busy = isBusy,
@@ -5116,7 +3592,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun PresetActionMenuDialog(
+    internal fun PresetActionMenuDialog(
         target: TuningPreset,
         onDismiss: () -> Unit,
     ) {
@@ -5219,7 +3695,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun PresetDeleteConfirmDialog(
+    internal fun PresetDeleteConfirmDialog(
         target: TuningPreset,
         onDismiss: () -> Unit,
     ) {
@@ -5277,7 +3753,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PresetPageDialogs() {
+    internal fun PresetPageDialogs() {
         if (presetSaveDialogVisible) {
             PresetNameDialog(
                 title = "保存当前为预设",
@@ -5347,7 +3823,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PresetBatchPreviewConfirmDialog(
+    internal fun PresetBatchPreviewConfirmDialog(
         preset: TuningPreset,
         onConfirm: () -> Unit,
         onDismiss: () -> Unit,
@@ -5412,7 +3888,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun PresetBatchPreviewProgressDialog() {
+    internal fun PresetBatchPreviewProgressDialog() {
         val progress = batchPreviewProgress ?: return
         val fraction = if (progress.total <= 0) 0f else (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
         MiuixBottomDialog(onDismissRequest = { batchPreviewCancelled = true }) {
@@ -5468,7 +3944,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun BatchPreviewRefreshConfirmDialog(
+    internal fun BatchPreviewRefreshConfirmDialog(
         preset: TuningPreset,
         onConfirm: () -> Unit,
         onDismiss: () -> Unit,
@@ -5539,7 +4015,7 @@ class MainActivity : ComponentActivity() {
      * 左侧滑块修改后此处自动刷新；也可以直接编辑文本，点「保存并应用」生效。
      */
     @Composable
-    private fun JsonSettingsEditor() {
+    internal fun JsonSettingsEditor() {
         val currentParams = currentTuningParams()
         LaunchedEffect(currentParams) {
             draftJsonParamsText = currentParams.toJson().toString(4)
@@ -5608,7 +4084,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun RootWriteConfirmDialog() {
+    internal fun RootWriteConfirmDialog() {
         val request = pendingRootWriteConfirm ?: return
         MiuixBottomDialog(onDismissRequest = { pendingRootWriteConfirm = null }) {
             Column(
@@ -5727,7 +4203,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun GenerationActionCard(selectedApp: AppEntry?) {
+    internal fun GenerationActionCard(selectedApp: AppEntry?) {
         val canRun = selectedApp != null && !isBusy
         SectionCard {
             Row(
@@ -5804,7 +4280,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun GptSettingsCard() {
+    internal fun GptSettingsCard() {
         SectionCard(rowsFullBleed = true) {
             LibraryChoiceRow(
                 title = "调用方式",
@@ -5924,7 +4400,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun RmbgComponentCard() {
+    internal fun RmbgComponentCard() {
         val component = remember(rmbgComponentStatus) { findRmbgComponent() }
 
         SectionCard(rowsFullBleed = true) {
@@ -6092,7 +4568,7 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    private fun formatTreeUriDisplay(uri: Uri?): String? {
+    internal fun formatTreeUriDisplay(uri: Uri?): String? {
         if (uri == null) return null
         // 优先用 treeDocumentId（如 primary:Download/ArtPlusOutput），比 raw Uri 更可读
         val fromId = runCatching { DocumentsContract.getTreeDocumentId(uri) }.getOrNull()
@@ -6106,7 +4582,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun OutputCard() {
+    internal fun OutputCard() {
         SectionCard(rowsFullBleed = true) {
             SettingsInfoRow(
                 title = "Root 目标",
@@ -6267,13 +4743,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun exportCurrentToExternal() {
+    internal fun exportCurrentToExternal() {
         // 保留兼容：设置页旧入口，委托到全量备份
         backupAllToExternal()
     }
 
     @Composable
-    private fun PreviewStripSettingsCard() {
+    internal fun PreviewStripSettingsCard() {
         SectionCard(rowsFullBleed = true) {
             LibrarySettingRow(
                 title = "顶部 1×4 预览条",
@@ -6301,7 +4777,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun LiquidGlassToggleRow() {
+    internal fun LiquidGlassToggleRow() {
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
         val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
@@ -6351,7 +4827,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun InputSettingsCard(launcherCount: Int, totalCount: Int, generatedCount: Int) {
+    internal fun InputSettingsCard(launcherCount: Int, totalCount: Int, generatedCount: Int) {
         SectionCard(rowsFullBleed = true) {
             SettingsInfoRow(
                 title = "应用范围",
@@ -6373,7 +4849,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun ShowSystemAppsToggleRow() {
+    internal fun ShowSystemAppsToggleRow() {
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
         val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
@@ -6435,7 +4911,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppPickerStatusCard(
+    internal fun AppPickerStatusCard(
         filteredCount: Int,
         totalCount: Int,
         generatedCount: Int,
@@ -6538,7 +5014,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppPickerFilterCard() {
+    internal fun AppPickerFilterCard() {
         SectionCard(rowsFullBleed = true) {
             LibrarySettingRow(
                 title = "显示系统应用",
@@ -6575,7 +5051,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppPickerSearchCard(filteredApps: List<AppEntry>) {
+    internal fun AppPickerSearchCard(filteredApps: List<AppEntry>) {
         SectionCard {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -6647,7 +5123,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppPickerControlsCard(
+    internal fun AppPickerControlsCard(
         filteredCount: Int,
         totalCount: Int,
         generatedCount: Int,
@@ -6670,7 +5146,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppMultiSelectActions(filteredApps: List<AppEntry>) {
+    internal fun AppMultiSelectActions(filteredApps: List<AppEntry>) {
         val filteredPackageNames = remember(filteredApps) { filteredApps.map { it.packageName }.toSet() }
         val selectedCount = multiSelectedPackageNames.size
         val hasFiltered = filteredPackageNames.isNotEmpty()
@@ -6722,7 +5198,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun AppRow(
+    internal fun AppRow(
         entry: AppEntry,
         selected: Boolean,
         multiSelected: Boolean,
@@ -6855,7 +5331,7 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    private fun AppIcon(entry: AppEntry, size: Dp) {
+    internal fun AppIcon(entry: AppEntry, size: Dp) {
         var bitmap by remember(entry.iconKey) {
             mutableStateOf(getCachedAppIcon(entry.iconKey))
         }
@@ -6892,9 +5368,9 @@ class MainActivity : ComponentActivity() {
     }
 
     // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    private fun getCachedAppIcon(key: String): Bitmap? = getCachedAppIcon(appIconCache, key)
+    internal fun getCachedAppIcon(key: String): Bitmap? = getCachedAppIcon(appIconCache, key)
 
-    private suspend fun loadCachedAppIcon(entry: AppEntry): Bitmap? =
+    internal suspend fun loadCachedAppIcon(entry: AppEntry): Bitmap? =
         withContext(Dispatchers.IO) {
             val cached = synchronized(appIconCache) {
                 appIconCache.get(entry.iconKey)
@@ -6912,7 +5388,7 @@ class MainActivity : ComponentActivity() {
         }
 
     // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    private fun loadAppIconBitmap(entry: AppEntry): Bitmap =
+    internal fun loadAppIconBitmap(entry: AppEntry): Bitmap =
         loadAppIconBitmap(entry, packageManager, ICON_CACHE_SIZE)
 
     /**
@@ -6920,7 +5396,7 @@ class MainActivity : ComponentActivity() {
      * 静态壁纸经 ImageWallpaper 暴露为 BitmapDrawable，直接取位图，无需任何权限；
      * 失败返回 null，调用方走内置图兜底。
      */
-    private fun loadPreviewWallpaperBitmap(): Bitmap? =
+    internal fun loadPreviewWallpaperBitmap(): Bitmap? =
         runCatching {
             val drawable = WallpaperManager.getInstance(this).drawable ?: return null
             val sampled = if (drawable is BitmapDrawable) {
@@ -6944,7 +5420,7 @@ class MainActivity : ComponentActivity() {
             sampled?.also { it.prepareToDraw() }
         }.getOrNull()
 
-    private fun loadBundledPreviewWallpaperBitmap(): Bitmap? =
+    internal fun loadBundledPreviewWallpaperBitmap(): Bitmap? =
         runCatching {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeResource(resources, R.drawable.preview_wallpaper, bounds)
@@ -6965,7 +5441,7 @@ class MainActivity : ComponentActivity() {
      * 导入用户上传的壁纸：只居中裁剪为 16:9，不做任何缩放压缩，避免变形；
      * 以 PNG 无损存档到私有目录，「桌面」背景优先使用。
      */
-    private fun importCustomWallpaper(uri: Uri) {
+    internal fun importCustomWallpaper(uri: Uri) {
         if (isBusy) {
             return
         }
@@ -6999,7 +5475,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun clearCustomWallpaper() {
+    internal fun clearCustomWallpaper() {
         runCatching {
             customWallpaperPath?.let { File(it).delete() }
             File(filesDir, CUSTOM_WALLPAPER_FILE).delete()
@@ -7011,7 +5487,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /** 居中裁剪为 16:9（竖屏），只裁剪不缩放；已符合比例则原图返回。 */
-    private fun centerCropToSixteenNine(source: Bitmap): Bitmap {
+    internal fun centerCropToSixteenNine(source: Bitmap): Bitmap {
         val w = source.width
         val h = source.height
         if (w <= 0 || h <= 0) {
@@ -7031,7 +5507,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun loadCustomWallpaperBitmap(): Bitmap? =
+    internal fun loadCustomWallpaperBitmap(): Bitmap? =
         runCatching {
             val path = customWallpaperPath ?: return null
             val file = File(path)
@@ -7046,7 +5522,7 @@ class MainActivity : ComponentActivity() {
 
 
 
-    private fun loadApps(refreshGenerated: Boolean = false) {
+    internal fun loadApps(refreshGenerated: Boolean = false) {
         // P3 交界：数据核收敛进 data/AppRepository.loadApps(pm)，线程/UI/状态写入留本编排。
         didRequestAppLoad = true
         Thread {
@@ -7071,7 +5547,7 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
-    private fun refreshGeneratedPackages(entries: List<AppEntry> = apps.toList()) {
+    internal fun refreshGeneratedPackages(entries: List<AppEntry> = apps.toList()) {
         if (entries.isEmpty()) {
             generatedScanFailed = false
             isScanningGeneratedPackages = false
@@ -7100,7 +5576,7 @@ class MainActivity : ComponentActivity() {
     }
 
     // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    private fun loadGeneratedPackageCache() {
+    internal fun loadGeneratedPackageCache() {
         generatedPackageNames =
             loadGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE))
         generatedScanFailed = false
@@ -7108,13 +5584,13 @@ class MainActivity : ComponentActivity() {
     }
 
     // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    private fun updateGeneratedPackageCache(packages: Set<String>) {
+    internal fun updateGeneratedPackageCache(packages: Set<String>) {
         generatedPackageNames =
             updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), packages)
     }
 
     // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    private fun markPackageGenerated(packageName: String) {
+    internal fun markPackageGenerated(packageName: String) {
         generatedPackageNames = markPackageGenerated(
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
             generatedPackageNames,
@@ -7122,7 +5598,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun loadUiState() {
+    internal fun loadUiState() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         selectedPackageName = prefs.getString(PREF_SELECTED_PACKAGE_NAME, null)
             ?.takeIf { it.isNotBlank() }
@@ -7189,7 +5665,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun saveUiState() {
+    internal fun saveUiState() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putString(PREF_SELECTED_PACKAGE_NAME, selectedPackageName)
@@ -7221,7 +5697,7 @@ class MainActivity : ComponentActivity() {
             .apply()
     }
 
-    private fun refreshArtPlusIcons() {
+    internal fun refreshArtPlusIcons() {
         if (isBusy || isRefreshingArtPlusIcons) {
             return
         }
@@ -7247,7 +5723,7 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
-    private fun refreshPermissionState() {
+    internal fun refreshPermissionState() {
         packageListPermissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             packageManager.checkPermission(Manifest.permission.QUERY_ALL_PACKAGES, packageName) ==
                 PackageManager.PERMISSION_GRANTED
@@ -7257,7 +5733,7 @@ class MainActivity : ComponentActivity() {
         usageAccessGranted = hasUsageAccess()
     }
 
-    private fun requestDeclaredPermissions() {
+    internal fun requestDeclaredPermissions() {
         val permissions = mutableListOf<String>()
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
@@ -7271,7 +5747,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestSpecialPermissionsOnce() {
+    internal fun requestSpecialPermissionsOnce() {
         if (usageAccessGranted) {
             return
         }
@@ -7287,7 +5763,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openAppPermissionSettings() {
+    internal fun openAppPermissionSettings() {
         runCatching {
             startActivity(
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
@@ -7298,7 +5774,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openUsageAccessSettings() {
+    internal fun openUsageAccessSettings() {
         runCatching {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }.onFailure {
@@ -7306,7 +5782,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun openExternalLink(url: String) {
+    internal fun openExternalLink(url: String) {
         runCatching {
             startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
         }.onFailure {
@@ -7314,13 +5790,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun currentVersionName(): String = try {
+    internal fun currentVersionName(): String = try {
         packageManager.getPackageInfo(packageName, 0).versionName ?: "1.4.0"
     } catch (_: Exception) {
         "1.4.0"
     }
 
-    private fun isNewerVersion(latest: String, current: String): Boolean {
+    internal fun isNewerVersion(latest: String, current: String): Boolean {
         val latestParts = latest.trim().removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
         val currentParts = current.trim().removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
         val len = maxOf(latestParts.size, currentParts.size)
@@ -7332,7 +5808,7 @@ class MainActivity : ComponentActivity() {
         return false
     }
 
-    private fun checkForUpdate() {
+    internal fun checkForUpdate() {
         if (isCheckingUpdate) return
         isCheckingUpdate = true
         statusText = "正在检查更新..."
@@ -7381,7 +5857,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun hasUsageAccess(): Boolean {
+    internal fun hasUsageAccess(): Boolean {
         val appOps = getSystemService(AppOpsManager::class.java) ?: return false
         val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             appOps.unsafeCheckOpNoThrow(
@@ -7400,7 +5876,7 @@ class MainActivity : ComponentActivity() {
         return mode == AppOpsManager.MODE_ALLOWED
     }
 
-    private fun getApplicationInfoCompat(packageName: String): ApplicationInfo =
+    internal fun getApplicationInfoCompat(packageName: String): ApplicationInfo =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             packageManager.getApplicationInfo(
                 packageName,
@@ -7411,11 +5887,11 @@ class MainActivity : ComponentActivity() {
             packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
         }
 
-    private fun isSystemApp(applicationInfo: ApplicationInfo): Boolean = AppVisibility.isSystemApp(applicationInfo)
+    internal fun isSystemApp(applicationInfo: ApplicationInfo): Boolean = AppVisibility.isSystemApp(applicationInfo)
 
     internal fun isSystemAppFlags(flags: Int): Boolean = AppVisibility.isSystemAppFlags(flags)
 
-    private fun shouldShowInAppPicker(entry: AppEntry): Boolean = AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, showSystemApps, packageName)
+    internal fun shouldShowInAppPicker(entry: AppEntry): Boolean = AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, showSystemApps, packageName)
 
     internal fun shouldShowInAppPickerForTest(
         flags: Int,
@@ -7432,11 +5908,11 @@ class MainActivity : ComponentActivity() {
         launchable: Boolean,
     ): Boolean = AppVisibility.shouldShowInPicker(flags, pkg, selfPackageName, showSystemApps, launchable)
 
-    private fun isDebugGenerateIntent(intent: Intent?): Boolean =
+    internal fun isDebugGenerateIntent(intent: Intent?): Boolean =
         intent?.getStringExtra(EXTRA_DEBUG_GENERATE_PACKAGE)?.isNotBlank() == true &&
             isDebugTokenValid(intent.getStringExtra(EXTRA_DEBUG_GENERATE_TOKEN))
 
-    private fun handleDebugGenerateIntent(intent: Intent?) {
+    internal fun handleDebugGenerateIntent(intent: Intent?) {
         if (!isDebugBuild()) {
             return
         }
@@ -7465,7 +5941,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun startDebugGeneration(
+    internal fun startDebugGeneration(
         packageName: String,
         useGpt: Boolean,
         installWithRoot: Boolean,
@@ -7534,7 +6010,7 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
-    private fun debugInspectPackage(packageName: String, includeRmbg: Boolean): JSONObject {
+    internal fun debugInspectPackage(packageName: String, includeRmbg: Boolean): JSONObject {
         val info = getApplicationInfoCompat(packageName)
         val label = runCatching { info.loadLabel(packageManager)?.toString() }
             .getOrNull()
@@ -7687,7 +6163,7 @@ class MainActivity : ComponentActivity() {
         return metadata
     }
 
-    private data class RmbgDebugCandidate(
+    internal data class RmbgDebugCandidate(
         val foreground: Bitmap,
         val result: CandidateBuildResult?,
         val coverage: Double,
@@ -7697,7 +6173,7 @@ class MainActivity : ComponentActivity() {
         val inference: RmbgInferenceReport,
     )
 
-    private fun loadGptSettings() {
+    internal fun loadGptSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         gptImageMode = GptImageMode.fromValue(prefs.getString(PREF_GPT_MODE, GptImageMode.Images.value))
         gptPromptPreset = GptPromptPreset.fromValue(
@@ -7713,7 +6189,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun saveGptSettings(): Boolean {
+    internal fun saveGptSettings(): Boolean {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val encryptedKey = encryptSecret(gptApiKey.trim())
         return prefs
@@ -7734,7 +6210,7 @@ class MainActivity : ComponentActivity() {
             .commit()
     }
 
-    private fun saveSettingsPage() {
+    internal fun saveSettingsPage() {
         val gptSaved = runCatching { saveGptSettings() }.getOrDefault(false)
         val rmbgSaved = runCatching { saveRmbgSettings() }.getOrDefault(false)
         saveLocalSeparationSettings()
@@ -7746,7 +6222,7 @@ class MainActivity : ComponentActivity() {
         statusText = if (gptSaved && rmbgSaved) "设置已保存" else "设置保存失败"
     }
 
-    private fun loadGptApiKey(prefs: android.content.SharedPreferences): String {
+    internal fun loadGptApiKey(prefs: android.content.SharedPreferences): String {
         val encrypted = prefs.getString(PREF_GPT_API_KEY_ENCRYPTED, null)
         val decrypted = encrypted
             ?.takeIf { it.isNotBlank() }
@@ -7768,7 +6244,7 @@ class MainActivity : ComponentActivity() {
         return legacyPlain
     }
 
-    private fun encryptSecret(value: String): String {
+    internal fun encryptSecret(value: String): String {
         if (value.isBlank()) {
             return ""
         }
@@ -7779,7 +6255,7 @@ class MainActivity : ComponentActivity() {
             .joinToString(":") { Base64.encodeToString(it, Base64.NO_WRAP) }
     }
 
-    private fun decryptSecret(value: String): String {
+    internal fun decryptSecret(value: String): String {
         val parts = value.split(':')
         if (parts.size != 2) {
             error("invalid encrypted secret")
@@ -7791,7 +6267,7 @@ class MainActivity : ComponentActivity() {
         return String(cipher.doFinal(encrypted), StandardCharsets.UTF_8)
     }
 
-    private fun gptSecretKey(): SecretKey {
+    internal fun gptSecretKey(): SecretKey {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
         (keyStore.getKey(KEYSTORE_GPT_KEY_ALIAS, null) as? SecretKey)?.let { return it }
         val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
@@ -7808,7 +6284,7 @@ class MainActivity : ComponentActivity() {
         return keyGenerator.generateKey()
     }
 
-    private fun loadRmbgSettings() {
+    internal fun loadRmbgSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         rmbgComponentUrl = prefs.getString(PREF_RMBG_COMPONENT_URL, DEFAULT_RMBG_COMPONENT_URL)
             ?.takeIf { it.isNotBlank() }
@@ -7825,28 +6301,28 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun saveRmbgSettings(): Boolean =
+    internal fun saveRmbgSettings(): Boolean =
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putString(PREF_RMBG_COMPONENT_URL, rmbgComponentUrl.trim())
             .putInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
             .commit()
 
-    private fun loadLocalSeparationSettings() {
+    internal fun loadLocalSeparationSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         localSeparationMode = LocalSeparationMode.fromValue(
             prefs.getString(PREF_LOCAL_SEPARATION_MODE, LocalSeparationMode.Auto.value),
         )
     }
 
-    private fun saveLocalSeparationSettings() {
+    internal fun saveLocalSeparationSettings() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putString(PREF_LOCAL_SEPARATION_MODE, localSeparationMode.value)
             .apply()
     }
 
-    private fun updateLocalSeparationMode(mode: LocalSeparationMode) {
+    internal fun updateLocalSeparationMode(mode: LocalSeparationMode) {
         if (localSeparationMode == mode) {
             return
         }
@@ -7862,7 +6338,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun updateLocalWorkflowToggle(name: String, enabled: Boolean) {
+    internal fun updateLocalWorkflowToggle(name: String, enabled: Boolean) {
         val previous = when (name) {
             "background" -> localBackgroundSeparationEnabled
             "adaptive" -> localAdaptiveSelectionEnabled
@@ -7912,7 +6388,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = true)
     }
 
-    private fun loadImageSettings() {
+    internal fun loadImageSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val storedValue = prefs.getInt(
             PREF_FOREGROUND_SUBJECT_PERCENT,
@@ -8084,7 +6560,7 @@ class MainActivity : ComponentActivity() {
             .apply()
     }
 
-    private fun updateForegroundSubjectPercent(value: Int) {
+    internal fun updateForegroundSubjectPercent(value: Int) {
         foregroundSubjectPercent = value.coerceIn(
             MIN_FOREGROUND_SUBJECT_PERCENT,
             MAX_FOREGROUND_SUBJECT_PERCENT,
@@ -8097,7 +6573,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateForegroundShadowLevel(value: Int) {
+    internal fun updateForegroundShadowLevel(value: Int) {
         foregroundShadowLevel = value.coerceIn(
             MIN_FOREGROUND_SHADOW_LEVEL,
             MAX_FOREGROUND_SHADOW_LEVEL,
@@ -8107,14 +6583,14 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun migrateLegacyPercent(value: Int, fallback: Int): Int =
+    internal fun migrateLegacyPercent(value: Int, fallback: Int): Int =
         when {
             value in 1..100 -> value
             value <= 0 -> 1
             else -> fallback
         }
 
-    private fun updateMonochromeThemeScalePercent(value: Int) {
+    internal fun updateMonochromeThemeScalePercent(value: Int) {
         val percent = value.coerceIn(MIN_MONOCHROME_THEME_SCALE_PERCENT, MAX_MONOCHROME_THEME_SCALE_PERCENT)
         monochromeThemeScale = (percent.toFloat() / 100f).coerceIn(
             MIN_MONOCHROME_THEME_SCALE,
@@ -8125,7 +6601,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateBackgroundSeparationPercent(value: Int) {
+    internal fun updateBackgroundSeparationPercent(value: Int) {
         backgroundSeparationPercent = value.coerceIn(
             MIN_BACKGROUND_SEPARATION_PERCENT,
             MAX_BACKGROUND_SEPARATION_PERCENT,
@@ -8135,7 +6611,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = true)
     }
 
-    private fun updatePlateRemovalPercent(value: Int) {
+    internal fun updatePlateRemovalPercent(value: Int) {
         plateRemovalPercent = value.coerceIn(
             MIN_PLATE_REMOVAL_PERCENT,
             MAX_PLATE_REMOVAL_PERCENT,
@@ -8145,7 +6621,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = true)
     }
 
-    private fun updateShadowRemovalPercent(value: Int) {
+    internal fun updateShadowRemovalPercent(value: Int) {
         shadowRemovalPercent = value.coerceIn(
             MIN_SHADOW_REMOVAL_PERCENT,
             MAX_SHADOW_REMOVAL_PERCENT,
@@ -8155,7 +6631,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = true)
     }
 
-    private fun updateEdgePolishPercent(value: Int) {
+    internal fun updateEdgePolishPercent(value: Int) {
         edgePolishPercent = value.coerceIn(
             MIN_EDGE_POLISH_PERCENT,
             MAX_EDGE_POLISH_PERCENT,
@@ -8165,7 +6641,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateRmbgAlphaStrengthPercent(value: Int) {
+    internal fun updateRmbgAlphaStrengthPercent(value: Int) {
         rmbgAlphaStrengthPercent = value.coerceIn(
             MIN_RMBG_ALPHA_STRENGTH_PERCENT,
             MAX_RMBG_ALPHA_STRENGTH_PERCENT,
@@ -8175,7 +6651,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateRmbgEdgeFeatherPercent(value: Int) {
+    internal fun updateRmbgEdgeFeatherPercent(value: Int) {
         rmbgEdgeFeatherPercent = value.coerceIn(
             MIN_RMBG_EDGE_FEATHER_PERCENT,
             MAX_RMBG_EDGE_FEATHER_PERCENT,
@@ -8185,7 +6661,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateRmbgEdgeAdjustPercent(value: Int) {
+    internal fun updateRmbgEdgeAdjustPercent(value: Int) {
         rmbgEdgeAdjustPercent = value.coerceIn(
             MIN_RMBG_EDGE_ADJUST_PERCENT,
             MAX_RMBG_EDGE_ADJUST_PERCENT,
@@ -8195,7 +6671,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateRmbgWeakAlphaKeepPercent(value: Int) {
+    internal fun updateRmbgWeakAlphaKeepPercent(value: Int) {
         rmbgWeakAlphaKeepPercent = value.coerceIn(
             MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
             MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
@@ -8205,14 +6681,14 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun currentRmbgModelPreset(): RmbgModelPreset {
+    internal fun currentRmbgModelPreset(): RmbgModelPreset {
         val url = rmbgComponentUrl.trim()
         return RMBG_MODEL_PRESETS.firstOrNull { preset ->
             preset.url.isNotBlank() && preset.url == url
         } ?: RMBG_MODEL_PRESET_CUSTOM
     }
 
-    private fun updateRmbgModelPreset(preset: RmbgModelPreset) {
+    internal fun updateRmbgModelPreset(preset: RmbgModelPreset) {
         if (preset == RMBG_MODEL_PRESET_CUSTOM) {
             rmbgComponentSaveStatus = ""
             statusText = "RMBG 使用自定义 URL"
@@ -8228,7 +6704,7 @@ class MainActivity : ComponentActivity() {
         statusText = "RMBG 预设已选择: ${preset.label}"
     }
 
-    private fun rmbgInferenceStatusSummary(): String {
+    internal fun rmbgInferenceStatusSummary(): String {
         if (isGeneratingRmbgCandidate) {
             return rmbgCandidateStatusText.ifBlank { "RMBG运行中" }
         }
@@ -8239,7 +6715,7 @@ class MainActivity : ComponentActivity() {
         return "尚未运行"
     }
 
-    private fun saveImageTuningSettings() {
+    internal fun saveImageTuningSettings() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, foregroundSubjectPercent)
@@ -8284,7 +6760,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /** 汇总当前全部调参字段为不可变快照（预设保存、撤销、debug 往返共用）。 */
-    private fun currentTuningParams(): TuningParams =
+    internal fun currentTuningParams(): TuningParams =
         TuningParams(
             foregroundSubjectPercent = foregroundSubjectPercent,
             foregroundShadowLevel = foregroundShadowLevel,
@@ -8345,14 +6821,14 @@ class MainActivity : ComponentActivity() {
             previewMonochromeDark = previewSelections.monochromeDark.name,
         )
 
-    private fun currentLocalPipelineConfig(): LocalPipelineConfig =
+    internal fun currentLocalPipelineConfig(): LocalPipelineConfig =
         LocalPipelineConfig.from(currentTuningParams())
 
     /**
      * 应用一份参数快照：写全部字段 + draft 文本，可选持久化并刷新预览。
      * 预设、debug HTTP、撤销/批量都走这里。
      */
-    private fun applyTuningParams(
+    internal fun applyTuningParams(
         params: TuningParams,
         rebuildCandidates: Boolean = true,
         persist: Boolean = true,
@@ -8467,7 +6943,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /** 撤销上一次参数应用（预设/批量前自动捕获快照）。 */
-    private fun restoreLastParams() {
+    internal fun restoreLastParams() {
         val snapshot = lastParamsSnapshot ?: run {
             statusText = "没有可还原的参数"
             return
@@ -8482,7 +6958,7 @@ class MainActivity : ComponentActivity() {
      * 仅重置全部调参到出厂默认值（TuningParams 默认构造），不清除已下载的 RMBG 模型与已生成的图标包。
      * 通过 TuningParams 默认值 + applyTuningParams 统一持久化，保证与各迁移逻辑一致。
      */
-    private fun resetToDefaults(confirmed: Boolean = false) {
+    internal fun resetToDefaults(confirmed: Boolean = false) {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
             statusText = "当前有任务在运行，请等待"
             return
@@ -8502,16 +6978,16 @@ class MainActivity : ComponentActivity() {
         statusText = "已恢复默认配置"
     }
 
-    private fun initTuningHistory() {
+    internal fun initTuningHistory() {
         // P2 交界：历史基线进 MainViewModel（冷启动时快照显式同步一次）。
         mainViewModel.resetHistory(currentTuningParams())
     }
 
-    private fun canUndoTuning(): Boolean = mainViewModel.canUndo()
+    internal fun canUndoTuning(): Boolean = mainViewModel.canUndo()
 
-    private fun canRedoTuning(): Boolean = mainViewModel.canRedo()
+    internal fun canRedoTuning(): Boolean = mainViewModel.canRedo()
 
-    private fun undoTuning() {
+    internal fun undoTuning() {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
             statusText = "当前有任务在运行，请等待"
             return
@@ -8528,7 +7004,7 @@ class MainActivity : ComponentActivity() {
         statusText = "已后退到上一个配置"
     }
 
-    private fun redoTuning() {
+    internal fun redoTuning() {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
             statusText = "当前有任务在运行，请等待"
             return
@@ -8546,14 +7022,14 @@ class MainActivity : ComponentActivity() {
     }
 
     /** 启动时统一加载调参相关设置（保留各迁移分支）。 */
-    private fun loadTuningParams() {
+    internal fun loadTuningParams() {
         loadLocalSeparationSettings()
         loadImageSettings()
         loadLiquidGlassSettings()
         draftJsonParamsText = currentTuningParams().toJson().toString(4)
     }
 
-    private fun updateNightSubjectLightBackgroundEnabled(enabled: Boolean) {
+    internal fun updateNightSubjectLightBackgroundEnabled(enabled: Boolean) {
         if (nightSubjectLightBackgroundEnabled == enabled) {
             return
         }
@@ -8567,28 +7043,28 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updatePreviewCornerRadiusDp(value: Int) {
+    internal fun updatePreviewCornerRadiusDp(value: Int) {
         val next = value.coerceIn(MIN_PREVIEW_CORNER_RADIUS_DP, MAX_PREVIEW_CORNER_RADIUS_DP)
         previewCornerRadiusDp = next
         draftPreviewCornerRadiusDpText = next.toString()
         saveUiState()
     }
 
-    private fun updatePreviewIconSizeDp(value: Int) {
+    internal fun updatePreviewIconSizeDp(value: Int) {
         val next = value.coerceIn(MIN_PREVIEW_ICON_SIZE_DP, MAX_PREVIEW_ICON_SIZE_DP)
         previewIconSizeDp = next
         draftPreviewIconSizeDpText = next.toString()
         saveUiState()
     }
 
-    private fun updateBatchPreviewCount(value: Int) {
+    internal fun updateBatchPreviewCount(value: Int) {
         val next = value.coerceIn(MIN_BATCH_PREVIEW_COUNT, MAX_BATCH_PREVIEW_COUNT)
         batchPreviewCount = next
         draftBatchPreviewCountText = next.toString()
         saveUiState()
     }
 
-    private fun updateBatchPreviewColumns(value: Int) {
+    internal fun updateBatchPreviewColumns(value: Int) {
         val next = value.coerceIn(2, 5)
         batchPreviewColumns = next
         draftBatchPreviewColumnsText = next.toString()
@@ -8604,21 +7080,21 @@ class MainActivity : ComponentActivity() {
         saveUiState()
     }
 
-    private fun updateBatchPreviewIconSizeDp(value: Int) {
+    internal fun updateBatchPreviewIconSizeDp(value: Int) {
         val next = value.coerceIn(40, 84)
         batchPreviewIconSizeDp = next
         draftBatchPreviewIconSizeDpText = next.toString()
         saveUiState()
     }
 
-    private fun updateBatchPreviewCornerRadiusDp(value: Int) {
+    internal fun updateBatchPreviewCornerRadiusDp(value: Int) {
         val next = value.coerceIn(0, 36)
         batchPreviewCornerRadiusDp = next
         draftBatchPreviewCornerRadiusDpText = next.toString()
         saveUiState()
     }
 
-    private fun updateBatchPreviewDesktopBackground(option: PreviewDesktopBackground) {
+    internal fun updateBatchPreviewDesktopBackground(option: PreviewDesktopBackground) {
         if (batchPreviewDesktopBackground == option) {
             return
         }
@@ -8626,7 +7102,7 @@ class MainActivity : ComponentActivity() {
         saveUiState()
     }
 
-    private fun updatePreviewDesktopBackground(option: PreviewDesktopBackground) {
+    internal fun updatePreviewDesktopBackground(option: PreviewDesktopBackground) {
         if (previewDesktopBackground == option) {
             return
         }
@@ -8634,7 +7110,7 @@ class MainActivity : ComponentActivity() {
         saveUiState()
     }
 
-    private fun updatePreviewStripEnabled(enabled: Boolean) {
+    internal fun updatePreviewStripEnabled(enabled: Boolean) {
         if (previewStripEnabled == enabled) {
             return
         }
@@ -8647,7 +7123,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun loadLiquidGlassSettings() {
+    internal fun loadLiquidGlassSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val migratedToLayered = prefs.getBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, false)
         liquidGlassEnabled = if (migratedToLayered) {
@@ -8719,14 +7195,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun saveLiquidGlassSettings() {
+    internal fun saveLiquidGlassSettings() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
             .putLiquidGlassSettings()
             .apply()
     }
 
-    private fun SharedPreferences.Editor.putLiquidGlassSettings(): SharedPreferences.Editor =
+    internal fun SharedPreferences.Editor.putLiquidGlassSettings(): SharedPreferences.Editor =
         putBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, true)
             .putBoolean(PREF_LIQUID_GLASS_ENABLED, liquidGlassEnabled)
             .putBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED, liquidGlassBottomBarEnabled)
@@ -8743,7 +7219,7 @@ class MainActivity : ComponentActivity() {
             .putInt(PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, liquidGlassSubjectShadowAlpha)
             .putInt(PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, liquidGlassSubjectOpacityPercent)
 
-    private fun updateLiquidGlassEnabled(enabled: Boolean) {
+    internal fun updateLiquidGlassEnabled(enabled: Boolean) {
         if (liquidGlassEnabled == enabled) {
             return
         }
@@ -8753,7 +7229,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassRadius(value: Int) {
+    internal fun updateLiquidGlassRadius(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)
         liquidGlassRadius = next
         draftLiquidGlassRadiusText = next.toString()
@@ -8762,7 +7238,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassOuterWidth(value: Int) {
+    internal fun updateLiquidGlassOuterWidth(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)
         liquidGlassOuterWidth = next
         draftLiquidGlassOuterWidthText = next.toString()
@@ -8771,7 +7247,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassTopAlpha(value: Int) {
+    internal fun updateLiquidGlassTopAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
         liquidGlassTopAlpha = next
         draftLiquidGlassTopAlphaText = next.toString()
@@ -8780,7 +7256,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassBottomAlpha(value: Int) {
+    internal fun updateLiquidGlassBottomAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
         liquidGlassBottomAlpha = next
         draftLiquidGlassBottomAlphaText = next.toString()
@@ -8789,7 +7265,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassBackgroundMistAlpha(value: Int) {
+    internal fun updateLiquidGlassBackgroundMistAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
         liquidGlassBackgroundMistAlpha = next
         draftLiquidGlassBackgroundMistAlphaText = next.toString()
@@ -8798,7 +7274,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassBottomDarkAlpha(value: Int) {
+    internal fun updateLiquidGlassBottomDarkAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
         liquidGlassBottomDarkAlpha = next
         draftLiquidGlassBottomDarkAlphaText = next.toString()
@@ -8807,7 +7283,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassSubjectScalePercent(value: Int) {
+    internal fun updateLiquidGlassSubjectScalePercent(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
         liquidGlassSubjectScalePercent = next
         draftLiquidGlassSubjectScaleText = next.toString()
@@ -8816,7 +7292,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassSubjectOutlineWidth(value: Int) {
+    internal fun updateLiquidGlassSubjectOutlineWidth(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
         liquidGlassSubjectOutlineWidth = next
         draftLiquidGlassSubjectOutlineWidthText = next.toString()
@@ -8825,7 +7301,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassSubjectInnerOutlineWidth(value: Int) {
+    internal fun updateLiquidGlassSubjectInnerOutlineWidth(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
         liquidGlassSubjectInnerOutlineWidth = next
         draftLiquidGlassSubjectInnerOutlineWidthText = next.toString()
@@ -8834,7 +7310,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassSubjectShadowAlpha(value: Int) {
+    internal fun updateLiquidGlassSubjectShadowAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
         liquidGlassSubjectShadowAlpha = next
         draftLiquidGlassSubjectShadowAlphaText = next.toString()
@@ -8843,7 +7319,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun updateLiquidGlassSubjectOpacityPercent(value: Int) {
+    internal fun updateLiquidGlassSubjectOpacityPercent(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
         liquidGlassSubjectOpacityPercent = next
         draftLiquidGlassSubjectOpacityText = next.toString()
@@ -8852,7 +7328,7 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
-    private fun generateSelected(
+    internal fun generateSelected(
         installWithRoot: Boolean,
         useGpt: Boolean,
         rootWriteMode: RootWriteMode = RootWriteMode.All,
@@ -8946,7 +7422,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun writeSelectedWithRoot(rootWriteMode: RootWriteMode) {
+    internal fun writeSelectedWithRoot(rootWriteMode: RootWriteMode) {
         val entry = apps.firstOrNull { it.packageName == selectedPackageName }
         if (entry == null) {
             statusText = "先选择一个应用"
@@ -9011,7 +7487,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun selectAppAndRestoreGeneratedPreview(entry: AppEntry) {
+    internal fun selectAppAndRestoreGeneratedPreview(entry: AppEntry) {
         val packageName = entry.packageName
         val revision = ++generatedPreviewRestoreRevision
         selectedPackageName = packageName
@@ -9058,7 +7534,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun addLiquidGlassToSelectedGenerated() {
+    internal fun addLiquidGlassToSelectedGenerated() {
         val entry = apps.firstOrNull { it.packageName == selectedPackageName }
         if (entry == null) {
             statusText = "先选择一个应用"
@@ -9095,7 +7571,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun toggleMultiSelectedPackage(packageName: String) {
+    internal fun toggleMultiSelectedPackage(packageName: String) {
         multiSelectedPackageNames = if (packageName in multiSelectedPackageNames) {
             multiSelectedPackageNames - packageName
         } else {
@@ -9103,7 +7579,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun addLiquidGlassToMultiSelectedGenerated() {
+    internal fun addLiquidGlassToMultiSelectedGenerated() {
         val packageNames = multiSelectedPackageNames.toList().sorted()
         if (packageNames.isEmpty()) {
             statusText = "先选择要添加光影的应用"
@@ -9123,7 +7599,7 @@ class MainActivity : ComponentActivity() {
         return
     }
 
-    private fun executeAddLiquidGlassToMultiSelectedGenerated(packageNames: List<String>) {
+    internal fun executeAddLiquidGlassToMultiSelectedGenerated(packageNames: List<String>) {
         if (isBusy) {
             return
         }
@@ -9181,7 +7657,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun existingGeneratedPackageDir(packageName: String): File {
+    internal fun existingGeneratedPackageDir(packageName: String): File {
         val currentPreviewDir = previewDirPath
             ?.takeIf { previewPackageName == packageName }
             ?.let(::File)
@@ -9198,7 +7674,7 @@ class MainActivity : ComponentActivity() {
         return copyRootGeneratedPackageToLocal(packageName)
     }
 
-    private fun buildGeneratedPackageSession(packageName: String, packageDir: File): GenerationSession {
+    internal fun buildGeneratedPackageSession(packageName: String, packageDir: File): GenerationSession {
         val recfg = decodeGeneratedBitmap(packageDir, FOREGROUND_ORIGINAL_BACKUP_NAME)
             ?: decodeGeneratedBitmap(packageDir, "recfg.png")
             ?: error("现有图标包缺少 recfg.png")
@@ -9227,20 +7703,20 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun artPlusPackageDir(packageName: String): File {
+    internal fun artPlusPackageDir(packageName: String): File {
         val base = getExternalFilesDir("ArtPlus") ?: File(filesDir, "ArtPlus")
         return File(base, packageName)
     }
 
-    private fun rootGeneratedPreviewDir(packageName: String): File =
+    internal fun rootGeneratedPreviewDir(packageName: String): File =
         File(File(filesDir, "RootGeneratedPreview"), packageName)
 
-    private fun hasGeneratedPackageBaseAssets(dir: File): Boolean =
+    internal fun hasGeneratedPackageBaseAssets(dir: File): Boolean =
         dir.isDirectory &&
             File(dir, "recbg.png").isFile &&
             File(dir, "recfg.png").isFile
 
-    private fun copyRootGeneratedPackageToLocal(packageName: String): File {
+    internal fun copyRootGeneratedPackageToLocal(packageName: String): File {
         val targetDir = rootGeneratedPreviewDir(packageName)
         ensureFreshDir(targetDir)
         val sourceDir = "$ROOT_UXICONS_DIR/$packageName"
@@ -9269,7 +7745,7 @@ class MainActivity : ComponentActivity() {
         return targetDir
     }
 
-    private fun applyLiquidGlassToGeneratedPackage(dir: File) {
+    internal fun applyLiquidGlassToGeneratedPackage(dir: File) {
         val baseRecbg = decodeGeneratedBitmap(dir, "recbg.png")
             ?: error("现有图标包缺少 recbg.png")
         val originalRecfgFile = File(dir, FOREGROUND_ORIGINAL_BACKUP_NAME)
@@ -9314,7 +7790,7 @@ class MainActivity : ComponentActivity() {
         savePng(normalDarkForeground(recfg2x2, recbg2x2), File(dir, "rec_night_2x2.png"))
     }
 
-    private fun writeDefaultSubjectMonochromeFiles(
+    internal fun writeDefaultSubjectMonochromeFiles(
         dir: File,
         baseRecfg: Bitmap,
         overwriteExisting: Boolean,
@@ -9342,7 +7818,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun glassBackgroundForGeneratedPackage(
+    internal fun glassBackgroundForGeneratedPackage(
         dir: File,
         name: String,
         fallback: Bitmap,
@@ -9358,10 +7834,10 @@ class MainActivity : ComponentActivity() {
         return liquidGlassBackgroundForSize(resized, width, height, forceLiquidGlass = true)
     }
 
-    private fun decodeGeneratedBitmap(dir: File, name: String): Bitmap? =
+    internal fun decodeGeneratedBitmap(dir: File, name: String): Bitmap? =
         BitmapFactory.decodeFile(File(dir, name).absolutePath)
 
-    private fun installLiquidGlassFilesWithRoot(packageDir: File, packageName: String) {
+    internal fun installLiquidGlassFilesWithRoot(packageDir: File, packageName: String) {
         val target = "$ROOT_UXICONS_DIR/$packageName"
         val source = packageDir.absolutePath
         val names = listOf(
@@ -9401,7 +7877,7 @@ class MainActivity : ComponentActivity() {
         runRootCommand(command, ROOT_SCAN_TIMEOUT_MS)
     }
 
-    private fun generateArtPlusPackage(
+    internal fun generateArtPlusPackage(
         app: AppEntry,
         useGpt: Boolean,
         localModeOverride: LocalSeparationMode? = null,
@@ -9450,7 +7926,7 @@ class MainActivity : ComponentActivity() {
     }
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun buildLocalCandidates(
+    internal fun buildLocalCandidates(
         localSource: LocalIconLayers,
         sourceIcon: Bitmap,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
@@ -9464,7 +7940,7 @@ class MainActivity : ComponentActivity() {
         backgroundSeparationPercent,
     )
 
-    private fun buildRmbgCandidate(sourceIcon: Bitmap): CandidateBuildResult? {
+    internal fun buildRmbgCandidate(sourceIcon: Bitmap): CandidateBuildResult? {
         val component = findRmbgComponent() ?: return null
         return runCatching {
             val mask = runRmbgAlphaMask(sourceIcon, component)
@@ -9496,7 +7972,7 @@ class MainActivity : ComponentActivity() {
         }.getOrElse { throw it }
     }
 
-    private fun rebuildRmbgBackground(sourceIcon: Bitmap, foreground: Bitmap): Bitmap {
+    internal fun rebuildRmbgBackground(sourceIcon: Bitmap, foreground: Bitmap): Bitmap {
         val fallback = solidBitmap(
             sourceIcon.width,
             sourceIcon.height,
@@ -9505,13 +7981,13 @@ class MainActivity : ComponentActivity() {
         return rebuildComposedIconBackground(sourceIcon, foreground, fallback)
     }
 
-    private fun rmbgValidationWarning(coverage: Double, bounds: Bounds?, cropRisk: Boolean): String {
+    internal fun rmbgValidationWarning(coverage: Double, bounds: Bounds?, cropRisk: Boolean): String {
         val coverageText = (coverage * 100.0).roundToInt()
         val boundsText = bounds?.let { "${it.width()}x${it.height()}@${it.left},${it.top}" } ?: "无"
         return "RMBG候选未通过校验，已保留: 覆盖率 ${coverageText}%，边界 $boundsText，贴边风险 ${if (cropRisk) "是" else "否"}"
     }
 
-    private fun buildRmbgDebugCandidate(sourceIcon: Bitmap): RmbgDebugCandidate {
+    internal fun buildRmbgDebugCandidate(sourceIcon: Bitmap): RmbgDebugCandidate {
         val component = findRmbgComponent() ?: error("未安装 RMBG 组件 ZIP")
         val mask = runRmbgAlphaMask(sourceIcon, component)
         val tunedAlpha = tuneRmbgAlpha(mask.alpha, sourceIcon.width, sourceIcon.height)
@@ -9550,9 +8026,9 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun rmbgComponentDir(): File = File(filesDir, RMBG_COMPONENT_DIR)
+    internal fun rmbgComponentDir(): File = File(filesDir, RMBG_COMPONENT_DIR)
 
-    private fun findRmbgComponent(): RmbgComponent? {
+    internal fun findRmbgComponent(): RmbgComponent? {
         val dir = rmbgComponentDir()
         val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: return null
         val model = File(dir, RMBG_MODEL_NAME)
@@ -9562,7 +8038,7 @@ class MainActivity : ComponentActivity() {
         return RmbgComponent(dir, abi, model)
     }
 
-    private fun clearInstalledRmbgComponent() {
+    internal fun clearInstalledRmbgComponent() {
         if (isBusy || isGeneratingRmbgCandidate || isInstallingRmbgComponent) {
             return
         }
@@ -9583,7 +8059,7 @@ class MainActivity : ComponentActivity() {
         statusText = if (deleted) "已清除 RMBG" else "没有已安装 RMBG"
     }
 
-    private fun installRmbgComponent(uri: Uri) {
+    internal fun installRmbgComponent(uri: Uri) {
         if (isBusy || isGeneratingRmbgCandidate || isInstallingRmbgComponent) {
             return
         }
@@ -9620,7 +8096,7 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
-    private fun installRmbgComponentFromUrl() {
+    internal fun installRmbgComponentFromUrl() {
         if (isBusy || isGeneratingRmbgCandidate || isInstallingRmbgComponent) {
             return
         }
@@ -9666,7 +8142,7 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
-    private fun installRmbgComponentFromModelUrl(modelUrl: String, modelFile: File): RmbgComponent {
+    internal fun installRmbgComponentFromModelUrl(modelUrl: String, modelFile: File): RmbgComponent {
         val targetDir = rmbgComponentDir()
         val tmpDir = File(filesDir, "$RMBG_COMPONENT_DIR.tmp")
         runCatching { rmbgRuntime?.close() }
@@ -9698,7 +8174,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun installRmbgComponentFromInput(input: InputStream): RmbgComponent {
+    internal fun installRmbgComponentFromInput(input: InputStream): RmbgComponent {
         val targetDir = rmbgComponentDir()
         val tmpDir = File(filesDir, "$RMBG_COMPONENT_DIR.tmp")
         runCatching { rmbgRuntime?.close() }
@@ -9726,7 +8202,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun downloadRmbgFile(urlText: String, target: File, minBytes: Long, label: String) {
+    internal fun downloadRmbgFile(urlText: String, target: File, minBytes: Long, label: String) {
         val url = validatedRemoteUrl(urlText, label, isDebugBuild())
         val connection = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
@@ -9798,7 +8274,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun unzipRmbgComponent(input: InputStream, targetDir: File) {
+    internal fun unzipRmbgComponent(input: InputStream, targetDir: File) {
         val canonicalTarget = targetDir.canonicalFile
         var totalWritten = 0L
         var fileCount = 0
@@ -9843,7 +8319,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun normalizeRmbgModelFile(dir: File) {
+    internal fun normalizeRmbgModelFile(dir: File) {
         val target = File(dir, RMBG_MODEL_NAME)
         if (target.isFile) {
             return
@@ -9855,14 +8331,14 @@ class MainActivity : ComponentActivity() {
         candidate?.copyTo(target, overwrite = true)
     }
 
-    private fun validateRmbgComponentDir(dir: File) {
+    internal fun validateRmbgComponentDir(dir: File) {
         val model = File(dir, RMBG_MODEL_NAME)
         if (!model.isFile || model.length() < RMBG_MIN_MODEL_BYTES) {
             error("缺少 $RMBG_MODEL_NAME")
         }
     }
 
-    private fun copyDirectory(source: File, target: File) {
+    internal fun copyDirectory(source: File, target: File) {
         if (source.isDirectory) {
             target.mkdirs()
             source.listFiles().orEmpty().forEach { child ->
@@ -9876,7 +8352,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private data class RmbgComponent(
+    internal data class RmbgComponent(
         val dir: File,
         val abi: String,
         val model: File,
@@ -9889,17 +8365,17 @@ class MainActivity : ComponentActivity() {
         ).joinToString("|")
     }
 
-    private data class RmbgModelOutput(
+    internal data class RmbgModelOutput(
         val output: FloatArray,
         val report: RmbgInferenceReport,
     )
 
-    private data class RmbgMaskResult(
+    internal data class RmbgMaskResult(
         val alpha: IntArray,
         val report: RmbgInferenceReport,
     )
 
-    private inner class DynamicRmbgRuntime(
+    internal inner class DynamicRmbgRuntime(
         private val component: RmbgComponent,
     ) : AutoCloseable {
         var activeBackend: RmbgInferenceBackend = RmbgInferenceBackend.Cpu
@@ -9988,7 +8464,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun runRmbgModel(component: RmbgComponent, input: FloatBuffer, shape: LongArray): RmbgModelOutput =
+    internal fun runRmbgModel(component: RmbgComponent, input: FloatBuffer, shape: LongArray): RmbgModelOutput =
         synchronized(this) {
             runCatching { rmbgRuntime?.close() }
             rmbgRuntime = null
@@ -10016,7 +8492,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    private fun runRmbgAlphaMask(sourceIcon: Bitmap, component: RmbgComponent): RmbgMaskResult {
+    internal fun runRmbgAlphaMask(sourceIcon: Bitmap, component: RmbgComponent): RmbgMaskResult {
         val inputSize = DEFAULT_RMBG_INPUT_SIZE
         val modelInput = resizeBitmap(sourceIcon, inputSize, inputSize)
         val inputPixels = IntArray(inputSize * inputSize)
@@ -10082,7 +8558,7 @@ class MainActivity : ComponentActivity() {
         return RmbgMaskResult(alpha = scaledPixels, report = modelOutput.report)
     }
 
-    private fun tuneRmbgAlpha(alpha: IntArray, width: Int, height: Int): IntArray {
+    internal fun tuneRmbgAlpha(alpha: IntArray, width: Int, height: Int): IntArray {
         if (alpha.size != width * height || width <= 0 || height <= 0) {
             return alpha.copyOf()
         }
@@ -10153,7 +8629,7 @@ class MainActivity : ComponentActivity() {
         return current
     }
 
-    private fun applyAlphaArrayToSource(source: Bitmap, alpha: IntArray): Bitmap {
+    internal fun applyAlphaArrayToSource(source: Bitmap, alpha: IntArray): Bitmap {
         val width = source.width
         val height = source.height
         val pixels = IntArray(width * height)
@@ -10177,7 +8653,7 @@ class MainActivity : ComponentActivity() {
         return repairTransparentEdgeColors(out)
     }
 
-    private fun applyMaskToSource(pixels: IntArray, width: Int, height: Int, mask: BooleanArray): Bitmap {
+    internal fun applyMaskToSource(pixels: IntArray, width: Int, height: Int, mask: BooleanArray): Bitmap {
         val outPixels = IntArray(pixels.size)
         for (i in pixels.indices) {
             val pixel = pixels[i]
@@ -10198,15 +8674,15 @@ class MainActivity : ComponentActivity() {
     }
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun prepareOriginalForeground(
+    internal fun prepareOriginalForeground(
         source: Bitmap,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
     ): Bitmap = prepareOriginalForeground(source, pipeline, originalForegroundCleanupMode, plateRemovalPercent)
 
-    private fun defaultLocalPreviewChoice(autoChoice: PreviewChoice): PreviewChoice =
+    internal fun defaultLocalPreviewChoice(autoChoice: PreviewChoice): PreviewChoice =
         defaultPreviewChoiceForMode(LocalSeparationMode.Auto, autoChoice)
 
-    private fun defaultPreviewChoiceForMode(mode: LocalSeparationMode, autoChoice: PreviewChoice): PreviewChoice =
+    internal fun defaultPreviewChoiceForMode(mode: LocalSeparationMode, autoChoice: PreviewChoice): PreviewChoice =
         when (mode) {
             LocalSeparationMode.Original -> PreviewChoice.Original
             LocalSeparationMode.Plate -> PreviewChoice.Full
@@ -10217,7 +8693,7 @@ class MainActivity : ComponentActivity() {
             LocalSeparationMode.Full -> PreviewChoice.Full
         }
 
-    private fun writePackageOutputs(session: GenerationSession, selections: PreviewSelections) {
+    internal fun writePackageOutputs(session: GenerationSession, selections: PreviewSelections) {
         val light = candidateWithCustomOverrides(session, PreviewMode.NormalLight, selections.normalLight)
         val lightBaseRecfg = renderCandidateForegroundBase(light)
         val lightRecfg = foregroundForSize(lightBaseRecfg, SIZE_1X1, SIZE_1X1)
@@ -10287,7 +8763,7 @@ class MainActivity : ComponentActivity() {
         savePng(adjustColor(lightRecfg, 0.7f, 0.95f), File(session.outDir, "peb.png"))
     }
 
-    private fun liquidGlassBackgroundForSize(
+    internal fun liquidGlassBackgroundForSize(
         source: Bitmap,
         width: Int,
         height: Int,
@@ -10305,7 +8781,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun foregroundForSize(
+    internal fun foregroundForSize(
         source: Bitmap,
         width: Int,
         height: Int,
@@ -10323,7 +8799,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun renderLayeredLiquidGlassBackground(source: Bitmap): Bitmap {
+    internal fun renderLayeredLiquidGlassBackground(source: Bitmap): Bitmap {
         val width = source.width
         val height = source.height
         val radius = liquidGlassRadiusForSize(width, height)
@@ -10349,7 +8825,7 @@ class MainActivity : ComponentActivity() {
         return applyAlphaMask(out, shapeMask)
     }
 
-    private fun renderLayeredLiquidGlassForeground(source: Bitmap): Bitmap {
+    internal fun renderLayeredLiquidGlassForeground(source: Bitmap): Bitmap {
         val width = source.width
         val height = source.height
         val radius = liquidGlassRadiusForSize(width, height)
@@ -10426,7 +8902,7 @@ class MainActivity : ComponentActivity() {
         return applyAlphaMask(out, shapeMask)
     }
 
-    private fun applyLiquidGlassSubjectOpacity(source: Bitmap, opacityPercent: Int): Bitmap {
+    internal fun applyLiquidGlassSubjectOpacity(source: Bitmap, opacityPercent: Int): Bitmap {
         val targetAlpha = (opacityPercent.coerceIn(
             MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
             MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
@@ -10487,7 +8963,7 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun unpremultiplyChannel(channel: Int, alpha: Int): Int {
+    internal fun unpremultiplyChannel(channel: Int, alpha: Int): Int {
         if (alpha <= 0) {
             return 0
         }
@@ -10497,7 +8973,7 @@ class MainActivity : ComponentActivity() {
         return ((channel * 255f) / alpha.toFloat()).roundToInt().coerceIn(0, 255)
     }
 
-    private fun liquidGlassSubjectNormalizedAlpha(alpha: Int, solidAlphaCutoff: Int): Float {
+    internal fun liquidGlassSubjectNormalizedAlpha(alpha: Int, solidAlphaCutoff: Int): Float {
         if (alpha >= solidAlphaCutoff) {
             return 1f
         }
@@ -10508,7 +8984,7 @@ class MainActivity : ComponentActivity() {
         return t * t * (3f - 2f * t)
     }
 
-    private fun liquidGlassSubjectAlphaScaleBase(pixels: IntArray): Int {
+    internal fun liquidGlassSubjectAlphaScaleBase(pixels: IntArray): Int {
         val visibleAlpha = pixels
             .asSequence()
             .map { AndroidColor.alpha(it) }
@@ -10525,7 +9001,7 @@ class MainActivity : ComponentActivity() {
         ).coerceIn(1, 255)
     }
 
-    private fun drawLayeredLiquidGlassLight(canvas: Canvas, width: Int, height: Int, radius: Float) {
+    internal fun drawLayeredLiquidGlassLight(canvas: Canvas, width: Int, height: Int, radius: Float) {
         val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
         val bottom = height.toFloat()
         val topAlpha = liquidGlassTopAlpha.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
@@ -10613,22 +9089,22 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun liquidGlassRadiusForSize(width: Int, height: Int): Float {
+    internal fun liquidGlassRadiusForSize(width: Int, height: Int): Float {
         val minSide = minOf(width, height).toFloat().coerceAtLeast(1f)
         return (liquidGlassRadius.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS) * liquidGlassScaleForSize(width, height))
             .coerceIn(0f, minSide / 2f)
     }
 
-    private fun liquidGlassScaleForSize(width: Int, height: Int): Float =
+    internal fun liquidGlassScaleForSize(width: Int, height: Int): Float =
         minOf(width, height).toFloat().coerceAtLeast(1f) / SIZE_1X1.toFloat()
 
-    private fun liquidGlassMaskFeather(width: Int, height: Int): Float =
+    internal fun liquidGlassMaskFeather(width: Int, height: Int): Float =
         maxOf(1f, liquidGlassScaleForSize(width, height))
 
-    private fun liquidGlassScaledWidth(width: Int, height: Int, value: Int): Int =
+    internal fun liquidGlassScaledWidth(width: Int, height: Int, value: Int): Int =
         (value * liquidGlassScaleForSize(width, height)).roundToInt().coerceAtLeast(0)
 
-    private fun scaleBitmapAroundCanvasCenter(source: Bitmap, scale: Float): Bitmap {
+    internal fun scaleBitmapAroundCanvasCenter(source: Bitmap, scale: Float): Bitmap {
         val safeScale = scale.coerceIn(
             MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT / 100f,
             MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT / 100f,
@@ -10652,7 +9128,7 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun subjectOutlineLayer(source: Bitmap, width: Int, inner: Boolean, alphaScale: Float): Bitmap {
+    internal fun subjectOutlineLayer(source: Bitmap, width: Int, inner: Boolean, alphaScale: Float): Bitmap {
         val baseAlpha = bitmapAlphaArray(source)
         val edgeAlpha = if (inner) {
             val eroded = minFilterAlpha(baseAlpha, source.width, source.height, width)
@@ -10664,7 +9140,7 @@ class MainActivity : ComponentActivity() {
         return alphaArrayToColorLayer(edgeAlpha, source.width, source.height, AndroidColor.WHITE, alphaScale)
     }
 
-    private fun maxFilterAlpha(alpha: IntArray, width: Int, height: Int, radius: Int): IntArray {
+    internal fun maxFilterAlpha(alpha: IntArray, width: Int, height: Int, radius: Int): IntArray {
         if (radius <= 0) {
             return alpha.copyOf()
         }
@@ -10696,7 +9172,7 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun minFilterAlpha(alpha: IntArray, width: Int, height: Int, radius: Int): IntArray {
+    internal fun minFilterAlpha(alpha: IntArray, width: Int, height: Int, radius: Int): IntArray {
         if (radius <= 0) {
             return alpha.copyOf()
         }
@@ -10732,13 +9208,13 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun whiteWithAlpha(alpha: Float): Int =
+    internal fun whiteWithAlpha(alpha: Float): Int =
         AndroidColor.argb(alpha.roundToInt().coerceIn(0, 255), 255, 255, 255)
 
-    private fun blackWithAlpha(alpha: Float): Int =
+    internal fun blackWithAlpha(alpha: Float): Int =
         AndroidColor.argb(alpha.roundToInt().coerceIn(0, 255), 0, 0, 0)
 
-    private fun applyAlphaMask(source: Bitmap, mask: IntArray): Bitmap {
+    internal fun applyAlphaMask(source: Bitmap, mask: IntArray): Bitmap {
         val width = source.width
         val height = source.height
         val pixels = IntArray(width * height)
@@ -10757,7 +9233,7 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun roundedRectMaskAlpha(width: Int, height: Int, radius: Float, feather: Float): IntArray {
+    internal fun roundedRectMaskAlpha(width: Int, height: Int, radius: Float, feather: Float): IntArray {
         val mask = IntArray(width * height)
         val halfWidth = width * 0.5f
         val halfHeight = height * 0.5f
@@ -10779,7 +9255,7 @@ class MainActivity : ComponentActivity() {
         return mask
     }
 
-    private fun sdRoundedRectCentered(
+    internal fun sdRoundedRectCentered(
         x: Float,
         y: Float,
         halfWidth: Float,
@@ -10793,7 +9269,7 @@ class MainActivity : ComponentActivity() {
         return outside + inside - radius
     }
 
-    private fun bitmapAlphaArray(source: Bitmap): IntArray {
+    internal fun bitmapAlphaArray(source: Bitmap): IntArray {
         val pixels = IntArray(source.width * source.height)
         source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
         for (i in pixels.indices) {
@@ -10802,7 +9278,7 @@ class MainActivity : ComponentActivity() {
         return pixels
     }
 
-    private fun alphaArrayToColorLayer(
+    internal fun alphaArrayToColorLayer(
         alpha: IntArray,
         width: Int,
         height: Int,
@@ -10826,10 +9302,10 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun vectorLength(x: Float, y: Float): Float =
+    internal fun vectorLength(x: Float, y: Float): Float =
         sqrt((x * x + y * y).toDouble()).toFloat()
 
-    private fun candidateOrFallback(
+    internal fun candidateOrFallback(
         session: GenerationSession,
         choice: PreviewChoice,
     ): IconCandidate =
@@ -10838,7 +9314,7 @@ class MainActivity : ComponentActivity() {
             ?: session.candidates[PreviewChoice.Plate]
             ?: session.candidates.getValue(PreviewChoice.Original)
 
-    private fun normalizePreviewSelections(
+    internal fun normalizePreviewSelections(
         session: GenerationSession,
         selections: PreviewSelections,
     ): PreviewSelections {
@@ -10870,7 +9346,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun candidateForChoice(session: GenerationSession, choice: PreviewChoice): IconCandidate? =
+    internal fun candidateForChoice(session: GenerationSession, choice: PreviewChoice): IconCandidate? =
         when (choice) {
             PreviewChoice.RmbgComposedBackground -> candidateWithComposedBackground(
                 session = session,
@@ -10883,7 +9359,7 @@ class MainActivity : ComponentActivity() {
             else -> session.candidates[choice]
         }
 
-    private fun candidateWithComposedBackground(
+    internal fun candidateWithComposedBackground(
         session: GenerationSession,
         foregroundChoice: PreviewChoice,
     ): IconCandidate? {
@@ -10895,7 +9371,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun effectiveChoiceForPreviewRow(
+    internal fun effectiveChoiceForPreviewRow(
         mode: PreviewMode,
         rowChoice: PreviewChoice,
         session: GenerationSession,
@@ -10918,7 +9394,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun candidateWithCustomOverrides(
+    internal fun candidateWithCustomOverrides(
         session: GenerationSession,
         mode: PreviewMode,
         choice: PreviewChoice,
@@ -10945,7 +9421,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun monochromeForCandidate(candidate: IconCandidate, invertLuma: Boolean = false): Bitmap {
+    internal fun monochromeForCandidate(candidate: IconCandidate, invertLuma: Boolean = false): Bitmap {
         if (candidate.monochromeFromDefaultSubject) {
             return simpleMonochromeAlphaFromDefaultSubject(
                 renderCandidateBitmap(candidate.recfgRaw),
@@ -10980,12 +9456,12 @@ class MainActivity : ComponentActivity() {
         return trimMonochromeEdge(monochrome)
     }
 
-    private fun scaleMonochromeForTheme(source: Bitmap): Bitmap =
+    internal fun scaleMonochromeForTheme(source: Bitmap): Bitmap =
         scaleBitmapAroundAlphaCenter(source, monochromeThemeScale)
 
 
 
-    private fun previewAssetsForSelections(
+    internal fun previewAssetsForSelections(
         session: GenerationSession,
         selections: PreviewSelections,
     ): PreviewAssets {
@@ -11018,7 +9494,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun previewAssetsForCandidate(candidate: IconCandidate, mode: PreviewMode? = null): PreviewAssets {
+    internal fun previewAssetsForCandidate(candidate: IconCandidate, mode: PreviewMode? = null): PreviewAssets {
         val customFinal = candidate.customFinalBitmap
         if (customFinal != null) {
             val transparent = solidBitmap(customFinal.width, customFinal.height, AndroidColor.TRANSPARENT)
@@ -11059,15 +9535,15 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun renderCandidateForegroundBase(candidate: IconCandidate): Bitmap =
+    internal fun renderCandidateForegroundBase(candidate: IconCandidate): Bitmap =
         renderCandidateBitmap(rmbgTunedForegroundRaw(candidate) ?: candidate.recfgRaw).let { bitmap ->
             if (candidate.isLocal && !candidate.applyLocalEdgePolish) bitmap else polishForegroundEdges(bitmap)
         }
 
-    private fun renderCandidateForeground(candidate: IconCandidate): Bitmap =
+    internal fun renderCandidateForeground(candidate: IconCandidate): Bitmap =
         foregroundForSize(renderCandidateForegroundBase(candidate), SIZE_1X1, SIZE_1X1)
 
-    private fun applyForegroundShadow(source: Bitmap): Bitmap {
+    internal fun applyForegroundShadow(source: Bitmap): Bitmap {
         val level = foregroundShadowLevel.coerceIn(MIN_FOREGROUND_SHADOW_LEVEL, MAX_FOREGROUND_SHADOW_LEVEL)
         if (level <= 0) {
             return source
@@ -11083,7 +9559,7 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun foregroundShadowParams(level: Int, baseSize: Int): ForegroundShadowParams {
+    internal fun foregroundShadowParams(level: Int, baseSize: Int): ForegroundShadowParams {
         val ratio = (level.toDouble() / MAX_FOREGROUND_SHADOW_LEVEL.toDouble()).coerceIn(0.0, 1.0)
         val scale = baseSize.toDouble() / SIZE_1X1.toDouble()
         return ForegroundShadowParams(
@@ -11095,7 +9571,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun subjectShadowBitmap(source: Bitmap, params: ForegroundShadowParams): Bitmap {
+    internal fun subjectShadowBitmap(source: Bitmap, params: ForegroundShadowParams): Bitmap {
         val width = source.width
         val height = source.height
         val sourcePixels = IntArray(width * height)
@@ -11117,7 +9593,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun growAlphaMask(source: Bitmap, radius: Int): Bitmap {
+    internal fun growAlphaMask(source: Bitmap, radius: Int): Bitmap {
         val width = source.width
         val height = source.height
         val sourcePixels = IntArray(width * height)
@@ -11148,7 +9624,7 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun blurAlphaMask(source: Bitmap, radius: Float): Bitmap {
+    internal fun blurAlphaMask(source: Bitmap, radius: Float): Bitmap {
         val safeRadius = radius.roundToInt().coerceIn(0, 25)
         if (safeRadius <= 0) {
             return source
@@ -11200,7 +9676,7 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    private fun rmbgTunedForegroundRaw(candidate: IconCandidate): Bitmap? {
+    internal fun rmbgTunedForegroundRaw(candidate: IconCandidate): Bitmap? {
         val source = candidate.rmbgSourceRaw ?: return null
         val alpha = candidate.rmbgAlphaRaw ?: return null
         if (alpha.size != source.width * source.height) {
@@ -11212,10 +9688,10 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun renderCandidateBitmap(bitmap: Bitmap): Bitmap =
+    internal fun renderCandidateBitmap(bitmap: Bitmap): Bitmap =
         normalizeForegroundSubjectSize(bitmap)
 
-    private fun applyPreviewChoice(mode: PreviewMode, choice: PreviewChoice) {
+    internal fun applyPreviewChoice(mode: PreviewMode, choice: PreviewChoice) {
         val session = activeGenerationSession ?: return
         val customKind = choice.customKind
         if (customKind != null) {
@@ -11240,7 +9716,7 @@ class MainActivity : ComponentActivity() {
         writeActivePreviewOutputs(session, selections, closeDialog = false)
     }
 
-    private fun applyPreviewChoiceToAll(choice: PreviewChoice) {
+    internal fun applyPreviewChoiceToAll(choice: PreviewChoice) {
         val session = activeGenerationSession ?: return
         val batchPackageNames = multiSelectedPackageNames.toList().sorted()
         if (batchPackageNames.isNotEmpty()) {
@@ -11278,7 +9754,7 @@ class MainActivity : ComponentActivity() {
         writeActivePreviewOutputs(session, selections, closeDialog = true)
     }
 
-    private fun applyPreviewChoiceToSelectedPackages(choice: PreviewChoice, packageNames: List<String>) {
+    internal fun applyPreviewChoiceToSelectedPackages(choice: PreviewChoice, packageNames: List<String>) {
         if (choice.isCustom) {
             statusText = "自定义图片需要逐个槽位上传"
             return
@@ -11400,7 +9876,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun updateBatchApplyProgress(
+    internal fun updateBatchApplyProgress(
         completed: Int,
         total: Int,
         currentLabel: String,
@@ -11418,7 +9894,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun generatePackageForPreviewChoice(app: AppEntry, choice: PreviewChoice): GenerationResult {
+    internal fun generatePackageForPreviewChoice(app: AppEntry, choice: PreviewChoice): GenerationResult {
         val useGpt = choice == PreviewChoice.Gpt || choice == PreviewChoice.GptComposedBackground
         val result = generateArtPlusPackage(app, useGpt)
         var session = result.session
@@ -11449,7 +9925,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun clearRmbgCandidateUiState() {
+    internal fun clearRmbgCandidateUiState() {
         if (isGeneratingRmbgCandidate) {
             return
         }
@@ -11461,7 +9937,7 @@ class MainActivity : ComponentActivity() {
         rmbgCandidateFailureMode = null
     }
 
-    private fun chooseCustomImageForMode(mode: PreviewMode, kind: CustomImageKind) {
+    internal fun chooseCustomImageForMode(mode: PreviewMode, kind: CustomImageKind) {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
             return
         }
@@ -11475,7 +9951,7 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    private fun importCustomPreviewImage(mode: PreviewMode, kind: CustomImageKind, uri: Uri) {
+    internal fun importCustomPreviewImage(mode: PreviewMode, kind: CustomImageKind, uri: Uri) {
         val session = activeGenerationSession
         if (session == null) {
             statusText = "先生成一次预览后再导入自定义图片"
@@ -11515,7 +9991,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun generateGptCandidateForMode(mode: PreviewMode, confirmed: Boolean = false) {
+    internal fun generateGptCandidateForMode(mode: PreviewMode, confirmed: Boolean = false) {
         val session = activeGenerationSession ?: return
         if (gptBaseUrl.trim().isEmpty() || gptApiKey.trim().isEmpty()) {
             statusText = "请填写AI提供商信息"
@@ -11577,7 +10053,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun generateGptCandidateForAll(confirmed: Boolean = false) {
+    internal fun generateGptCandidateForAll(confirmed: Boolean = false) {
         val session = activeGenerationSession ?: return
         if (gptBaseUrl.trim().isEmpty() || gptApiKey.trim().isEmpty()) {
             statusText = "请填写AI提供商信息"
@@ -11640,7 +10116,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun generateRmbgCandidateForMode(mode: PreviewMode, confirmed: Boolean = false) {
+    internal fun generateRmbgCandidateForMode(mode: PreviewMode, confirmed: Boolean = false) {
         val session = activeGenerationSession ?: return
         if (session.candidates[PreviewChoice.Rmbg] != null) {
             applyPreviewChoice(mode, PreviewChoice.Rmbg)
@@ -11735,7 +10211,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun generateRmbgCandidateForAll(confirmed: Boolean = false) {
+    internal fun generateRmbgCandidateForAll(confirmed: Boolean = false) {
         val session = activeGenerationSession ?: return
         if (session.candidates[PreviewChoice.Rmbg] != null) {
             applyPreviewChoiceToAll(PreviewChoice.Rmbg)
@@ -11831,7 +10307,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun describeRmbgFailure(error: Throwable): String {
+    internal fun describeRmbgFailure(error: Throwable): String {
         val root = unwrapInvocationError(error)
         val raw = root.message ?: root.javaClass.simpleName
         val lower = raw.lowercase()
@@ -11852,7 +10328,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun formatRmbgInferenceReport(report: RmbgInferenceReport?): String {
+    internal fun formatRmbgInferenceReport(report: RmbgInferenceReport?): String {
         if (report == null) {
             return RmbgInferenceBackend.Cpu.label
         }
@@ -11864,7 +10340,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun unwrapInvocationError(error: Throwable): Throwable {
+    internal fun unwrapInvocationError(error: Throwable): Throwable {
         var current = error
         while (current is InvocationTargetException && current.targetException != null) {
             current = current.targetException
@@ -11872,7 +10348,7 @@ class MainActivity : ComponentActivity() {
         return current
     }
 
-    private fun refreshActivePreviewOutputs(
+    internal fun refreshActivePreviewOutputs(
         rebuildLocalCandidates: Boolean,
         retargetFrom: PreviewChoice? = null,
     ) {
@@ -11937,7 +10413,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun writeActivePreviewOutputs(
+    internal fun writeActivePreviewOutputs(
         session: GenerationSession,
         selections: PreviewSelections,
         closeDialog: Boolean,
@@ -11979,22 +10455,22 @@ class MainActivity : ComponentActivity() {
     }
 
     // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
-    private fun gptEditImage(source: Bitmap, prompt: String, background: String): Bitmap =
+    internal fun gptEditImage(source: Bitmap, prompt: String, background: String): Bitmap =
         gptEditImage(source, prompt, background, gptImageMode, gptModelId, gptBaseUrl, gptApiKey, isDebugBuild())
 
     // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
-    private fun loadCustomImageBitmap(uri: Uri): Bitmap = loadCustomImageBitmap(contentResolver, uri)
+    internal fun loadCustomImageBitmap(uri: Uri): Bitmap = loadCustomImageBitmap(contentResolver, uri)
 
     // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
-    private fun buildTransparentForegroundPrompt(): String =
+    internal fun buildTransparentForegroundPrompt(): String =
         buildTransparentForegroundPrompt(gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
-    private fun buildChromaForegroundPrompt(chromaHex: String): String =
+    internal fun buildChromaForegroundPrompt(chromaHex: String): String =
         buildChromaForegroundPrompt(chromaHex, gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun buildLocalIconLayers(
+    internal fun buildLocalIconLayers(
         icon: Drawable,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
     ): LocalIconLayers = buildLocalIconLayers(
@@ -12010,7 +10486,7 @@ class MainActivity : ComponentActivity() {
     )
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun chooseBetterAdaptiveForeground(
+    internal fun chooseBetterAdaptiveForeground(
         fromComposed: Bitmap,
         directForeground: Bitmap,
         background: Bitmap,
@@ -12029,18 +10505,18 @@ class MainActivity : ComponentActivity() {
     )
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun subtractPlainIconBackground(
+    internal fun subtractPlainIconBackground(
         source: Bitmap,
         background: Bitmap,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
     ): Bitmap = subtractPlainIconBackground(source, background, pipeline, backgroundSeparationPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun hasAdaptiveMaskArtifact(source: Bitmap): Boolean =
+    internal fun hasAdaptiveMaskArtifact(source: Bitmap): Boolean =
         hasAdaptiveMaskArtifact(source, adaptiveMaskEdgeCoveragePercent, adaptiveMaskMinCoveragePercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun isUsableDirectAdaptiveForeground(source: Bitmap, composedCoverage: Double): Boolean =
+    internal fun isUsableDirectAdaptiveForeground(source: Bitmap, composedCoverage: Double): Boolean =
         isUsableDirectAdaptiveForeground(
             source,
             composedCoverage,
@@ -12049,35 +10525,35 @@ class MainActivity : ComponentActivity() {
         )
 
     // 调参映射委托到 imaging/PipelineTuning.kt（显式传参版本），本体重构期间保留无参 wrapper。
-    private fun effectiveBackgroundSeparationDistance(): Double =
+    internal fun effectiveBackgroundSeparationDistance(): Double =
         effectiveBackgroundSeparationDistance(backgroundSeparationPercent)
 
-    private fun effectivePlateRemovalDistance(): Double =
+    internal fun effectivePlateRemovalDistance(): Double =
         effectivePlateRemovalDistance(plateRemovalPercent)
 
-    private fun effectiveShadowRemovalAlpha(): Int =
+    internal fun effectiveShadowRemovalAlpha(): Int =
         effectiveShadowRemovalAlpha(shadowRemovalPercent)
 
-    private fun effectiveShadowMaxSaturation(): Double =
+    internal fun effectiveShadowMaxSaturation(): Double =
         effectiveShadowMaxSaturation(shadowRemovalPercent)
 
-    private fun effectiveShadowMaxLuminance(): Int =
+    internal fun effectiveShadowMaxLuminance(): Int =
         effectiveShadowMaxLuminance(shadowRemovalPercent)
 
-    private fun effectiveShadowMinVisibleRatio(): Double =
+    internal fun effectiveShadowMinVisibleRatio(): Double =
         effectiveShadowMinVisibleRatio(shadowRemovalPercent)
 
-    private fun effectiveShadowMinOffset(): Double =
+    internal fun effectiveShadowMinOffset(): Double =
         effectiveShadowMinOffset(shadowRemovalPercent)
 
-    private fun effectiveShadowMinDownOffset(): Double =
+    internal fun effectiveShadowMinDownOffset(): Double =
         effectiveShadowMinDownOffset(shadowRemovalPercent)
 
-    private fun effectiveShadowMinLumaDrop(): Int =
+    internal fun effectiveShadowMinLumaDrop(): Int =
         effectiveShadowMinLumaDrop(shadowRemovalPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun subtractBackground(
+    internal fun subtractBackground(
         composed: Bitmap,
         background: Bitmap,
         colorSource: Bitmap? = null,
@@ -12085,7 +10561,7 @@ class MainActivity : ComponentActivity() {
     ): Bitmap = subtractBackground(composed, background, colorSource, pipeline, backgroundSeparationPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun separateLocalForeground(
+    internal fun separateLocalForeground(
         source: Bitmap,
         background: Bitmap,
         mode: LocalSeparationMode,
@@ -12094,33 +10570,33 @@ class MainActivity : ComponentActivity() {
         separateLocalForeground(source, background, mode, pipeline, plateRemovalPercent, shadowRemovalPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun removeForegroundPlate(
+    internal fun removeForegroundPlate(
         source: Bitmap,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
     ): ForegroundCleanupResult = removeForegroundPlate(source, pipeline, plateRemovalPercent)
 
-    private fun residueDistanceThreshold(): Double =
+    internal fun residueDistanceThreshold(): Double =
         residueDistanceThreshold(plateRemovalPercent)
 
-    private fun edgeConnectedResidueDistanceThreshold(): Double =
+    internal fun edgeConnectedResidueDistanceThreshold(): Double =
         edgeConnectedResidueDistanceThreshold(plateRemovalPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun removeOffsetShadow(
+    internal fun removeOffsetShadow(
         source: Bitmap,
         background: Bitmap,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
     ): ShadowCleanupResult = removeOffsetShadow(source, background, pipeline, shadowRemovalPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun normalizeForegroundSubjectSize(source: Bitmap): Bitmap =
+    internal fun normalizeForegroundSubjectSize(source: Bitmap): Bitmap =
         normalizeForegroundSubjectSize(source, foregroundSubjectPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun normalDarkForeground(source: Bitmap, darkBackground: Bitmap): Bitmap =
+    internal fun normalDarkForeground(source: Bitmap, darkBackground: Bitmap): Bitmap =
         normalDarkForeground(source, darkBackground, nightSubjectLightBackgroundEnabled)
 
-    private fun simpleMonochromeAlphaFromDefaultSubject(source: Bitmap, invertLuma: Boolean): Bitmap {
+    internal fun simpleMonochromeAlphaFromDefaultSubject(source: Bitmap, invertLuma: Boolean): Bitmap {
         val width = source.width
         val height = source.height
         val sourcePixels = IntArray(width * height)
@@ -12150,20 +10626,20 @@ class MainActivity : ComponentActivity() {
     }
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P5 状态收敛后删除。
-    private fun polishForegroundEdges(source: Bitmap): Bitmap =
+    internal fun polishForegroundEdges(source: Bitmap): Bitmap =
         polishForegroundEdges(source, edgePolishPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    private fun polishMonochromeEdges(source: Bitmap): Bitmap =
+    internal fun polishMonochromeEdges(source: Bitmap): Bitmap =
         polishMonochromeEdges(source, edgePolishPercent)
 
-    private fun foregroundEdgePolishStrength(): Double =
+    internal fun foregroundEdgePolishStrength(): Double =
         foregroundEdgePolishStrength(edgePolishPercent)
 
-    private fun monochromeEdgePolishStrength(): Double =
+    internal fun monochromeEdgePolishStrength(): Double =
         monochromeEdgePolishStrength(edgePolishPercent)
 
-    private fun bitmapStatsJson(bitmap: Bitmap): JSONObject {
+    internal fun bitmapStatsJson(bitmap: Bitmap): JSONObject {
         val visibleBounds = alphaBounds(bitmap, LOCAL_ALPHA_VISIBLE_THRESHOLD)
         val meaningfulBounds = meaningfulAlphaBounds(bitmap)
         val centroid = meaningfulAlphaCentroid(bitmap)
@@ -12187,7 +10663,7 @@ class MainActivity : ComponentActivity() {
             .put("touches_edge", meaningfulBounds?.let { hasAutoCropRisk(it, bitmap.width, bitmap.height) } ?: false)
     }
 
-    private fun boundsJson(bounds: Bounds?): Any =
+    internal fun boundsJson(bounds: Bounds?): Any =
         if (bounds == null) {
             JSONObject.NULL
         } else {
@@ -12200,7 +10676,7 @@ class MainActivity : ComponentActivity() {
                 .put("height", bounds.height())
         }
 
-    private fun showKeyboardFor(editText: EditText) {
+    internal fun showKeyboardFor(editText: EditText) {
         editText.post {
             editText.requestFocus()
             editText.context
@@ -12209,18 +10685,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun status(message: String) {
+    internal fun status(message: String) {
         runOnUiThread { statusText = message }
     }
 
-    private fun toastStatus(message: String) {
+    internal fun toastStatus(message: String) {
         runOnUiThread {
             statusText = message
             Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun cancelBackup() {
+    internal fun cancelBackup() {
         backupJob?.cancel()
         backupJob = null
         backupDotJob?.cancel()
@@ -12232,7 +10708,7 @@ class MainActivity : ComponentActivity() {
         toastStatus("已停止备份")
     }
 
-    private fun cancelSingleExport() {
+    internal fun cancelSingleExport() {
         singleExportJob?.cancel()
         singleExportJob = null
         singleExportSheetVisible = false
@@ -12240,7 +10716,7 @@ class MainActivity : ComponentActivity() {
         toastStatus("已停止导出")
     }
 
-    private fun startBackupDotAnimation() {
+    internal fun startBackupDotAnimation() {
         backupDotJob?.cancel()
         backupDotJob = mainScope.launch {
             while (isActive) {
@@ -12250,12 +10726,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun stopBackupDotAnimation() {
+    internal fun stopBackupDotAnimation() {
         backupDotJob?.cancel()
         backupDotJob = null
     }
 
-    private fun exportSelectedToExternal() {
+    internal fun exportSelectedToExternal() {
         if (outputTreeUri == null) {
             toastStatus("还没有设置目录")
             exportDialogVisible = true
@@ -12309,7 +10785,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun backupAllToExternal(isFromOnboarding: Boolean = false) {
+    internal fun backupAllToExternal(isFromOnboarding: Boolean = false) {
         if (outputTreeUri == null) {
             toastStatus("还没有设置目录")
             exportDialogVisible = true
@@ -12500,7 +10976,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun startDebugHttpServerIfNeeded() {
+    internal fun startDebugHttpServerIfNeeded() {
         if (!isDebugBuild()) {
             return
         }
@@ -12532,10 +11008,10 @@ class MainActivity : ComponentActivity() {
         ).also { it.start() }
     }
 
-    private fun isDebugBuild(): Boolean =
+    internal fun isDebugBuild(): Boolean =
         (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
-    private fun debugToken(): String {
+    internal fun debugToken(): String {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val existing = prefs.getString(PREF_DEBUG_TOKEN, null)
             ?.takeIf { it.length >= 32 }
@@ -12547,10 +11023,10 @@ class MainActivity : ComponentActivity() {
         return created
     }
 
-    private fun isDebugTokenValid(token: String?): Boolean =
+    internal fun isDebugTokenValid(token: String?): Boolean =
         token != null && token == debugToken()
 
-    private fun runOnMainSync(action: () -> Unit) {
+    internal fun runOnMainSync(action: () -> Unit) {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             action()
             return
@@ -12572,7 +11048,7 @@ class MainActivity : ComponentActivity() {
         failure?.let { throw it }
     }
 
-    private fun currentDebugParamsJson(): JSONObject =
+    internal fun currentDebugParamsJson(): JSONObject =
         JSONObject()
             .put("port", DEBUG_HTTP_PORT)
             .put("busy", isBusy)
@@ -12732,10 +11208,10 @@ class MainActivity : ComponentActivity() {
                     ),
             )
 
-    private fun intRangeJson(min: Int, max: Int): JSONObject =
+    internal fun intRangeJson(min: Int, max: Int): JSONObject =
         JSONObject().put("min", min).put("max", max)
 
-    private fun liquidGlassParamLabelsJson(): JSONObject =
+    internal fun liquidGlassParamLabelsJson(): JSONObject =
         JSONObject()
             .put("liquid_glass_enabled", "启用液态玻璃")
             .put("liquid_glass_radius", "玻璃圆角")
@@ -12751,7 +11227,7 @@ class MainActivity : ComponentActivity() {
             .put("liquid_glass_subject_opacity_percent", "主体透明度")
 
     // P4 注明：读 Activity 调参，留置（system/DebugServer 经 hooks.currentParams() 回调）。
-    private fun currentDebugParamsOnMain(): JSONObject {
+    internal fun currentDebugParamsOnMain(): JSONObject {
         var snapshot: JSONObject? = null
         runOnMainSync {
             snapshot = currentDebugParamsJson()
@@ -12760,7 +11236,7 @@ class MainActivity : ComponentActivity() {
     }
 
     // P4 注明：写 Activity 调参，留置（system/DebugServer 经 hooks.applyParams() 回调）。
-    private fun applyDebugParams(params: Map<String, String>): JSONObject {
+    internal fun applyDebugParams(params: Map<String, String>): JSONObject {
         var snapshot: JSONObject? = null
         runOnMainSync {
             check(!isBusy) { "当前任务正在运行，不能修改参数" }
@@ -12781,7 +11257,7 @@ class MainActivity : ComponentActivity() {
         return snapshot ?: error("debug params unavailable")
     }
 
-    private fun debugHomeHtml(): String = """
+    internal fun debugHomeHtml(): String = """
         <!doctype html>
         <html>
         <head>
@@ -12910,7 +11386,7 @@ class MainActivity : ComponentActivity() {
         </html>
     """.trimIndent()
 
-    private fun loadPreviewAssets(dir: File): PreviewAssets =
+    internal fun loadPreviewAssets(dir: File): PreviewAssets =
         PreviewAssets(
             recbg = decodePreviewBitmap(dir, "recbg.png"),
             recfg = decodePreviewBitmap(dir, "recfg.png"),
@@ -12921,23 +11397,23 @@ class MainActivity : ComponentActivity() {
                 ?: decodePreviewBitmap(dir, "monochrome.png"),
         )
 
-    private fun decodePreviewBitmap(dir: File, name: String): Bitmap? =
+    internal fun decodePreviewBitmap(dir: File, name: String): Bitmap? =
         BitmapFactory.decodeFile(File(dir, name).absolutePath)?.also { it.prepareToDraw() }
 
 
-    private data class BatchPreviewProgress(
+    internal data class BatchPreviewProgress(
         val presetName: String,
         val completed: Int,
         val total: Int,
         val currentLabel: String,
     )
 
-    private data class ComponentCandidates(
+    internal data class ComponentCandidates(
         val subject: IconCandidate?,
         val background: IconCandidate?,
     )
 
-    private data class ForegroundShadowParams(
+    internal data class ForegroundShadowParams(
         val alpha: Int,
         val blurRadius: Float,
         val offsetX: Int,
@@ -12945,25 +11421,14 @@ class MainActivity : ComponentActivity() {
         val spread: Int,
     )
 
-    private data class GenerationResult(
+    internal data class GenerationResult(
         val outDir: File,
         val session: GenerationSession,
         val selections: PreviewSelections,
     )
 
-    private enum class PreviewDesktopBackground(val label: String, val fallbackColor: Color) {
-        LightGray("浅灰", Color(0xFFE8E8E8)),
-        DarkGray("深灰", Color(0xFF4A4A4A)),
-        Black("纯黑", Color(0xFF050505)),
-        Wallpaper("桌面", Color(0xFF30333A));
 
-        companion object {
-            fun fromName(name: String?): PreviewDesktopBackground =
-                entries.firstOrNull { it.name == name } ?: DarkGray
-        }
-    }
-
-    private data class PreviewSelections(
+    internal data class PreviewSelections(
         val normalLight: PreviewChoice,
         val normalDark: PreviewChoice,
         val monochromeLight: PreviewChoice,
@@ -13050,39 +11515,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private enum class AppPage(val order: Int) {
-        Home(0),
-        AppPicker(1),
-        About(2),
-        BatchPreview(3),
-    }
 
-    private data class RmbgModelPreset(
+    internal data class RmbgModelPreset(
         val id: String,
         val label: String,
         val summary: String,
         val url: String,
     )
 
-    private enum class GeneratedFilter(val label: String) {
-        All("全部"),
-        Generated("已生成"),
-        Ungenerated("未生成");
-
-        companion object {
-            fun fromName(name: String?): GeneratedFilter =
-                entries.firstOrNull { it.name == name } ?: All
-        }
-    }
 
     /** 生成设置内部的「可视化 / JSON」二级切换。 */
-    private enum class AdvancedSettingsTab(val label: String) {
-        Sliders("可视化"),
-        Json("JSON"),
-    }
 
     /** 预设批量应用的落地方式。 */
-    private enum class BatchOutputMode(val label: String) {
+    internal enum class BatchOutputMode(val label: String) {
         Root("Root 写入"),
         Saf("SAF 导出"),
     }
@@ -13288,7 +11733,6 @@ class MainActivity : ComponentActivity() {
         private const val KEYSTORE_GPT_KEY_ALIAS = "artplus_gpt_api_key"
         private const val KEYSTORE_CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
         private const val KEYSTORE_GCM_TAG_BITS = 128
-        private const val PREVIEW_LIVE_ASSET_DEBOUNCE_MS = 70L
         private const val PREVIEW_OUTPUT_DEBOUNCE_MS = 140L
         private const val PREVIEW_REBUILD_DEBOUNCE_MS = 180L
         private const val DEFAULT_PREVIEW_ICON_SIZE_DP = 70
@@ -13301,32 +11745,9 @@ class MainActivity : ComponentActivity() {
         private const val MIN_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MIN_BATCH_PREVIEW_COUNT
         private const val MAX_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MAX_BATCH_PREVIEW_COUNT
         private const val PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE = 480
-        private const val PREVIEW_LABEL_HEIGHT_DP = 16
         private val SETTINGS_ROW_INSIDE_MARGIN = PaddingValues(vertical = 6.dp)
 
-        private const val BACK_GESTURE_COMMIT_PROGRESS = 0.28f
-        private const val BACK_GESTURE_PAGE_TRANSLATION_RATIO = 1.0f
-        private const val GITHUB_REPO_URL = "https://github.com/Costben/ArtPlus"
-        private const val GITHUB_LICENSE_URL = "https://github.com/Costben/ArtPlus/blob/main/LICENSE"
         private const val GITHUB_RELEASES_URL = "https://github.com/Costben/ArtPlus/releases"
-        private const val MIT_LICENSE_TEXT =
-            "MIT License\n\n" +
-                "Copyright (c) 2026 Costben\n\n" +
-                "Permission is hereby granted, free of charge, to any person obtaining a copy\n" +
-                "of this software and associated documentation files (the \"Software\"), to deal\n" +
-                "in the Software without restriction, including without limitation the rights\n" +
-                "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n" +
-                "copies of the Software, and to permit persons to whom the Software is\n" +
-                "furnished to do so, subject to the following conditions:\n\n" +
-                "The above copyright notice and this permission notice shall be included in all\n" +
-                "copies or substantial portions of the Software.\n\n" +
-                "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n" +
-                "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n" +
-                "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n" +
-                "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n" +
-                "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n" +
-                "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n" +
-                "SOFTWARE."
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
         ) {

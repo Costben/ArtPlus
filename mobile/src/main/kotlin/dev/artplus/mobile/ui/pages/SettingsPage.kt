@@ -324,87 +324,166 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.caverock.androidsvg.SVG
 
-internal data class UpdateInfo(
-    val latestVersion: String,
-    val tagName: String,
-    val htmlUrl: String,
-)
-
-/** 调用 AI/RMBG 前的二次确认请求。 */
-internal data class ServiceConfirmRequest(
-    val title: String,
-    val message: String,
-    val confirmLabel: String,
-    val onConfirm: () -> Unit,
-)
-
-/** 写入 Root 目标目录前的二次确认请求。 */
-internal data class RootWriteConfirmRequest(
-    val packageName: String,
-    val targetPath: String,
-    val rootWriteMode: RootWriteMode,
-    val onConfirm: () -> Unit,
-)
-
-internal data class BatchApplyProgress(
-    val title: String,
-    val completed: Int,
-    val total: Int,
-    val currentLabel: String,
-    val failures: Int,
-)
-
-internal data class ExportProgress(
-    val title: String,
-    val completed: Int,
-    val total: Int,
-    val currentLabel: String,
-    val isIndeterminate: Boolean = false,
-)
-
-
-internal enum class AdvancedSettingsCategory(val label: String) {
-    LiquidGlass("液态玻璃"),
-    Local("稳定规则"),
-    Rmbg("RMBG");
-
-    companion object {
-        fun fromName(name: String?): AdvancedSettingsCategory =
-            entries.firstOrNull { it.name == name } ?: LiquidGlass
+@Composable
+internal fun MainActivity.SettingsPage(
+    innerPadding: PaddingValues,
+    scrollBehavior: ScrollBehavior,
+    launcherCount: Int,
+    totalCount: Int,
+    generatedCount: Int,
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
+            .padding(innerPadding)
+            .imePadding()
+            .padding(horizontal = 12.dp),
+        contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+            item {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    InputSettingsCard(
+                        launcherCount = launcherCount,
+                        totalCount = totalCount,
+                        generatedCount = generatedCount,
+                    )
+                    OutputCard()
+                    PreviewStripSettingsCard()
+                    WallpaperSettingsCard()
+                    GptSettingsCard()
+                    RmbgComponentCard()
+                    SectionCard(rowsFullBleed = true) {
+                        LibrarySettingRow(
+                            title = "悬浮底栏",
+                            summary = if (liquidGlassBottomBarEnabled) "已开启" else "已关闭",
+                            icon = SettingsIconKind.Glass,
+                            showSwitch = true,
+                            checked = liquidGlassBottomBarEnabled,
+                            enabled = !isBusy,
+                            onCheckedChange = {
+                                liquidGlassBottomBarEnabled = it
+                                saveLiquidGlassSettings()
+                                statusText = if (liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭"
+                            },
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LibrarySettingRow(
+                            title = "底栏模糊",
+                            summary = when {
+                                !liquidGlassBottomBarEnabled -> "需先开启悬浮底栏"
+                                liquidGlassBottomBarBlurEnabled -> "已开启"
+                                else -> "已关闭"
+                            },
+                            icon = SettingsIconKind.Glass,
+                            showSwitch = true,
+                            checked = liquidGlassBottomBarBlurEnabled,
+                            enabled = !isBusy && liquidGlassBottomBarEnabled,
+                            onCheckedChange = {
+                                liquidGlassBottomBarBlurEnabled = it
+                                saveLiquidGlassSettings()
+                                statusText = if (liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭"
+                            },
+                        )
+                    }
+                    SectionCard(rowsFullBleed = true) {
+                        LibrarySettingRow(
+                            title = "恢复默认配置",
+                            summary = "恢复后可通过首页预设卡片的「还原上一步」撤销",
+                            icon = settingsIconForTitle("恢复默认配置"),
+                            showValue = false,
+                            showArrowRight = true,
+                            enabled = !isBusy,
+                            onClick = { resetDefaultsDialogVisible = true },
+                        )
+                        if (resetDefaultsDialogVisible) {
+                            MiuixBottomDialog(onDismissRequest = { resetDefaultsDialogVisible = false }) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(28.dp))
+                                        .background(MiuixTheme.colorScheme.background)
+                                        .padding(horizontal = 24.dp, vertical = 22.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    Text(
+                                        text = "恢复默认配置",
+                                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Text(
+                                        text = "一键恢复全部调参到出厂默认值，不会删除本地 RMBG 模型与已生成的图标包。恢复后可通过预设卡片的「还原上一步」撤销。",
+                                        style = MiuixTheme.textStyles.body1,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 5,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        Button(
+                                            onClick = { resetDefaultsDialogVisible = false },
+                                            modifier = Modifier.weight(1f),
+                                            colors = ButtonDefaults.buttonColors(),
+                                        ) {
+                                            Text(
+                                                text = "取消",
+                                                style = MiuixTheme.textStyles.button,
+                                                color = MiuixTheme.colorScheme.onSurface,
+                                                maxLines = 1,
+                                            )
+                                        }
+                                        Button(
+                                            onClick = {
+                                                resetDefaultsDialogVisible = false
+                                                resetToDefaults()
+                                            },
+                                            enabled = !isBusy,
+                                            modifier = Modifier.weight(1f),
+                                            colors = ButtonDefaults.buttonColorsPrimary(),
+                                        ) {
+                                            Text(
+                                                text = "恢复默认",
+                                                style = MiuixTheme.textStyles.button,
+                                                color = Color.White,
+                                                maxLines = 1,
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    SectionCard(rowsFullBleed = true) {
+                        LibrarySettingRow(
+                            title = "导出引导",
+                            summary = "首次引导与全量备份入口",
+                            icon = settingsIconForTitle("导出引导"),
+                            showArrowRight = true,
+                            enabled = !isBusy,
+                            onClick = { onboardingVisible = true },
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LibrarySettingRow(
+                            title = "关于",
+                            summary = "源码、开源协议与更新",
+                            icon = SettingsIconKind.Link,
+                            showArrowRight = true,
+                            enabled = !isBusy,
+                            onClick = { currentPage = AppPage.About },
+                        )
+                    }
+                }
+            }
     }
-}
-
-internal enum class PreviewDesktopBackground(val label: String, val fallbackColor: Color) {
-    LightGray("浅灰", Color(0xFFE8E8E8)),
-    DarkGray("深灰", Color(0xFF4A4A4A)),
-    Black("纯黑", Color(0xFF050505)),
-    Wallpaper("桌面", Color(0xFF30333A));
-
-    companion object {
-        fun fromName(name: String?): PreviewDesktopBackground =
-            entries.firstOrNull { it.name == name } ?: DarkGray
-    }
-}
-
-internal enum class AppPage(val order: Int) {
-    Home(0),
-    AppPicker(1),
-    About(2),
-    BatchPreview(3),
-}
-
-internal enum class GeneratedFilter(val label: String) {
-    All("全部"),
-    Generated("已生成"),
-    Ungenerated("未生成");
-
-    companion object {
-        fun fromName(name: String?): GeneratedFilter =
-            entries.firstOrNull { it.name == name } ?: All
-    }
-}
-
-internal enum class AdvancedSettingsTab(val label: String) {
-    Sliders("可视化"),
-    Json("JSON"),
 }

@@ -324,87 +324,290 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.caverock.androidsvg.SVG
 
-internal data class UpdateInfo(
-    val latestVersion: String,
-    val tagName: String,
-    val htmlUrl: String,
-)
+@Composable
+internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
+    val scrollBehavior = MiuixScrollBehavior()
+    val result = batchPreviewResult
+    val preset = result?.preset ?: activeBatchPreviewPreset
+    val coroutineScope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+    val isDark = isSystemInDarkTheme()
 
-/** 调用 AI/RMBG 前的二次确认请求。 */
-internal data class ServiceConfirmRequest(
-    val title: String,
-    val message: String,
-    val confirmLabel: String,
-    val onConfirm: () -> Unit,
-)
-
-/** 写入 Root 目标目录前的二次确认请求。 */
-internal data class RootWriteConfirmRequest(
-    val packageName: String,
-    val targetPath: String,
-    val rootWriteMode: RootWriteMode,
-    val onConfirm: () -> Unit,
-)
-
-internal data class BatchApplyProgress(
-    val title: String,
-    val completed: Int,
-    val total: Int,
-    val currentLabel: String,
-    val failures: Int,
-)
-
-internal data class ExportProgress(
-    val title: String,
-    val completed: Int,
-    val total: Int,
-    val currentLabel: String,
-    val isIndeterminate: Boolean = false,
-)
-
-
-internal enum class AdvancedSettingsCategory(val label: String) {
-    LiquidGlass("液态玻璃"),
-    Local("稳定规则"),
-    Rmbg("RMBG");
-
-    companion object {
-        fun fromName(name: String?): AdvancedSettingsCategory =
-            entries.firstOrNull { it.name == name } ?: LiquidGlass
+    val modes = remember {
+        listOf(
+            PreviewMode.NormalLight,
+            PreviewMode.NormalDark,
+            PreviewMode.MonochromeLight,
+            PreviewMode.MonochromeDark,
+        )
     }
-}
-
-internal enum class PreviewDesktopBackground(val label: String, val fallbackColor: Color) {
-    LightGray("浅灰", Color(0xFFE8E8E8)),
-    DarkGray("深灰", Color(0xFF4A4A4A)),
-    Black("纯黑", Color(0xFF050505)),
-    Wallpaper("桌面", Color(0xFF30333A));
-
-    companion object {
-        fun fromName(name: String?): PreviewDesktopBackground =
-            entries.firstOrNull { it.name == name } ?: DarkGray
+    val tabTitles = remember {
+        listOf("正常亮色", "正常暗色", "单色亮色", "单色暗色")
     }
-}
 
-internal enum class AppPage(val order: Int) {
-    Home(0),
-    AppPicker(1),
-    About(2),
-    BatchPreview(3),
-}
+    Scaffold(
+        containerColor = pageBackground,
+        topBar = {
+            TopAppBar(
+                title = preset?.name ?: "批量预览",
+                scrollBehavior = scrollBehavior,
+                navigationIconPadding = 0.dp,
+                actionIconPadding = 0.dp,
+                navigationIcon = {
+                    TitleBarIconButton(
+                        icon = Lucide.ChevronLeft,
+                        contentDescription = "返回",
+                        enabled = !isBusy,
+                        dimWhenDisabled = false,
+                        onClick = { currentPage = AppPage.Home },
+                    )
+                },
+                actions = {
+                    TitleBarIconButton(
+                        icon = Lucide.RefreshCw,
+                        contentDescription = "重新生成",
+                        enabled = !isBusy && !isGeneratingBatchPreview && preset != null,
+                        dimWhenDisabled = true,
+                        paddingStart = 0.dp,
+                        paddingEnd = 16.dp,
+                        onClick = { showBatchPreviewRefreshConfirm = true },
+                    )
+                },
+            )
+        },
+    ) { innerPadding ->
+        // 预览框高度锁死：内容行数 + 1 行，框内无滚动可抢，所有纵向手势归页面
+        val previewContentRows = result?.items?.size?.let { count ->
+            if (count <= 0) 0 else (count + batchPreviewColumns - 1) / batchPreviewColumns
+        } ?: 0
+        val previewDisplayRows = previewContentRows + 1
+        val previewRowHeight = batchPreviewIconSizeDp.dp + 6.dp + PREVIEW_LABEL_HEIGHT_DP.dp
+        val previewFrameHeight = 18.dp + previewRowHeight * previewDisplayRows +
+            18.dp * (previewDisplayRows - 1) + 18.dp
+        val overscrollEffect = rememberOverscrollEffect()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(pageBackground)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .overscroll(overscrollEffect)
+                .padding(innerPadding)
+                .imePadding()
+                .padding(bottom = 12.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // 1. 桌面控制卡：背景一行 + 三个主页化参数行（无图标、默认展开）
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+            ) {
+                SectionCard(rowsFullBleed = true) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        PreviewDesktopBackground.entries.forEach { bgOption ->
+                            PreviewBackgroundOption(
+                                option = bgOption,
+                                selected = batchPreviewDesktopBackground == bgOption,
+                                modifier = Modifier.weight(1f),
+                                onClick = { updateBatchPreviewDesktopBackground(bgOption) },
+                            )
+                        }
+                    }
 
-internal enum class GeneratedFilter(val label: String) {
-    All("全部"),
-    Generated("已生成"),
-    Ungenerated("未生成");
+                    NumberParameterControl(
+                        busy = isBusy,
+                        title = "列数",
+                        summary = "控制桌面每行图标数量，切换列数会自动适配图标大小",
+                        value = batchPreviewColumns,
+                        draftText = draftBatchPreviewColumnsText,
+                        min = 2,
+                        max = 5,
+                        step = 1,
+                        onDraftChange = { draftBatchPreviewColumnsText = it },
+                        onSave = { updateBatchPreviewColumns(it) },
+                        showIcon = false,
+                        initiallyExpanded = false,
+                    )
 
-    companion object {
-        fun fromName(name: String?): GeneratedFilter =
-            entries.firstOrNull { it.name == name } ?: All
+                    NumberParameterControl(
+                        busy = isBusy,
+                        title = "图标大小",
+                        summary = "控制预览图标的显示大小",
+                        value = batchPreviewIconSizeDp,
+                        draftText = draftBatchPreviewIconSizeDpText,
+                        min = 40,
+                        max = 84,
+                        step = 2,
+                        onDraftChange = { draftBatchPreviewIconSizeDpText = it },
+                        onSave = { updateBatchPreviewIconSizeDp(it) },
+                        showIcon = false,
+                        initiallyExpanded = false,
+                    )
+
+                    NumberParameterControl(
+                        busy = isBusy,
+                        title = "图标圆角",
+                        summary = "控制预览图标的圆角大小",
+                        value = batchPreviewCornerRadiusDp,
+                        draftText = draftBatchPreviewCornerRadiusDpText,
+                        min = 0,
+                        max = 36,
+                        step = 1,
+                        onDraftChange = { draftBatchPreviewCornerRadiusDpText = it },
+                        onSave = { updateBatchPreviewCornerRadiusDp(it) },
+                        showIcon = false,
+                        initiallyExpanded = false,
+                    )
+                }
+            }
+            }
+
+            // 2. 4 风格切换栏（控制卡下方、预览框上方）
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                tabTitles.forEachIndexed { index, title ->
+                    val selected = pagerState.currentPage == index
+                    val bg = if (selected) {
+                        MiuixTheme.colorScheme.primaryVariant
+                    } else {
+                        if (isDark) MiuixTheme.colorScheme.surfaceContainerHigh else Color.White
+                    }
+                    val textColor = if (selected) Color.White else MiuixTheme.colorScheme.onSurface
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(38.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(bg)
+                            .clickable {
+                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = title,
+                            style = MiuixTheme.textStyles.body2.copy(
+                                fontSize = 13.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                            ),
+                            color = textColor,
+                            maxLines = 1,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
+
+            // 3. 桌面展示框：高度锁死为内容行数 + 1 行，框内不滚动
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+            ) {
+                Card(
+                    cornerRadius = 20.dp,
+                    insideMargin = PaddingValues(0.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(previewFrameHeight)
+                            .clip(RoundedCornerShape(20.dp)),
+                    ) {
+                        PreviewDesktopBackgroundSurface(
+                            option = batchPreviewDesktopBackground,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
+                        if (result == null || result.items.isEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "暂无预览数据",
+                                    style = MiuixTheme.textStyles.body2,
+                                    color = Color.White.copy(alpha = 0.8f),
+                                )
+                            }
+                        } else {
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier.fillMaxSize(),
+                            ) { page ->
+                                val currentMode = modes[page]
+                                val isLightBg = batchPreviewDesktopBackground == PreviewDesktopBackground.LightGray
+                                val labelColor = if (isLightBg) Color(0xFF222222) else Color.White
+                                val shadowColor = if (isLightBg) Color.White.copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.85f)
+
+                                LazyVerticalGrid(
+                                    columns = GridCells.Fixed(batchPreviewColumns),
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 18.dp),
+                                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    userScrollEnabled = false,
+                                ) {
+                                    items(result.items, key = { it.packageName }) { item ->
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) {
+                                            if (item.assets.missingMessage(currentMode) == null) {
+                                                GeneratedIconPreview(
+                                                    assets = item.assets,
+                                                    mode = currentMode,
+                                                    modifier = Modifier.size(batchPreviewIconSizeDp.dp),
+                                                    cornerRadiusDp = batchPreviewCornerRadiusDp,
+                                                )
+                                            } else {
+                                                MissingIconPreview(
+                                                    modifier = Modifier.size(batchPreviewIconSizeDp.dp),
+                                                    mode = currentMode,
+                                                    compact = true,
+                                                    cornerRadiusDp = batchPreviewCornerRadiusDp,
+                                                )
+                                            }
+                                            Text(
+                                                text = item.label,
+                                                style = TextStyle(
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    shadow = Shadow(
+                                                        color = shadowColor,
+                                                        offset = Offset(0f, 1f),
+                                                        blurRadius = 3f,
+                                                    ),
+                                                ),
+                                                color = labelColor,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.padding(horizontal = 2.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-}
-
-internal enum class AdvancedSettingsTab(val label: String) {
-    Sliders("可视化"),
-    Json("JSON"),
 }
