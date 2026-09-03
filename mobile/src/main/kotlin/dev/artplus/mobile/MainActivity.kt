@@ -541,43 +541,10 @@ class MainActivity : ComponentActivity() {
     private var mitLicenseDialogVisible by mutableStateOf(false)
     private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    private data class UpdateInfo(
-        val latestVersion: String,
-        val tagName: String,
-        val htmlUrl: String,
-    )
 
-    /** 调用 AI/RMBG 前的二次确认请求。 */
-    private data class ServiceConfirmRequest(
-        val title: String,
-        val message: String,
-        val confirmLabel: String,
-        val onConfirm: () -> Unit,
-    )
 
-    /** 写入 Root 目标目录前的二次确认请求。 */
-    private data class RootWriteConfirmRequest(
-        val packageName: String,
-        val targetPath: String,
-        val rootWriteMode: RootWriteMode,
-        val onConfirm: () -> Unit,
-    )
 
-    private data class BatchApplyProgress(
-        val title: String,
-        val completed: Int,
-        val total: Int,
-        val currentLabel: String,
-        val failures: Int,
-    )
 
-    private data class ExportProgress(
-        val title: String,
-        val completed: Int,
-        val total: Int,
-        val currentLabel: String,
-        val isIndeterminate: Boolean = false,
-    )
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -1040,7 +1007,13 @@ class MainActivity : ComponentActivity() {
                 // 后台态不显示底部弹窗，但保留状态供设置页“备份中...”展示
             }
 
-            ServiceConfirmDialog()
+            pendingServiceConfirm?.let { request ->
+                ServiceConfirmDialog(
+                    request = request,
+                    onConfirm = { dismissServiceConfirm(confirmed = true) },
+                    onDismiss = { dismissServiceConfirm(confirmed = false) },
+                )
+            }
             RootWriteConfirmDialog()
             RefreshConfirmDialog()
             PresetPageDialogs()
@@ -2218,6 +2191,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         NumberParameterControl(
+                            busy = isBusy,
                             title = "列数",
                             summary = "控制桌面每行图标数量，切换列数会自动适配图标大小",
                             value = batchPreviewColumns,
@@ -2232,6 +2206,7 @@ class MainActivity : ComponentActivity() {
                         )
 
                         NumberParameterControl(
+                            busy = isBusy,
                             title = "图标大小",
                             summary = "控制预览图标的显示大小",
                             value = batchPreviewIconSizeDp,
@@ -2246,6 +2221,7 @@ class MainActivity : ComponentActivity() {
                         )
 
                         NumberParameterControl(
+                            busy = isBusy,
                             title = "图标圆角",
                             summary = "控制预览图标的圆角大小",
                             value = batchPreviewCornerRadiusDp,
@@ -2437,327 +2413,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun BatchApplyProgressDialog(progress: BatchApplyProgress) {
-        val fraction = if (progress.total <= 0) {
-            0f
-        } else {
-            (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
-        }
-        Dialog(onDismissRequest = {}) {
-            ApplyDialogDimEffect()
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                insideMargin = PaddingValues(18.dp),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(
-                        text = progress.title,
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = progress.currentLabel,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(12.dp)
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(fraction)
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(MiuixTheme.colorScheme.primaryVariant),
-                        )
-                    }
-                    Text(
-                        text = buildString {
-                            append("${progress.completed}/${progress.total}")
-                            if (progress.failures > 0) {
-                                append(" · 失败 ${progress.failures}")
-                            }
-                        },
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
 
-    @Composable
-    private fun ExportProgressDialog(progress: ExportProgress) {
-        val fraction = if (progress.total <= 0) 0f else (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
-        val infiniteTransition = rememberInfiniteTransition(label = "exportProgress")
-        val indeterminateFraction by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(animation = tween(durationMillis = 1200, easing = LinearEasing)),
-            label = "indeterminate",
-        )
-        Dialog(onDismissRequest = {}) {
-            ApplyDialogDimEffect()
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                insideMargin = PaddingValues(18.dp),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text(
-                        text = progress.title,
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = progress.currentLabel,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (progress.isIndeterminate) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(12.dp)
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(0.35f)
-                                    .graphicsLayer { translationX = (size.width * 1.2f * indeterminateFraction) - size.width * 0.35f }
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .background(MiuixTheme.colorScheme.primaryVariant),
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(12.dp)
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(fraction)
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .background(MiuixTheme.colorScheme.primaryVariant),
-                            )
-                        }
-                        Text(
-                            text = "${progress.completed}/${progress.total}",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-        }
-    }
 
-    @Composable
-    private fun BackupProgressBottomSheet(
-        progress: ExportProgress,
-        onStop: () -> Unit,
-        onBackground: () -> Unit,
-    ) {
-        val fraction = if (progress.total <= 0) 0f else (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
-        val infiniteTransition = rememberInfiniteTransition(label = "backupSheet")
-        val indeterminateFraction by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(animation = tween(durationMillis = 1200, easing = LinearEasing)),
-            label = "indeterminate",
-        )
-        Dialog(
-            onDismissRequest = onBackground,
-            properties = DialogProperties(usePlatformDefaultWidth = false),
-        ) {
-            ApplyDialogDimEffect()
-            var animateIn by remember { mutableStateOf(false) }
-            LaunchedEffect(Unit) { animateIn = true }
-            val offsetY by animateFloatAsState(
-                targetValue = if (animateIn) 0f else 320f,
-                animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f),
-                label = "BackupSheetSlideUp",
-            )
-            val alpha by animateFloatAsState(
-                targetValue = if (animateIn) 1f else 0f,
-                animationSpec = tween(durationMillis = 180),
-                label = "BackupSheetFadeIn",
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onBackground,
-                    )
-                    .imePadding()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                contentAlignment = Alignment.BottomCenter,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer {
-                            translationY = offsetY
-                            this.alpha = alpha
-                        }
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {},
-                        ),
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(28.dp))
-                            .background(MiuixTheme.colorScheme.background)
-                            .padding(start = 24.dp, end = 24.dp, top = 18.dp, bottom = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            text = progress.title,
-                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                            color = MiuixTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        // 第一行：正在备份 + 进度分数/百分比
-                        val line1 = when {
-                            progress.isIndeterminate -> "正在备份"
-                            progress.title.contains("导出") -> "正在导出 ${progress.completed}/${progress.total}"
-                            else -> "正在备份 ${progress.completed}/${progress.total}"
-                        }
-                        Text(
-                            text = line1,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        // 第二行：包名，单行显示不换行
-                        val pkgName = remember(progress.currentLabel) {
-                            val raw = progress.currentLabel
-                            when {
-                                ":" in raw -> raw.substringAfterLast(":").trim()
-                                "：" in raw -> raw.substringAfterLast("：").trim()
-                                raw.contains("/") && raw.contains(" ") -> raw.substringAfterLast(" ").trim().takeIf { it.contains(".") } ?: ""
-                                else -> ""
-                            }.takeIf { it.isNotBlank() && it != raw.trim() } ?: ""
-                        }
-                        if (pkgName.isNotBlank()) {
-                            Text(
-                                text = pkgName,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                softWrap = false,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
-                        // 进度条固定位置，高度恒定不跳动
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(12.dp)
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                        ) {
-                            if (progress.isIndeterminate) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .fillMaxWidth(0.35f)
-                                        .graphicsLayer { translationX = (size.width * 1.2f * indeterminateFraction) - size.width * 0.35f }
-                                        .clip(RoundedCornerShape(999.dp))
-                                        .background(MiuixTheme.colorScheme.primaryVariant),
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .fillMaxWidth(fraction)
-                                        .clip(RoundedCornerShape(999.dp))
-                                        .background(MiuixTheme.colorScheme.primaryVariant),
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Button(
-                                onClick = onStop,
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    color = Color(0xFFE53935),
-                                    contentColor = Color.White,
-                                ),
-                            ) {
-                                Text(
-                                    text = "停止备份",
-                                    style = MiuixTheme.textStyles.button,
-                                    color = Color.White,
-                                    maxLines = 1,
-                                )
-                            }
-                            Button(
-                                onClick = onBackground,
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColorsPrimary(),
-                            ) {
-                                Text(
-                                    text = "后台备份",
-                                    style = MiuixTheme.textStyles.button,
-                                    color = Color.White,
-                                    maxLines = 1,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     @Composable
     private fun GeneratedPreviewCard() {
@@ -3007,6 +2664,7 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "前景主体大小",
                     summary = "控制前景主体在图标画布中的占比",
                     value = foregroundSubjectPercent,
@@ -3019,6 +2677,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Scale,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "预览圆角",
                     summary = "控制预览图标的圆角大小",
                     value = previewCornerRadiusDp,
@@ -3031,6 +2690,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Radius,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "预览缩放",
                     summary = "预览图显示大小",
                     value = previewIconSizeDp,
@@ -3409,94 +3069,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun AiIconLoadingPreview(
-        modifier: Modifier = Modifier.size(72.dp),
-        overlay: Boolean = false,
-    ) {
-        val transition = rememberInfiniteTransition(label = "AiIconLoading")
-        val phase by transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1800, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-            label = "AiIconLoadingPhase",
-        )
-        val pulse by transition.animateFloat(
-            initialValue = 0.35f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1400, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-            label = "AiIconLoadingPulse",
-        )
-        val shape = RoundedCornerShape(20.dp)
-        Box(
-            modifier = modifier
-                .clip(shape)
-                .background(if (overlay) Color.Transparent else Color(0xFF14131A)),
-            contentAlignment = Alignment.Center,
-        ) {
-            ComposeCanvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                drawRect(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF15131D),
-                            Color(0xFF1D2136),
-                            Color(0xFF171522),
-                        ),
-                        start = Offset(0f, 0f),
-                        end = Offset(w, h),
-                    ),
-                    alpha = if (overlay) 0.22f else 1f,
-                )
-                val rows = 9
-                val cols = 11
-                for (row in 0 until rows) {
-                    for (col in 0 until cols) {
-                        val fx = (col + 0.5f) / cols
-                        val fy = (row + 0.5f) / rows
-                        val wave = sin((fx * 5.6f + phase * 6.28318f).toDouble()).toFloat()
-                        val ribbon = 1f - (abs(fy - (0.52f + wave * 0.18f)) / 0.34f).coerceIn(0f, 1f)
-                        val shimmer = 0.55f + 0.45f * sin((phase * 6.28318f + row * 0.74f + col * 0.39f).toDouble()).toFloat()
-                        val alphaBase = (0.12f + ribbon * 0.46f + pulse * 0.12f + shimmer * 0.08f).coerceIn(0.12f, 0.72f)
-                        val alpha = if (overlay) alphaBase * 0.58f else alphaBase
-                        val radius = w * (0.012f + ribbon * 0.012f)
-                        val color = when ((row + col) % 5) {
-                            0 -> Color(0xFF28F7D2)
-                            1 -> Color(0xFF4C83FF)
-                            2 -> Color(0xFFE044FF)
-                            3 -> Color(0xFFFFC857)
-                            else -> Color(0xFFFF4D9D)
-                        }
-                        val offsetX = sin((phase * 6.28318f + row).toDouble()).toFloat() * w * 0.018f
-                        val offsetY = cos((phase * 6.28318f + col).toDouble()).toFloat() * h * 0.014f
-                        drawCircle(
-                            color = color,
-                            radius = radius,
-                            center = Offset(w * fx + offsetX, h * fy + offsetY),
-                            alpha = alpha,
-                        )
-                    }
-                }
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.18f + pulse * 0.12f), Color.Transparent),
-                        center = Offset(w * (0.48f + 0.12f * sin((phase * 6.28318f).toDouble()).toFloat()), h * 0.5f),
-                        radius = w * 0.54f,
-                    ),
-                    radius = w * 0.54f,
-                    center = Offset(w * 0.5f, h * 0.5f),
-                    alpha = if (overlay) 0.16f else 0.35f,
-                )
-            }
-        }
-    }
 
     @Composable
     private fun PreviewNightFillBackgroundRow() {
@@ -3591,6 +3163,7 @@ class MainActivity : ComponentActivity() {
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     NumberParameterControl(
+                        busy = isBusy,
                         title = "主体占比",
                         summary = "复杂游戏图标建议 100%",
                         value = foregroundSubjectPercent,
@@ -3869,27 +3442,6 @@ class MainActivity : ComponentActivity() {
     }
     }
 
-    @Composable
-    private fun PreviewChoiceActions(
-        showApplyAll: Boolean,
-        applyEnabled: Boolean,
-        onApplyAll: () -> Unit,
-    ) {
-        Box(
-            modifier = Modifier.width(88.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (showApplyAll) {
-                CompactActionButton(
-                    text = "全部应用",
-                    onClick = onApplyAll,
-                    enabled = applyEnabled,
-                    modifier = Modifier.fillMaxWidth(),
-                    height = 56.dp,
-                )
-            }
-        }
-    }
 
     @Composable
     private fun CandidateIconPreview(candidate: IconCandidate, mode: PreviewMode) {
@@ -4153,6 +3705,7 @@ class MainActivity : ComponentActivity() {
             localSeparationMode
         }
         SegmentedControl(
+            enabled = !isBusy,
             labels = modes.map { it.label },
             selectedIndex = modes.indexOf(selectedMode).coerceAtLeast(0),
             scrollable = true,
@@ -4171,6 +3724,7 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 SegmentedControl(
+                    enabled = !isBusy,
                     labels = AdvancedSettingsTab.entries.map { it.label },
                     selectedIndex = AdvancedSettingsTab.entries.indexOf(advancedSettingsTab).coerceAtLeast(0),
                     onSelected = { index ->
@@ -4188,6 +3742,7 @@ class MainActivity : ComponentActivity() {
                 )
                 if (advancedSettingsTab == AdvancedSettingsTab.Sliders) {
                     AdvancedCategoryTabs(
+                        enabled = !isBusy,
                         selected = advancedSettingsCategory,
                         onSelected = { category ->
                             advancedSettingsCategory = category
@@ -4199,94 +3754,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun AdvancedCategoryTabs(
-        selected: AdvancedSettingsCategory,
-        onSelected: (AdvancedSettingsCategory) -> Unit,
-    ) {
-        val categories = AdvancedSettingsCategory.entries
-        val safeSelectedIndex = categories.indexOf(selected).coerceAtLeast(0)
-        val density = LocalDensity.current
-        var widthPx by remember(categories.size) { mutableStateOf(0) }
-        val gap = 12.dp
-        val gapPx = with(density) { gap.toPx() }
-        val segmentWidthPx = if (widthPx == 0) {
-            0f
-        } else {
-            ((widthPx.toFloat() - gapPx * (categories.size - 1)).coerceAtLeast(1f) / categories.size.toFloat())
-        }
-        val selectedOffsetPx by animateFloatAsState(
-            targetValue = (segmentWidthPx + gapPx) * safeSelectedIndex,
-            animationSpec = tween(durationMillis = 240),
-            label = "AdvancedCategoryOffset",
-        )
-        val selectedWidth = with(density) { segmentWidthPx.toDp() }
-        val selectedColor = if (isSystemInDarkTheme()) {
-            Color(0xFF555555)
-        } else {
-            Color(0xFFF1F1F1)
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .onGloballyPositioned { widthPx = it.size.width },
-        ) {
-            if (segmentWidthPx > 0f) {
-                Box(
-                    modifier = Modifier
-                        .width(selectedWidth)
-                        .fillMaxHeight()
-                        .offset { IntOffset(selectedOffsetPx.roundToInt(), 0) }
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(selectedColor),
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(gap),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                categories.forEach { category ->
-                    val isSelected = category == selected
-                    val interactionSource = remember(category) { MutableInteractionSource() }
-                    val textColor by animateColorAsState(
-                        targetValue = if (isSelected) {
-                            MiuixTheme.colorScheme.onSurface
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        },
-                        animationSpec = tween(durationMillis = 180),
-                        label = "AdvancedCategoryText",
-                    )
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(18.dp))
-                            .clickable(
-                                enabled = !isBusy && !isSelected,
-                                interactionSource = interactionSource,
-                                indication = null,
-                            ) { onSelected(category) },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = category.label,
-                            style = MiuixTheme.textStyles.title4.copy(
-                                fontWeight = FontWeight(700),
-                                fontSize = 16.sp,
-                            ),
-                            color = textColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-        }
-    }
 
     @Composable
     private fun LiquidGlassToggleCard() {
@@ -4311,6 +3778,7 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "玻璃圆角",
                     summary = "控制玻璃遮罩圆角，背景与主体按同一轮廓裁剪",
                     value = liquidGlassRadius,
@@ -4322,6 +3790,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Radius,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "外框高度",
                     summary = "控制玻璃外缘高光的厚度",
                     value = liquidGlassOuterWidth,
@@ -4334,6 +3803,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Glass,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "顶部强度",
                     summary = "控制顶边贴边高光的亮度",
                     value = liquidGlassTopAlpha,
@@ -4346,6 +3816,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Spark,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "底边强度",
                     summary = "控制底边贴边高光的亮度",
                     value = liquidGlassBottomAlpha,
@@ -4358,6 +3829,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Spark,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "背景灰雾",
                     summary = "给图标背景叠加均匀暗雾，降低整体亮度",
                     value = liquidGlassBackgroundMistAlpha,
@@ -4370,6 +3842,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Shadow,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "底部灰雾",
                     summary = "给底部叠加暗雾渐变，压住底边亮度",
                     value = liquidGlassBottomDarkAlpha,
@@ -4393,6 +3866,7 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "主体比例",
                     summary = "调整主体在玻璃层中的缩放比例",
                     value = liquidGlassSubjectScalePercent,
@@ -4405,6 +3879,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Scale,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "主体外框宽度",
                     summary = "沿主体外侧透明边界添加高光描边",
                     value = liquidGlassSubjectOutlineWidth,
@@ -4417,6 +3892,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Spark,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "主体内框宽度",
                     summary = "沿主体内侧透明边界添加高光描边",
                     value = liquidGlassSubjectInnerOutlineWidth,
@@ -4429,6 +3905,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Spark,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "主体阴影",
                     summary = "控制主体投影透明度，增强层次",
                     value = liquidGlassSubjectShadowAlpha,
@@ -4441,6 +3918,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Shadow,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "主体透明度",
                     summary = "归一化主体后再控制整体不透明度",
                     value = liquidGlassSubjectOpacityPercent,
@@ -4464,6 +3942,7 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "背景相似度",
                     summary = "越高越容易把相近颜色当背景",
                     value = backgroundSeparationPercent,
@@ -4475,6 +3954,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Cutout,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "底板清理",
                     summary = "越高越容易移除纯色底板",
                     value = plateRemovalPercent,
@@ -4486,6 +3966,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Plate,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "旧阴影清理",
                     summary = "清掉原图里的长阴影，不是新增阴影",
                     value = shadowRemovalPercent,
@@ -4497,6 +3978,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Eraser,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "边缘修补",
                     summary = "修补抠图毛刺和半透明边",
                     value = edgePolishPercent,
@@ -4561,6 +4043,7 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "Alpha 力度",
                     summary = "100 不变，越高越实",
                     value = rmbgAlphaStrengthPercent,
@@ -4572,6 +4055,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Cutout,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "边缘柔化",
                     summary = "越高边缘越软",
                     value = rmbgEdgeFeatherPercent,
@@ -4583,6 +4067,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Cutout,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "边缘扩缩",
                     summary = "低收缩，高扩张",
                     value = rmbgEdgeAdjustPercent,
@@ -4594,6 +4079,7 @@ class MainActivity : ComponentActivity() {
                     icon = SettingsIconKind.Scale,
                 )
                 NumberParameterControl(
+                    busy = isBusy,
                     title = "弱透明保留",
                     summary = "越高越保留半透明细节",
                     value = rmbgWeakAlphaKeepPercent,
@@ -5224,18 +4710,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun formatPresetDate(timestamp: Long): String {
-        val calendar = java.util.Calendar.getInstance().apply { timeInMillis = timestamp }
-        return String.format(
-            Locale.getDefault(),
-            "%04d-%02d-%02d %02d:%02d",
-            calendar.get(java.util.Calendar.YEAR),
-            calendar.get(java.util.Calendar.MONTH) + 1,
-            calendar.get(java.util.Calendar.DAY_OF_MONTH),
-            calendar.get(java.util.Calendar.HOUR_OF_DAY),
-            calendar.get(java.util.Calendar.MINUTE),
-        )
-    }
 
     @Composable
     private fun PresetStatusCard() {
@@ -5556,6 +5030,7 @@ class MainActivity : ComponentActivity() {
                             val isActive = preset.id == activePresetId
                             val isModified = isActive && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: preset.params))
                             CompactPresetRow(
+                                busy = isBusy,
                                 preset = preset,
                                 isActive = isActive,
                                 isModified = isModified,
@@ -5624,6 +5099,7 @@ class MainActivity : ComponentActivity() {
     private fun BatchPreviewSettingsCard() {
         SectionCard(rowsFullBleed = true) {
             NumberParameterControl(
+                busy = isBusy,
                 title = "批量预览数量",
                 summary = "预设四风格宫格预览时随机抓取的应用数量（默认 20，优先未生成图标应用）",
                 value = batchPreviewCount,
@@ -5638,119 +5114,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun CompactPresetRow(
-        preset: TuningPreset,
-        isActive: Boolean,
-        isModified: Boolean,
-        onApply: () -> Unit,
-        onPreview: () -> Unit,
-        onMore: () -> Unit,
-    ) {
-        val containerBg = if (isActive) {
-            MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
-        } else {
-            MiuixTheme.colorScheme.surfaceContainerHigh
-        }
-        val tags = remember(preset.params) { preset.featureTags() }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(containerBg)
-                .clickable(enabled = !isBusy) { onApply() }
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isActive) {
-                            if (isModified) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.6f) else MiuixTheme.colorScheme.primaryVariant
-                        } else {
-                            Color.Transparent
-                        }
-                    ),
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = preset.name,
-                        style = MiuixTheme.textStyles.body1.copy(
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                        ),
-                        color = if (isActive) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                    )
-                    tags.forEach { tag ->
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.12f))
-                                .padding(horizontal = 5.dp, vertical = 1.dp),
-                        ) {
-                            Text(
-                                text = tag,
-                                style = MiuixTheme.textStyles.footnote2.copy(fontSize = 10.sp),
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                        }
-                    }
-                }
-
-                Text(
-                    text = formatPresetDate(preset.updatedAt) + if (isActive) (if (isModified) " · 已套用 (已修改)" else " · 已套用") else "",
-                    style = MiuixTheme.textStyles.footnote2,
-                    color = if (isActive) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.8f) else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(enabled = !isBusy) { onPreview() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    imageVector = Lucide.Eye,
-                    contentDescription = "批量预览",
-                    modifier = Modifier.size(16.dp),
-                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(enabled = !isBusy) { onMore() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    imageVector = Lucide.EllipsisVertical,
-                    contentDescription = "更多操作",
-                    modifier = Modifier.size(16.dp),
-                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                )
-            }
-        }
-    }
 
     @Composable
     private fun PresetActionMenuDialog(
@@ -5784,6 +5147,7 @@ class MainActivity : ComponentActivity() {
                         .padding(vertical = 8.dp),
                 ) {
                     PresetMenuItem(
+                        enabled = !isBusy,
                         title = "应用此预设",
                         summary = "载入此快照的全部调参设置",
                         onClick = {
@@ -5792,6 +5156,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     PresetMenuItem(
+                        enabled = !isBusy,
                         title = "批量四风格预览",
                         summary = "随机抓取应用，四种风格宫格预览",
                         onClick = {
@@ -5800,6 +5165,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     PresetMenuItem(
+                        enabled = !isBusy,
                         title = "覆盖为此预设",
                         summary = "将当前所有调参保存覆盖到「${target.name}」",
                         onClick = {
@@ -5808,6 +5174,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     PresetMenuItem(
+                        enabled = !isBusy,
                         title = "重命名",
                         summary = "修改该预设名称",
                         onClick = {
@@ -5816,6 +5183,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     PresetMenuItem(
+                        enabled = !isBusy,
                         title = "复制单条 JSON",
                         summary = "导出该预设快照到剪贴板，方便分享",
                         onClick = {
@@ -5824,6 +5192,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     PresetMenuItem(
+                        enabled = !isBusy,
                         title = "删除预设",
                         summary = "从预设库中彻底移除",
                         onClick = {
@@ -5848,43 +5217,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun PresetMenuItem(
-        title: String,
-        summary: String,
-        onClick: () -> Unit,
-    ) {
-        val interactionSource = remember { MutableInteractionSource() }
-        val pressed by interactionSource.collectIsPressedAsState()
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(if (pressed) MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f) else Color.Transparent)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    enabled = !isBusy,
-                    onClick = onClick,
-                )
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.SemiBold),
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = summary,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
 
     @Composable
     private fun PresetDeleteConfirmDialog(
@@ -6200,152 +5532,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun PresetNameDialog(
-        title: String,
-        initialName: String,
-        confirmLabel: String,
-        onConfirm: (String) -> Unit,
-        onDismiss: () -> Unit,
-    ) {
-        var name by remember(initialName) { mutableStateOf(initialName) }
-        MiuixBottomDialog(onDismissRequest = onDismiss) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                InlineInputField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = "预设名称",
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "取消",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = { onConfirm(name.trim()) },
-                        enabled = name.trim().isNotEmpty(),
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = confirmLabel,
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
-    }
 
-    @Composable
-    private fun PresetImportDialog(
-        onConfirm: (String) -> Unit,
-        onDismiss: () -> Unit,
-    ) {
-        var text by remember { mutableStateOf("") }
-        MiuixBottomDialog(onDismissRequest = onDismiss) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "导入预设 JSON",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                BasicTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    singleLine = false,
-                    textStyle = MiuixTheme.textStyles.body1.copy(
-                        color = MiuixTheme.colorScheme.onSurface,
-                    ),
-                    cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                        .padding(12.dp),
-                    decorationBox = { innerTextField ->
-                        Box {
-                            if (text.isEmpty()) {
-                                Text(
-                                    text = "粘贴导出的预设 JSON...",
-                                    style = MiuixTheme.textStyles.body1,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            }
-                            innerTextField()
-                        }
-                    },
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "取消",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = { onConfirm(text) },
-                        enabled = text.trim().isNotEmpty(),
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "导入",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
-    }
 
     /**
      * JSON 参数编辑器：全部调参参数以类型化 JSON 呈现。
@@ -6419,67 +5606,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun ServiceConfirmDialog() {
-        val request = pendingServiceConfirm ?: return
-        MiuixBottomDialog(onDismissRequest = { dismissServiceConfirm(confirmed = false) }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = request.title,
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = request.message,
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 6,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = { dismissServiceConfirm(confirmed = false) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "取消",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = { dismissServiceConfirm(confirmed = true) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = request.confirmLabel,
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
-    }
 
     @Composable
     private fun RootWriteConfirmDialog() {
@@ -6596,180 +5722,7 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    @Composable
-    private fun NumberParameterControl(
-        title: String,
-        summary: String,
-        value: Int,
-        draftText: String,
-        min: Int,
-        max: Int,
-        step: Int = 1,
-        onDraftChange: (String) -> Unit,
-        onSave: (Int) -> Unit,
-        enabled: Boolean = true,
-        icon: SettingsIconKind? = null,
-        showIcon: Boolean = true,
-        initiallyExpanded: Boolean = false,
-    ) {
-        val controlEnabled = enabled && !isBusy
-        var expanded by remember { mutableStateOf(initiallyExpanded) }
-        val headerInteractionSource = remember { MutableInteractionSource() }
-        val headerPressed by headerInteractionSource.collectIsPressedAsState()
-        val bridge = LocalSectionCardPressBridge.current
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            // 图1 全出血直角按压块：无 clip，直角背景由 Card 圆角裁切，左右铺满、首末补到容器边
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .trackSectionPress(bridge, headerPressed)
-                    .background(cardRowPressedColor(headerPressed))
-                    .clickable(
-                        interactionSource = headerInteractionSource,
-                        indication = null,
-                        enabled = controlEnabled,
-                        onClick = { expanded = !expanded },
-                    )
-                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 9.dp)
-                    .semantics {
-                        role = Role.Button
-                        stateDescription = if (expanded) "已展开拖动条" else "已收起拖动条"
-                    },
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (showIcon) {
-                    SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
-                ) {
-                    Text(
-                        text = title,
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = summary,
-                        modifier = if (expanded) Modifier.basicMarquee() else Modifier,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        softWrap = false,
-                    )
-                }
-                // 输入框区域消费点击，避免误触切换折叠
-                Box(
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        enabled = controlEnabled,
-                        onClick = {},
-                    ),
-                ) {
-                    NumberInputBox(
-                        value = draftText,
-                        fallbackValue = value,
-                        min = min,
-                        max = max,
-                        enabled = controlEnabled,
-                        onValueChange = onDraftChange,
-                        onDone = { submitted ->
-                            submitted.toIntOrNull()
-                                ?.coerceIn(min, max)
-                                ?.let(onSave)
-                        },
-                    )
-                }
-                KernelStyleArrow(expanded = expanded)
-            }
-            AnimatedVisibility(
-                visible = expanded,
-                enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                    expandVertically(animationSpec = tween(durationMillis = 180)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                    shrinkVertically(animationSpec = tween(durationMillis = 160)),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
-                ) {
-                    SteppedPercentSlider(
-                        value = value,
-                        min = min,
-                        max = max,
-                        step = step,
-                        enabled = controlEnabled,
-                        onValueChange = onSave,
-                    )
-                }
-            }
-        }
-    }
 
-    @Composable
-    private fun DecimalParameterControl(
-        title: String,
-        summary: String,
-        value: Float,
-        draftText: String,
-        min: Float,
-        max: Float,
-        onDraftChange: (String) -> Unit,
-        onSave: (Float) -> Unit,
-        enabled: Boolean = true,
-        icon: SettingsIconKind? = null,
-    ) {
-        val controlEnabled = enabled && !isBusy
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "$summary · 范围 ${formatScale(min)}-${formatScale(max)}",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                DecimalInputBox(
-                    value = draftText,
-                    fallbackValue = formatScale(value),
-                    enabled = controlEnabled,
-                    onValueChange = onDraftChange,
-                    onDone = { submitted ->
-                        submitted.toFloatOrNull()
-                            ?.coerceIn(min, max)
-                            ?.let(onSave)
-                    },
-                )
-            }
-        }
-    }
 
 
 
@@ -7332,6 +6285,7 @@ class MainActivity : ComponentActivity() {
                 onCheckedChange = { updatePreviewStripEnabled(it) },
             )
             NumberParameterControl(
+                busy = isBusy,
                 title = "批量预览数量",
                 summary = "预设四风格宫格预览时随机抓取的应用数量（默认 20，优先未生成图标应用）",
                 value = batchPreviewCount,
@@ -7607,6 +6561,7 @@ class MainActivity : ComponentActivity() {
             ) {
                 val filters = GeneratedFilter.entries
                 SegmentedControl(
+                    enabled = !isBusy,
                     labels = filters.map { it.label },
                     selectedIndex = filters.indexOf(generatedFilter),
                     onSelected = { index ->
@@ -7891,175 +6846,7 @@ class MainActivity : ComponentActivity() {
 
 
 
-    @Composable
-    private fun SegmentedControl(
-        labels: List<String>,
-        selectedIndex: Int,
-        scrollable: Boolean = false,
-        onSelected: (Int) -> Unit,
-    ) {
-        if (labels.isEmpty()) {
-            return
-        }
-        val shape = RoundedCornerShape(16.dp)
-        val safeSelectedIndex = selectedIndex.coerceIn(0, labels.lastIndex)
-        val density = LocalDensity.current
-        var widthPx by remember(labels.size) { mutableStateOf(0) }
-        val gap = 10.dp
-        val gapPx = with(density) { gap.toPx() }
-        val minSegmentWidth = if (scrollable) 86.dp else 0.dp
-        val minSegmentWidthPx = with(density) { minSegmentWidth.toPx() }
-        val segmentWidthPx = if (widthPx == 0) {
-            0f
-        } else if (scrollable) {
-            val availableWidth = (widthPx.toFloat() - gapPx * (labels.size - 1)).coerceAtLeast(1f)
-            maxOf(minSegmentWidthPx, availableWidth / labels.size.toFloat())
-        } else {
-            val availableWidth = (widthPx.toFloat() - gapPx * (labels.size - 1)).coerceAtLeast(1f)
-            availableWidth / labels.size.toFloat()
-        }
-        val selectedOffsetPx by animateFloatAsState(
-            targetValue = (segmentWidthPx + gapPx) * safeSelectedIndex,
-            animationSpec = tween(durationMillis = 220),
-            label = "SegmentedControlOffset",
-        )
-        val selectedWidth = with(density) { segmentWidthPx.toDp() }
-        val contentWidth = with(density) {
-            (segmentWidthPx * labels.size + gapPx * (labels.size - 1)).toDp()
-        }
-        val optionBackground = if (isSystemInDarkTheme()) {
-            Color(0xFF444444)
-        } else {
-            Color(0xFFEFEFEF)
-        }
-        val scrollState = rememberScrollState()
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(42.dp)
-                .onGloballyPositioned { coordinates ->
-                    widthPx = coordinates.size.width
-                },
-        ) {
-            Box(
-                modifier = Modifier
-                    .then(
-                        if (widthPx > 0) {
-                            Modifier.width(contentWidth)
-                        } else {
-                            Modifier.fillMaxWidth()
-                        }
-                    )
-                    .fillMaxHeight()
-                    .then(if (scrollable) Modifier.horizontalScroll(scrollState) else Modifier),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(gap),
-                ) {
-                    labels.forEach {
-                        Box(
-                            modifier = Modifier
-                                .then(
-                                    if (widthPx > 0) {
-                                        Modifier.width(selectedWidth)
-                                    } else {
-                                        Modifier.weight(1f)
-                                    }
-                                )
-                                .fillMaxHeight()
-                                .clip(shape)
-                                .background(optionBackground),
-                        )
-                    }
-                }
-                if (widthPx > 0) {
-                    Box(
-                        modifier = Modifier
-                            .offset { IntOffset(selectedOffsetPx.roundToInt(), 0) }
-                            .width(selectedWidth)
-                            .fillMaxHeight()
-                            .clip(shape)
-                            .background(MiuixTheme.colorScheme.primaryVariant),
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(gap),
-                ) {
-                    labels.forEachIndexed { index, label ->
-                        val selected = index == safeSelectedIndex
-                        val interactionSource = remember { MutableInteractionSource() }
-                        val foreground = if (selected) {
-                            Color.White
-                        } else {
-                            MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        }
-                        Box(
-                            modifier = Modifier
-                                .then(
-                                    if (widthPx > 0) {
-                                        Modifier.width(selectedWidth)
-                                    } else {
-                                        Modifier.weight(1f)
-                                    }
-                                )
-                                .fillMaxHeight()
-                                .clip(shape)
-                                .clickable(
-                                    interactionSource = interactionSource,
-                                    indication = null,
-                                    enabled = !isBusy && !selected,
-                                ) {
-                                    onSelected(index)
-                                }
-                                .padding(horizontal = 2.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = label,
-                                style = MiuixTheme.textStyles.button,
-                                color = foreground,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun SegmentOption(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-        val background = if (selected) {
-            MiuixTheme.colorScheme.primaryVariant
-        } else {
-            MiuixTheme.colorScheme.surfaceContainerHigh
-        }
-        val foreground = if (selected) {
-            MiuixTheme.colorScheme.onPrimaryVariant
-        } else {
-            MiuixTheme.colorScheme.onSurfaceVariantSummary
-        }
-        Box(
-            modifier = modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(background)
-                .clickable(enabled = !isBusy, onClick = onClick)
-                .padding(vertical = 8.dp, horizontal = 4.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = label,
-                style = MiuixTheme.textStyles.button,
-                color = foreground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
 
 
 
@@ -12197,8 +10984,6 @@ class MainActivity : ComponentActivity() {
         scaleBitmapAroundAlphaCenter(source, monochromeThemeScale)
 
 
-    private fun formatScale(value: Float): String =
-        String.format(Locale.US, "%.2f", value)
 
     private fun previewAssetsForSelections(
         session: GenerationSession,
@@ -14287,17 +13072,6 @@ class MainActivity : ComponentActivity() {
         companion object {
             fun fromName(name: String?): GeneratedFilter =
                 entries.firstOrNull { it.name == name } ?: All
-        }
-    }
-
-    private enum class AdvancedSettingsCategory(val label: String) {
-        LiquidGlass("液态玻璃"),
-        Local("稳定规则"),
-        Rmbg("RMBG");
-
-        companion object {
-            fun fromName(name: String?): AdvancedSettingsCategory =
-                entries.firstOrNull { it.name == name } ?: LiquidGlass
         }
     }
 
