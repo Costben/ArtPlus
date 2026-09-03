@@ -195,3 +195,94 @@ internal fun trimForegroundEdge(
     out.setPixels(outPixels, 0, width, 0, 0, width, height)
     return repairLocalTransparentEdgeColors(out, pipeline)
 }
+
+internal fun smoothAlphaEdges(
+    source: Bitmap,
+    strength: Double,
+    growTransparentEdges: Boolean = false,
+    radius: Int = 1,
+    growStrength: Double = MONO_EDGE_GROW_STRENGTH,
+): Bitmap {
+    if (strength <= 0.0) {
+        return source
+    }
+    val width = source.width
+    val height = source.height
+    val pixels = IntArray(width * height)
+    val outPixels = pixels.copyOf()
+    source.getPixels(pixels, 0, width, 0, 0, width, height)
+
+    for (y in 0 until height) {
+        for (x in 0 until width) {
+            val index = y * width + x
+            val pixel = pixels[index]
+            val alpha = AndroidColor.alpha(pixel)
+            if (alpha <= 0 && !growTransparentEdges) {
+                outPixels[index] = AndroidColor.TRANSPARENT
+                continue
+            }
+            var alphaSum = 0
+            var count = 0
+            var hasTransparentNeighbor = false
+            var redSum = 0
+            var greenSum = 0
+            var blueSum = 0
+            var visibleColorCount = 0
+            val edgeRadius = radius.coerceAtLeast(1)
+            for (dy in -edgeRadius..edgeRadius) {
+                for (dx in -edgeRadius..edgeRadius) {
+                    val nx = x + dx
+                    val ny = y + dy
+                    count += 1
+                    if (nx !in 0 until width || ny !in 0 until height) {
+                        hasTransparentNeighbor = true
+                        continue
+                    }
+                    val neighborAlpha = AndroidColor.alpha(pixels[ny * width + nx])
+                    alphaSum += neighborAlpha
+                    if (neighborAlpha <= MONO_EDGE_ALPHA_DROP_THRESHOLD) {
+                        hasTransparentNeighbor = true
+                    } else {
+                        val neighbor = pixels[ny * width + nx]
+                        redSum += AndroidColor.red(neighbor)
+                        greenSum += AndroidColor.green(neighbor)
+                        blueSum += AndroidColor.blue(neighbor)
+                        visibleColorCount += 1
+                    }
+                }
+            }
+            if (!hasTransparentNeighbor || count <= 0) {
+                outPixels[index] = pixel
+                continue
+            }
+            val blurredAlpha = alphaSum / count
+            val outAlpha = if (alpha <= 0 && growTransparentEdges) {
+                (blurredAlpha * growStrength).toInt()
+            } else {
+                (alpha * (1.0 - strength) + blurredAlpha * strength).toInt()
+            }
+                .coerceIn(0, 255)
+            outPixels[index] = if (outAlpha <= MONO_EDGE_ALPHA_DROP_THRESHOLD) {
+                AndroidColor.TRANSPARENT
+            } else if (alpha <= 0 && visibleColorCount > 0) {
+                AndroidColor.argb(
+                    outAlpha,
+                    redSum / visibleColorCount,
+                    greenSum / visibleColorCount,
+                    blueSum / visibleColorCount,
+                )
+            } else {
+                AndroidColor.argb(
+                    outAlpha,
+                    AndroidColor.red(pixel),
+                    AndroidColor.green(pixel),
+                    AndroidColor.blue(pixel),
+                )
+            }
+        }
+    }
+
+    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    out.setPixels(outPixels, 0, width, 0, 0, width, height)
+    return out
+}
