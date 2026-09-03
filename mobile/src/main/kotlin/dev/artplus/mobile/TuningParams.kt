@@ -927,3 +927,7 @@ data class LocalPipelineConfig(
         )
     }
 }
+
+// ui/components 用行出血与卡片内边距（原 MainActivity companion，slice1 提升）。
+const val CHOICE_ROW_HORIZONTAL_BLEED_DP = 16
+const val SECTION_CARD_VERTICAL_PADDING_DP = 12
