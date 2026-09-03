@@ -20,6 +20,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.net.LocalServerSocket
@@ -81,6 +82,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.overscroll
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -451,9 +454,14 @@ class MainActivity : ComponentActivity() {
     private var batchPreviewCount by mutableIntStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT)
     private var draftBatchPreviewCountText by mutableStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT.toString())
     private var batchPreviewColumns by mutableIntStateOf(4)
+    private var draftBatchPreviewColumnsText by mutableStateOf("4")
     private var batchPreviewIconSizeDp by mutableIntStateOf(54)
+    private var draftBatchPreviewIconSizeDpText by mutableStateOf("54")
     private var batchPreviewCornerRadiusDp by mutableIntStateOf(20)
+    private var draftBatchPreviewCornerRadiusDpText by mutableStateOf("20")
     private var batchPreviewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
+    private var customWallpaperPath by mutableStateOf<String?>(null)
+    private var customWallpaperInfo by mutableStateOf("")
     private var pendingServiceConfirm by mutableStateOf<ServiceConfirmRequest?>(null)
     private var autoConfirmRootWrite by mutableStateOf(false)
     private var pendingRootWriteConfirm by mutableStateOf<RootWriteConfirmRequest?>(null)
@@ -625,6 +633,15 @@ class MainActivity : ComponentActivity() {
                 return@registerForActivityResult
             }
             importCustomPreviewImage(mode, kind, uri)
+        }
+
+    private val chooseWallpaperLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) {
+                statusText = "未选择壁纸"
+                return@registerForActivityResult
+            }
+            importCustomWallpaper(uri)
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -1692,6 +1709,7 @@ class MainActivity : ComponentActivity() {
                         )
                         OutputCard()
                         PreviewStripSettingsCard()
+                        WallpaperSettingsCard()
                         GptSettingsCard()
                         RmbgComponentCard()
                         SectionCard(rowsFullBleed = true) {
@@ -2217,8 +2235,6 @@ class MainActivity : ComponentActivity() {
             listOf("正常亮色", "正常暗色", "单色亮色", "单色暗色")
         }
 
-        var showTuningControls by remember { mutableStateOf(true) }
-
         Scaffold(
             containerColor = pageBackground,
             topBar = {
@@ -2226,6 +2242,7 @@ class MainActivity : ComponentActivity() {
                     title = preset?.name ?: "批量预览",
                     scrollBehavior = scrollBehavior,
                     navigationIconPadding = 0.dp,
+                    actionIconPadding = 0.dp,
                     navigationIcon = {
                         TitleBarIconButton(
                             icon = Lucide.ChevronLeft,
@@ -2248,63 +2265,29 @@ class MainActivity : ComponentActivity() {
                     },
                 )
             },
-            bottomBar = {
-                if (preset != null && result != null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(pageBackground),
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
-                                .navigationBarsPadding(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = preset.name,
-                                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Bold),
-                                    color = MiuixTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    text = "共 ${result.items.size} 个应用 · 4 风格 · ${batchPreviewColumns} 列排版",
-                                    style = MiuixTheme.textStyles.footnote2,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    maxLines = 1,
-                                )
-                            }
-                            Button(
-                                onClick = {
-                                    applyPreset(preset)
-                                },
-                                colors = ButtonDefaults.buttonColorsPrimary(),
-                            ) {
-                                Text(
-                                    text = "套用此预设",
-                                    style = MiuixTheme.textStyles.button,
-                                    color = Color.White,
-                                )
-                            }
-                        }
-                    }
-                }
-            },
         ) { innerPadding ->
-            val previewFrameHeight = LocalConfiguration.current.screenHeightDp.dp
+            // 预览框高度锁死：内容行数 + 1 行，框内无滚动可抢，所有纵向手势归页面
+            val previewContentRows = result?.items?.size?.let { count ->
+                if (count <= 0) 0 else (count + batchPreviewColumns - 1) / batchPreviewColumns
+            } ?: 0
+            val previewDisplayRows = previewContentRows + 1
+            val previewRowHeight = batchPreviewIconSizeDp.dp + 6.dp + PREVIEW_LABEL_HEIGHT_DP.dp
+            val previewFrameHeight = 18.dp + previewRowHeight * previewDisplayRows +
+                18.dp * (previewDisplayRows - 1) + 18.dp
+            val overscrollEffect = rememberOverscrollEffect()
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(pageBackground)
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .overscroll(overscrollEffect)
                     .padding(innerPadding)
+                    .imePadding()
                     .padding(bottom = 12.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                // 1. 桌面控制卡：背景一行 + 列数拖动条 + 微调（默认展开）
+                // 1. 桌面控制卡：背景一行 + 三个主页化参数行（无图标、默认展开）
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2313,7 +2296,7 @@ class MainActivity : ComponentActivity() {
                     SectionCard(rowsFullBleed = true) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                         Row(
                             modifier = Modifier
@@ -2331,126 +2314,47 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Text(
-                                text = "列数: ${batchPreviewColumns}列",
-                                style = MiuixTheme.textStyles.footnote2,
-                                color = MiuixTheme.colorScheme.onSurface,
-                                modifier = Modifier.width(96.dp),
-                            )
-                            Box(modifier = Modifier.weight(1f)) {
-                                SteppedPercentSlider(
-                                    value = batchPreviewColumns,
-                                    min = 2,
-                                    max = 5,
-                                    step = 1,
-                                    enabled = true,
-                                    showDots = false,
-                                    onValueChange = { updateBatchPreviewColumns(it) },
-                                )
-                            }
-                        }
+                        NumberParameterControl(
+                            title = "列数",
+                            summary = "控制桌面每行图标数量，切换列数会自动适配图标大小",
+                            value = batchPreviewColumns,
+                            draftText = draftBatchPreviewColumnsText,
+                            min = 2,
+                            max = 5,
+                            step = 1,
+                            onDraftChange = { draftBatchPreviewColumnsText = it },
+                            onSave = { updateBatchPreviewColumns(it) },
+                            showIcon = false,
+                            initiallyExpanded = false,
+                        )
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showTuningControls = !showTuningControls }
-                                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Image(
-                                imageVector = Lucide.SlidersHorizontal,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurface),
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "桌面微调",
-                                    style = MiuixTheme.textStyles.body1,
-                                    color = MiuixTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    text = "图标大小 ${batchPreviewIconSizeDp}dp · 图标圆角 ${batchPreviewCornerRadiusDp}dp",
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            KernelStyleArrow(expanded = showTuningControls)
-                        }
+                        NumberParameterControl(
+                            title = "图标大小",
+                            summary = "控制预览图标的显示大小",
+                            value = batchPreviewIconSizeDp,
+                            draftText = draftBatchPreviewIconSizeDpText,
+                            min = 40,
+                            max = 84,
+                            step = 2,
+                            onDraftChange = { draftBatchPreviewIconSizeDpText = it },
+                            onSave = { updateBatchPreviewIconSizeDp(it) },
+                            showIcon = false,
+                            initiallyExpanded = false,
+                        )
 
-                        AnimatedVisibility(
-                            visible = showTuningControls,
-                            enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                                expandVertically(animationSpec = tween(durationMillis = 180)),
-                            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                                shrinkVertically(animationSpec = tween(durationMillis = 160)),
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    Text(
-                                        text = "图标大小: ${batchPreviewIconSizeDp}dp",
-                                        style = MiuixTheme.textStyles.footnote2,
-                                        color = MiuixTheme.colorScheme.onSurface,
-                                        modifier = Modifier.width(96.dp),
-                                    )
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        SteppedPercentSlider(
-                                            value = batchPreviewIconSizeDp,
-                                            min = 40,
-                                            max = 84,
-                                            step = 2,
-                                            enabled = true,
-                                            showDots = false,
-                                            onValueChange = { updateBatchPreviewIconSizeDp(it) },
-                                        )
-                                    }
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    Text(
-                                        text = "图标圆角: ${batchPreviewCornerRadiusDp}dp",
-                                        style = MiuixTheme.textStyles.footnote2,
-                                        color = MiuixTheme.colorScheme.onSurface,
-                                        modifier = Modifier.width(96.dp),
-                                    )
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        SteppedPercentSlider(
-                                            value = batchPreviewCornerRadiusDp,
-                                            min = 0,
-                                            max = 36,
-                                            step = 1,
-                                            enabled = true,
-                                            showDots = false,
-                                            onValueChange = { updateBatchPreviewCornerRadiusDp(it) },
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        NumberParameterControl(
+                            title = "图标圆角",
+                            summary = "控制预览图标的圆角大小",
+                            value = batchPreviewCornerRadiusDp,
+                            draftText = draftBatchPreviewCornerRadiusDpText,
+                            min = 0,
+                            max = 36,
+                            step = 1,
+                            onDraftChange = { draftBatchPreviewCornerRadiusDpText = it },
+                            onSave = { updateBatchPreviewCornerRadiusDp(it) },
+                            showIcon = false,
+                            initiallyExpanded = false,
+                        )
                     }
                 }
                 }
@@ -2495,7 +2399,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // 3. 桌面展示框：一屏高的 Card，内部完整桌面
+                // 3. 桌面展示框：高度锁死为内容行数 + 1 行，框内不滚动
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2543,6 +2447,7 @@ class MainActivity : ComponentActivity() {
                                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 18.dp),
                                         verticalArrangement = Arrangement.spacedBy(18.dp),
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        userScrollEnabled = false,
                                     ) {
                                         items(result.items, key = { it.packageName }) { item ->
                                             Column(
@@ -3532,9 +3437,9 @@ class MainActivity : ComponentActivity() {
         option: PreviewDesktopBackground,
         modifier: Modifier = Modifier,
     ) {
-        val wallpaper = remember(option) {
+        val wallpaper = remember(option, customWallpaperPath) {
             if (option == PreviewDesktopBackground.Wallpaper) {
-                loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
+                loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
             } else {
                 null
             }
@@ -5886,6 +5791,39 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun WallpaperSettingsCard() {
+        val hasCustom = customWallpaperPath != null
+        SectionCard(rowsFullBleed = true) {
+            LibrarySettingRow(
+                title = "上传自定义壁纸",
+                summary = if (hasCustom) {
+                    "已上传${customWallpaperInfo.takeIf { it.isNotBlank() }?.let { "（$it）" }.orEmpty()}，「桌面」背景优先使用 · 自动居中裁剪 16:9（不缩放不变形）"
+                } else {
+                    "「桌面」背景当前用系统壁纸/内置壁纸 · 上传后自动居中裁剪 16:9（不缩放不变形）"
+                },
+                icon = SettingsIconKind.FileUpload,
+                showValue = false,
+                showArrowRight = true,
+                enabled = !isBusy,
+                onClick = {
+                    chooseWallpaperLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
+                },
+            )
+            if (hasCustom) {
+                LibrarySettingRow(
+                    title = "清除自定义壁纸",
+                    summary = "恢复为系统壁纸/内置壁纸",
+                    icon = SettingsIconKind.Eraser,
+                    showValue = false,
+                    showArrowRight = true,
+                    enabled = !isBusy,
+                    onClick = { clearCustomWallpaper() },
+                )
+            }
+        }
+    }
+
+    @Composable
     private fun BatchPreviewSettingsCard() {
         SectionCard(rowsFullBleed = true) {
             NumberParameterControl(
@@ -6910,9 +6848,11 @@ class MainActivity : ComponentActivity() {
         onSave: (Int) -> Unit,
         enabled: Boolean = true,
         icon: SettingsIconKind? = null,
+        showIcon: Boolean = true,
+        initiallyExpanded: Boolean = false,
     ) {
         val controlEnabled = enabled && !isBusy
-        var expanded by remember { mutableStateOf(false) }
+        var expanded by remember { mutableStateOf(initiallyExpanded) }
         val headerInteractionSource = remember { MutableInteractionSource() }
         val headerPressed by headerInteractionSource.collectIsPressedAsState()
         val bridge = LocalSectionCardPressBridge.current
@@ -6940,7 +6880,9 @@ class MainActivity : ComponentActivity() {
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
+                if (showIcon) {
+                    SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
+                }
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(3.dp),
@@ -9412,16 +9354,68 @@ class MainActivity : ComponentActivity() {
         drawDrawable(entry.applicationInfo.loadIcon(packageManager), ICON_CACHE_SIZE, ICON_CACHE_SIZE, transparent = true)
             .also { it.prepareToDraw() }
 
+    /**
+     * 读取当前设备桌面壁纸并保留原始宽高比（短边缩放到 480 左右）。
+     * 静态壁纸经 ImageWallpaper 暴露为 BitmapDrawable，直接取位图，无需任何权限；
+     * 失败返回 null，调用方走内置图兜底。
+     */
     private fun loadPreviewWallpaperBitmap(): Bitmap? =
         runCatching {
             val drawable = WallpaperManager.getInstance(this).drawable ?: return null
-            drawDrawable(
-                drawable = drawable,
-                width = PREVIEW_WALLPAPER_SAMPLE_SIZE,
-                height = PREVIEW_WALLPAPER_SAMPLE_SIZE,
-                transparent = false,
-            ).also { it.prepareToDraw() }
+            val sampled = if (drawable is BitmapDrawable) {
+                drawable.bitmap?.let { sampleBitmapShortEdge(it, PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE) }
+            } else {
+                val intrinsicW = drawable.intrinsicWidth.takeIf { it > 0 }
+                val intrinsicH = drawable.intrinsicHeight.takeIf { it > 0 }
+                if (intrinsicW != null && intrinsicH != null) {
+                    val scale = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE.toFloat() /
+                        minOf(intrinsicW, intrinsicH).toFloat()
+                    drawDrawableCover(
+                        drawable = drawable,
+                        width = (intrinsicW * scale).roundToInt().coerceAtLeast(1),
+                        height = (intrinsicH * scale).roundToInt().coerceAtLeast(1),
+                    )
+                } else {
+                    // 无内在尺寸（如纯色壁纸）：按常见竖屏比例渲染
+                    drawDrawableCover(drawable, PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE, 854)
+                }
+            }
+            sampled?.also { it.prepareToDraw() }
         }.getOrNull()
+
+    /** 等比缩放：短边对齐目标尺寸（已达标则原图返回，共享位图不回收）。 */
+    private fun sampleBitmapShortEdge(source: Bitmap, shortEdge: Int): Bitmap {
+        val srcW = source.width
+        val srcH = source.height
+        if (srcW <= 0 || srcH <= 0 || minOf(srcW, srcH) == shortEdge) {
+            return source
+        }
+        val scale = shortEdge.toFloat() / minOf(srcW, srcH).toFloat()
+        return Bitmap.createScaledBitmap(
+            source,
+            (srcW * scale).roundToInt().coerceAtLeast(1),
+            (srcH * scale).roundToInt().coerceAtLeast(1),
+            true,
+        )
+    }
+
+    /** Cover 模式绘制：等比放大铺满目标并居中裁切，不拉伸变形。 */
+    private fun drawDrawableCover(drawable: Drawable, width: Int, height: Int): Bitmap {
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(AndroidColor.BLACK)
+        val copy = drawable.constantState?.newDrawable()?.mutate() ?: drawable.mutate()
+        val srcW = copy.intrinsicWidth.takeIf { it > 0 } ?: width
+        val srcH = copy.intrinsicHeight.takeIf { it > 0 } ?: height
+        val scale = maxOf(width.toFloat() / srcW, height.toFloat() / srcH)
+        val dstW = (srcW * scale).roundToInt()
+        val dstH = (srcH * scale).roundToInt()
+        val left = (width - dstW) / 2
+        val top = (height - dstH) / 2
+        copy.setBounds(left, top, left + dstW, top + dstH)
+        copy.draw(canvas)
+        return bitmap
+    }
 
     private fun loadBundledPreviewWallpaperBitmap(): Bitmap? =
         runCatching {
@@ -9438,6 +9432,88 @@ class MainActivity : ComponentActivity() {
             val opts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
             BitmapFactory.decodeResource(resources, R.drawable.preview_wallpaper, opts)
                 ?.also { it.prepareToDraw() }
+        }.getOrNull()
+
+    /**
+     * 导入用户上传的壁纸：只居中裁剪为 16:9，不做任何缩放压缩，避免变形；
+     * 以 PNG 无损存档到私有目录，「桌面」背景优先使用。
+     */
+    private fun importCustomWallpaper(uri: Uri) {
+        if (isBusy) {
+            return
+        }
+        statusText = "正在导入壁纸…"
+        startUiFriendlyThread("ArtPlusWallpaperImport") {
+            try {
+                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    ?: error("无法打开图片")
+                val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    ?: error("图片无法解码；请选择 JPG/PNG/WEBP")
+                val cropped = centerCropToSixteenNine(decoded)
+                if (cropped !== decoded && !decoded.isRecycled) {
+                    decoded.recycle()
+                }
+                val outFile = File(filesDir, CUSTOM_WALLPAPER_FILE)
+                FileOutputStream(outFile).use { fos ->
+                    if (!cropped.compress(Bitmap.CompressFormat.PNG, 100, fos)) {
+                        error("壁纸保存失败")
+                    }
+                }
+                val info = "${cropped.width} × ${cropped.height}"
+                runOnUiThread {
+                    customWallpaperPath = outFile.absolutePath
+                    customWallpaperInfo = info
+                    statusText = "已导入自定义壁纸（$info），「桌面」背景优先使用此图"
+                    saveUiState()
+                }
+            } catch (error: Exception) {
+                status("壁纸导入失败: ${error.message ?: error.javaClass.simpleName}")
+            }
+        }
+    }
+
+    private fun clearCustomWallpaper() {
+        runCatching {
+            customWallpaperPath?.let { File(it).delete() }
+            File(filesDir, CUSTOM_WALLPAPER_FILE).delete()
+        }
+        customWallpaperPath = null
+        customWallpaperInfo = ""
+        statusText = "已清除自定义壁纸，「桌面」背景恢复系统壁纸/内置壁纸"
+        saveUiState()
+    }
+
+    /** 居中裁剪为 16:9（竖屏），只裁剪不缩放；已符合比例则原图返回。 */
+    private fun centerCropToSixteenNine(source: Bitmap): Bitmap {
+        val w = source.width
+        val h = source.height
+        if (w <= 0 || h <= 0) {
+            return source
+        }
+        val targetRatio = 9f / 16f
+        val currentRatio = w.toFloat() / h.toFloat()
+        if (abs(currentRatio - targetRatio) / targetRatio < 0.005f) {
+            return source
+        }
+        return if (currentRatio > targetRatio) {
+            val cropW = (h * targetRatio).roundToInt().coerceIn(1, w)
+            Bitmap.createBitmap(source, (w - cropW) / 2, 0, cropW, h)
+        } else {
+            val cropH = (w / targetRatio).roundToInt().coerceIn(1, h)
+            Bitmap.createBitmap(source, 0, (h - cropH) / 2, w, cropH)
+        }
+    }
+
+    private fun loadCustomWallpaperBitmap(): Bitmap? =
+        runCatching {
+            val path = customWallpaperPath ?: return null
+            val file = File(path)
+            if (!file.isFile) {
+                return null
+            }
+            val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return null
+            sampleBitmapShortEdge(bitmap, PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE)
+                .also { it.prepareToDraw() }
         }.getOrNull()
 
     @Composable
@@ -9664,11 +9740,27 @@ class MainActivity : ComponentActivity() {
             .coerceIn(MIN_BATCH_PREVIEW_COUNT, MAX_BATCH_PREVIEW_COUNT)
         draftBatchPreviewCountText = batchPreviewCount.toString()
         batchPreviewColumns = prefs.getInt(PREF_BATCH_PREVIEW_COLUMNS, 4).coerceIn(2, 5)
+        draftBatchPreviewColumnsText = batchPreviewColumns.toString()
         batchPreviewIconSizeDp = prefs.getInt(PREF_BATCH_PREVIEW_ICON_SIZE_DP, 54).coerceIn(40, 84)
+        draftBatchPreviewIconSizeDpText = batchPreviewIconSizeDp.toString()
         batchPreviewCornerRadiusDp = prefs.getInt(PREF_BATCH_PREVIEW_CORNER_RADIUS_DP, previewCornerRadiusDp).coerceIn(0, 36)
+        draftBatchPreviewCornerRadiusDpText = batchPreviewCornerRadiusDp.toString()
         batchPreviewDesktopBackground = PreviewDesktopBackground.fromName(
             prefs.getString(PREF_BATCH_PREVIEW_DESKTOP_BG, PreviewDesktopBackground.DarkGray.name),
         )
+        customWallpaperPath = prefs.getString(PREF_CUSTOM_WALLPAPER_PATH, null)
+            ?.takeIf { File(it).isFile }
+        customWallpaperInfo = customWallpaperPath?.let { path ->
+            runCatching {
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(path, bounds)
+                if (bounds.outWidth > 0 && bounds.outHeight > 0) {
+                    "${bounds.outWidth} × ${bounds.outHeight}"
+                } else {
+                    ""
+                }
+            }.getOrNull().orEmpty()
+        }.orEmpty()
         autoConfirmRootWrite = prefs.getBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, prefs.getBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, false))
         autoConfirmRefresh = prefs.getBoolean(PREF_AUTO_CONFIRM_REFRESH, false)
         outputTreeUri = prefs.getString(PREF_OUTPUT_TREE_URI, null)?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
@@ -9704,6 +9796,7 @@ class MainActivity : ComponentActivity() {
             .putInt(PREF_BATCH_PREVIEW_ICON_SIZE_DP, batchPreviewIconSizeDp)
             .putInt(PREF_BATCH_PREVIEW_CORNER_RADIUS_DP, batchPreviewCornerRadiusDp)
             .putString(PREF_BATCH_PREVIEW_DESKTOP_BG, batchPreviewDesktopBackground.name)
+            .apply { customWallpaperPath?.let { putString(PREF_CUSTOM_WALLPAPER_PATH, it) } ?: remove(PREF_CUSTOM_WALLPAPER_PATH) }
             .putBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, autoConfirmRootWrite)
             .putBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, autoConfirmRootWrite)
             .putBoolean(PREF_AUTO_CONFIRM_REFRESH, autoConfirmRefresh)
@@ -11238,6 +11331,7 @@ class MainActivity : ComponentActivity() {
     private fun updateBatchPreviewColumns(value: Int) {
         val next = value.coerceIn(2, 5)
         batchPreviewColumns = next
+        draftBatchPreviewColumnsText = next.toString()
         val autoSize = when (next) {
             2 -> 72
             3 -> 64
@@ -11246,18 +11340,21 @@ class MainActivity : ComponentActivity() {
             else -> 54
         }
         batchPreviewIconSizeDp = autoSize
+        draftBatchPreviewIconSizeDpText = autoSize.toString()
         saveUiState()
     }
 
     private fun updateBatchPreviewIconSizeDp(value: Int) {
         val next = value.coerceIn(40, 84)
         batchPreviewIconSizeDp = next
+        draftBatchPreviewIconSizeDpText = next.toString()
         saveUiState()
     }
 
     private fun updateBatchPreviewCornerRadiusDp(value: Int) {
         val next = value.coerceIn(0, 36)
         batchPreviewCornerRadiusDp = next
+        draftBatchPreviewCornerRadiusDpText = next.toString()
         saveUiState()
     }
 
@@ -20735,6 +20832,8 @@ class MainActivity : ComponentActivity() {
         private const val PREF_BATCH_PREVIEW_ICON_SIZE_DP = "batch_preview_icon_size_dp"
         private const val PREF_BATCH_PREVIEW_CORNER_RADIUS_DP = "batch_preview_corner_radius_dp"
         private const val PREF_BATCH_PREVIEW_DESKTOP_BG = "batch_preview_desktop_bg"
+        private const val PREF_CUSTOM_WALLPAPER_PATH = "custom_wallpaper_path"
+        private const val CUSTOM_WALLPAPER_FILE = "custom_wallpaper.png"
         private const val PREF_PREVIEW_SELECTION_NORMAL_LIGHT = "preview_selection_normal_light"
         private const val PREF_PREVIEW_SELECTION_NORMAL_DARK = "preview_selection_normal_dark"
         private const val PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT = "preview_selection_monochrome_light"
@@ -20873,8 +20972,8 @@ class MainActivity : ComponentActivity() {
         private const val DEFAULT_BATCH_PREVIEW_COUNT = BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT
         private const val MIN_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MIN_BATCH_PREVIEW_COUNT
         private const val MAX_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MAX_BATCH_PREVIEW_COUNT
-        private const val PREVIEW_WALLPAPER_SAMPLE_SIZE = 320
         private const val PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE = 480
+        private const val PREVIEW_LABEL_HEIGHT_DP = 16
         private const val CHOICE_ROW_HORIZONTAL_BLEED_DP = 16
         private const val SECTION_CARD_VERTICAL_PADDING_DP = 12
         private val SETTINGS_ROW_INSIDE_MARGIN = PaddingValues(vertical = 6.dp)
