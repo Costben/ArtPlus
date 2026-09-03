@@ -395,7 +395,7 @@ internal fun MainActivity.ArtPlusScreen() {
         previewPackageName,
         previewDirPath,
         sharedPreviewSession,
-        MainActivity.PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark),
+        PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark),
         previewVersion,
         sharedPreviewTuning,
     ) {
@@ -415,7 +415,7 @@ internal fun MainActivity.ArtPlusScreen() {
             val liveAssets = sharedPreviewSession?.let { session ->
                 try {
                     withContext(previewWorkerDispatcher) {
-                        previewAssetsForSelections(session, MainActivity.PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)).preparedForDraw()
+                        previewAssetsForSelections(session, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)).preparedForDraw()
                     }
                 } catch (_: CancellationException) {
                     throw CancellationException()

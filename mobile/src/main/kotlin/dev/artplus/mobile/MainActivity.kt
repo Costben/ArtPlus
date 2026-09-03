@@ -6101,15 +6101,6 @@ class MainActivity : ComponentActivity() {
         return metadata
     }
 
-    internal data class RmbgDebugCandidate(
-        val foreground: Bitmap,
-        val result: CandidateBuildResult?,
-        val coverage: Double,
-        val boundsText: String,
-        val cropRisk: Boolean,
-        val manualUsable: Boolean,
-        val inference: RmbgInferenceReport,
-    )
 
     internal fun loadGptSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -8159,28 +8150,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    internal data class RmbgComponent(
-        val dir: File,
-        val abi: String,
-        val model: File,
-    ) {
-        val key: String = listOf(
-            dir.absolutePath,
-            abi,
-            model.length(),
-            model.lastModified(),
-        ).joinToString("|")
-    }
 
-    internal data class RmbgModelOutput(
-        val output: FloatArray,
-        val report: RmbgInferenceReport,
-    )
 
-    internal data class RmbgMaskResult(
-        val alpha: IntArray,
-        val report: RmbgInferenceReport,
-    )
 
     internal inner class DynamicRmbgRuntime(
         private val component: RmbgComponent,
@@ -11069,136 +11040,17 @@ class MainActivity : ComponentActivity() {
         BitmapFactory.decodeFile(File(dir, name).absolutePath)?.also { it.prepareToDraw() }
 
 
-    internal data class BatchPreviewProgress(
-        val presetName: String,
-        val completed: Int,
-        val total: Int,
-        val currentLabel: String,
-    )
-
-    internal data class ComponentCandidates(
-        val subject: IconCandidate?,
-        val background: IconCandidate?,
-    )
-
-    internal data class ForegroundShadowParams(
-        val alpha: Int,
-        val blurRadius: Float,
-        val offsetX: Int,
-        val offsetY: Int,
-        val spread: Int,
-    )
-
-    internal data class GenerationResult(
-        val outDir: File,
-        val session: GenerationSession,
-        val selections: PreviewSelections,
-    )
 
 
-    internal data class PreviewSelections(
-        val normalLight: PreviewChoice,
-        val normalDark: PreviewChoice,
-        val monochromeLight: PreviewChoice,
-        val monochromeDark: PreviewChoice,
-    ) {
-        fun choiceFor(mode: PreviewMode): PreviewChoice =
-            when (mode) {
-                PreviewMode.NormalLight -> normalLight
-                PreviewMode.NormalDark -> normalDark
-                PreviewMode.MonochromeLight -> monochromeLight
-                PreviewMode.MonochromeDark -> monochromeDark
-            }
-
-        fun withChoice(mode: PreviewMode, choice: PreviewChoice): PreviewSelections =
-            when (mode) {
-                PreviewMode.NormalLight -> copy(normalLight = choice)
-                PreviewMode.NormalDark -> copy(normalDark = choice)
-                PreviewMode.MonochromeLight -> copy(monochromeLight = choice)
-                PreviewMode.MonochromeDark -> copy(monochromeDark = choice)
-            }
-
-        fun retarget(from: PreviewChoice, to: PreviewChoice): PreviewSelections {
-            if (from == to) {
-                return this
-            }
-            return PreviewSelections(
-                normalLight = replaceDefault(normalLight, from, to),
-                normalDark = replaceDefault(normalDark, from, to),
-                monochromeLight = replaceDefault(monochromeLight, from, to),
-                monochromeDark = replaceDefault(monochromeDark, from, to),
-            )
-        }
-
-        private fun replaceDefault(
-            choice: PreviewChoice,
-            from: PreviewChoice,
-            to: PreviewChoice,
-        ): PreviewChoice =
-            if (choice == from) to else choice
-
-        companion object {
-            fun default(choice: PreviewChoice): PreviewSelections =
-                PreviewSelections(
-                    normalLight = choice,
-                    normalDark = choice,
-                    monochromeLight = choice,
-                    monochromeDark = choice,
-                )
-
-            fun fromPrefs(prefs: android.content.SharedPreferences): PreviewSelections =
-                PreviewSelections(
-                    normalLight = previewChoiceFromName(
-                        prefs.getString(PREF_PREVIEW_SELECTION_NORMAL_LIGHT, null),
-                    ),
-                    normalDark = previewChoiceFromName(
-                        prefs.getString(PREF_PREVIEW_SELECTION_NORMAL_DARK, null),
-                    ),
-                    monochromeLight = previewChoiceFromName(
-                        prefs.getString(PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT, null),
-                    ),
-                    monochromeDark = previewChoiceFromName(
-                        prefs.getString(PREF_PREVIEW_SELECTION_MONOCHROME_DARK, null),
-                    ),
-                )
-
-            fun fromNames(
-                normalLight: String?,
-                normalDark: String?,
-                monochromeLight: String?,
-                monochromeDark: String?,
-            ): PreviewSelections =
-                PreviewSelections(
-                    normalLight = previewChoiceFromName(normalLight),
-                    normalDark = previewChoiceFromName(normalDark),
-                    monochromeLight = previewChoiceFromName(monochromeLight),
-                    monochromeDark = previewChoiceFromName(monochromeDark),
-                )
-
-            private fun previewChoiceFromName(name: String?): PreviewChoice =
-                PreviewChoice.entries.firstOrNull { it.name == name }
-                    ?.let { if (it == PreviewChoice.Plate) PreviewChoice.Full else it }
-                    ?.takeUnless { it.isCustom }
-                    ?: PreviewChoice.Full
-        }
-    }
 
 
-    internal data class RmbgModelPreset(
-        val id: String,
-        val label: String,
-        val summary: String,
-        val url: String,
-    )
+
+
+
 
 
     /** 生成设置内部的「可视化 / JSON」二级切换。 */
 
-    /** 预设批量应用的落地方式。 */
-    internal enum class BatchOutputMode(val label: String) {
-        Root("Root 写入"),
-        Saf("SAF 导出"),
-    }
 
     companion object {
         private const val PREFS_NAME = "artplus_mobile"
@@ -11291,10 +11143,6 @@ class MainActivity : ComponentActivity() {
         private const val PREF_BATCH_PREVIEW_DESKTOP_BG = "batch_preview_desktop_bg"
         private const val PREF_CUSTOM_WALLPAPER_PATH = "custom_wallpaper_path"
         private const val CUSTOM_WALLPAPER_FILE = "custom_wallpaper.png"
-        private const val PREF_PREVIEW_SELECTION_NORMAL_LIGHT = "preview_selection_normal_light"
-        private const val PREF_PREVIEW_SELECTION_NORMAL_DARK = "preview_selection_normal_dark"
-        private const val PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT = "preview_selection_monochrome_light"
-        private const val PREF_PREVIEW_SELECTION_MONOCHROME_DARK = "preview_selection_monochrome_dark"
         private const val PREF_PREVIEW_DESKTOP_BACKGROUND = "preview_desktop_background"
         private const val PREF_PREVIEW_ICON_SIZE_DP = "preview_icon_size_dp"
         private const val PREF_PREVIEW_CORNER_RADIUS_DP = "preview_corner_radius_dp"

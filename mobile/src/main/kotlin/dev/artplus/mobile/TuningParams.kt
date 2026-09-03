@@ -957,3 +957,9 @@ const val MIT_LICENSE_TEXT =
     "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n" +
     "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n" +
     "SOFTWARE."
+
+// 预览选择 prefs 键（原 MainActivity companion，slice5 提升）。
+const val PREF_PREVIEW_SELECTION_NORMAL_LIGHT = "preview_selection_normal_light"
+const val PREF_PREVIEW_SELECTION_NORMAL_DARK = "preview_selection_normal_dark"
+const val PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT = "preview_selection_monochrome_light"
+const val PREF_PREVIEW_SELECTION_MONOCHROME_DARK = "preview_selection_monochrome_dark"
