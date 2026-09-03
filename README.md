@@ -22,12 +22,12 @@
     <td align="center" width="33%">
       <img src="docs/assets/preview_home.png" width="260" alt="主页与多态预览" /><br />
       <b>主页与多态预览</b><br />
-      <sub>日间/暗色/单色及顶部预览条</sub>
+      <sub>标准亮色/暗色与单色亮色/暗色</sub>
     </td>
     <td align="center" width="33%">
-      <img src="docs/assets/preview_layer_debug.png" width="260" alt="图层拆解与调试" /><br />
-      <b>图层拆解与调试</b><br />
-      <sub>前景/背景/蒙版多层分离校准</sub>
+      <img src="docs/assets/preview_params.png" width="260" alt="生成参数调节" /><br />
+      <b>生成参数调节</b><br />
+      <sub>稳定规则调参与顶部预览条</sub>
     </td>
     <td align="center" width="33%">
       <img src="docs/assets/preview_preset.png" width="260" alt="预设快照管理" /><br />
@@ -54,11 +54,11 @@ ArtPlus 自动将第三方应用普通图标解构并标准化生成 ColorOS ART
     <th align="center">单色图标 (monochrome)</th>
   </tr>
   <tr>
-    <td align="center"><img src="docs/assets/demo_cloud_original.png" width="96" alt="Original" /><br /><sub><b>原始图标</b></sub></td>
-    <td align="center"><img src="docs/assets/demo_cloud_recfg.png" width="96" alt="recfg" /><br /><sub><b>主体前景</b></sub></td>
-    <td align="center"><img src="docs/assets/demo_cloud_recbg.png" width="96" alt="recbg" /><br /><sub><b>背景延展</b></sub></td>
-    <td align="center"><img src="docs/assets/demo_cloud_rec_night.png" width="96" alt="rec_night" /><br /><sub><b>暗色适配</b></sub></td>
-    <td align="center"><img src="docs/assets/demo_cloud_monochrome.png" width="96" alt="monochrome" /><br /><sub><b>单色提取</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_googlehome_original.png" width="96" alt="Original" /><br /><sub><b>原始图标</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_googlehome_recfg.png" width="96" alt="recfg" /><br /><sub><b>主体前景</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_googlehome_recbg.png" width="96" alt="recbg" /><br /><sub><b>背景延展</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_googlehome_rec_night.png" width="96" alt="rec_night" /><br /><sub><b>暗色适配</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_googlehome_monochrome.png" width="96" alt="monochrome" /><br /><sub><b>单色提取</b></sub></td>
   </tr>
   <tr>
     <td align="center"><code>icon.png</code></td>
