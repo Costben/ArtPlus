@@ -185,3 +185,8 @@ internal enum class AdaptiveForegroundMode(val value: String, val label: String)
             entries.firstOrNull { it.value == value } ?: Auto
     }
 }
+
+internal data class ComponentCandidates(
+    val subject: IconCandidate?,
+    val background: IconCandidate?,
+)

@@ -13592,80 +13592,11 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
+    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
     private fun prepareOriginalForeground(
         source: Bitmap,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): Bitmap {
-        if (!pipeline.originalCleanupEnabled || !pipeline.plateCleanupEnabled) {
-            return source
-        }
-        return when (originalForegroundCleanupMode) {
-            OriginalForegroundCleanupMode.Off -> source
-            OriginalForegroundCleanupMode.Plate -> removeForegroundPlate(source, pipeline).bitmap
-            OriginalForegroundCleanupMode.Auto -> {
-                if (hasLayeredLightForegroundPlate(source)) {
-                    source
-                } else {
-                    val cleaned = removeForegroundPlate(source, pipeline)
-                    if (cleaned.changed && shouldUseOriginalSafetyCleanup(source, cleaned.bitmap)) {
-                        cleaned.bitmap
-                    } else {
-                        source
-                    }
-                }
-            }
-        }
-    }
-
-    private fun shouldUseOriginalSafetyCleanup(source: Bitmap, cleaned: Bitmap): Boolean {
-        val sourceCoverage = alphaCoverage(source)
-        val cleanedCoverage = alphaCoverage(cleaned)
-        if (cleanedCoverage <= 0.0 || cleanedCoverage >= sourceCoverage - ORIGINAL_CLEANUP_MIN_COVERAGE_DROP) {
-            return false
-        }
-        if (cleanedCoverage < ORIGINAL_CLEANUP_MIN_REMAINING_COVERAGE) {
-            return false
-        }
-        val sourceBounds = alphaBounds(source, LOCAL_ALPHA_VISIBLE_THRESHOLD) ?: return false
-        val cleanedBounds = alphaBounds(cleaned, ORIGINAL_CLEANUP_ALPHA_BOUNDS_THRESHOLD)
-            ?: alphaBounds(cleaned, LOCAL_ALPHA_VISIBLE_THRESHOLD)
-            ?: return false
-        val sourceMax = maxOf(sourceBounds.width(), sourceBounds.height()).toDouble()
-        val cleanedMax = maxOf(cleanedBounds.width(), cleanedBounds.height()).toDouble()
-        if (sourceMax <= 0.0) {
-            return false
-        }
-        return cleanedMax / sourceMax >= ORIGINAL_CLEANUP_MIN_BOUNDS_RATIO
-    }
-
-    private fun hasLayeredLightForegroundPlate(source: Bitmap): Boolean {
-        if (alphaCoverage(source) < ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE) {
-            return false
-        }
-        val pixels = IntArray(source.width * source.height)
-        source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
-        var visible = 0
-        var lightPlate = 0
-        var darkDetail = 0
-        for (pixel in pixels) {
-            if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                continue
-            }
-            visible++
-            val saturation = saturation(pixel)
-            val luma = luma(pixel)
-            if (luma >= ADAPTIVE_DIRECT_PLATE_MIN_LUMA && saturation <= ADAPTIVE_DIRECT_PLATE_MAX_SATURATION) {
-                lightPlate++
-            } else if (luma <= ADAPTIVE_DIRECT_DETAIL_MAX_LUMA) {
-                darkDetail++
-            }
-        }
-        if (visible == 0) {
-            return false
-        }
-        return lightPlate.toDouble() / visible.toDouble() >= ADAPTIVE_DIRECT_PLATE_MIN_RATIO &&
-            darkDetail.toDouble() / visible.toDouble() >= ADAPTIVE_DIRECT_DETAIL_MIN_RATIO
-    }
+    ): Bitmap = prepareOriginalForeground(source, pipeline, originalForegroundCleanupMode, plateRemovalPercent)
 
     private fun defaultLocalPreviewChoice(autoChoice: PreviewChoice): PreviewChoice =
         defaultPreviewChoiceForMode(LocalSeparationMode.Auto, autoChoice)
@@ -15994,71 +15925,6 @@ class MainActivity : ComponentActivity() {
 
     private fun buildBackgroundPrompt(): String =
         "Remove the app icon main subject/logo. Rebuild only the clean original background plate. No logo, no text, no symbol."
-
-    private fun drawDrawable(
-        drawable: Drawable?,
-        width: Int,
-        height: Int,
-        transparent: Boolean,
-    ): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawColor(if (transparent) AndroidColor.TRANSPARENT else AndroidColor.WHITE)
-        if (drawable != null) {
-            val copy = drawable.constantState?.newDrawable()?.mutate() ?: drawable.mutate()
-            copy.setBounds(0, 0, width, height)
-            copy.draw(canvas)
-            if (transparent && copy is AdaptiveIconDrawable) {
-                return clearOutsideAdaptiveIconMask(bitmap, copy)
-            }
-        }
-        return bitmap
-    }
-
-    private fun clearOutsideAdaptiveIconMask(source: Bitmap, icon: AdaptiveIconDrawable): Bitmap {
-        val width = source.width
-        val height = source.height
-        val mask = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val maskCanvas = Canvas(mask)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.color = AndroidColor.WHITE
-        maskCanvas.drawPath(icon.iconMask, paint)
-
-        val sourcePixels = IntArray(width * height)
-        val maskPixels = IntArray(width * height)
-        source.getPixels(sourcePixels, 0, width, 0, 0, width, height)
-        mask.getPixels(maskPixels, 0, width, 0, 0, width, height)
-        for (i in sourcePixels.indices) {
-            val maskAlpha = AndroidColor.alpha(maskPixels[i])
-            if (maskAlpha <= 0) {
-                sourcePixels[i] = AndroidColor.TRANSPARENT
-                continue
-            }
-            if (maskAlpha < 255) {
-                val pixel = sourcePixels[i]
-                val alpha = (AndroidColor.alpha(pixel) * maskAlpha / 255.0)
-                    .toInt()
-                    .coerceIn(0, 255)
-                sourcePixels[i] = AndroidColor.argb(
-                    alpha,
-                    AndroidColor.red(pixel),
-                    AndroidColor.green(pixel),
-                    AndroidColor.blue(pixel),
-                )
-            }
-        }
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        out.setPixels(sourcePixels, 0, width, 0, 0, width, height)
-        return out
-    }
-
-    private fun drawLocalCandidateSourceIcon(icon: Drawable, width: Int, height: Int): Bitmap =
-        drawDrawable(
-            drawable = icon,
-            width = width,
-            height = height,
-            transparent = icon is AdaptiveIconDrawable,
-        )
 
     private fun buildLocalIconLayers(
         icon: Drawable,
@@ -19021,9 +18887,7 @@ class MainActivity : ComponentActivity() {
         private const val EXTRA_DEBUG_GENERATE_ROOT_WRITE_MODE = "dev.artplus.mobile.DEBUG_GENERATE_ROOT_WRITE_MODE"
         private const val EXTRA_DEBUG_GENERATE_TOKEN = "dev.artplus.mobile.DEBUG_GENERATE_TOKEN"
         private const val CURRENT_IMAGE_TUNING_VERSION = 4
-        private const val SIZE_1X1 = 240
         private const val SIZE_2X2 = 704
-        private const val LOCAL_ICON_RENDER_SCALE = 3
         private const val GPT_SOURCE_SIZE = 1024
         private const val RMBG_COMPONENT_DIR = "rmbg_component"
         private const val RMBG_MODEL_NAME = "bria-rmbg.onnx"
@@ -19245,28 +19109,8 @@ class MainActivity : ComponentActivity() {
         private const val NIGHT_DEFAULT_BOOST_MAX_BLEND = 0.16
         private const val NIGHT_FILL_BACKGROUND_MAX_BLEND = 0.30
         private const val AUTO_COVERAGE_CHANGE_THRESHOLD = 0.012
-        private const val ORIGINAL_CLEANUP_MIN_COVERAGE_DROP = 0.025
-        private const val ORIGINAL_CLEANUP_MIN_REMAINING_COVERAGE = 0.012
-        private const val ORIGINAL_CLEANUP_ALPHA_BOUNDS_THRESHOLD = 64
-        private const val ORIGINAL_CLEANUP_MIN_BOUNDS_RATIO = 0.25
         private const val AUTO_EDGE_TOUCH_MARGIN_PX = 1
         private const val AUTO_EDGE_TOUCH_COUNT_LIMIT = 2
-        private const val MONOCHROME_MIN_COVERAGE = 0.004
-        private const val ADAPTIVE_DIRECT_MIN_COVERAGE = 0.02
-        private const val ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE = 0.72
-        private const val ADAPTIVE_DIRECT_MIN_LOST_COVERAGE = 0.18
-        private const val ADAPTIVE_DIRECT_PLATE_MIN_LUMA = 220
-        private const val ADAPTIVE_DIRECT_PLATE_MAX_SATURATION = 0.16
-        private const val ADAPTIVE_DIRECT_PLATE_MIN_RATIO = 0.24
-        private const val ADAPTIVE_DIRECT_DETAIL_MAX_LUMA = 112
-        private const val ADAPTIVE_DIRECT_DETAIL_MIN_RATIO = 0.01
-        private const val ADAPTIVE_DIRECT_PLATE_BACKGROUND_DISTANCE = 36.0
-        private const val ADAPTIVE_DIRECT_DETAIL_BACKGROUND_DISTANCE = 42.0
-        private const val ADAPTIVE_BACKGROUND_DETAIL_DISTANCE = 52.0
-        private const val ADAPTIVE_BACKGROUND_DETAIL_MIN_RATIO = 0.015
-        private const val ADAPTIVE_BACKGROUND_DETAIL_MAX_RATIO = 0.55
-        private const val ADAPTIVE_CLEAN_CORNER_RATIO = 0.18f
-        private const val ADAPTIVE_CLEAN_SOLID_DISTANCE = 24.0
         private const val RMBG_MIN_MANUAL_COVERAGE = 0.02
         private const val RMBG_MAX_MANUAL_COVERAGE = 0.62
         private const val RMBG_MIN_AUTO_COVERAGE = 0.02

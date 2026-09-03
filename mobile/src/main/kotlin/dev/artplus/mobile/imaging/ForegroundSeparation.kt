@@ -703,3 +703,80 @@ internal fun separateLocalForeground(
         summary = if (actions.isEmpty()) "$prefix: 保持原样" else "$prefix: ${actions.joinToString(" / ")}",
     )
 }
+
+internal fun prepareOriginalForeground(
+    source: Bitmap,
+    pipeline: LocalPipelineConfig,
+    originalForegroundCleanupMode: OriginalForegroundCleanupMode,
+    plateRemovalPercent: Int,
+): Bitmap {
+    if (!pipeline.originalCleanupEnabled || !pipeline.plateCleanupEnabled) {
+        return source
+    }
+    return when (originalForegroundCleanupMode) {
+        OriginalForegroundCleanupMode.Off -> source
+        OriginalForegroundCleanupMode.Plate -> removeForegroundPlate(source, pipeline, plateRemovalPercent).bitmap
+        OriginalForegroundCleanupMode.Auto -> {
+            if (hasLayeredLightForegroundPlate(source)) {
+                source
+            } else {
+                val cleaned = removeForegroundPlate(source, pipeline, plateRemovalPercent)
+                if (cleaned.changed && shouldUseOriginalSafetyCleanup(source, cleaned.bitmap)) {
+                    cleaned.bitmap
+                } else {
+                    source
+                }
+            }
+        }
+    }
+}
+
+internal fun shouldUseOriginalSafetyCleanup(source: Bitmap, cleaned: Bitmap): Boolean {
+    val sourceCoverage = alphaCoverage(source)
+    val cleanedCoverage = alphaCoverage(cleaned)
+    if (cleanedCoverage <= 0.0 || cleanedCoverage >= sourceCoverage - ORIGINAL_CLEANUP_MIN_COVERAGE_DROP) {
+        return false
+    }
+    if (cleanedCoverage < ORIGINAL_CLEANUP_MIN_REMAINING_COVERAGE) {
+        return false
+    }
+    val sourceBounds = alphaBounds(source, LOCAL_ALPHA_VISIBLE_THRESHOLD) ?: return false
+    val cleanedBounds = alphaBounds(cleaned, ORIGINAL_CLEANUP_ALPHA_BOUNDS_THRESHOLD)
+        ?: alphaBounds(cleaned, LOCAL_ALPHA_VISIBLE_THRESHOLD)
+        ?: return false
+    val sourceMax = maxOf(sourceBounds.width(), sourceBounds.height()).toDouble()
+    val cleanedMax = maxOf(cleanedBounds.width(), cleanedBounds.height()).toDouble()
+    if (sourceMax <= 0.0) {
+        return false
+    }
+    return cleanedMax / sourceMax >= ORIGINAL_CLEANUP_MIN_BOUNDS_RATIO
+}
+
+internal fun hasLayeredLightForegroundPlate(source: Bitmap): Boolean {
+    if (alphaCoverage(source) < ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE) {
+        return false
+    }
+    val pixels = IntArray(source.width * source.height)
+    source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
+    var visible = 0
+    var lightPlate = 0
+    var darkDetail = 0
+    for (pixel in pixels) {
+        if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+            continue
+        }
+        visible++
+        val saturation = saturation(pixel)
+        val luma = luma(pixel)
+        if (luma >= ADAPTIVE_DIRECT_PLATE_MIN_LUMA && saturation <= ADAPTIVE_DIRECT_PLATE_MAX_SATURATION) {
+            lightPlate++
+        } else if (luma <= ADAPTIVE_DIRECT_DETAIL_MAX_LUMA) {
+            darkDetail++
+        }
+    }
+    if (visible == 0) {
+        return false
+    }
+    return lightPlate.toDouble() / visible.toDouble() >= ADAPTIVE_DIRECT_PLATE_MIN_RATIO &&
+        darkDetail.toDouble() / visible.toDouble() >= ADAPTIVE_DIRECT_DETAIL_MIN_RATIO
+}
