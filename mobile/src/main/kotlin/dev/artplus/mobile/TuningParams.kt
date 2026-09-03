@@ -351,6 +351,21 @@ const val GPT_READ_TIMEOUT_MS = 360_000
 const val GPT_SOURCE_SIZE = 1024
 
 /**
+ * Debug 服务器 + RMBG 形态学（system/pipeline 与 MainActivity 共用）。
+ *
+ * 从 MainActivity companion object 迁移而来（P4 拆分）：原为 private，
+ * 现为顶层公开常量，数值与类型未变。同包直接引用，Activity 内原有调用点零改动。
+ */
+const val DEBUG_HTTP_PORT = 3964
+const val DEBUG_HTTP_ABSTRACT_NAME = "artplus-debug-http"
+const val DEBUG_HTTP_READ_TIMEOUT_MS = 4_000
+const val DEBUG_HTTP_MAX_HEADER_BYTES = 16 * 1024
+const val DEBUG_HTTP_MAX_BODY_BYTES = 64 * 1024
+const val DEBUG_HTTP_TOKEN_HEADER = "X-ArtPlus-Debug-Token"
+const val DEBUG_HTTP_TOKEN_PARAM = "token"
+const val RMBG_EDGE_FEATHER_MIN_ALPHA_DELTA = 12
+
+/**
  * 全部可调参数的不可变快照（预设/撤销/批量传输用）。
  *
  * 数字与布尔为强类型；模式（LocalSeparationMode / AdaptiveForegroundMode /

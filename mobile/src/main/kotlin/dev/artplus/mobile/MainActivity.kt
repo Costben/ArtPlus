@@ -12624,84 +12624,6 @@ class MainActivity : ComponentActivity() {
         return current
     }
 
-    private fun morphRmbgAlpha(
-        alpha: IntArray,
-        width: Int,
-        height: Int,
-        expand: Boolean,
-        radius: Int,
-    ): IntArray {
-        val out = IntArray(alpha.size)
-        val safeRadius = radius.coerceAtLeast(1)
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                var selected = if (expand) 0 else 255
-                for (dy in -safeRadius..safeRadius) {
-                    for (dx in -safeRadius..safeRadius) {
-                        val nx = x + dx
-                        val ny = y + dy
-                        val value = if (nx in 0 until width && ny in 0 until height) {
-                            alpha[ny * width + nx].coerceIn(0, 255)
-                        } else {
-                            0
-                        }
-                        selected = if (expand) {
-                            maxOf(selected, value)
-                        } else {
-                            minOf(selected, value)
-                        }
-                    }
-                }
-                out[y * width + x] = selected
-            }
-        }
-        return out
-    }
-
-    private fun featherRmbgAlphaEdges(
-        alpha: IntArray,
-        width: Int,
-        height: Int,
-        strength: Double,
-        radius: Int,
-    ): IntArray {
-        val out = alpha.copyOf()
-        val safeRadius = radius.coerceAtLeast(1)
-        val blend = strength.coerceIn(0.0, 1.0)
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                val index = y * width + x
-                var sum = 0
-                var count = 0
-                var minAlpha = 255
-                var maxAlpha = 0
-                for (dy in -safeRadius..safeRadius) {
-                    for (dx in -safeRadius..safeRadius) {
-                        val nx = x + dx
-                        val ny = y + dy
-                        val value = if (nx in 0 until width && ny in 0 until height) {
-                            alpha[ny * width + nx].coerceIn(0, 255)
-                        } else {
-                            0
-                        }
-                        sum += value
-                        count++
-                        minAlpha = minOf(minAlpha, value)
-                        maxAlpha = maxOf(maxAlpha, value)
-                    }
-                }
-                if (count <= 0 || maxAlpha - minAlpha < RMBG_EDGE_FEATHER_MIN_ALPHA_DELTA) {
-                    continue
-                }
-                val average = sum.toDouble() / count.toDouble()
-                out[index] = (alpha[index] * (1.0 - blend) + average * blend)
-                    .roundToInt()
-                    .coerceIn(0, 255)
-            }
-        }
-        return out
-    }
-
     private fun applyAlphaArrayToSource(source: Bitmap, alpha: IntArray): Bitmap {
         val width = source.width
         val height = source.height
@@ -15080,7 +15002,28 @@ class MainActivity : ComponentActivity() {
             return
         }
         debugToken()
-        debugHttpServer = DebugHttpServer(DEBUG_HTTP_PORT).also { it.start() }
+        // P4 交界：server 顶层化进 system/DebugServer，不持 Activity；
+        // 经 DebugServerHooks 回调解耦（currentDebugParamsOnMain/applyDebugParams 系留置，
+        // 读 186 live vars，P5 再议）。
+        debugHttpServer = DebugHttpServer(
+            DEBUG_HTTP_PORT,
+            object : DebugServerHooks {
+                override fun onStatus(message: String) = status(message)
+                override fun homeHtml(): String = debugHomeHtml()
+                override fun currentParams(): JSONObject = currentDebugParamsOnMain()
+                override fun applyParams(params: Map<String, String>): JSONObject = applyDebugParams(params)
+                override fun inspectPackage(packageName: String, includeRmbg: Boolean): JSONObject =
+                    debugInspectPackage(packageName, includeRmbg)
+                override fun startGeneration(
+                    packageName: String,
+                    useGpt: Boolean,
+                    installWithRoot: Boolean,
+                    debugMode: LocalSeparationMode,
+                    rootWriteMode: RootWriteMode,
+                ): Boolean = startDebugGeneration(packageName, useGpt, installWithRoot, debugMode, rootWriteMode)
+                override fun isTokenValid(token: String?): Boolean = isDebugTokenValid(token)
+            },
+        ).also { it.start() }
     }
 
     private fun isDebugBuild(): Boolean =
@@ -15301,6 +15244,7 @@ class MainActivity : ComponentActivity() {
             .put("liquid_glass_subject_shadow_alpha", "主体阴影")
             .put("liquid_glass_subject_opacity_percent", "主体透明度")
 
+    // P4 注明：读 Activity 调参，留置（system/DebugServer 经 hooks.currentParams() 回调）。
     private fun currentDebugParamsOnMain(): JSONObject {
         var snapshot: JSONObject? = null
         runOnMainSync {
@@ -15309,6 +15253,7 @@ class MainActivity : ComponentActivity() {
         return snapshot ?: error("debug params unavailable")
     }
 
+    // P4 注明：写 Activity 调参，留置（system/DebugServer 经 hooks.applyParams() 回调）。
     private fun applyDebugParams(params: Map<String, String>): JSONObject {
         var snapshot: JSONObject? = null
         runOnMainSync {
@@ -15328,18 +15273,6 @@ class MainActivity : ComponentActivity() {
             snapshot = currentDebugParamsJson()
         }
         return snapshot ?: error("debug params unavailable")
-    }
-
-    private fun jsonToParamMap(json: JSONObject): Map<String, String> {
-        val params = mutableMapOf<String, String>()
-        val keys = json.keys()
-        while (keys.hasNext()) {
-            val key = keys.next()
-            if (!json.isNull(key)) {
-                params[key] = json.optString(key)
-            }
-        }
-        return params
     }
 
     private fun debugHomeHtml(): String = """
@@ -15470,364 +15403,6 @@ class MainActivity : ComponentActivity() {
         </body>
         </html>
     """.trimIndent()
-
-    private data class DebugHttpResponse(
-        val status: Int,
-        val contentType: String,
-        val body: String,
-    )
-
-    private data class DebugHttpRequest(
-        val method: String,
-        val target: String,
-        val headers: Map<String, String>,
-        val body: String,
-    )
-
-    private inner class DebugHttpServer(private val port: Int) {
-        @Volatile
-        private var running = false
-        private var serverSocket: ServerSocket? = null
-        private var localServerSocket: LocalServerSocket? = null
-        private var thread: Thread? = null
-        private var localThread: Thread? = null
-
-        fun start() {
-            if (running) {
-                return
-            }
-            running = true
-            startTcpServer()
-            startLocalServer()
-        }
-
-        private fun startTcpServer() {
-            thread = Thread({
-                runCatching {
-                    ServerSocket().use { server ->
-                        server.reuseAddress = true
-                        server.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), port))
-                        serverSocket = server
-                        while (running) {
-                            val socket = runCatching { server.accept() }.getOrNull() ?: break
-                            Thread({ handle(socket) }, "ArtPlusDebugHttpClient").also {
-                                it.isDaemon = true
-                                it.start()
-                            }
-                        }
-                    }
-                }.onFailure {
-                    if (running) {
-                        status("Debug HTTP 启动失败: ${it.message ?: it.javaClass.simpleName}")
-                    }
-                }
-            }, "ArtPlusDebugHttp").also {
-                it.isDaemon = true
-                it.start()
-            }
-        }
-
-        private fun startLocalServer() {
-            localThread = Thread({
-                var server: LocalServerSocket? = null
-                try {
-                    server = LocalServerSocket(DEBUG_HTTP_ABSTRACT_NAME)
-                    localServerSocket = server
-                    while (running) {
-                        val socket = runCatching { server.accept() }.getOrNull() ?: break
-                        Thread({ handle(socket) }, "ArtPlusDebugLocalClient").also {
-                            it.isDaemon = true
-                            it.start()
-                        }
-                    }
-                } catch (error: Exception) {
-                    if (running) {
-                        status("Debug local HTTP 启动失败: ${error.message ?: error.javaClass.simpleName}")
-                    }
-                } finally {
-                    runCatching { server?.close() }
-                }
-            }, "ArtPlusDebugLocalHttp").also {
-                it.isDaemon = true
-                it.start()
-            }
-        }
-
-        fun stop() {
-            running = false
-            runCatching { serverSocket?.close() }
-            runCatching { localServerSocket?.close() }
-            serverSocket = null
-            localServerSocket = null
-            thread = null
-            localThread = null
-        }
-
-        private fun handle(socket: Socket) {
-            socket.use { client ->
-                try {
-                    client.soTimeout = DEBUG_HTTP_READ_TIMEOUT_MS
-                    handleStreams(client.getInputStream(), client.getOutputStream())
-                } catch (error: Exception) {
-                    writeResponseQuietly(client.getOutputStream(), errorResponse(error))
-                }
-            }
-        }
-
-        private fun handle(socket: LocalSocket) {
-            try {
-                handleStreams(socket.inputStream, socket.outputStream)
-            } catch (error: Exception) {
-                writeResponseQuietly(socket.outputStream, errorResponse(error))
-            } finally {
-                runCatching { socket.close() }
-            }
-        }
-
-        private fun handleStreams(input: InputStream, output: OutputStream) {
-            val request = readRequest(input)
-            if (request == null) {
-                writeResponse(output, DebugHttpResponse(400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"bad request\"}"))
-                return
-            }
-            writeResponse(output, route(request))
-        }
-
-        private fun readRequest(input: InputStream): DebugHttpRequest? {
-            val headerBytes = readHttpHeader(input) ?: return null
-            val headerText = String(headerBytes, StandardCharsets.UTF_8)
-            val lines = headerLines(headerText)
-            val requestLine = lines.firstOrNull() ?: return null
-            val parts = requestLine.trim().split(Regex("\\s+"))
-            if (parts.size < 2) {
-                return null
-            }
-            val headers = mutableMapOf<String, String>()
-            lines.drop(1).forEach { line ->
-                val separator = line.indexOf(':')
-                if (separator > 0) {
-                    headers[line.substring(0, separator).lowercase(Locale.US)] = line.substring(separator + 1).trim()
-                }
-            }
-            val contentLength = headers["content-length"]?.toIntOrNull() ?: 0
-            val body = if (contentLength > 0) {
-                readExactlyAvailable(input, contentLength.coerceAtMost(DEBUG_HTTP_MAX_BODY_BYTES))
-            } else {
-                ""
-            }
-            return DebugHttpRequest(
-                method = parts[0].uppercase(Locale.US),
-                target = parts[1],
-                headers = headers,
-                body = body,
-            )
-        }
-
-        private fun readHttpHeader(input: InputStream): ByteArray? {
-            val header = ByteArrayOutputStream()
-            while (header.size() < DEBUG_HTTP_MAX_HEADER_BYTES) {
-                val next = input.read()
-                if (next < 0) {
-                    return if (header.size() == 0) null else header.toByteArray()
-                }
-                header.write(next)
-                val bytes = header.toByteArray()
-                val size = bytes.size
-                if (
-                    size >= 4 &&
-                    bytes[size - 4] == '\r'.code.toByte() &&
-                    bytes[size - 3] == '\n'.code.toByte() &&
-                    bytes[size - 2] == '\r'.code.toByte() &&
-                    bytes[size - 1] == '\n'.code.toByte()
-                ) {
-                    return bytes
-                }
-                if (
-                    size >= 2 &&
-                    bytes[size - 2] == '\n'.code.toByte() &&
-                    bytes[size - 1] == '\n'.code.toByte()
-                ) {
-                    return bytes
-                }
-            }
-            return null
-        }
-
-        private fun readExactlyAvailable(input: InputStream, length: Int): String {
-            val bodyBytes = ByteArray(length)
-            var offset = 0
-            while (offset < length) {
-                val read = input.read(bodyBytes, offset, length - offset)
-                if (read < 0) {
-                    break
-                }
-                offset += read
-            }
-            return String(bodyBytes, 0, offset, StandardCharsets.UTF_8)
-        }
-
-        private fun headerLines(headerText: String): List<String> =
-            headerText
-                .replace("\r\n", "\n")
-                .split('\n')
-                .map { it.trimEnd('\r') }
-                .filter { it.isNotBlank() }
-
-        private fun route(request: DebugHttpRequest): DebugHttpResponse {
-            val method = request.method
-            val target = request.target
-            val body = request.body
-            val path = target.substringBefore('?')
-            val query = parseQuery(target.substringAfter('?', ""))
-            return try {
-                if (!isAuthorizedDebugRequest(request, query, body)) {
-                    return jsonResponse(JSONObject().put("ok", false).put("error", "forbidden"), 403)
-                }
-                when {
-                    method == "GET" && (path == "/" || path == "/debug") ->
-                        DebugHttpResponse(200, "text/html; charset=utf-8", debugHomeHtml())
-                    method == "GET" && path == "/debug/params" ->
-                        jsonResponse(currentDebugParamsOnMain())
-                    method == "POST" && path == "/debug/params" -> {
-                        val params = query.toMutableMap()
-                        params.putAll(parseBodyParams(body))
-                        jsonResponse(applyDebugParams(params))
-                    }
-                    path == "/debug/status" ->
-                        jsonResponse(currentDebugParamsOnMain())
-                    method == "POST" && path == "/debug/inspect" -> {
-                        val params = query.toMutableMap()
-                        params.putAll(parseBodyParams(body))
-                        val packageName = params["package"]?.trim().orEmpty()
-                        if (packageName.isEmpty()) {
-                            jsonResponse(JSONObject().put("ok", false).put("error", "missing package"), 400)
-                        } else {
-                            jsonResponse(
-                                debugInspectPackage(
-                                    packageName = packageName,
-                                    includeRmbg = params["include_rmbg"]?.toBooleanStrictOrNull() ?: false,
-                                ),
-                            )
-                        }
-                    }
-                    method == "POST" && path == "/debug/generate" -> {
-                        val params = query.toMutableMap()
-                        params.putAll(parseBodyParams(body))
-                        val packageName = params["package"]?.trim().orEmpty()
-                        if (packageName.isEmpty()) {
-                            jsonResponse(JSONObject().put("ok", false).put("error", "missing package"), 400)
-                        } else {
-                            val mode = LocalSeparationMode.fromValue(params["mode"])
-                            val accepted = startDebugGeneration(
-                                packageName = packageName,
-                                useGpt = params["use_gpt"]?.toBooleanStrictOrNull() ?: false,
-                                installWithRoot = params["install_root"]?.toBooleanStrictOrNull() ?: false,
-                                debugMode = mode,
-                                rootWriteMode = RootWriteMode.fromValue(params["root_write_mode"]),
-                            )
-                            val snapshot = currentDebugParamsOnMain()
-                            jsonResponse(
-                                JSONObject()
-                                    .put("ok", accepted)
-                                    .put("package", packageName)
-                                    .put("mode", mode.value)
-                                    .put("rmbg_status", snapshot.optString("rmbg_status"))
-                                    .put("status", snapshot.optString("status")),
-                                if (accepted) 202 else 409,
-                            )
-                        }
-                    }
-                    else -> jsonResponse(JSONObject().put("ok", false).put("error", "not found"), 404)
-                }
-            } catch (error: Exception) {
-                jsonResponse(
-                    JSONObject()
-                        .put("ok", false)
-                        .put("error", error.message ?: error.javaClass.simpleName),
-                    500,
-                )
-            }
-        }
-
-        private fun isAuthorizedDebugRequest(
-            request: DebugHttpRequest,
-            query: Map<String, String>,
-            body: String,
-        ): Boolean {
-            val bodyParams = runCatching { parseBodyParams(body) }.getOrDefault(emptyMap())
-            val token = request.headers[DEBUG_HTTP_TOKEN_HEADER.lowercase(Locale.US)]
-                ?: query[DEBUG_HTTP_TOKEN_PARAM]
-                ?: bodyParams[DEBUG_HTTP_TOKEN_PARAM]
-            return isDebugTokenValid(token)
-        }
-
-        private fun parseBodyParams(body: String): Map<String, String> {
-            val trimmed = body.trim()
-            if (trimmed.isEmpty()) {
-                return emptyMap()
-            }
-            return if (trimmed.startsWith("{")) {
-                jsonToParamMap(JSONObject(trimmed))
-            } else {
-                parseQuery(trimmed)
-            }
-        }
-
-        private fun parseQuery(query: String): Map<String, String> {
-            if (query.isBlank()) {
-                return emptyMap()
-            }
-            return query.split('&')
-                .filter { it.isNotBlank() }
-                .associate { pair ->
-                    val key = pair.substringBefore('=')
-                    val value = pair.substringAfter('=', "")
-                    urlDecode(key) to urlDecode(value)
-                }
-        }
-
-        private fun urlDecode(value: String): String =
-            URLDecoder.decode(value, StandardCharsets.UTF_8.name())
-
-        private fun jsonResponse(json: JSONObject, status: Int = 200): DebugHttpResponse =
-            DebugHttpResponse(status, "application/json; charset=utf-8", json.toString(2))
-
-        private fun errorResponse(error: Exception): DebugHttpResponse =
-            jsonResponse(
-                JSONObject()
-                    .put("ok", false)
-                    .put("error", error.message ?: error.javaClass.simpleName),
-                500,
-            )
-
-        private fun writeResponseQuietly(output: OutputStream, response: DebugHttpResponse) {
-            runCatching { writeResponse(output, response) }
-        }
-
-        private fun writeResponse(output: OutputStream, response: DebugHttpResponse) {
-            val bytes = response.body.toByteArray(StandardCharsets.UTF_8)
-            val reason = when (response.status) {
-                200 -> "OK"
-                202 -> "Accepted"
-                400 -> "Bad Request"
-                403 -> "Forbidden"
-                404 -> "Not Found"
-                409 -> "Conflict"
-                else -> "Error"
-            }
-            val header = buildString {
-                append("HTTP/1.1 ${response.status} $reason\r\n")
-                append("Content-Type: ${response.contentType}\r\n")
-                append("Content-Length: ${bytes.size}\r\n")
-                append("Cache-Control: no-store\r\n")
-                append("Connection: close\r\n")
-                append("\r\n")
-            }
-            output.write(header.toByteArray(StandardCharsets.UTF_8))
-            output.write(bytes)
-            output.flush()
-        }
-    }
 
     private fun loadPreviewAssets(dir: File): PreviewAssets =
         PreviewAssets(
@@ -16214,13 +15789,6 @@ class MainActivity : ComponentActivity() {
         private val RMBG_NORMALIZE_MEAN = floatArrayOf(0.485f, 0.456f, 0.406f)
         private val RMBG_NORMALIZE_STD = floatArrayOf(0.229f, 0.224f, 0.225f)
         private const val LEGACY_DEFAULT_GPT_BASE_URL = "http://192.168.31.179:3002/v1"
-        private const val DEBUG_HTTP_PORT = 3964
-        private const val DEBUG_HTTP_ABSTRACT_NAME = "artplus-debug-http"
-        private const val DEBUG_HTTP_READ_TIMEOUT_MS = 4_000
-        private const val DEBUG_HTTP_MAX_HEADER_BYTES = 16 * 1024
-        private const val DEBUG_HTTP_MAX_BODY_BYTES = 64 * 1024
-        private const val DEBUG_HTTP_TOKEN_HEADER = "X-ArtPlus-Debug-Token"
-        private const val DEBUG_HTTP_TOKEN_PARAM = "token"
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val KEYSTORE_GPT_KEY_ALIAS = "artplus_gpt_api_key"
         private const val KEYSTORE_CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
@@ -16280,7 +15848,6 @@ class MainActivity : ComponentActivity() {
         private const val RMBG_MIN_AUTO_COVERAGE = 0.02
         private const val RMBG_MAX_AUTO_COVERAGE = 0.34
         private const val RMBG_EDGE_ADJUST_MAX_RADIUS = 3
-        private const val RMBG_EDGE_FEATHER_MIN_ALPHA_DELTA = 12
         private const val RMBG_WEAK_ALPHA_MAX_CUT = 72
     }
 }
