@@ -18,8 +18,9 @@ outputs/tmp/
 CLAUDE.md
 AGENTS.md
 CONTEXT.md
-# docs (local only, not tracked)
-docs/
+# docs (local only, not tracked, except assets)
+docs/*
+!docs/assets/
 
 # IDE
 .vscode/
