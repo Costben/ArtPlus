@@ -70,6 +70,14 @@ class MainViewModel : ViewModel() {
         _params.value = current
     }
 
+    /**
+     * live 调参写漏斗（P5 状态收敛）：不记历史（与原各 update* 直接写 var 一致，
+     * 撤销只经 applyTuningParams/captureUndo 路径），同步更新 params 流触发重组。
+     */
+    fun updateLive(transform: (TuningParams) -> TuningParams) {
+        _params.value = transform(_params.value)
+    }
+
     /** 后退；无处可退返回 null（调用方显示"已到最早的配置"）。 */
     fun undo(): TuningParams? {
         if (!canUndo()) {

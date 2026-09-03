@@ -139,6 +139,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -326,6 +327,7 @@ import com.caverock.androidsvg.SVG
 
 @Composable
 internal fun MainActivity.ArtPlusScreen() {
+    val tuningState = mainViewModel.params.collectAsState().value
     val pageBackground = if (isSystemInDarkTheme()) {
         Color.Black
     } else {
@@ -393,7 +395,7 @@ internal fun MainActivity.ArtPlusScreen() {
         previewPackageName,
         previewDirPath,
         sharedPreviewSession,
-        previewSelections,
+        MainActivity.PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark),
         previewVersion,
         sharedPreviewTuning,
     ) {
@@ -413,7 +415,7 @@ internal fun MainActivity.ArtPlusScreen() {
             val liveAssets = sharedPreviewSession?.let { session ->
                 try {
                     withContext(previewWorkerDispatcher) {
-                        previewAssetsForSelections(session, previewSelections).preparedForDraw()
+                        previewAssetsForSelections(session, MainActivity.PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)).preparedForDraw()
                     }
                 } catch (_: CancellationException) {
                     throw CancellationException()

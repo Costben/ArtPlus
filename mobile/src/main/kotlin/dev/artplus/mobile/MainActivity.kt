@@ -139,6 +139,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -344,89 +345,36 @@ class MainActivity : ComponentActivity() {
     internal var outputTreeUri by mutableStateOf<Uri?>(null)
     internal var isBusy by mutableStateOf(false)
     internal var didRequestAppLoad = false
-    internal var gptImageMode by mutableStateOf(GptImageMode.Images)
-    internal var gptPromptPreset by mutableStateOf(GptPromptPreset.StableCutout)
-    internal var gptCustomPrompt by mutableStateOf("")
     internal var gptModelId by mutableStateOf("")
     internal var gptBaseUrl by mutableStateOf("")
     internal var gptApiKey by mutableStateOf("")
     internal var gptSettingsSaveStatus by mutableStateOf("")
-    internal var localSeparationMode by mutableStateOf(LocalSeparationMode.Auto)
-    internal var foregroundSubjectPercent by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT)
     internal var draftForegroundSubjectPercentText by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT.toString())
-    internal var foregroundShadowLevel by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL)
     internal var draftForegroundShadowLevelText by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL.toString())
-    internal var monochromeThemeScale by mutableStateOf(DEFAULT_MONOCHROME_THEME_SCALE)
     internal var draftMonochromeThemeScaleText by mutableStateOf((DEFAULT_MONOCHROME_THEME_SCALE * 100).roundToInt().toString())
     internal var advancedSettingsCategory by mutableStateOf(AdvancedSettingsCategory.LiquidGlass)
     internal var advancedSettingsTab by mutableStateOf(AdvancedSettingsTab.Sliders)
-    internal var backgroundSeparationPercent by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT)
     internal var draftBackgroundSeparationText by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT.toString())
-    internal var plateRemovalPercent by mutableStateOf(DEFAULT_PLATE_REMOVAL_PERCENT)
     internal var draftPlateRemovalText by mutableStateOf(DEFAULT_PLATE_REMOVAL_PERCENT.toString())
-    internal var shadowRemovalPercent by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT)
     internal var draftShadowRemovalText by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT.toString())
-    internal var edgePolishPercent by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT)
     internal var draftEdgePolishText by mutableStateOf(DEFAULT_EDGE_POLISH_PERCENT.toString())
-    internal var rmbgAlphaStrengthPercent by mutableStateOf(DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT)
     internal var draftRmbgAlphaStrengthText by mutableStateOf(DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT.toString())
-    internal var rmbgEdgeFeatherPercent by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT)
     internal var draftRmbgEdgeFeatherText by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT.toString())
-    internal var rmbgEdgeAdjustPercent by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT)
     internal var draftRmbgEdgeAdjustText by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT.toString())
-    internal var rmbgWeakAlphaKeepPercent by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT)
     internal var draftRmbgWeakAlphaKeepText by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT.toString())
-    internal var liquidGlassEnabled by mutableStateOf(false)
     internal var liquidGlassBottomBarEnabled by mutableStateOf(true)
     internal var liquidGlassBottomBarBlurEnabled by mutableStateOf(true)
-    internal var liquidGlassRadius by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS)
     internal var draftLiquidGlassRadiusText by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS.toString())
-    internal var liquidGlassOuterWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH)
     internal var draftLiquidGlassOuterWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH.toString())
-    internal var liquidGlassTopAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA)
     internal var draftLiquidGlassTopAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA.toString())
-    internal var liquidGlassBottomAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA)
     internal var draftLiquidGlassBottomAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA.toString())
-    internal var liquidGlassBackgroundMistAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA)
     internal var draftLiquidGlassBackgroundMistAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA.toString())
-    internal var liquidGlassBottomDarkAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
     internal var draftLiquidGlassBottomDarkAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA.toString())
-    internal var liquidGlassSubjectScalePercent by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
     internal var draftLiquidGlassSubjectScaleText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT.toString())
-    internal var liquidGlassSubjectOutlineWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
     internal var draftLiquidGlassSubjectOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH.toString())
-    internal var liquidGlassSubjectInnerOutlineWidth by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH)
     internal var draftLiquidGlassSubjectInnerOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH.toString())
-    internal var liquidGlassSubjectShadowAlpha by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
     internal var draftLiquidGlassSubjectShadowAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA.toString())
-    internal var liquidGlassSubjectOpacityPercent by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
     internal var draftLiquidGlassSubjectOpacityText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT.toString())
-    internal var adaptiveForegroundMode by mutableStateOf(AdaptiveForegroundMode.Auto)
-    internal var adaptiveDirectMaxCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT)
-    internal var adaptiveDirectMaxCoverageIncreasePercent by mutableStateOf(DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT)
-    internal var adaptiveMaskEdgeCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT)
-    internal var adaptiveMaskMinCoveragePercent by mutableStateOf(DEFAULT_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT)
-    internal var adaptiveCenterEpsilonPercent by mutableStateOf(DEFAULT_ADAPTIVE_CENTER_EPSILON_PERCENT)
-    internal var originalForegroundCleanupMode by mutableStateOf(OriginalForegroundCleanupMode.Auto)
-    internal var localBackgroundSeparationEnabled by mutableStateOf(true)
-    internal var localAdaptiveSelectionEnabled by mutableStateOf(true)
-    internal var localCornerMaskCleanupEnabled by mutableStateOf(true)
-    internal var localAlphaEdgeColorRepairEnabled by mutableStateOf(true)
-    internal var localPlainBackgroundEstimationEnabled by mutableStateOf(true)
-    internal var localOriginalCleanupEnabled by mutableStateOf(true)
-    internal var localPlateCleanupEnabled by mutableStateOf(true)
-    internal var localPlateEdgeRepairEnabled by mutableStateOf(true)
-    internal var localPlateResidueCleanupEnabled by mutableStateOf(true)
-    internal var localShadowCleanupEnabled by mutableStateOf(true)
-    internal var localShadowEdgeRepairEnabled by mutableStateOf(true)
-    internal var localEdgeTrimEnabled by mutableStateOf(true)
-    internal var localComposedBackgroundEnabled by mutableStateOf(true)
-    internal var localTwoLayerCandidateEnabled by mutableStateOf(true)
-    internal var localComponentCandidatesEnabled by mutableStateOf(true)
-    internal var localTextSafeCandidateEnabled by mutableStateOf(true)
-    internal var localAutoSelectionEnabled by mutableStateOf(true)
-    internal var localEdgePolishEnabled by mutableStateOf(true)
-    internal var nightSubjectLightBackgroundEnabled by mutableStateOf(false)
     internal var lastParamsSnapshot by mutableStateOf<TuningParams?>(null)
     // P2 交界：历史单源已收敛进 MainViewModel（state/），Activity 不再持有 tuningHistory 栈；
     // 186 live vars 与 currentTuningParams() 不动（P5 重写），同步一律走快照显式调用。
@@ -497,7 +445,6 @@ class MainActivity : ComponentActivity() {
     internal var previewStripEnabled by mutableStateOf(false)
     internal var sharedPreviewAssets by mutableStateOf<PreviewAssets?>(null)
     internal var activeGenerationSession by mutableStateOf<GenerationSession?>(null)
-    internal var previewSelections by mutableStateOf(PreviewSelections.default(PreviewChoice.Full))
     internal var previewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
     internal var previewCornerRadiusDp by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP)
     internal var draftPreviewCornerRadiusDpText by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP.toString())
@@ -620,7 +567,9 @@ class MainActivity : ComponentActivity() {
         loadTuningParams()
         initTuningHistory()
         loadRmbgSettings()
-        loadGeneratedPackageCache()
+        generatedPackageNames = loadGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE))
+        generatedScanFailed = false
+        isScanningGeneratedPackages = false
         loadUiState()
         loadPresetState()
         startDebugHttpServerIfNeeded()
@@ -1089,6 +1038,7 @@ class MainActivity : ComponentActivity() {
     /** 调试图层卡片：前景 / 背景 / alpha 蒙版小图。 */
     @Composable
     internal fun LayerDebugCard() {
+        val tuningState = mainViewModel.params.collectAsState().value
         val dirPath = previewDirPath ?: return
         val packageName = previewPackageName ?: return
         val session = activeGenerationSession?.takeIf {
@@ -1096,7 +1046,7 @@ class MainActivity : ComponentActivity() {
         } ?: return
         val assets = sharedPreviewAssets ?: return
 
-        val choice = previewSelections.normalLight
+        val choice = PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark).normalLight
         val candidate = candidateForChoice(session, choice)
         val alphaMask = remember(candidate) {
             candidate?.recfgRaw?.let { bitmap ->
@@ -1134,6 +1084,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun PreviewControlCard() {
+        val tuningState = mainViewModel.params.collectAsState().value
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -1143,7 +1094,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "前景主体大小",
                     summary = "控制前景主体在图标画布中的占比",
-                    value = foregroundSubjectPercent,
+                    value = tuningState.foregroundSubjectPercent,
                     draftText = draftForegroundSubjectPercentText,
                     min = MIN_FOREGROUND_SUBJECT_PERCENT,
                     max = MAX_FOREGROUND_SUBJECT_PERCENT,
@@ -1554,7 +1505,7 @@ class MainActivity : ComponentActivity() {
                 .clip(RoundedCornerShape(16.dp))
                 .background(MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.58f))
                 .clickable(enabled = !isBusy) {
-                    updateNightSubjectLightBackgroundEnabled(!nightSubjectLightBackgroundEnabled)
+                    updateNightSubjectLightBackgroundEnabled(!mainViewModel.params.value.nightSubjectLightBackgroundEnabled)
                 }
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -1578,7 +1529,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
             PreviewCornerSwitch(
-                checked = nightSubjectLightBackgroundEnabled,
+                checked = mainViewModel.params.value.nightSubjectLightBackgroundEnabled,
                 enabled = !isBusy,
             )
         }
@@ -1586,6 +1537,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun PreviewChoiceDialog(mode: PreviewMode, session: GenerationSession) {
+        val tuningState = mainViewModel.params.collectAsState().value
         val defaultChoices = listOf(
             PreviewChoice.Original,
             PreviewChoice.ComposedBackground,
@@ -1600,7 +1552,7 @@ class MainActivity : ComponentActivity() {
             PreviewChoice.CustomForeground,
             PreviewChoice.CustomBackground,
         )
-        val selectedMoreRule = previewSelections.choiceFor(mode).let { choice ->
+        val selectedMoreRule = PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark).choiceFor(mode).let { choice ->
             when {
                 choice == PreviewChoice.Plate -> PreviewChoice.Full
                 choice in moreChoices -> choice
@@ -1642,7 +1594,7 @@ class MainActivity : ComponentActivity() {
                         busy = isBusy,
                         title = "主体占比",
                         summary = "复杂游戏图标建议 100%",
-                        value = foregroundSubjectPercent,
+                        value = mainViewModel.params.value.foregroundSubjectPercent,
                         draftText = draftForegroundSubjectPercentText,
                         min = MIN_FOREGROUND_SUBJECT_PERCENT,
                         max = MAX_FOREGROUND_SUBJECT_PERCENT,
@@ -1784,7 +1736,8 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun PreviewChoiceRow(mode: PreviewMode, choice: PreviewChoice, session: GenerationSession) {
-        val currentChoice = previewSelections.choiceFor(mode)
+        val tuningState = mainViewModel.params.collectAsState().value
+        val currentChoice = PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark).choiceFor(mode)
         val effectiveChoice = effectiveChoiceForPreviewRow(mode, choice, session)
         val selected = currentChoice == effectiveChoice ||
             (choice == PreviewChoice.ComposedBackground && currentChoice.isComposedBackgroundCombination)
@@ -1921,55 +1874,56 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun CandidateIconPreview(candidate: IconCandidate, mode: PreviewMode) {
+        val tuningState = mainViewModel.params.collectAsState().value
         var assets by remember(
             candidate,
             mode,
-            foregroundSubjectPercent,
-            foregroundShadowLevel,
-            edgePolishPercent,
-            rmbgAlphaStrengthPercent,
-            rmbgEdgeFeatherPercent,
-            rmbgEdgeAdjustPercent,
-            rmbgWeakAlphaKeepPercent,
-            liquidGlassEnabled,
-            liquidGlassRadius,
-            liquidGlassOuterWidth,
-            liquidGlassTopAlpha,
-            liquidGlassBottomAlpha,
-            liquidGlassBackgroundMistAlpha,
-            liquidGlassBottomDarkAlpha,
-            liquidGlassSubjectScalePercent,
-            liquidGlassSubjectOutlineWidth,
-            liquidGlassSubjectInnerOutlineWidth,
-            liquidGlassSubjectShadowAlpha,
-            liquidGlassSubjectOpacityPercent,
-            nightSubjectLightBackgroundEnabled,
+            tuningState.foregroundSubjectPercent,
+            tuningState.foregroundShadowLevel,
+            tuningState.edgePolishPercent,
+            tuningState.rmbgAlphaStrengthPercent,
+            tuningState.rmbgEdgeFeatherPercent,
+            tuningState.rmbgEdgeAdjustPercent,
+            tuningState.rmbgWeakAlphaKeepPercent,
+            tuningState.liquidGlassEnabled,
+            tuningState.liquidGlassRadius,
+            tuningState.liquidGlassOuterWidth,
+            tuningState.liquidGlassTopAlpha,
+            tuningState.liquidGlassBottomAlpha,
+            tuningState.liquidGlassBackgroundMistAlpha,
+            tuningState.liquidGlassBottomDarkAlpha,
+            tuningState.liquidGlassSubjectScalePercent,
+            tuningState.liquidGlassSubjectOutlineWidth,
+            tuningState.liquidGlassSubjectInnerOutlineWidth,
+            tuningState.liquidGlassSubjectShadowAlpha,
+            tuningState.liquidGlassSubjectOpacityPercent,
+            tuningState.nightSubjectLightBackgroundEnabled,
         ) {
             mutableStateOf<PreviewAssets?>(null)
         }
         LaunchedEffect(
             candidate,
             mode,
-            foregroundSubjectPercent,
-            foregroundShadowLevel,
-            edgePolishPercent,
-            rmbgAlphaStrengthPercent,
-            rmbgEdgeFeatherPercent,
-            rmbgEdgeAdjustPercent,
-            rmbgWeakAlphaKeepPercent,
-            liquidGlassEnabled,
-            liquidGlassRadius,
-            liquidGlassOuterWidth,
-            liquidGlassTopAlpha,
-            liquidGlassBottomAlpha,
-            liquidGlassBackgroundMistAlpha,
-            liquidGlassBottomDarkAlpha,
-            liquidGlassSubjectScalePercent,
-            liquidGlassSubjectOutlineWidth,
-            liquidGlassSubjectInnerOutlineWidth,
-            liquidGlassSubjectShadowAlpha,
-            liquidGlassSubjectOpacityPercent,
-            nightSubjectLightBackgroundEnabled,
+            tuningState.foregroundSubjectPercent,
+            tuningState.foregroundShadowLevel,
+            tuningState.edgePolishPercent,
+            tuningState.rmbgAlphaStrengthPercent,
+            tuningState.rmbgEdgeFeatherPercent,
+            tuningState.rmbgEdgeAdjustPercent,
+            tuningState.rmbgWeakAlphaKeepPercent,
+            tuningState.liquidGlassEnabled,
+            tuningState.liquidGlassRadius,
+            tuningState.liquidGlassOuterWidth,
+            tuningState.liquidGlassTopAlpha,
+            tuningState.liquidGlassBottomAlpha,
+            tuningState.liquidGlassBackgroundMistAlpha,
+            tuningState.liquidGlassBottomDarkAlpha,
+            tuningState.liquidGlassSubjectScalePercent,
+            tuningState.liquidGlassSubjectOutlineWidth,
+            tuningState.liquidGlassSubjectInnerOutlineWidth,
+            tuningState.liquidGlassSubjectShadowAlpha,
+            tuningState.liquidGlassSubjectOpacityPercent,
+            tuningState.nightSubjectLightBackgroundEnabled,
         ) {
             assets = null
             try {
@@ -2174,11 +2128,12 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun LocalSeparationModeControl() {
+        val tuningState = mainViewModel.params.collectAsState().value
         val modes = LocalSeparationMode.entries.filterNot { it == LocalSeparationMode.Plate }
-        val selectedMode = if (localSeparationMode == LocalSeparationMode.Plate) {
+        val selectedMode = if (LocalSeparationMode.fromValue(tuningState.localSeparationMode) == LocalSeparationMode.Plate) {
             LocalSeparationMode.Full
         } else {
-            localSeparationMode
+            LocalSeparationMode.fromValue(tuningState.localSeparationMode)
         }
         SegmentedControl(
             enabled = !isBusy,
@@ -2233,13 +2188,14 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun LiquidGlassToggleCard() {
+        val tuningState = mainViewModel.params.collectAsState().value
         SectionCard(rowsFullBleed = true) {
             LibrarySettingRow(
                 title = "液态玻璃风格",
                 summary = "开启后按当前液态玻璃参数重绘背景和前景光影",
                 icon = SettingsIconKind.Glass,
                 showSwitch = true,
-                checked = liquidGlassEnabled,
+                checked = tuningState.liquidGlassEnabled,
                 enabled = !isBusy,
                 onCheckedChange = { updateLiquidGlassEnabled(it) },
             )
@@ -2248,6 +2204,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun LiquidGlassSurfaceCard() {
+        val tuningState = mainViewModel.params.collectAsState().value
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -2257,7 +2214,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "玻璃圆角",
                     summary = "控制玻璃遮罩圆角，背景与主体按同一轮廓裁剪",
-                    value = liquidGlassRadius,
+                    value = tuningState.liquidGlassRadius,
                     draftText = draftLiquidGlassRadiusText,
                     min = MIN_LIQUID_GLASS_RADIUS,
                     max = MAX_LIQUID_GLASS_RADIUS,
@@ -2269,7 +2226,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "外框高度",
                     summary = "控制玻璃外缘高光的厚度",
-                    value = liquidGlassOuterWidth,
+                    value = tuningState.liquidGlassOuterWidth,
                     draftText = draftLiquidGlassOuterWidthText,
                     min = MIN_LIQUID_GLASS_OUTER_WIDTH,
                     max = MAX_LIQUID_GLASS_OUTER_WIDTH,
@@ -2282,7 +2239,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "顶部强度",
                     summary = "控制顶边贴边高光的亮度",
-                    value = liquidGlassTopAlpha,
+                    value = tuningState.liquidGlassTopAlpha,
                     draftText = draftLiquidGlassTopAlphaText,
                     min = MIN_LIQUID_GLASS_ALPHA,
                     max = MAX_LIQUID_GLASS_ALPHA,
@@ -2295,7 +2252,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "底边强度",
                     summary = "控制底边贴边高光的亮度",
-                    value = liquidGlassBottomAlpha,
+                    value = tuningState.liquidGlassBottomAlpha,
                     draftText = draftLiquidGlassBottomAlphaText,
                     min = MIN_LIQUID_GLASS_ALPHA,
                     max = MAX_LIQUID_GLASS_ALPHA,
@@ -2308,7 +2265,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "背景灰雾",
                     summary = "给图标背景叠加均匀暗雾，降低整体亮度",
-                    value = liquidGlassBackgroundMistAlpha,
+                    value = tuningState.liquidGlassBackgroundMistAlpha,
                     draftText = draftLiquidGlassBackgroundMistAlphaText,
                     min = MIN_LIQUID_GLASS_MIST_ALPHA,
                     max = MAX_LIQUID_GLASS_MIST_ALPHA,
@@ -2321,7 +2278,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "底部灰雾",
                     summary = "给底部叠加暗雾渐变，压住底边亮度",
-                    value = liquidGlassBottomDarkAlpha,
+                    value = tuningState.liquidGlassBottomDarkAlpha,
                     draftText = draftLiquidGlassBottomDarkAlphaText,
                     min = MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
                     max = MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
@@ -2336,6 +2293,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun LiquidGlassSubjectCard() {
+        val tuningState = mainViewModel.params.collectAsState().value
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -2345,7 +2303,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "主体比例",
                     summary = "调整主体在玻璃层中的缩放比例",
-                    value = liquidGlassSubjectScalePercent,
+                    value = tuningState.liquidGlassSubjectScalePercent,
                     draftText = draftLiquidGlassSubjectScaleText,
                     min = MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
                     max = MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
@@ -2358,7 +2316,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "主体外框宽度",
                     summary = "沿主体外侧透明边界添加高光描边",
-                    value = liquidGlassSubjectOutlineWidth,
+                    value = tuningState.liquidGlassSubjectOutlineWidth,
                     draftText = draftLiquidGlassSubjectOutlineWidthText,
                     min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
                     max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
@@ -2371,7 +2329,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "主体内框宽度",
                     summary = "沿主体内侧透明边界添加高光描边",
-                    value = liquidGlassSubjectInnerOutlineWidth,
+                    value = tuningState.liquidGlassSubjectInnerOutlineWidth,
                     draftText = draftLiquidGlassSubjectInnerOutlineWidthText,
                     min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
                     max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
@@ -2384,7 +2342,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "主体阴影",
                     summary = "控制主体投影透明度，增强层次",
-                    value = liquidGlassSubjectShadowAlpha,
+                    value = tuningState.liquidGlassSubjectShadowAlpha,
                     draftText = draftLiquidGlassSubjectShadowAlphaText,
                     min = MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
                     max = MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
@@ -2397,7 +2355,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "主体透明度",
                     summary = "归一化主体后再控制整体不透明度",
-                    value = liquidGlassSubjectOpacityPercent,
+                    value = tuningState.liquidGlassSubjectOpacityPercent,
                     draftText = draftLiquidGlassSubjectOpacityText,
                     min = MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
                     max = MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
@@ -2412,6 +2370,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun LocalRuleTuningCard() {
+        val tuningState = mainViewModel.params.collectAsState().value
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -2421,7 +2380,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "背景相似度",
                     summary = "越高越容易把相近颜色当背景",
-                    value = backgroundSeparationPercent,
+                    value = tuningState.backgroundSeparationPercent,
                     draftText = draftBackgroundSeparationText,
                     min = MIN_BACKGROUND_SEPARATION_PERCENT,
                     max = MAX_BACKGROUND_SEPARATION_PERCENT,
@@ -2433,7 +2392,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "底板清理",
                     summary = "越高越容易移除纯色底板",
-                    value = plateRemovalPercent,
+                    value = tuningState.plateRemovalPercent,
                     draftText = draftPlateRemovalText,
                     min = MIN_PLATE_REMOVAL_PERCENT,
                     max = MAX_PLATE_REMOVAL_PERCENT,
@@ -2445,7 +2404,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "旧阴影清理",
                     summary = "清掉原图里的长阴影，不是新增阴影",
-                    value = shadowRemovalPercent,
+                    value = tuningState.shadowRemovalPercent,
                     draftText = draftShadowRemovalText,
                     min = MIN_SHADOW_REMOVAL_PERCENT,
                     max = MAX_SHADOW_REMOVAL_PERCENT,
@@ -2457,7 +2416,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "边缘修补",
                     summary = "修补抠图毛刺和半透明边",
-                    value = edgePolishPercent,
+                    value = tuningState.edgePolishPercent,
                     draftText = draftEdgePolishText,
                     min = MIN_EDGE_POLISH_PERCENT,
                     max = MAX_EDGE_POLISH_PERCENT,
@@ -2471,25 +2430,26 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun LocalWorkflowPipelineCard() {
+        val tuningState = mainViewModel.params.collectAsState().value
         SectionCard(rowsFullBleed = true) {
-            LocalWorkflowToggleRow("背景估计与相减", "普通图标和 Adaptive 图标的背景分离", localBackgroundSeparationEnabled, "background")
-            LocalWorkflowToggleRow("Adaptive 自动选层", "在合成前景与直接前景之间自动判断", localAdaptiveSelectionEnabled, "adaptive")
-            LocalWorkflowToggleRow("角落蒙版清理", "清理 Adaptive 四角残留", localCornerMaskCleanupEnabled, "corner")
-            LocalWorkflowToggleRow("透明边缘补色", "修复本地抠图透明边的颜色残留", localAlphaEdgeColorRepairEnabled, "alpha_edge_repair")
-            LocalWorkflowToggleRow("普通背景估计", "关闭后跳过普通背景相减与拼合", localPlainBackgroundEstimationEnabled, "plain_background")
-            LocalWorkflowToggleRow("原始前景清理", "应用原始前景的底板清理规则", localOriginalCleanupEnabled, "original")
-            LocalWorkflowToggleRow("底板清理", "检测并移除连接到边缘的底板", localPlateCleanupEnabled, "plate")
-            LocalWorkflowToggleRow("底板修边", "修复底板移除后的边缘颜色", localPlateEdgeRepairEnabled, "plate_edge")
-            LocalWorkflowToggleRow("彩色残留清理", "清除底板颜色在主体边缘的残留", localPlateResidueCleanupEnabled, "plate_residue")
-            LocalWorkflowToggleRow("长阴影清理", "移除原图中偏移的长阴影", localShadowCleanupEnabled, "shadow")
-            LocalWorkflowToggleRow("阴影边缘修复", "保留阴影交界处的抗锯齿边缘", localShadowEdgeRepairEnabled, "shadow_edge")
-            LocalWorkflowToggleRow("前景收边", "执行局部侵蚀和边缘羽化", localEdgeTrimEnabled, "edge_trim")
-            LocalWorkflowToggleRow("拼合背景候选", "生成主体与重建背景的组合候选", localComposedBackgroundEnabled, "composed")
-            LocalWorkflowToggleRow("二层候选", "运行底板/主体分层候选算法", localTwoLayerCandidateEnabled, "two_layer")
-            LocalWorkflowToggleRow("组件候选", "生成底座作为主体或背景的候选", localComponentCandidatesEnabled, "component")
-            LocalWorkflowToggleRow("字标保全候选", "保留更完整文字的安全候选", localTextSafeCandidateEnabled, "text_safe")
-            LocalWorkflowToggleRow("自动候选选择", "关闭后固定使用完整清理结果", localAutoSelectionEnabled, "auto")
-            LocalWorkflowToggleRow("本地最终边缘润色", "渲染本地候选时执行最后的边缘处理", localEdgePolishEnabled, "edge_polish")
+            LocalWorkflowToggleRow("背景估计与相减", "普通图标和 Adaptive 图标的背景分离", tuningState.localBackgroundSeparationEnabled, "background")
+            LocalWorkflowToggleRow("Adaptive 自动选层", "在合成前景与直接前景之间自动判断", tuningState.localAdaptiveSelectionEnabled, "adaptive")
+            LocalWorkflowToggleRow("角落蒙版清理", "清理 Adaptive 四角残留", tuningState.localCornerMaskCleanupEnabled, "corner")
+            LocalWorkflowToggleRow("透明边缘补色", "修复本地抠图透明边的颜色残留", tuningState.localAlphaEdgeColorRepairEnabled, "alpha_edge_repair")
+            LocalWorkflowToggleRow("普通背景估计", "关闭后跳过普通背景相减与拼合", tuningState.localPlainBackgroundEstimationEnabled, "plain_background")
+            LocalWorkflowToggleRow("原始前景清理", "应用原始前景的底板清理规则", tuningState.localOriginalCleanupEnabled, "original")
+            LocalWorkflowToggleRow("底板清理", "检测并移除连接到边缘的底板", tuningState.localPlateCleanupEnabled, "plate")
+            LocalWorkflowToggleRow("底板修边", "修复底板移除后的边缘颜色", tuningState.localPlateEdgeRepairEnabled, "plate_edge")
+            LocalWorkflowToggleRow("彩色残留清理", "清除底板颜色在主体边缘的残留", tuningState.localPlateResidueCleanupEnabled, "plate_residue")
+            LocalWorkflowToggleRow("长阴影清理", "移除原图中偏移的长阴影", tuningState.localShadowCleanupEnabled, "shadow")
+            LocalWorkflowToggleRow("阴影边缘修复", "保留阴影交界处的抗锯齿边缘", tuningState.localShadowEdgeRepairEnabled, "shadow_edge")
+            LocalWorkflowToggleRow("前景收边", "执行局部侵蚀和边缘羽化", tuningState.localEdgeTrimEnabled, "edge_trim")
+            LocalWorkflowToggleRow("拼合背景候选", "生成主体与重建背景的组合候选", tuningState.localComposedBackgroundEnabled, "composed")
+            LocalWorkflowToggleRow("二层候选", "运行底板/主体分层候选算法", tuningState.localTwoLayerCandidateEnabled, "two_layer")
+            LocalWorkflowToggleRow("组件候选", "生成底座作为主体或背景的候选", tuningState.localComponentCandidatesEnabled, "component")
+            LocalWorkflowToggleRow("字标保全候选", "保留更完整文字的安全候选", tuningState.localTextSafeCandidateEnabled, "text_safe")
+            LocalWorkflowToggleRow("自动候选选择", "关闭后固定使用完整清理结果", tuningState.localAutoSelectionEnabled, "auto")
+            LocalWorkflowToggleRow("本地最终边缘润色", "渲染本地候选时执行最后的边缘处理", tuningState.localEdgePolishEnabled, "edge_polish")
         }
     }
 
@@ -2513,6 +2473,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun RmbgTuningCard() {
+        val tuningState = mainViewModel.params.collectAsState().value
         SectionCard(rowsFullBleed = true) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -2522,7 +2483,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "Alpha 力度",
                     summary = "100 不变，越高越实",
-                    value = rmbgAlphaStrengthPercent,
+                    value = tuningState.rmbgAlphaStrengthPercent,
                     draftText = draftRmbgAlphaStrengthText,
                     min = MIN_RMBG_ALPHA_STRENGTH_PERCENT,
                     max = MAX_RMBG_ALPHA_STRENGTH_PERCENT,
@@ -2534,7 +2495,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "边缘柔化",
                     summary = "越高边缘越软",
-                    value = rmbgEdgeFeatherPercent,
+                    value = tuningState.rmbgEdgeFeatherPercent,
                     draftText = draftRmbgEdgeFeatherText,
                     min = MIN_RMBG_EDGE_FEATHER_PERCENT,
                     max = MAX_RMBG_EDGE_FEATHER_PERCENT,
@@ -2546,7 +2507,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "边缘扩缩",
                     summary = "低收缩，高扩张",
-                    value = rmbgEdgeAdjustPercent,
+                    value = tuningState.rmbgEdgeAdjustPercent,
                     draftText = draftRmbgEdgeAdjustText,
                     min = MIN_RMBG_EDGE_ADJUST_PERCENT,
                     max = MAX_RMBG_EDGE_ADJUST_PERCENT,
@@ -2558,7 +2519,7 @@ class MainActivity : ComponentActivity() {
                     busy = isBusy,
                     title = "弱透明保留",
                     summary = "越高越保留半透明细节",
-                    value = rmbgWeakAlphaKeepPercent,
+                    value = tuningState.rmbgWeakAlphaKeepPercent,
                     draftText = draftRmbgWeakAlphaKeepText,
                     min = MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
                     max = MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
@@ -2915,10 +2876,10 @@ class MainActivity : ComponentActivity() {
     ): PreviewAssets {
         val icon = app.applicationInfo.loadIcon(packageManager)
         val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
-        val localSource = buildLocalIconLayers(icon, pipeline)
-        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, pipeline)
+        val localSource = buildLocalIconLayers(icon, pipeline, mainViewModel.params.value.backgroundSeparationPercent, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
+        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, pipeline, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode), mainViewModel.params.value.plateRemovalPercent, mainViewModel.params.value.shadowRemovalPercent, mainViewModel.params.value.backgroundSeparationPercent)
         val localCandidates = localCandidateSet.candidates
-        val defaultChoice = defaultPreviewChoiceForMode(localSeparationMode, localCandidateSet.autoChoice)
+        val defaultChoice = defaultPreviewChoiceForMode(LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode), localCandidateSet.autoChoice)
             .takeIf { localCandidates.containsKey(it) }
             ?: localCandidateSet.autoChoice.takeIf { localCandidates.containsKey(it) }
             ?: PreviewChoice.Original
@@ -3030,13 +2991,13 @@ class MainActivity : ComponentActivity() {
                 }
                 runOnUiThread {
                     if (successes.isNotEmpty()) {
-                        updateGeneratedPackageCache(generatedPackageNames + successes)
+                        generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames + successes)
                         multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
                     }
                     val result = selectedResult
                     if (result != null && selectedPackageName == selectedAtStart) {
                         activeGenerationSession = result.session
-                        previewSelections = result.selections
+                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
                         previewChoiceMode = null
                         previewPackageName = result.session.packageName
                         previewDirPath = result.outDir.absolutePath
@@ -3152,13 +3113,13 @@ class MainActivity : ComponentActivity() {
                 }
                 runOnUiThread {
                     if (successes.isNotEmpty()) {
-                        updateGeneratedPackageCache(generatedPackageNames + successes)
+                        generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames + successes)
                         multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
                     }
                     val result = selectedResult
                     if (result != null && selectedPackageName == selectedAtStart) {
                         activeGenerationSession = result.session
-                        previewSelections = result.selections
+                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
                         previewChoiceMode = null
                         previewPackageName = result.session.packageName
                         previewDirPath = result.outDir.absolutePath
@@ -4281,21 +4242,22 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun GptSettingsCard() {
+        val tuningState = mainViewModel.params.collectAsState().value
         SectionCard(rowsFullBleed = true) {
             LibraryChoiceRow(
                 title = "调用方式",
                 summary = "选择 AI 生图的调用方式",
-                value = gptImageMode.label,
+                value = GptImageMode.fromValue(tuningState.gptImageMode).label,
                 icon = SettingsIconKind.Spark,
                 enabled = !isBusy,
-                entry = remember(gptImageMode) {
+                entry = remember(GptImageMode.fromValue(tuningState.gptImageMode)) {
                     DropdownEntry(
                         items = GptImageMode.entries.map { mode ->
                             DropdownItem(
                                 text = mode.label,
-                                selected = mode == gptImageMode,
+                                selected = mode == GptImageMode.fromValue(tuningState.gptImageMode),
                                 onClick = {
-                                    gptImageMode = mode
+                                    mainViewModel.updateLive { p -> p.copy(gptImageMode = (mode).value) }
                                     gptSettingsSaveStatus = ""
                                 },
                             )
@@ -4306,19 +4268,19 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.height(4.dp))
             LibraryChoiceRow(
                 title = "AI 提示词",
-                summary = gptPromptPreset.summary,
-                value = gptPromptPreset.label,
+                summary = GptPromptPreset.fromValue(tuningState.gptPromptPreset).summary,
+                value = GptPromptPreset.fromValue(tuningState.gptPromptPreset).label,
                 icon = SettingsIconKind.Prompt,
                 enabled = !isBusy,
-                entry = remember(gptPromptPreset) {
+                entry = remember(GptPromptPreset.fromValue(tuningState.gptPromptPreset)) {
                     DropdownEntry(
                         items = GptPromptPreset.entries.map { preset ->
                             DropdownItem(
                                 text = preset.label,
                                 summary = preset.summary,
-                                selected = preset == gptPromptPreset,
+                                selected = preset == GptPromptPreset.fromValue(tuningState.gptPromptPreset),
                                 onClick = {
-                                    gptPromptPreset = preset
+                                    mainViewModel.updateLive { p -> p.copy(gptPromptPreset = (preset).value) }
                                     gptSettingsSaveStatus = ""
                                 },
                             )
@@ -4327,7 +4289,7 @@ class MainActivity : ComponentActivity() {
                 },
             )
             AnimatedVisibility(
-                visible = gptPromptPreset == GptPromptPreset.Custom,
+                visible = GptPromptPreset.fromValue(tuningState.gptPromptPreset) == GptPromptPreset.Custom,
                 enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
                     expandVertically(animationSpec = tween(durationMillis = 180)),
                 exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
@@ -4337,13 +4299,13 @@ class MainActivity : ComponentActivity() {
                     Spacer(modifier = Modifier.height(6.dp))
                     SettingsTextInputRow(
                         title = "自定义前景提示词",
-                        value = gptCustomPrompt,
+                        value = tuningState.gptCustomPrompt,
                         label = "自定义前景提示词",
                         inputHint = "请填写自定义前景提示词",
                         icon = SettingsIconKind.Prompt,
                         enabled = !isBusy,
                         onValueChange = {
-                            gptCustomPrompt = it
+                            mainViewModel.updateLive { p -> p.copy(gptCustomPrompt = it) }
                             gptSettingsSaveStatus = ""
                         },
                     )
@@ -4778,6 +4740,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun LiquidGlassToggleRow() {
+        val tuningState = mainViewModel.params.collectAsState().value
         val interactionSource = remember { MutableInteractionSource() }
         val pressed by interactionSource.collectIsPressedAsState()
         val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
@@ -4792,7 +4755,7 @@ class MainActivity : ComponentActivity() {
                     interactionSource = interactionSource,
                     indication = null,
                     enabled = !isBusy,
-                    onClick = { updateLiquidGlassEnabled(!liquidGlassEnabled) },
+                    onClick = { updateLiquidGlassEnabled(!mainViewModel.params.value.liquidGlassEnabled) },
                 )
                 .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
                 .padding(vertical = 4.dp),
@@ -4820,7 +4783,7 @@ class MainActivity : ComponentActivity() {
                     softWrap = false,
                 )
             }
-            LiquidGlassSwitch(checked = liquidGlassEnabled, enabled = !isBusy)
+            LiquidGlassSwitch(checked = tuningState.liquidGlassEnabled, enabled = !isBusy)
         }
     }
 
@@ -5333,7 +5296,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun AppIcon(entry: AppEntry, size: Dp) {
         var bitmap by remember(entry.iconKey) {
-            mutableStateOf(getCachedAppIcon(entry.iconKey))
+            mutableStateOf(getCachedAppIcon(appIconCache, entry.iconKey))
         }
         val imageBitmap = remember(bitmap) { bitmap?.asImageBitmap() }
 
@@ -5367,8 +5330,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    internal fun getCachedAppIcon(key: String): Bitmap? = getCachedAppIcon(appIconCache, key)
 
     internal suspend fun loadCachedAppIcon(entry: AppEntry): Bitmap? =
         withContext(Dispatchers.IO) {
@@ -5379,7 +5340,7 @@ class MainActivity : ComponentActivity() {
                 return@withContext cached
             }
 
-            val bitmap = runCatching { loadAppIconBitmap(entry) }.getOrNull() ?: return@withContext null
+            val bitmap = runCatching { loadAppIconBitmap(entry, packageManager, ICON_CACHE_SIZE) }.getOrNull() ?: return@withContext null
 
             synchronized(appIconCache) {
                 appIconCache.put(entry.iconKey, bitmap)
@@ -5387,9 +5348,6 @@ class MainActivity : ComponentActivity() {
             bitmap
         }
 
-    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    internal fun loadAppIconBitmap(entry: AppEntry): Bitmap =
-        loadAppIconBitmap(entry, packageManager, ICON_CACHE_SIZE)
 
     /**
      * 读取当前设备桌面壁纸并保留原始宽高比（短边缩放到 480 左右）。
@@ -5562,7 +5520,7 @@ class MainActivity : ComponentActivity() {
             runOnUiThread {
                 result
                     .onSuccess { generated ->
-                        updateGeneratedPackageCache(generated)
+                        generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generated)
                         generatedScanFailed = false
                         statusText = "已刷新生成状态: ${generated.size} 个"
                     }
@@ -5575,28 +5533,8 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
-    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    internal fun loadGeneratedPackageCache() {
-        generatedPackageNames =
-            loadGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE))
-        generatedScanFailed = false
-        isScanningGeneratedPackages = false
-    }
 
-    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    internal fun updateGeneratedPackageCache(packages: Set<String>) {
-        generatedPackageNames =
-            updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), packages)
-    }
 
-    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
-    internal fun markPackageGenerated(packageName: String) {
-        generatedPackageNames = markPackageGenerated(
-            getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
-            generatedPackageNames,
-            packageName,
-        )
-    }
 
     internal fun loadUiState() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -5619,7 +5557,7 @@ class MainActivity : ComponentActivity() {
         previewDirPath = prefs.getString(PREF_PREVIEW_DIR_PATH, null)
             ?.takeIf { it.isNotBlank() }
         previewStripEnabled = prefs.getBoolean(PREF_PREVIEW_STRIP_ENABLED, false)
-        previewSelections = PreviewSelections.fromPrefs(prefs)
+        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.fromPrefs(prefs)).normalLight.name, previewNormalDark = (PreviewSelections.fromPrefs(prefs)).normalDark.name, previewMonochromeLight = (PreviewSelections.fromPrefs(prefs)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.fromPrefs(prefs)).monochromeDark.name) }
         previewDesktopBackground = PreviewDesktopBackground.fromName(
             prefs.getString(PREF_PREVIEW_DESKTOP_BACKGROUND, null),
         )
@@ -5677,10 +5615,10 @@ class MainActivity : ComponentActivity() {
             .putString(PREF_PREVIEW_PACKAGE_NAME, previewPackageName)
             .putString(PREF_PREVIEW_DIR_PATH, previewDirPath)
             .putBoolean(PREF_PREVIEW_STRIP_ENABLED, previewStripEnabled)
-            .putString(PREF_PREVIEW_SELECTION_NORMAL_LIGHT, previewSelections.normalLight.name)
-            .putString(PREF_PREVIEW_SELECTION_NORMAL_DARK, previewSelections.normalDark.name)
-            .putString(PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT, previewSelections.monochromeLight.name)
-            .putString(PREF_PREVIEW_SELECTION_MONOCHROME_DARK, previewSelections.monochromeDark.name)
+            .putString(PREF_PREVIEW_SELECTION_NORMAL_LIGHT, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).normalLight.name)
+            .putString(PREF_PREVIEW_SELECTION_NORMAL_DARK, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).normalDark.name)
+            .putString(PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).monochromeLight.name)
+            .putString(PREF_PREVIEW_SELECTION_MONOCHROME_DARK, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).monochromeDark.name)
             .putString(PREF_PREVIEW_DESKTOP_BACKGROUND, previewDesktopBackground.name)
             .putInt(PREF_PREVIEW_ICON_SIZE_DP, previewIconSizeDp)
             .putInt(PREF_PREVIEW_CORNER_RADIUS_DP, previewCornerRadiusDp)
@@ -5984,7 +5922,7 @@ class MainActivity : ComponentActivity() {
                 if (installWithRoot) {
                     installWithRoot(result.outDir, packageName, rootWriteMode)
                     runOnMainSync {
-                        markPackageGenerated(packageName)
+                        generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, packageName)
                         statusText = "调试生成完成并${rootWriteMode.label}写入 Root，未刷新，请手动点刷新 ART+ 图标: ${result.outDir.absolutePath}"
                     }
                 } else {
@@ -5994,7 +5932,7 @@ class MainActivity : ComponentActivity() {
                 }
                 runOnMainSync {
                     activeGenerationSession = result.session
-                    previewSelections = result.selections
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
                     previewChoiceMode = null
                     previewPackageName = packageName
                     previewDirPath = result.outDir.absolutePath
@@ -6057,11 +5995,11 @@ class MainActivity : ComponentActivity() {
             val direct = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
             val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
             val subtracted = if (localPipeline.backgroundSeparationEnabled) {
-                subtractBackground(composed, background, pipeline = localPipeline)
+                subtractBackground(composed, background, pipeline = localPipeline, backgroundSeparationPercent = mainViewModel.params.value.backgroundSeparationPercent)
             } else {
                 composed
             }
-            val selection = chooseBetterAdaptiveForeground(subtracted, direct, background, localPipeline)
+            val selection = chooseBetterAdaptiveForeground(subtracted, direct, background, localPipeline, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
             val chosen = selection.bitmap
             val adaptiveJson = JSONObject()
             saveLayer("adaptive_background_240", resizeBitmap(background, SIZE_1X1, SIZE_1X1), adaptiveJson)
@@ -6070,20 +6008,20 @@ class MainActivity : ComponentActivity() {
             saveLayer("adaptive_direct_foreground_240", resizeBitmap(direct, SIZE_1X1, SIZE_1X1), adaptiveJson)
             saveLayer("adaptive_chosen_foreground_240", resizeBitmap(chosen, SIZE_1X1, SIZE_1X1), adaptiveJson)
             adaptiveJson
-                .put("subtracted_has_mask_artifact", hasAdaptiveMaskArtifact(subtracted))
-                .put("direct_usable", isUsableDirectAdaptiveForeground(direct, alphaCoverage(subtracted)))
+                .put("subtracted_has_mask_artifact", hasAdaptiveMaskArtifact(subtracted, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent))
+                .put("direct_usable", isUsableDirectAdaptiveForeground(direct, alphaCoverage(subtracted), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent))
                 .put("subtracted_coverage", alphaCoverage(subtracted))
                 .put("direct_coverage", alphaCoverage(direct))
                 .put("chosen_preserve_geometry", selection.preserveGeometry)
             metadata.put("adaptive", adaptiveJson)
         }
 
-        val localSource = buildLocalIconLayers(icon, localPipeline)
+        val localSource = buildLocalIconLayers(icon, localPipeline, mainViewModel.params.value.backgroundSeparationPercent, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
         val localJson = JSONObject()
         saveLayer("local_base_recbg", localSource.recbg, localJson)
         saveLayer("local_base_recfg", localSource.recfg, localJson)
         localSource.monochrome?.let { saveLayer("local_base_monochrome", it, localJson) }
-        val candidateSet = buildLocalCandidates(localSource, candidateSource240, localPipeline)
+        val candidateSet = buildLocalCandidates(localSource, candidateSource240, localPipeline, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode), mainViewModel.params.value.plateRemovalPercent, mainViewModel.params.value.shadowRemovalPercent, mainViewModel.params.value.backgroundSeparationPercent)
         localJson.put("auto_choice", candidateSet.autoChoice.name.lowercase(Locale.US))
         metadata.put("local", localJson)
 
@@ -6175,11 +6113,11 @@ class MainActivity : ComponentActivity() {
 
     internal fun loadGptSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        gptImageMode = GptImageMode.fromValue(prefs.getString(PREF_GPT_MODE, GptImageMode.Images.value))
-        gptPromptPreset = GptPromptPreset.fromValue(
+        mainViewModel.updateLive { p -> p.copy(gptImageMode = (GptImageMode.fromValue(prefs.getString(PREF_GPT_MODE, GptImageMode.Images.value))).value) }
+        mainViewModel.updateLive { p -> p.copy(gptPromptPreset = (GptPromptPreset.fromValue(
             prefs.getString(PREF_GPT_PROMPT_PRESET, GptPromptPreset.StableCutout.value),
-        )
-        gptCustomPrompt = prefs.getString(PREF_GPT_CUSTOM_PROMPT, "") ?: ""
+        )).value) }
+        mainViewModel.updateLive { p -> p.copy(gptCustomPrompt = prefs.getString(PREF_GPT_CUSTOM_PROMPT, "") ?: "") }
         gptModelId = prefs.getString(PREF_GPT_MODEL_ID, "") ?: ""
         val storedBaseUrl = prefs.getString(PREF_GPT_BASE_URL, "") ?: ""
         gptBaseUrl = if (storedBaseUrl == LEGACY_DEFAULT_GPT_BASE_URL) "" else storedBaseUrl
@@ -6194,9 +6132,9 @@ class MainActivity : ComponentActivity() {
         val encryptedKey = encryptSecret(gptApiKey.trim())
         return prefs
             .edit()
-            .putString(PREF_GPT_MODE, gptImageMode.value)
-            .putString(PREF_GPT_PROMPT_PRESET, gptPromptPreset.value)
-            .putString(PREF_GPT_CUSTOM_PROMPT, gptCustomPrompt.trim())
+            .putString(PREF_GPT_MODE, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode).value)
+            .putString(PREF_GPT_PROMPT_PRESET, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset).value)
+            .putString(PREF_GPT_CUSTOM_PROMPT, mainViewModel.params.value.gptCustomPrompt.trim())
             .putString(PREF_GPT_MODEL_ID, gptModelId.trim())
             .putString(PREF_GPT_BASE_URL, gptBaseUrl.trim())
             .remove(PREF_GPT_API_KEY)
@@ -6310,27 +6248,27 @@ class MainActivity : ComponentActivity() {
 
     internal fun loadLocalSeparationSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        localSeparationMode = LocalSeparationMode.fromValue(
+        mainViewModel.updateLive { p -> p.copy(localSeparationMode = (LocalSeparationMode.fromValue(
             prefs.getString(PREF_LOCAL_SEPARATION_MODE, LocalSeparationMode.Auto.value),
-        )
+        )).value) }
     }
 
     internal fun saveLocalSeparationSettings() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
-            .putString(PREF_LOCAL_SEPARATION_MODE, localSeparationMode.value)
+            .putString(PREF_LOCAL_SEPARATION_MODE, LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode).value)
             .apply()
     }
 
     internal fun updateLocalSeparationMode(mode: LocalSeparationMode) {
-        if (localSeparationMode == mode) {
+        if (LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode) == mode) {
             return
         }
         val session = activeGenerationSession
         val previousDefault = session?.let {
-            defaultPreviewChoiceForMode(localSeparationMode, it.autoLocalChoice)
+            defaultPreviewChoiceForMode(LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode), it.autoLocalChoice)
         }
-        localSeparationMode = mode
+        mainViewModel.updateLive { p -> p.copy(localSeparationMode = (mode).value) }
         saveLocalSeparationSettings()
         refreshActivePreviewOutputs(
             rebuildLocalCandidates = true,
@@ -6340,48 +6278,48 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLocalWorkflowToggle(name: String, enabled: Boolean) {
         val previous = when (name) {
-            "background" -> localBackgroundSeparationEnabled
-            "adaptive" -> localAdaptiveSelectionEnabled
-            "corner" -> localCornerMaskCleanupEnabled
-            "alpha_edge_repair" -> localAlphaEdgeColorRepairEnabled
-            "plain_background" -> localPlainBackgroundEstimationEnabled
-            "original" -> localOriginalCleanupEnabled
-            "plate" -> localPlateCleanupEnabled
-            "plate_edge" -> localPlateEdgeRepairEnabled
-            "plate_residue" -> localPlateResidueCleanupEnabled
-            "shadow" -> localShadowCleanupEnabled
-            "shadow_edge" -> localShadowEdgeRepairEnabled
-            "edge_trim" -> localEdgeTrimEnabled
-            "composed" -> localComposedBackgroundEnabled
-            "two_layer" -> localTwoLayerCandidateEnabled
-            "component" -> localComponentCandidatesEnabled
-            "text_safe" -> localTextSafeCandidateEnabled
-            "auto" -> localAutoSelectionEnabled
-            "edge_polish" -> localEdgePolishEnabled
+            "background" -> mainViewModel.params.value.localBackgroundSeparationEnabled
+            "adaptive" -> mainViewModel.params.value.localAdaptiveSelectionEnabled
+            "corner" -> mainViewModel.params.value.localCornerMaskCleanupEnabled
+            "alpha_edge_repair" -> mainViewModel.params.value.localAlphaEdgeColorRepairEnabled
+            "plain_background" -> mainViewModel.params.value.localPlainBackgroundEstimationEnabled
+            "original" -> mainViewModel.params.value.localOriginalCleanupEnabled
+            "plate" -> mainViewModel.params.value.localPlateCleanupEnabled
+            "plate_edge" -> mainViewModel.params.value.localPlateEdgeRepairEnabled
+            "plate_residue" -> mainViewModel.params.value.localPlateResidueCleanupEnabled
+            "shadow" -> mainViewModel.params.value.localShadowCleanupEnabled
+            "shadow_edge" -> mainViewModel.params.value.localShadowEdgeRepairEnabled
+            "edge_trim" -> mainViewModel.params.value.localEdgeTrimEnabled
+            "composed" -> mainViewModel.params.value.localComposedBackgroundEnabled
+            "two_layer" -> mainViewModel.params.value.localTwoLayerCandidateEnabled
+            "component" -> mainViewModel.params.value.localComponentCandidatesEnabled
+            "text_safe" -> mainViewModel.params.value.localTextSafeCandidateEnabled
+            "auto" -> mainViewModel.params.value.localAutoSelectionEnabled
+            "edge_polish" -> mainViewModel.params.value.localEdgePolishEnabled
             else -> return
         }
         if (previous == enabled) {
             return
         }
         when (name) {
-            "background" -> localBackgroundSeparationEnabled = enabled
-            "adaptive" -> localAdaptiveSelectionEnabled = enabled
-            "corner" -> localCornerMaskCleanupEnabled = enabled
-            "alpha_edge_repair" -> localAlphaEdgeColorRepairEnabled = enabled
-            "plain_background" -> localPlainBackgroundEstimationEnabled = enabled
-            "original" -> localOriginalCleanupEnabled = enabled
-            "plate" -> localPlateCleanupEnabled = enabled
-            "plate_edge" -> localPlateEdgeRepairEnabled = enabled
-            "plate_residue" -> localPlateResidueCleanupEnabled = enabled
-            "shadow" -> localShadowCleanupEnabled = enabled
-            "shadow_edge" -> localShadowEdgeRepairEnabled = enabled
-            "edge_trim" -> localEdgeTrimEnabled = enabled
-            "composed" -> localComposedBackgroundEnabled = enabled
-            "two_layer" -> localTwoLayerCandidateEnabled = enabled
-            "component" -> localComponentCandidatesEnabled = enabled
-            "text_safe" -> localTextSafeCandidateEnabled = enabled
-            "auto" -> localAutoSelectionEnabled = enabled
-            "edge_polish" -> localEdgePolishEnabled = enabled
+            "background" -> mainViewModel.updateLive { p -> p.copy(localBackgroundSeparationEnabled = enabled) }
+            "adaptive" -> mainViewModel.updateLive { p -> p.copy(localAdaptiveSelectionEnabled = enabled) }
+            "corner" -> mainViewModel.updateLive { p -> p.copy(localCornerMaskCleanupEnabled = enabled) }
+            "alpha_edge_repair" -> mainViewModel.updateLive { p -> p.copy(localAlphaEdgeColorRepairEnabled = enabled) }
+            "plain_background" -> mainViewModel.updateLive { p -> p.copy(localPlainBackgroundEstimationEnabled = enabled) }
+            "original" -> mainViewModel.updateLive { p -> p.copy(localOriginalCleanupEnabled = enabled) }
+            "plate" -> mainViewModel.updateLive { p -> p.copy(localPlateCleanupEnabled = enabled) }
+            "plate_edge" -> mainViewModel.updateLive { p -> p.copy(localPlateEdgeRepairEnabled = enabled) }
+            "plate_residue" -> mainViewModel.updateLive { p -> p.copy(localPlateResidueCleanupEnabled = enabled) }
+            "shadow" -> mainViewModel.updateLive { p -> p.copy(localShadowCleanupEnabled = enabled) }
+            "shadow_edge" -> mainViewModel.updateLive { p -> p.copy(localShadowEdgeRepairEnabled = enabled) }
+            "edge_trim" -> mainViewModel.updateLive { p -> p.copy(localEdgeTrimEnabled = enabled) }
+            "composed" -> mainViewModel.updateLive { p -> p.copy(localComposedBackgroundEnabled = enabled) }
+            "two_layer" -> mainViewModel.updateLive { p -> p.copy(localTwoLayerCandidateEnabled = enabled) }
+            "component" -> mainViewModel.updateLive { p -> p.copy(localComponentCandidatesEnabled = enabled) }
+            "text_safe" -> mainViewModel.updateLive { p -> p.copy(localTextSafeCandidateEnabled = enabled) }
+            "auto" -> mainViewModel.updateLive { p -> p.copy(localAutoSelectionEnabled = enabled) }
+            "edge_polish" -> mainViewModel.updateLive { p -> p.copy(localEdgePolishEnabled = enabled) }
         }
         saveImageTuningSettings()
         statusText = if (enabled) "已启用本地步骤" else "已关闭本地步骤"
@@ -6394,191 +6332,191 @@ class MainActivity : ComponentActivity() {
             PREF_FOREGROUND_SUBJECT_PERCENT,
             DEFAULT_FOREGROUND_SUBJECT_PERCENT,
         )
-        foregroundSubjectPercent = if (storedValue == LEGACY_FOREGROUND_SUBJECT_PERCENT) {
+        mainViewModel.updateLive { p -> p.copy(foregroundSubjectPercent = if (storedValue == LEGACY_FOREGROUND_SUBJECT_PERCENT) {
             DEFAULT_FOREGROUND_SUBJECT_PERCENT
         } else {
             storedValue.coerceIn(MIN_FOREGROUND_SUBJECT_PERCENT, MAX_FOREGROUND_SUBJECT_PERCENT)
-        }
-        draftForegroundSubjectPercentText = foregroundSubjectPercent.toString()
-        foregroundShadowLevel = prefs.getInt(
+        }) }
+        draftForegroundSubjectPercentText = mainViewModel.params.value.foregroundSubjectPercent.toString()
+        mainViewModel.updateLive { p -> p.copy(foregroundShadowLevel = prefs.getInt(
             PREF_FOREGROUND_SHADOW_LEVEL,
             DEFAULT_FOREGROUND_SHADOW_LEVEL,
-        ).coerceIn(MIN_FOREGROUND_SHADOW_LEVEL, MAX_FOREGROUND_SHADOW_LEVEL)
-        draftForegroundShadowLevelText = foregroundShadowLevel.toString()
-        monochromeThemeScale = prefs.getFloat(
+        ).coerceIn(MIN_FOREGROUND_SHADOW_LEVEL, MAX_FOREGROUND_SHADOW_LEVEL)) }
+        draftForegroundShadowLevelText = mainViewModel.params.value.foregroundShadowLevel.toString()
+        mainViewModel.updateLive { p -> p.copy(monochromeThemeScale = prefs.getFloat(
             PREF_MONOCHROME_THEME_SCALE,
             DEFAULT_MONOCHROME_THEME_SCALE,
-        ).coerceIn(MIN_MONOCHROME_THEME_SCALE, MAX_MONOCHROME_THEME_SCALE)
-        draftMonochromeThemeScaleText = (monochromeThemeScale * 100).roundToInt().toString()
+        ).coerceIn(MIN_MONOCHROME_THEME_SCALE, MAX_MONOCHROME_THEME_SCALE)) }
+        draftMonochromeThemeScaleText = (mainViewModel.params.value.monochromeThemeScale * 100).roundToInt().toString()
         val tuningVersion = prefs.getInt(PREF_IMAGE_TUNING_VERSION, 1)
-        backgroundSeparationPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
+        mainViewModel.updateLive { p -> p.copy(backgroundSeparationPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             DEFAULT_BACKGROUND_SEPARATION_PERCENT
         } else {
             prefs.getInt(PREF_BACKGROUND_SEPARATION_PERCENT, DEFAULT_BACKGROUND_SEPARATION_PERCENT)
                 .let { migrateLegacyPercent(it, DEFAULT_BACKGROUND_SEPARATION_PERCENT) }
-        }.coerceIn(MIN_BACKGROUND_SEPARATION_PERCENT, MAX_BACKGROUND_SEPARATION_PERCENT)
-        draftBackgroundSeparationText = backgroundSeparationPercent.toString()
-        plateRemovalPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
+        }.coerceIn(MIN_BACKGROUND_SEPARATION_PERCENT, MAX_BACKGROUND_SEPARATION_PERCENT)) }
+        draftBackgroundSeparationText = mainViewModel.params.value.backgroundSeparationPercent.toString()
+        mainViewModel.updateLive { p -> p.copy(plateRemovalPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             DEFAULT_PLATE_REMOVAL_PERCENT
         } else {
             prefs.getInt(PREF_PLATE_REMOVAL_PERCENT, DEFAULT_PLATE_REMOVAL_PERCENT)
                 .let { migrateLegacyPercent(it, DEFAULT_PLATE_REMOVAL_PERCENT) }
-        }.coerceIn(MIN_PLATE_REMOVAL_PERCENT, MAX_PLATE_REMOVAL_PERCENT)
-        draftPlateRemovalText = plateRemovalPercent.toString()
-        shadowRemovalPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
+        }.coerceIn(MIN_PLATE_REMOVAL_PERCENT, MAX_PLATE_REMOVAL_PERCENT)) }
+        draftPlateRemovalText = mainViewModel.params.value.plateRemovalPercent.toString()
+        mainViewModel.updateLive { p -> p.copy(shadowRemovalPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             DEFAULT_SHADOW_REMOVAL_PERCENT
         } else {
             prefs.getInt(PREF_SHADOW_REMOVAL_PERCENT, DEFAULT_SHADOW_REMOVAL_PERCENT)
                 .let { migrateLegacyPercent(it, DEFAULT_SHADOW_REMOVAL_PERCENT) }
-        }.coerceIn(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT)
-        draftShadowRemovalText = shadowRemovalPercent.toString()
-        edgePolishPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
+        }.coerceIn(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT)) }
+        draftShadowRemovalText = mainViewModel.params.value.shadowRemovalPercent.toString()
+        mainViewModel.updateLive { p -> p.copy(edgePolishPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             DEFAULT_EDGE_POLISH_PERCENT
         } else {
             prefs.getInt(PREF_EDGE_POLISH_PERCENT, DEFAULT_EDGE_POLISH_PERCENT)
-        }.coerceIn(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT)
-        draftEdgePolishText = edgePolishPercent.toString()
-        rmbgAlphaStrengthPercent = prefs.getInt(
+        }.coerceIn(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT)) }
+        draftEdgePolishText = mainViewModel.params.value.edgePolishPercent.toString()
+        mainViewModel.updateLive { p -> p.copy(rmbgAlphaStrengthPercent = prefs.getInt(
             PREF_RMBG_ALPHA_STRENGTH_PERCENT,
             DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT,
-        ).coerceIn(MIN_RMBG_ALPHA_STRENGTH_PERCENT, MAX_RMBG_ALPHA_STRENGTH_PERCENT)
-        draftRmbgAlphaStrengthText = rmbgAlphaStrengthPercent.toString()
-        rmbgEdgeFeatherPercent = prefs.getInt(
+        ).coerceIn(MIN_RMBG_ALPHA_STRENGTH_PERCENT, MAX_RMBG_ALPHA_STRENGTH_PERCENT)) }
+        draftRmbgAlphaStrengthText = mainViewModel.params.value.rmbgAlphaStrengthPercent.toString()
+        mainViewModel.updateLive { p -> p.copy(rmbgEdgeFeatherPercent = prefs.getInt(
             PREF_RMBG_EDGE_FEATHER_PERCENT,
             DEFAULT_RMBG_EDGE_FEATHER_PERCENT,
-        ).coerceIn(MIN_RMBG_EDGE_FEATHER_PERCENT, MAX_RMBG_EDGE_FEATHER_PERCENT)
-        draftRmbgEdgeFeatherText = rmbgEdgeFeatherPercent.toString()
-        rmbgEdgeAdjustPercent = prefs.getInt(
+        ).coerceIn(MIN_RMBG_EDGE_FEATHER_PERCENT, MAX_RMBG_EDGE_FEATHER_PERCENT)) }
+        draftRmbgEdgeFeatherText = mainViewModel.params.value.rmbgEdgeFeatherPercent.toString()
+        mainViewModel.updateLive { p -> p.copy(rmbgEdgeAdjustPercent = prefs.getInt(
             PREF_RMBG_EDGE_ADJUST_PERCENT,
             DEFAULT_RMBG_EDGE_ADJUST_PERCENT,
-        ).coerceIn(MIN_RMBG_EDGE_ADJUST_PERCENT, MAX_RMBG_EDGE_ADJUST_PERCENT)
-        draftRmbgEdgeAdjustText = rmbgEdgeAdjustPercent.toString()
-        rmbgWeakAlphaKeepPercent = prefs.getInt(
+        ).coerceIn(MIN_RMBG_EDGE_ADJUST_PERCENT, MAX_RMBG_EDGE_ADJUST_PERCENT)) }
+        draftRmbgEdgeAdjustText = mainViewModel.params.value.rmbgEdgeAdjustPercent.toString()
+        mainViewModel.updateLive { p -> p.copy(rmbgWeakAlphaKeepPercent = prefs.getInt(
             PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT,
             DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-        ).coerceIn(MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT, MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT)
-        draftRmbgWeakAlphaKeepText = rmbgWeakAlphaKeepPercent.toString()
-        adaptiveForegroundMode = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
+        ).coerceIn(MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT, MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT)) }
+        draftRmbgWeakAlphaKeepText = mainViewModel.params.value.rmbgWeakAlphaKeepPercent.toString()
+        mainViewModel.updateLive { p -> p.copy(adaptiveForegroundMode = (if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             AdaptiveForegroundMode.Auto
         } else {
             AdaptiveForegroundMode.fromValue(
                 prefs.getString(PREF_ADAPTIVE_FOREGROUND_MODE, AdaptiveForegroundMode.Auto.value),
             )
-        }
-        adaptiveDirectMaxCoveragePercent = prefs.getInt(
+        }).value) }
+        mainViewModel.updateLive { p -> p.copy(adaptiveDirectMaxCoveragePercent = prefs.getInt(
             PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT,
             DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT,
-        ).coerceIn(MIN_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, MAX_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT)
-        adaptiveDirectMaxCoverageIncreasePercent = prefs.getInt(
+        ).coerceIn(MIN_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, MAX_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT)) }
+        mainViewModel.updateLive { p -> p.copy(adaptiveDirectMaxCoverageIncreasePercent = prefs.getInt(
             PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT,
             DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT,
         ).coerceIn(
             MIN_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT,
             MAX_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT,
-        )
-        adaptiveMaskEdgeCoveragePercent = prefs.getInt(
+        )) }
+        mainViewModel.updateLive { p -> p.copy(adaptiveMaskEdgeCoveragePercent = prefs.getInt(
             PREF_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT,
             DEFAULT_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT,
-        ).coerceIn(MIN_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT, MAX_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT)
-        adaptiveMaskMinCoveragePercent = prefs.getInt(
+        ).coerceIn(MIN_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT, MAX_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT)) }
+        mainViewModel.updateLive { p -> p.copy(adaptiveMaskMinCoveragePercent = prefs.getInt(
             PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT,
             DEFAULT_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT,
-        ).coerceIn(MIN_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, MAX_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT)
-        adaptiveCenterEpsilonPercent = prefs.getInt(
+        ).coerceIn(MIN_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, MAX_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT)) }
+        mainViewModel.updateLive { p -> p.copy(adaptiveCenterEpsilonPercent = prefs.getInt(
             PREF_ADAPTIVE_CENTER_EPSILON_PERCENT,
             DEFAULT_ADAPTIVE_CENTER_EPSILON_PERCENT,
-        ).coerceIn(MIN_ADAPTIVE_CENTER_EPSILON_PERCENT, MAX_ADAPTIVE_CENTER_EPSILON_PERCENT)
-        originalForegroundCleanupMode = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
+        ).coerceIn(MIN_ADAPTIVE_CENTER_EPSILON_PERCENT, MAX_ADAPTIVE_CENTER_EPSILON_PERCENT)) }
+        mainViewModel.updateLive { p -> p.copy(originalForegroundCleanupMode = (if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
             OriginalForegroundCleanupMode.Auto
         } else {
             OriginalForegroundCleanupMode.fromValue(
                 prefs.getString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, OriginalForegroundCleanupMode.Auto.value),
             )
-        }
-        localBackgroundSeparationEnabled = prefs.getBoolean(PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED, true)
-        localAdaptiveSelectionEnabled = prefs.getBoolean(PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED, true)
-        localCornerMaskCleanupEnabled = prefs.getBoolean(PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED, true)
-        localAlphaEdgeColorRepairEnabled = prefs.getBoolean(PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED, true)
-        localPlainBackgroundEstimationEnabled = prefs.getBoolean(PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED, true)
-        localOriginalCleanupEnabled = prefs.getBoolean(PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED, true)
-        localPlateCleanupEnabled = prefs.getBoolean(PREF_LOCAL_PLATE_CLEANUP_ENABLED, true)
-        localPlateEdgeRepairEnabled = prefs.getBoolean(PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED, true)
-        localPlateResidueCleanupEnabled = prefs.getBoolean(PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED, true)
-        localShadowCleanupEnabled = prefs.getBoolean(PREF_LOCAL_SHADOW_CLEANUP_ENABLED, true)
-        localShadowEdgeRepairEnabled = prefs.getBoolean(PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED, true)
-        localEdgeTrimEnabled = prefs.getBoolean(PREF_LOCAL_EDGE_TRIM_ENABLED, true)
-        localComposedBackgroundEnabled = prefs.getBoolean(PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED, true)
-        localTwoLayerCandidateEnabled = prefs.getBoolean(PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED, true)
-        localComponentCandidatesEnabled = prefs.getBoolean(PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED, true)
-        localTextSafeCandidateEnabled = prefs.getBoolean(PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED, true)
-        localAutoSelectionEnabled = prefs.getBoolean(PREF_LOCAL_AUTO_SELECTION_ENABLED, true)
-        localEdgePolishEnabled = prefs.getBoolean(PREF_LOCAL_EDGE_POLISH_ENABLED, true)
-        nightSubjectLightBackgroundEnabled = prefs.getBoolean(
+        }).value) }
+        mainViewModel.updateLive { p -> p.copy(localBackgroundSeparationEnabled = prefs.getBoolean(PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localAdaptiveSelectionEnabled = prefs.getBoolean(PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localCornerMaskCleanupEnabled = prefs.getBoolean(PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localAlphaEdgeColorRepairEnabled = prefs.getBoolean(PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localPlainBackgroundEstimationEnabled = prefs.getBoolean(PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localOriginalCleanupEnabled = prefs.getBoolean(PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localPlateCleanupEnabled = prefs.getBoolean(PREF_LOCAL_PLATE_CLEANUP_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localPlateEdgeRepairEnabled = prefs.getBoolean(PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localPlateResidueCleanupEnabled = prefs.getBoolean(PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localShadowCleanupEnabled = prefs.getBoolean(PREF_LOCAL_SHADOW_CLEANUP_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localShadowEdgeRepairEnabled = prefs.getBoolean(PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localEdgeTrimEnabled = prefs.getBoolean(PREF_LOCAL_EDGE_TRIM_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localComposedBackgroundEnabled = prefs.getBoolean(PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localTwoLayerCandidateEnabled = prefs.getBoolean(PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localComponentCandidatesEnabled = prefs.getBoolean(PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localTextSafeCandidateEnabled = prefs.getBoolean(PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localAutoSelectionEnabled = prefs.getBoolean(PREF_LOCAL_AUTO_SELECTION_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(localEdgePolishEnabled = prefs.getBoolean(PREF_LOCAL_EDGE_POLISH_ENABLED, true)) }
+        mainViewModel.updateLive { p -> p.copy(nightSubjectLightBackgroundEnabled = prefs.getBoolean(
             PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED,
             false,
-        )
+        )) }
         prefs.edit()
-            .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, foregroundSubjectPercent)
-            .putInt(PREF_FOREGROUND_SHADOW_LEVEL, foregroundShadowLevel)
-            .putFloat(PREF_MONOCHROME_THEME_SCALE, monochromeThemeScale)
-            .putInt(PREF_BACKGROUND_SEPARATION_PERCENT, backgroundSeparationPercent)
-            .putInt(PREF_PLATE_REMOVAL_PERCENT, plateRemovalPercent)
-            .putInt(PREF_SHADOW_REMOVAL_PERCENT, shadowRemovalPercent)
-            .putInt(PREF_EDGE_POLISH_PERCENT, edgePolishPercent)
-            .putInt(PREF_RMBG_ALPHA_STRENGTH_PERCENT, rmbgAlphaStrengthPercent)
-            .putInt(PREF_RMBG_EDGE_FEATHER_PERCENT, rmbgEdgeFeatherPercent)
-            .putInt(PREF_RMBG_EDGE_ADJUST_PERCENT, rmbgEdgeAdjustPercent)
-            .putInt(PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT, rmbgWeakAlphaKeepPercent)
-            .putString(PREF_ADAPTIVE_FOREGROUND_MODE, adaptiveForegroundMode.value)
-            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, adaptiveDirectMaxCoveragePercent)
-            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, adaptiveDirectMaxCoverageIncreasePercent)
-            .putInt(PREF_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT, adaptiveMaskEdgeCoveragePercent)
-            .putInt(PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, adaptiveMaskMinCoveragePercent)
-            .putInt(PREF_ADAPTIVE_CENTER_EPSILON_PERCENT, adaptiveCenterEpsilonPercent)
-            .putString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, originalForegroundCleanupMode.value)
-            .putBoolean(PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED, localBackgroundSeparationEnabled)
-            .putBoolean(PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED, localAdaptiveSelectionEnabled)
-            .putBoolean(PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED, localCornerMaskCleanupEnabled)
-            .putBoolean(PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED, localAlphaEdgeColorRepairEnabled)
-            .putBoolean(PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED, localPlainBackgroundEstimationEnabled)
-            .putBoolean(PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED, localOriginalCleanupEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_CLEANUP_ENABLED, localPlateCleanupEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED, localPlateEdgeRepairEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED, localPlateResidueCleanupEnabled)
-            .putBoolean(PREF_LOCAL_SHADOW_CLEANUP_ENABLED, localShadowCleanupEnabled)
-            .putBoolean(PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED, localShadowEdgeRepairEnabled)
-            .putBoolean(PREF_LOCAL_EDGE_TRIM_ENABLED, localEdgeTrimEnabled)
-            .putBoolean(PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED, localComposedBackgroundEnabled)
-            .putBoolean(PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED, localTwoLayerCandidateEnabled)
-            .putBoolean(PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED, localComponentCandidatesEnabled)
-            .putBoolean(PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED, localTextSafeCandidateEnabled)
-            .putBoolean(PREF_LOCAL_AUTO_SELECTION_ENABLED, localAutoSelectionEnabled)
-            .putBoolean(PREF_LOCAL_EDGE_POLISH_ENABLED, localEdgePolishEnabled)
-            .putBoolean(PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED, nightSubjectLightBackgroundEnabled)
+            .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, mainViewModel.params.value.foregroundSubjectPercent)
+            .putInt(PREF_FOREGROUND_SHADOW_LEVEL, mainViewModel.params.value.foregroundShadowLevel)
+            .putFloat(PREF_MONOCHROME_THEME_SCALE, mainViewModel.params.value.monochromeThemeScale)
+            .putInt(PREF_BACKGROUND_SEPARATION_PERCENT, mainViewModel.params.value.backgroundSeparationPercent)
+            .putInt(PREF_PLATE_REMOVAL_PERCENT, mainViewModel.params.value.plateRemovalPercent)
+            .putInt(PREF_SHADOW_REMOVAL_PERCENT, mainViewModel.params.value.shadowRemovalPercent)
+            .putInt(PREF_EDGE_POLISH_PERCENT, mainViewModel.params.value.edgePolishPercent)
+            .putInt(PREF_RMBG_ALPHA_STRENGTH_PERCENT, mainViewModel.params.value.rmbgAlphaStrengthPercent)
+            .putInt(PREF_RMBG_EDGE_FEATHER_PERCENT, mainViewModel.params.value.rmbgEdgeFeatherPercent)
+            .putInt(PREF_RMBG_EDGE_ADJUST_PERCENT, mainViewModel.params.value.rmbgEdgeAdjustPercent)
+            .putInt(PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT, mainViewModel.params.value.rmbgWeakAlphaKeepPercent)
+            .putString(PREF_ADAPTIVE_FOREGROUND_MODE, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode).value)
+            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveDirectMaxCoveragePercent)
+            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent)
+            .putInt(PREF_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent)
+            .putInt(PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveMaskMinCoveragePercent)
+            .putInt(PREF_ADAPTIVE_CENTER_EPSILON_PERCENT, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
+            .putString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode).value)
+            .putBoolean(PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED, mainViewModel.params.value.localBackgroundSeparationEnabled)
+            .putBoolean(PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED, mainViewModel.params.value.localAdaptiveSelectionEnabled)
+            .putBoolean(PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED, mainViewModel.params.value.localCornerMaskCleanupEnabled)
+            .putBoolean(PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED, mainViewModel.params.value.localAlphaEdgeColorRepairEnabled)
+            .putBoolean(PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED, mainViewModel.params.value.localPlainBackgroundEstimationEnabled)
+            .putBoolean(PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED, mainViewModel.params.value.localOriginalCleanupEnabled)
+            .putBoolean(PREF_LOCAL_PLATE_CLEANUP_ENABLED, mainViewModel.params.value.localPlateCleanupEnabled)
+            .putBoolean(PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED, mainViewModel.params.value.localPlateEdgeRepairEnabled)
+            .putBoolean(PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED, mainViewModel.params.value.localPlateResidueCleanupEnabled)
+            .putBoolean(PREF_LOCAL_SHADOW_CLEANUP_ENABLED, mainViewModel.params.value.localShadowCleanupEnabled)
+            .putBoolean(PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED, mainViewModel.params.value.localShadowEdgeRepairEnabled)
+            .putBoolean(PREF_LOCAL_EDGE_TRIM_ENABLED, mainViewModel.params.value.localEdgeTrimEnabled)
+            .putBoolean(PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED, mainViewModel.params.value.localComposedBackgroundEnabled)
+            .putBoolean(PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED, mainViewModel.params.value.localTwoLayerCandidateEnabled)
+            .putBoolean(PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED, mainViewModel.params.value.localComponentCandidatesEnabled)
+            .putBoolean(PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED, mainViewModel.params.value.localTextSafeCandidateEnabled)
+            .putBoolean(PREF_LOCAL_AUTO_SELECTION_ENABLED, mainViewModel.params.value.localAutoSelectionEnabled)
+            .putBoolean(PREF_LOCAL_EDGE_POLISH_ENABLED, mainViewModel.params.value.localEdgePolishEnabled)
+            .putBoolean(PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED, mainViewModel.params.value.nightSubjectLightBackgroundEnabled)
             .putInt(PREF_IMAGE_TUNING_VERSION, CURRENT_IMAGE_TUNING_VERSION)
             .putBoolean(PREF_FOREGROUND_SUBJECT_PERCENT_MIGRATED, true)
             .apply()
     }
 
     internal fun updateForegroundSubjectPercent(value: Int) {
-        foregroundSubjectPercent = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(foregroundSubjectPercent = value.coerceIn(
             MIN_FOREGROUND_SUBJECT_PERCENT,
             MAX_FOREGROUND_SUBJECT_PERCENT,
-        )
-        draftForegroundSubjectPercentText = foregroundSubjectPercent.toString()
+        )) }
+        draftForegroundSubjectPercentText = mainViewModel.params.value.foregroundSubjectPercent.toString()
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
-            .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, foregroundSubjectPercent)
+            .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, mainViewModel.params.value.foregroundSubjectPercent)
             .apply()
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
     internal fun updateForegroundShadowLevel(value: Int) {
-        foregroundShadowLevel = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(foregroundShadowLevel = value.coerceIn(
             MIN_FOREGROUND_SHADOW_LEVEL,
             MAX_FOREGROUND_SHADOW_LEVEL,
-        )
-        draftForegroundShadowLevelText = foregroundShadowLevel.toString()
+        )) }
+        draftForegroundShadowLevelText = mainViewModel.params.value.foregroundShadowLevel.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
@@ -6592,91 +6530,91 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateMonochromeThemeScalePercent(value: Int) {
         val percent = value.coerceIn(MIN_MONOCHROME_THEME_SCALE_PERCENT, MAX_MONOCHROME_THEME_SCALE_PERCENT)
-        monochromeThemeScale = (percent.toFloat() / 100f).coerceIn(
+        mainViewModel.updateLive { p -> p.copy(monochromeThemeScale = (percent.toFloat() / 100f).coerceIn(
             MIN_MONOCHROME_THEME_SCALE,
             MAX_MONOCHROME_THEME_SCALE,
-        )
+        )) }
         draftMonochromeThemeScaleText = percent.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
     internal fun updateBackgroundSeparationPercent(value: Int) {
-        backgroundSeparationPercent = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(backgroundSeparationPercent = value.coerceIn(
             MIN_BACKGROUND_SEPARATION_PERCENT,
             MAX_BACKGROUND_SEPARATION_PERCENT,
-        )
-        draftBackgroundSeparationText = backgroundSeparationPercent.toString()
+        )) }
+        draftBackgroundSeparationText = mainViewModel.params.value.backgroundSeparationPercent.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = true)
     }
 
     internal fun updatePlateRemovalPercent(value: Int) {
-        plateRemovalPercent = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(plateRemovalPercent = value.coerceIn(
             MIN_PLATE_REMOVAL_PERCENT,
             MAX_PLATE_REMOVAL_PERCENT,
-        )
-        draftPlateRemovalText = plateRemovalPercent.toString()
+        )) }
+        draftPlateRemovalText = mainViewModel.params.value.plateRemovalPercent.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = true)
     }
 
     internal fun updateShadowRemovalPercent(value: Int) {
-        shadowRemovalPercent = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(shadowRemovalPercent = value.coerceIn(
             MIN_SHADOW_REMOVAL_PERCENT,
             MAX_SHADOW_REMOVAL_PERCENT,
-        )
-        draftShadowRemovalText = shadowRemovalPercent.toString()
+        )) }
+        draftShadowRemovalText = mainViewModel.params.value.shadowRemovalPercent.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = true)
     }
 
     internal fun updateEdgePolishPercent(value: Int) {
-        edgePolishPercent = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(edgePolishPercent = value.coerceIn(
             MIN_EDGE_POLISH_PERCENT,
             MAX_EDGE_POLISH_PERCENT,
-        )
-        draftEdgePolishText = edgePolishPercent.toString()
+        )) }
+        draftEdgePolishText = mainViewModel.params.value.edgePolishPercent.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
     internal fun updateRmbgAlphaStrengthPercent(value: Int) {
-        rmbgAlphaStrengthPercent = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(rmbgAlphaStrengthPercent = value.coerceIn(
             MIN_RMBG_ALPHA_STRENGTH_PERCENT,
             MAX_RMBG_ALPHA_STRENGTH_PERCENT,
-        )
-        draftRmbgAlphaStrengthText = rmbgAlphaStrengthPercent.toString()
+        )) }
+        draftRmbgAlphaStrengthText = mainViewModel.params.value.rmbgAlphaStrengthPercent.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
     internal fun updateRmbgEdgeFeatherPercent(value: Int) {
-        rmbgEdgeFeatherPercent = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(rmbgEdgeFeatherPercent = value.coerceIn(
             MIN_RMBG_EDGE_FEATHER_PERCENT,
             MAX_RMBG_EDGE_FEATHER_PERCENT,
-        )
-        draftRmbgEdgeFeatherText = rmbgEdgeFeatherPercent.toString()
+        )) }
+        draftRmbgEdgeFeatherText = mainViewModel.params.value.rmbgEdgeFeatherPercent.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
     internal fun updateRmbgEdgeAdjustPercent(value: Int) {
-        rmbgEdgeAdjustPercent = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(rmbgEdgeAdjustPercent = value.coerceIn(
             MIN_RMBG_EDGE_ADJUST_PERCENT,
             MAX_RMBG_EDGE_ADJUST_PERCENT,
-        )
-        draftRmbgEdgeAdjustText = rmbgEdgeAdjustPercent.toString()
+        )) }
+        draftRmbgEdgeAdjustText = mainViewModel.params.value.rmbgEdgeAdjustPercent.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
     internal fun updateRmbgWeakAlphaKeepPercent(value: Int) {
-        rmbgWeakAlphaKeepPercent = value.coerceIn(
+        mainViewModel.updateLive { p -> p.copy(rmbgWeakAlphaKeepPercent = value.coerceIn(
             MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
             MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-        )
-        draftRmbgWeakAlphaKeepText = rmbgWeakAlphaKeepPercent.toString()
+        )) }
+        draftRmbgWeakAlphaKeepText = mainViewModel.params.value.rmbgWeakAlphaKeepPercent.toString()
         saveImageTuningSettings()
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
@@ -6718,108 +6656,50 @@ class MainActivity : ComponentActivity() {
     internal fun saveImageTuningSettings() {
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
-            .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, foregroundSubjectPercent)
-            .putInt(PREF_FOREGROUND_SHADOW_LEVEL, foregroundShadowLevel)
-            .putFloat(PREF_MONOCHROME_THEME_SCALE, monochromeThemeScale)
-            .putInt(PREF_BACKGROUND_SEPARATION_PERCENT, backgroundSeparationPercent)
-            .putInt(PREF_PLATE_REMOVAL_PERCENT, plateRemovalPercent)
-            .putInt(PREF_SHADOW_REMOVAL_PERCENT, shadowRemovalPercent)
-            .putInt(PREF_EDGE_POLISH_PERCENT, edgePolishPercent)
-            .putInt(PREF_RMBG_ALPHA_STRENGTH_PERCENT, rmbgAlphaStrengthPercent)
-            .putInt(PREF_RMBG_EDGE_FEATHER_PERCENT, rmbgEdgeFeatherPercent)
-            .putInt(PREF_RMBG_EDGE_ADJUST_PERCENT, rmbgEdgeAdjustPercent)
-            .putInt(PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT, rmbgWeakAlphaKeepPercent)
-            .putString(PREF_ADAPTIVE_FOREGROUND_MODE, adaptiveForegroundMode.value)
-            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, adaptiveDirectMaxCoveragePercent)
-            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, adaptiveDirectMaxCoverageIncreasePercent)
-            .putInt(PREF_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT, adaptiveMaskEdgeCoveragePercent)
-            .putInt(PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, adaptiveMaskMinCoveragePercent)
-            .putInt(PREF_ADAPTIVE_CENTER_EPSILON_PERCENT, adaptiveCenterEpsilonPercent)
-            .putString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, originalForegroundCleanupMode.value)
-            .putBoolean(PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED, localBackgroundSeparationEnabled)
-            .putBoolean(PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED, localAdaptiveSelectionEnabled)
-            .putBoolean(PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED, localCornerMaskCleanupEnabled)
-            .putBoolean(PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED, localAlphaEdgeColorRepairEnabled)
-            .putBoolean(PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED, localPlainBackgroundEstimationEnabled)
-            .putBoolean(PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED, localOriginalCleanupEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_CLEANUP_ENABLED, localPlateCleanupEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED, localPlateEdgeRepairEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED, localPlateResidueCleanupEnabled)
-            .putBoolean(PREF_LOCAL_SHADOW_CLEANUP_ENABLED, localShadowCleanupEnabled)
-            .putBoolean(PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED, localShadowEdgeRepairEnabled)
-            .putBoolean(PREF_LOCAL_EDGE_TRIM_ENABLED, localEdgeTrimEnabled)
-            .putBoolean(PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED, localComposedBackgroundEnabled)
-            .putBoolean(PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED, localTwoLayerCandidateEnabled)
-            .putBoolean(PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED, localComponentCandidatesEnabled)
-            .putBoolean(PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED, localTextSafeCandidateEnabled)
-            .putBoolean(PREF_LOCAL_AUTO_SELECTION_ENABLED, localAutoSelectionEnabled)
-            .putBoolean(PREF_LOCAL_EDGE_POLISH_ENABLED, localEdgePolishEnabled)
-            .putBoolean(PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED, nightSubjectLightBackgroundEnabled)
+            .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, mainViewModel.params.value.foregroundSubjectPercent)
+            .putInt(PREF_FOREGROUND_SHADOW_LEVEL, mainViewModel.params.value.foregroundShadowLevel)
+            .putFloat(PREF_MONOCHROME_THEME_SCALE, mainViewModel.params.value.monochromeThemeScale)
+            .putInt(PREF_BACKGROUND_SEPARATION_PERCENT, mainViewModel.params.value.backgroundSeparationPercent)
+            .putInt(PREF_PLATE_REMOVAL_PERCENT, mainViewModel.params.value.plateRemovalPercent)
+            .putInt(PREF_SHADOW_REMOVAL_PERCENT, mainViewModel.params.value.shadowRemovalPercent)
+            .putInt(PREF_EDGE_POLISH_PERCENT, mainViewModel.params.value.edgePolishPercent)
+            .putInt(PREF_RMBG_ALPHA_STRENGTH_PERCENT, mainViewModel.params.value.rmbgAlphaStrengthPercent)
+            .putInt(PREF_RMBG_EDGE_FEATHER_PERCENT, mainViewModel.params.value.rmbgEdgeFeatherPercent)
+            .putInt(PREF_RMBG_EDGE_ADJUST_PERCENT, mainViewModel.params.value.rmbgEdgeAdjustPercent)
+            .putInt(PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT, mainViewModel.params.value.rmbgWeakAlphaKeepPercent)
+            .putString(PREF_ADAPTIVE_FOREGROUND_MODE, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode).value)
+            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveDirectMaxCoveragePercent)
+            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent)
+            .putInt(PREF_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent)
+            .putInt(PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveMaskMinCoveragePercent)
+            .putInt(PREF_ADAPTIVE_CENTER_EPSILON_PERCENT, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
+            .putString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode).value)
+            .putBoolean(PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED, mainViewModel.params.value.localBackgroundSeparationEnabled)
+            .putBoolean(PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED, mainViewModel.params.value.localAdaptiveSelectionEnabled)
+            .putBoolean(PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED, mainViewModel.params.value.localCornerMaskCleanupEnabled)
+            .putBoolean(PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED, mainViewModel.params.value.localAlphaEdgeColorRepairEnabled)
+            .putBoolean(PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED, mainViewModel.params.value.localPlainBackgroundEstimationEnabled)
+            .putBoolean(PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED, mainViewModel.params.value.localOriginalCleanupEnabled)
+            .putBoolean(PREF_LOCAL_PLATE_CLEANUP_ENABLED, mainViewModel.params.value.localPlateCleanupEnabled)
+            .putBoolean(PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED, mainViewModel.params.value.localPlateEdgeRepairEnabled)
+            .putBoolean(PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED, mainViewModel.params.value.localPlateResidueCleanupEnabled)
+            .putBoolean(PREF_LOCAL_SHADOW_CLEANUP_ENABLED, mainViewModel.params.value.localShadowCleanupEnabled)
+            .putBoolean(PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED, mainViewModel.params.value.localShadowEdgeRepairEnabled)
+            .putBoolean(PREF_LOCAL_EDGE_TRIM_ENABLED, mainViewModel.params.value.localEdgeTrimEnabled)
+            .putBoolean(PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED, mainViewModel.params.value.localComposedBackgroundEnabled)
+            .putBoolean(PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED, mainViewModel.params.value.localTwoLayerCandidateEnabled)
+            .putBoolean(PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED, mainViewModel.params.value.localComponentCandidatesEnabled)
+            .putBoolean(PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED, mainViewModel.params.value.localTextSafeCandidateEnabled)
+            .putBoolean(PREF_LOCAL_AUTO_SELECTION_ENABLED, mainViewModel.params.value.localAutoSelectionEnabled)
+            .putBoolean(PREF_LOCAL_EDGE_POLISH_ENABLED, mainViewModel.params.value.localEdgePolishEnabled)
+            .putBoolean(PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED, mainViewModel.params.value.nightSubjectLightBackgroundEnabled)
             .putInt(PREF_IMAGE_TUNING_VERSION, CURRENT_IMAGE_TUNING_VERSION)
             .apply()
     }
 
     /** 汇总当前全部调参字段为不可变快照（预设保存、撤销、debug 往返共用）。 */
     internal fun currentTuningParams(): TuningParams =
-        TuningParams(
-            foregroundSubjectPercent = foregroundSubjectPercent,
-            foregroundShadowLevel = foregroundShadowLevel,
-            monochromeThemeScale = monochromeThemeScale,
-            backgroundSeparationPercent = backgroundSeparationPercent,
-            plateRemovalPercent = plateRemovalPercent,
-            shadowRemovalPercent = shadowRemovalPercent,
-            edgePolishPercent = edgePolishPercent,
-            rmbgAlphaStrengthPercent = rmbgAlphaStrengthPercent,
-            rmbgEdgeFeatherPercent = rmbgEdgeFeatherPercent,
-            rmbgEdgeAdjustPercent = rmbgEdgeAdjustPercent,
-            rmbgWeakAlphaKeepPercent = rmbgWeakAlphaKeepPercent,
-            liquidGlassEnabled = liquidGlassEnabled,
-            liquidGlassRadius = liquidGlassRadius,
-            liquidGlassOuterWidth = liquidGlassOuterWidth,
-            liquidGlassTopAlpha = liquidGlassTopAlpha,
-            liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-            liquidGlassBackgroundMistAlpha = liquidGlassBackgroundMistAlpha,
-            liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-            liquidGlassSubjectScalePercent = liquidGlassSubjectScalePercent,
-            liquidGlassSubjectOutlineWidth = liquidGlassSubjectOutlineWidth,
-            liquidGlassSubjectInnerOutlineWidth = liquidGlassSubjectInnerOutlineWidth,
-            liquidGlassSubjectShadowAlpha = liquidGlassSubjectShadowAlpha,
-            liquidGlassSubjectOpacityPercent = liquidGlassSubjectOpacityPercent,
-            adaptiveForegroundMode = adaptiveForegroundMode.value,
-            adaptiveDirectMaxCoveragePercent = adaptiveDirectMaxCoveragePercent,
-            adaptiveDirectMaxCoverageIncreasePercent = adaptiveDirectMaxCoverageIncreasePercent,
-            adaptiveMaskEdgeCoveragePercent = adaptiveMaskEdgeCoveragePercent,
-            adaptiveMaskMinCoveragePercent = adaptiveMaskMinCoveragePercent,
-            adaptiveCenterEpsilonPercent = adaptiveCenterEpsilonPercent,
-            originalForegroundCleanupMode = originalForegroundCleanupMode.value,
-            localBackgroundSeparationEnabled = localBackgroundSeparationEnabled,
-            localAdaptiveSelectionEnabled = localAdaptiveSelectionEnabled,
-            localCornerMaskCleanupEnabled = localCornerMaskCleanupEnabled,
-            localAlphaEdgeColorRepairEnabled = localAlphaEdgeColorRepairEnabled,
-            localPlainBackgroundEstimationEnabled = localPlainBackgroundEstimationEnabled,
-            localOriginalCleanupEnabled = localOriginalCleanupEnabled,
-            localPlateCleanupEnabled = localPlateCleanupEnabled,
-            localPlateEdgeRepairEnabled = localPlateEdgeRepairEnabled,
-            localPlateResidueCleanupEnabled = localPlateResidueCleanupEnabled,
-            localShadowCleanupEnabled = localShadowCleanupEnabled,
-            localShadowEdgeRepairEnabled = localShadowEdgeRepairEnabled,
-            localEdgeTrimEnabled = localEdgeTrimEnabled,
-            localComposedBackgroundEnabled = localComposedBackgroundEnabled,
-            localTwoLayerCandidateEnabled = localTwoLayerCandidateEnabled,
-            localComponentCandidatesEnabled = localComponentCandidatesEnabled,
-            localTextSafeCandidateEnabled = localTextSafeCandidateEnabled,
-            localAutoSelectionEnabled = localAutoSelectionEnabled,
-            localEdgePolishEnabled = localEdgePolishEnabled,
-            nightSubjectLightBackgroundEnabled = nightSubjectLightBackgroundEnabled,
-            localSeparationMode = localSeparationMode.value,
-            gptImageMode = gptImageMode.value,
-            gptPromptPreset = gptPromptPreset.value,
-            gptCustomPrompt = gptCustomPrompt,
-            previewNormalLight = previewSelections.normalLight.name,
-            previewNormalDark = previewSelections.normalDark.name,
-            previewMonochromeLight = previewSelections.monochromeLight.name,
-            previewMonochromeDark = previewSelections.monochromeDark.name,
-        )
+        mainViewModel.params.value
 
     internal fun currentLocalPipelineConfig(): LocalPipelineConfig =
         LocalPipelineConfig.from(currentTuningParams())
@@ -6842,87 +6722,28 @@ class MainActivity : ComponentActivity() {
         // P2 交界：历史/快照单源在 MainViewModel，用快照显式同步（VM 不读 Activity 字段）；
         // 186 live vars 仍是 UI 真源（P5 重写），applied 传本函数收到的快照参数。
         mainViewModel.onParamsApplied(before = before, applied = params, captureUndo = captureUndo)
-        foregroundSubjectPercent = params.foregroundSubjectPercent
-        draftForegroundSubjectPercentText = foregroundSubjectPercent.toString()
-        foregroundShadowLevel = params.foregroundShadowLevel
-        draftForegroundShadowLevelText = foregroundShadowLevel.toString()
-        monochromeThemeScale = params.monochromeThemeScale
-        draftMonochromeThemeScaleText = (monochromeThemeScale * 100).roundToInt().toString()
-        backgroundSeparationPercent = params.backgroundSeparationPercent
-        draftBackgroundSeparationText = backgroundSeparationPercent.toString()
-        plateRemovalPercent = params.plateRemovalPercent
-        draftPlateRemovalText = plateRemovalPercent.toString()
-        shadowRemovalPercent = params.shadowRemovalPercent
-        draftShadowRemovalText = shadowRemovalPercent.toString()
-        edgePolishPercent = params.edgePolishPercent
-        draftEdgePolishText = edgePolishPercent.toString()
-        rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent
-        draftRmbgAlphaStrengthText = rmbgAlphaStrengthPercent.toString()
-        rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent
-        draftRmbgEdgeFeatherText = rmbgEdgeFeatherPercent.toString()
-        rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent
-        draftRmbgEdgeAdjustText = rmbgEdgeAdjustPercent.toString()
-        rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent
-        draftRmbgWeakAlphaKeepText = rmbgWeakAlphaKeepPercent.toString()
-        liquidGlassEnabled = params.liquidGlassEnabled
-        liquidGlassRadius = params.liquidGlassRadius
-        draftLiquidGlassRadiusText = liquidGlassRadius.toString()
-        liquidGlassOuterWidth = params.liquidGlassOuterWidth
-        draftLiquidGlassOuterWidthText = liquidGlassOuterWidth.toString()
-        liquidGlassTopAlpha = params.liquidGlassTopAlpha
-        draftLiquidGlassTopAlphaText = liquidGlassTopAlpha.toString()
-        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha
-        draftLiquidGlassBottomAlphaText = liquidGlassBottomAlpha.toString()
-        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha
-        draftLiquidGlassBackgroundMistAlphaText = liquidGlassBackgroundMistAlpha.toString()
-        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha
-        draftLiquidGlassBottomDarkAlphaText = liquidGlassBottomDarkAlpha.toString()
-        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent
-        draftLiquidGlassSubjectScaleText = liquidGlassSubjectScalePercent.toString()
-        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth
-        draftLiquidGlassSubjectOutlineWidthText = liquidGlassSubjectOutlineWidth.toString()
-        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth
-        draftLiquidGlassSubjectInnerOutlineWidthText = liquidGlassSubjectInnerOutlineWidth.toString()
-        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha
-        draftLiquidGlassSubjectShadowAlphaText = liquidGlassSubjectShadowAlpha.toString()
-        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent
-        draftLiquidGlassSubjectOpacityText = liquidGlassSubjectOpacityPercent.toString()
-        adaptiveForegroundMode = AdaptiveForegroundMode.fromValue(params.adaptiveForegroundMode)
-        adaptiveDirectMaxCoveragePercent = params.adaptiveDirectMaxCoveragePercent
-        adaptiveDirectMaxCoverageIncreasePercent = params.adaptiveDirectMaxCoverageIncreasePercent
-        adaptiveMaskEdgeCoveragePercent = params.adaptiveMaskEdgeCoveragePercent
-        adaptiveMaskMinCoveragePercent = params.adaptiveMaskMinCoveragePercent
-        adaptiveCenterEpsilonPercent = params.adaptiveCenterEpsilonPercent
-        originalForegroundCleanupMode = OriginalForegroundCleanupMode.fromValue(params.originalForegroundCleanupMode)
-        localBackgroundSeparationEnabled = params.localBackgroundSeparationEnabled
-        localAdaptiveSelectionEnabled = params.localAdaptiveSelectionEnabled
-        localCornerMaskCleanupEnabled = params.localCornerMaskCleanupEnabled
-        localAlphaEdgeColorRepairEnabled = params.localAlphaEdgeColorRepairEnabled
-        localPlainBackgroundEstimationEnabled = params.localPlainBackgroundEstimationEnabled
-        localOriginalCleanupEnabled = params.localOriginalCleanupEnabled
-        localPlateCleanupEnabled = params.localPlateCleanupEnabled
-        localPlateEdgeRepairEnabled = params.localPlateEdgeRepairEnabled
-        localPlateResidueCleanupEnabled = params.localPlateResidueCleanupEnabled
-        localShadowCleanupEnabled = params.localShadowCleanupEnabled
-        localShadowEdgeRepairEnabled = params.localShadowEdgeRepairEnabled
-        localEdgeTrimEnabled = params.localEdgeTrimEnabled
-        localComposedBackgroundEnabled = params.localComposedBackgroundEnabled
-        localTwoLayerCandidateEnabled = params.localTwoLayerCandidateEnabled
-        localComponentCandidatesEnabled = params.localComponentCandidatesEnabled
-        localTextSafeCandidateEnabled = params.localTextSafeCandidateEnabled
-        localAutoSelectionEnabled = params.localAutoSelectionEnabled
-        localEdgePolishEnabled = params.localEdgePolishEnabled
-        nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled
-        localSeparationMode = LocalSeparationMode.fromValue(params.localSeparationMode)
-        gptImageMode = GptImageMode.fromValue(params.gptImageMode)
-        gptPromptPreset = GptPromptPreset.fromValue(params.gptPromptPreset)
-        gptCustomPrompt = params.gptCustomPrompt
-        previewSelections = PreviewSelections.fromNames(
-            params.previewNormalLight,
-            params.previewNormalDark,
-            params.previewMonochromeLight,
-            params.previewMonochromeDark,
-        )
+        draftForegroundSubjectPercentText = params.foregroundSubjectPercent.toString()
+        draftForegroundShadowLevelText = params.foregroundShadowLevel.toString()
+        draftMonochromeThemeScaleText = (params.monochromeThemeScale * 100).roundToInt().toString()
+        draftBackgroundSeparationText = params.backgroundSeparationPercent.toString()
+        draftPlateRemovalText = params.plateRemovalPercent.toString()
+        draftShadowRemovalText = params.shadowRemovalPercent.toString()
+        draftEdgePolishText = params.edgePolishPercent.toString()
+        draftRmbgAlphaStrengthText = params.rmbgAlphaStrengthPercent.toString()
+        draftRmbgEdgeFeatherText = params.rmbgEdgeFeatherPercent.toString()
+        draftRmbgEdgeAdjustText = params.rmbgEdgeAdjustPercent.toString()
+        draftRmbgWeakAlphaKeepText = params.rmbgWeakAlphaKeepPercent.toString()
+        draftLiquidGlassRadiusText = params.liquidGlassRadius.toString()
+        draftLiquidGlassOuterWidthText = params.liquidGlassOuterWidth.toString()
+        draftLiquidGlassTopAlphaText = params.liquidGlassTopAlpha.toString()
+        draftLiquidGlassBottomAlphaText = params.liquidGlassBottomAlpha.toString()
+        draftLiquidGlassBackgroundMistAlphaText = params.liquidGlassBackgroundMistAlpha.toString()
+        draftLiquidGlassBottomDarkAlphaText = params.liquidGlassBottomDarkAlpha.toString()
+        draftLiquidGlassSubjectScaleText = params.liquidGlassSubjectScalePercent.toString()
+        draftLiquidGlassSubjectOutlineWidthText = params.liquidGlassSubjectOutlineWidth.toString()
+        draftLiquidGlassSubjectInnerOutlineWidthText = params.liquidGlassSubjectInnerOutlineWidth.toString()
+        draftLiquidGlassSubjectShadowAlphaText = params.liquidGlassSubjectShadowAlpha.toString()
+        draftLiquidGlassSubjectOpacityText = params.liquidGlassSubjectOpacityPercent.toString()
         draftJsonParamsText = params.toJson().toString(4)
         if (persist) {
             saveLocalSeparationSettings()
@@ -7030,10 +6851,10 @@ class MainActivity : ComponentActivity() {
     }
 
     internal fun updateNightSubjectLightBackgroundEnabled(enabled: Boolean) {
-        if (nightSubjectLightBackgroundEnabled == enabled) {
+        if (mainViewModel.params.value.nightSubjectLightBackgroundEnabled == enabled) {
             return
         }
-        nightSubjectLightBackgroundEnabled = enabled
+        mainViewModel.updateLive { p -> p.copy(nightSubjectLightBackgroundEnabled = enabled) }
         saveImageTuningSettings()
         statusText = if (enabled) {
             "标准暗色已开启填充背景色"
@@ -7126,66 +6947,66 @@ class MainActivity : ComponentActivity() {
     internal fun loadLiquidGlassSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val migratedToLayered = prefs.getBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, false)
-        liquidGlassEnabled = if (migratedToLayered) {
+        mainViewModel.updateLive { p -> p.copy(liquidGlassEnabled = if (migratedToLayered) {
             prefs.getBoolean(PREF_LIQUID_GLASS_ENABLED, true)
         } else {
             true
-        }
-        liquidGlassRadius = prefs.getInt(
+        }) }
+        mainViewModel.updateLive { p -> p.copy(liquidGlassRadius = prefs.getInt(
             PREF_LIQUID_GLASS_RADIUS,
             DEFAULT_LIQUID_GLASS_RADIUS,
-        ).coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)
-        draftLiquidGlassRadiusText = liquidGlassRadius.toString()
-        liquidGlassOuterWidth = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)) }
+        draftLiquidGlassRadiusText = mainViewModel.params.value.liquidGlassRadius.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassOuterWidth = prefs.getInt(
             PREF_LIQUID_GLASS_OUTER_WIDTH,
             prefs.getInt(PREF_LIQUID_GLASS_BACKGROUND_LEVEL_LEGACY, DEFAULT_LIQUID_GLASS_OUTER_WIDTH),
-        ).coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)
-        draftLiquidGlassOuterWidthText = liquidGlassOuterWidth.toString()
-        liquidGlassTopAlpha = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)) }
+        draftLiquidGlassOuterWidthText = mainViewModel.params.value.liquidGlassOuterWidth.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassTopAlpha = prefs.getInt(
             PREF_LIQUID_GLASS_TOP_ALPHA,
             DEFAULT_LIQUID_GLASS_TOP_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
-        draftLiquidGlassTopAlphaText = liquidGlassTopAlpha.toString()
-        liquidGlassBottomAlpha = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)) }
+        draftLiquidGlassTopAlphaText = mainViewModel.params.value.liquidGlassTopAlpha.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassBottomAlpha = prefs.getInt(
             PREF_LIQUID_GLASS_BOTTOM_ALPHA,
             DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
-        draftLiquidGlassBottomAlphaText = liquidGlassBottomAlpha.toString()
-        liquidGlassBackgroundMistAlpha = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)) }
+        draftLiquidGlassBottomAlphaText = mainViewModel.params.value.liquidGlassBottomAlpha.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassBackgroundMistAlpha = prefs.getInt(
             PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA,
             DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
-        draftLiquidGlassBackgroundMistAlphaText = liquidGlassBackgroundMistAlpha.toString()
-        liquidGlassBottomDarkAlpha = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)) }
+        draftLiquidGlassBackgroundMistAlphaText = mainViewModel.params.value.liquidGlassBackgroundMistAlpha.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassBottomDarkAlpha = prefs.getInt(
             PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
             DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
-        draftLiquidGlassBottomDarkAlphaText = liquidGlassBottomDarkAlpha.toString()
-        liquidGlassSubjectScalePercent = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)) }
+        draftLiquidGlassBottomDarkAlphaText = mainViewModel.params.value.liquidGlassBottomDarkAlpha.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectScalePercent = prefs.getInt(
             PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
             DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
-        draftLiquidGlassSubjectScaleText = liquidGlassSubjectScalePercent.toString()
-        liquidGlassSubjectOutlineWidth = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)) }
+        draftLiquidGlassSubjectScaleText = mainViewModel.params.value.liquidGlassSubjectScalePercent.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectOutlineWidth = prefs.getInt(
             PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
             DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
-        draftLiquidGlassSubjectOutlineWidthText = liquidGlassSubjectOutlineWidth.toString()
-        liquidGlassSubjectInnerOutlineWidth = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)) }
+        draftLiquidGlassSubjectOutlineWidthText = mainViewModel.params.value.liquidGlassSubjectOutlineWidth.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectInnerOutlineWidth = prefs.getInt(
             PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH,
             DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
-        draftLiquidGlassSubjectInnerOutlineWidthText = liquidGlassSubjectInnerOutlineWidth.toString()
-        liquidGlassSubjectShadowAlpha = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)) }
+        draftLiquidGlassSubjectInnerOutlineWidthText = mainViewModel.params.value.liquidGlassSubjectInnerOutlineWidth.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectShadowAlpha = prefs.getInt(
             PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
             DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
-        draftLiquidGlassSubjectShadowAlphaText = liquidGlassSubjectShadowAlpha.toString()
-        liquidGlassSubjectOpacityPercent = prefs.getInt(
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)) }
+        draftLiquidGlassSubjectShadowAlphaText = mainViewModel.params.value.liquidGlassSubjectShadowAlpha.toString()
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectOpacityPercent = prefs.getInt(
             PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
             DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
-        draftLiquidGlassSubjectOpacityText = liquidGlassSubjectOpacityPercent.toString()
+        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)) }
+        draftLiquidGlassSubjectOpacityText = mainViewModel.params.value.liquidGlassSubjectOpacityPercent.toString()
         liquidGlassBottomBarEnabled = prefs.getBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED, true)
         liquidGlassBottomBarBlurEnabled = prefs.getBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_BLUR_ENABLED, true)
         if (!migratedToLayered) {
@@ -7204,26 +7025,26 @@ class MainActivity : ComponentActivity() {
 
     internal fun SharedPreferences.Editor.putLiquidGlassSettings(): SharedPreferences.Editor =
         putBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, true)
-            .putBoolean(PREF_LIQUID_GLASS_ENABLED, liquidGlassEnabled)
+            .putBoolean(PREF_LIQUID_GLASS_ENABLED, mainViewModel.params.value.liquidGlassEnabled)
             .putBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED, liquidGlassBottomBarEnabled)
             .putBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_BLUR_ENABLED, liquidGlassBottomBarBlurEnabled)
-            .putInt(PREF_LIQUID_GLASS_RADIUS, liquidGlassRadius)
-            .putInt(PREF_LIQUID_GLASS_OUTER_WIDTH, liquidGlassOuterWidth)
-            .putInt(PREF_LIQUID_GLASS_TOP_ALPHA, liquidGlassTopAlpha)
-            .putInt(PREF_LIQUID_GLASS_BOTTOM_ALPHA, liquidGlassBottomAlpha)
-            .putInt(PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA, liquidGlassBackgroundMistAlpha)
-            .putInt(PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA, liquidGlassBottomDarkAlpha)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, liquidGlassSubjectScalePercent)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, liquidGlassSubjectOutlineWidth)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH, liquidGlassSubjectInnerOutlineWidth)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, liquidGlassSubjectShadowAlpha)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, liquidGlassSubjectOpacityPercent)
+            .putInt(PREF_LIQUID_GLASS_RADIUS, mainViewModel.params.value.liquidGlassRadius)
+            .putInt(PREF_LIQUID_GLASS_OUTER_WIDTH, mainViewModel.params.value.liquidGlassOuterWidth)
+            .putInt(PREF_LIQUID_GLASS_TOP_ALPHA, mainViewModel.params.value.liquidGlassTopAlpha)
+            .putInt(PREF_LIQUID_GLASS_BOTTOM_ALPHA, mainViewModel.params.value.liquidGlassBottomAlpha)
+            .putInt(PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA, mainViewModel.params.value.liquidGlassBackgroundMistAlpha)
+            .putInt(PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA, mainViewModel.params.value.liquidGlassBottomDarkAlpha)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, mainViewModel.params.value.liquidGlassSubjectScalePercent)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, mainViewModel.params.value.liquidGlassSubjectOutlineWidth)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH, mainViewModel.params.value.liquidGlassSubjectInnerOutlineWidth)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, mainViewModel.params.value.liquidGlassSubjectShadowAlpha)
+            .putInt(PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, mainViewModel.params.value.liquidGlassSubjectOpacityPercent)
 
     internal fun updateLiquidGlassEnabled(enabled: Boolean) {
-        if (liquidGlassEnabled == enabled) {
+        if (mainViewModel.params.value.liquidGlassEnabled == enabled) {
             return
         }
-        liquidGlassEnabled = enabled
+        mainViewModel.updateLive { p -> p.copy(liquidGlassEnabled = enabled) }
         saveLiquidGlassSettings()
         statusText = if (enabled) "液态玻璃风格已开启" else "液态玻璃风格已关闭"
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
@@ -7231,7 +7052,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassRadius(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)
-        liquidGlassRadius = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassRadius = next) }
         draftLiquidGlassRadiusText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃圆角 $next"
@@ -7240,7 +7061,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassOuterWidth(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)
-        liquidGlassOuterWidth = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassOuterWidth = next) }
         draftLiquidGlassOuterWidthText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃外框高度 $next"
@@ -7249,7 +7070,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassTopAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
-        liquidGlassTopAlpha = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassTopAlpha = next) }
         draftLiquidGlassTopAlphaText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃顶部强度 $next"
@@ -7258,7 +7079,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassBottomAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
-        liquidGlassBottomAlpha = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassBottomAlpha = next) }
         draftLiquidGlassBottomAlphaText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃底边强度 $next"
@@ -7267,7 +7088,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassBackgroundMistAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
-        liquidGlassBackgroundMistAlpha = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassBackgroundMistAlpha = next) }
         draftLiquidGlassBackgroundMistAlphaText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃背景灰雾 $next"
@@ -7276,7 +7097,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassBottomDarkAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
-        liquidGlassBottomDarkAlpha = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassBottomDarkAlpha = next) }
         draftLiquidGlassBottomDarkAlphaText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃底部灰雾 $next"
@@ -7285,7 +7106,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassSubjectScalePercent(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
-        liquidGlassSubjectScalePercent = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectScalePercent = next) }
         draftLiquidGlassSubjectScaleText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃主体比例 $next"
@@ -7294,7 +7115,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassSubjectOutlineWidth(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
-        liquidGlassSubjectOutlineWidth = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectOutlineWidth = next) }
         draftLiquidGlassSubjectOutlineWidthText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃主体外框 $next"
@@ -7303,7 +7124,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassSubjectInnerOutlineWidth(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
-        liquidGlassSubjectInnerOutlineWidth = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectInnerOutlineWidth = next) }
         draftLiquidGlassSubjectInnerOutlineWidthText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃主体内框 $next"
@@ -7312,7 +7133,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassSubjectShadowAlpha(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
-        liquidGlassSubjectShadowAlpha = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectShadowAlpha = next) }
         draftLiquidGlassSubjectShadowAlphaText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃主体阴影 $next"
@@ -7321,7 +7142,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun updateLiquidGlassSubjectOpacityPercent(value: Int) {
         val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
-        liquidGlassSubjectOpacityPercent = next
+        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectOpacityPercent = next) }
         draftLiquidGlassSubjectOpacityText = next.toString()
         saveLiquidGlassSettings()
         statusText = "液态玻璃主体透明度 $next"
@@ -7377,7 +7198,7 @@ class MainActivity : ComponentActivity() {
                 val result = generateArtPlusPackage(entry, useGpt)
                 runOnUiThread {
                     activeGenerationSession = result.session
-                    previewSelections = result.selections
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
                     previewChoiceMode = null
                     previewPackageName = entry.packageName
                     previewDirPath = result.outDir.absolutePath
@@ -7390,7 +7211,7 @@ class MainActivity : ComponentActivity() {
                 if (installWithRoot) {
                     installWithRoot(result.outDir, entry.packageName, rootWriteMode)
                     runOnUiThread {
-                        markPackageGenerated(entry.packageName)
+                        generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, entry.packageName)
                     }
                     if (useGpt) {
                         toastStatus("已生成AI版并${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
@@ -7445,7 +7266,7 @@ class MainActivity : ComponentActivity() {
 
             isBusy = true
             statusText = "按当前预览写入${rootWriteMode.label}: ${entry.packageName}"
-            val selections = previewSelections
+            val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)
             startUiFriendlyThread("ArtPlusPreviewRootWrite") {
                 try {
                     writePackageOutputs(session, selections)
@@ -7454,9 +7275,9 @@ class MainActivity : ComponentActivity() {
                     }
                     installWithRoot(session.outDir, entry.packageName, rootWriteMode)
                     runOnUiThread {
-                        markPackageGenerated(entry.packageName)
+                        generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, entry.packageName)
                         activeGenerationSession = session
-                        previewSelections = selections
+                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                         previewPackageName = entry.packageName
                         previewDirPath = session.outDir.absolutePath
                         previewVersion += 1
@@ -7495,7 +7316,7 @@ class MainActivity : ComponentActivity() {
         previewChoiceMode = null
         previewPackageName = null
         previewDirPath = null
-        previewSelections = PreviewSelections.default(PreviewChoice.Original)
+        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
         previewVersion += 1
         clearRmbgCandidateUiState()
         val localDir = artPlusPackageDir(packageName)
@@ -7517,9 +7338,9 @@ class MainActivity : ComponentActivity() {
                 }
                 result
                     .onSuccess { packageDir ->
-                        markPackageGenerated(packageName)
+                        generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, packageName)
                         activeGenerationSession = buildGeneratedPackageSession(packageName, packageDir)
-                        previewSelections = PreviewSelections.default(PreviewChoice.Original)
+                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
                         previewChoiceMode = null
                         previewPackageName = packageName
                         previewDirPath = packageDir.absolutePath
@@ -7551,9 +7372,9 @@ class MainActivity : ComponentActivity() {
                 applyLiquidGlassToGeneratedPackage(packageDir)
                 installLiquidGlassFilesWithRoot(packageDir, entry.packageName)
                 runOnUiThread {
-                    markPackageGenerated(entry.packageName)
+                    generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, entry.packageName)
                     activeGenerationSession = buildGeneratedPackageSession(entry.packageName, packageDir)
-                    previewSelections = PreviewSelections.default(PreviewChoice.Original)
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
                     previewChoiceMode = null
                     previewPackageName = entry.packageName
                     previewDirPath = packageDir.absolutePath
@@ -7630,7 +7451,7 @@ class MainActivity : ComponentActivity() {
 
             runOnUiThread {
                 if (successes.isNotEmpty()) {
-                    updateGeneratedPackageCache(generatedPackageNames + successes)
+                    generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames + successes)
                     multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
                 }
                 if (
@@ -7640,7 +7461,7 @@ class MainActivity : ComponentActivity() {
                     selectedDirPath != null
                 ) {
                     activeGenerationSession = selectedSession
-                    previewSelections = PreviewSelections.default(PreviewChoice.Original)
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
                     previewChoiceMode = null
                     previewPackageName = selectedAtStart
                     previewDirPath = selectedDirPath
@@ -7784,10 +7605,10 @@ class MainActivity : ComponentActivity() {
         savePng(recfg2x1, File(dir, "recfg_2x1.png"))
         savePng(recfg2x2, File(dir, "recfg_2x2.png"))
 
-        savePng(normalDarkForeground(outputRecfg, recbg), File(dir, "rec_night.png"))
-        savePng(normalDarkForeground(recfg1x2, recbg1x2), File(dir, "rec_night_1x2.png"))
-        savePng(normalDarkForeground(recfg2x1, recbg2x1), File(dir, "rec_night_2x1.png"))
-        savePng(normalDarkForeground(recfg2x2, recbg2x2), File(dir, "rec_night_2x2.png"))
+        savePng(normalDarkForeground(outputRecfg, recbg, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(dir, "rec_night.png"))
+        savePng(normalDarkForeground(recfg1x2, recbg1x2, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(dir, "rec_night_1x2.png"))
+        savePng(normalDarkForeground(recfg2x1, recbg2x1, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(dir, "rec_night_2x1.png"))
+        savePng(normalDarkForeground(recfg2x2, recbg2x2, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(dir, "rec_night_2x2.png"))
     }
 
     internal fun writeDefaultSubjectMonochromeFiles(
@@ -7890,17 +7711,17 @@ class MainActivity : ComponentActivity() {
         val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
         val gptSourceIcon = drawDrawable(icon, GPT_SOURCE_SIZE, GPT_SOURCE_SIZE, transparent = false)
         val localPipeline = currentLocalPipelineConfig()
-        val localSource = buildLocalIconLayers(icon, localPipeline)
-        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, localPipeline)
+        val localSource = buildLocalIconLayers(icon, localPipeline, mainViewModel.params.value.backgroundSeparationPercent, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
+        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, localPipeline, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode), mainViewModel.params.value.plateRemovalPercent, mainViewModel.params.value.shadowRemovalPercent, mainViewModel.params.value.backgroundSeparationPercent)
         val localCandidates = localCandidateSet.candidates
         val candidates = if (useGpt) {
             // P4 交界：GPT 图层收敛进 pipeline/，显式传调参 + 凭证 + 状态回调。
-            val gptLayers = generateGptLayers(gptSourceIcon, localSource.recfg, localSource.recbg, gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent, gptImageMode, gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
+            val gptLayers = generateGptLayers(gptSourceIcon, localSource.recfg, localSource.recbg, mainViewModel.params.value.gptCustomPrompt, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset), mainViewModel.params.value.foregroundSubjectPercent, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode), gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
             localCandidates + (PreviewChoice.Gpt to IconCandidate(gptLayers.recfg, gptLayers.recbg, monochromeRaw = null, isLocal = false))
         } else {
             localCandidates
         }
-        val selectedLocalMode = localModeOverride ?: localSeparationMode
+        val selectedLocalMode = localModeOverride ?: LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode)
         val requestedChoice = if (useGpt) {
             PreviewChoice.Gpt
         } else {
@@ -7921,24 +7742,10 @@ class MainActivity : ComponentActivity() {
             autoLocalChoice = localCandidateSet.autoChoice,
         )
         writePackageOutputs(session, selections)
-        status("本地分离: ${selectedLocalMode.label}/${defaultChoice.label} · 背景 $backgroundSeparationPercent · 底板 $plateRemovalPercent · 阴影 $shadowRemovalPercent · 毛刺 $edgePolishPercent")
+        status("本地分离: ${selectedLocalMode.label}/${defaultChoice.label} · 背景 $mainViewModel.params.value.backgroundSeparationPercent · 底板 $mainViewModel.params.value.plateRemovalPercent · 阴影 $mainViewModel.params.value.shadowRemovalPercent · 毛刺 $mainViewModel.params.value.edgePolishPercent")
         return GenerationResult(outDir = outDir, session = session, selections = selections)
     }
 
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun buildLocalCandidates(
-        localSource: LocalIconLayers,
-        sourceIcon: Bitmap,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): LocalCandidateSet = buildLocalCandidates(
-        localSource,
-        sourceIcon,
-        pipeline,
-        originalForegroundCleanupMode,
-        plateRemovalPercent,
-        shadowRemovalPercent,
-        backgroundSeparationPercent,
-    )
 
     internal fun buildRmbgCandidate(sourceIcon: Bitmap): CandidateBuildResult? {
         val component = findRmbgComponent() ?: return null
@@ -8563,7 +8370,7 @@ class MainActivity : ComponentActivity() {
             return alpha.copyOf()
         }
         var current = alpha.copyOf()
-        val strength = rmbgAlphaStrengthPercent.coerceIn(
+        val strength = mainViewModel.params.value.rmbgAlphaStrengthPercent.coerceIn(
             MIN_RMBG_ALPHA_STRENGTH_PERCENT,
             MAX_RMBG_ALPHA_STRENGTH_PERCENT,
         )
@@ -8577,7 +8384,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val adjust = rmbgEdgeAdjustPercent.coerceIn(
+        val adjust = mainViewModel.params.value.rmbgEdgeAdjustPercent.coerceIn(
             MIN_RMBG_EDGE_ADJUST_PERCENT,
             MAX_RMBG_EDGE_ADJUST_PERCENT,
         ) - DEFAULT_RMBG_EDGE_ADJUST_PERCENT
@@ -8595,16 +8402,16 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val feather = ratioPercent(rmbgEdgeFeatherPercent.coerceIn(
+        val feather = ratioPercent(mainViewModel.params.value.rmbgEdgeFeatherPercent.coerceIn(
             MIN_RMBG_EDGE_FEATHER_PERCENT,
             MAX_RMBG_EDGE_FEATHER_PERCENT,
         ))
         if (feather > 0.0) {
-            val radius = if (rmbgEdgeFeatherPercent >= 70) 2 else 1
+            val radius = if (mainViewModel.params.value.rmbgEdgeFeatherPercent >= 70) 2 else 1
             current = featherRmbgAlphaEdges(current, width, height, strength = feather, radius = radius)
         }
 
-        val weakKeep = ratioPercent(rmbgWeakAlphaKeepPercent.coerceIn(
+        val weakKeep = ratioPercent(mainViewModel.params.value.rmbgWeakAlphaKeepPercent.coerceIn(
             MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
             MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
         ))
@@ -8673,11 +8480,6 @@ class MainActivity : ComponentActivity() {
         return repairTransparentEdgeColors(out)
     }
 
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun prepareOriginalForeground(
-        source: Bitmap,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): Bitmap = prepareOriginalForeground(source, pipeline, originalForegroundCleanupMode, plateRemovalPercent)
 
     internal fun defaultLocalPreviewChoice(autoChoice: PreviewChoice): PreviewChoice =
         defaultPreviewChoiceForMode(LocalSeparationMode.Auto, autoChoice)
@@ -8726,17 +8528,17 @@ class MainActivity : ComponentActivity() {
         val nightRecbg1x2 = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_1X2[0], SIZE_1X2[1])
         val nightRecbg2x1 = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X1[0], SIZE_2X1[1])
         val nightRecbg2x2 = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X2, SIZE_2X2)
-        savePng(normalDarkForeground(nightRecfg, nightRecbg), File(session.outDir, "rec_night.png"))
+        savePng(normalDarkForeground(nightRecfg, nightRecbg, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(session.outDir, "rec_night.png"))
         savePng(
-            normalDarkForeground(nightRecfg1x2, nightRecbg1x2),
+            normalDarkForeground(nightRecfg1x2, nightRecbg1x2, mainViewModel.params.value.nightSubjectLightBackgroundEnabled),
             File(session.outDir, "rec_night_1x2.png"),
         )
         savePng(
-            normalDarkForeground(nightRecfg2x1, nightRecbg2x1),
+            normalDarkForeground(nightRecfg2x1, nightRecbg2x1, mainViewModel.params.value.nightSubjectLightBackgroundEnabled),
             File(session.outDir, "rec_night_2x1.png"),
         )
         savePng(
-            normalDarkForeground(nightRecfg2x2, nightRecbg2x2),
+            normalDarkForeground(nightRecfg2x2, nightRecbg2x2, mainViewModel.params.value.nightSubjectLightBackgroundEnabled),
             File(session.outDir, "rec_night_2x2.png"),
         )
 
@@ -8774,7 +8576,7 @@ class MainActivity : ComponentActivity() {
         } else {
             resizeBitmap(source, width, height)
         }
-        return if (forceLiquidGlass || liquidGlassEnabled) {
+        return if (forceLiquidGlass || mainViewModel.params.value.liquidGlassEnabled) {
             renderLayeredLiquidGlassBackground(resized)
         } else {
             resized
@@ -8792,7 +8594,7 @@ class MainActivity : ComponentActivity() {
         } else {
             centerOnCanvas(source, width, height)
         }
-        return if (forceLiquidGlass || liquidGlassEnabled) {
+        return if (forceLiquidGlass || mainViewModel.params.value.liquidGlassEnabled) {
             renderLayeredLiquidGlassForeground(sized)
         } else {
             applyForegroundShadow(sized)
@@ -8809,7 +8611,7 @@ class MainActivity : ComponentActivity() {
         canvas.drawColor(AndroidColor.TRANSPARENT)
         canvas.drawBitmap(source, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
 
-        val mistAlpha = liquidGlassBackgroundMistAlpha.coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
+        val mistAlpha = mainViewModel.params.value.liquidGlassBackgroundMistAlpha.coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
         if (mistAlpha > 0) {
             canvas.drawRect(
                 0f,
@@ -8832,7 +8634,7 @@ class MainActivity : ComponentActivity() {
         val shapeMask = roundedRectMaskAlpha(width, height, radius, feather = liquidGlassMaskFeather(width, height))
         val subject = scaleBitmapAroundCanvasCenter(
             source,
-            liquidGlassSubjectScalePercent
+            mainViewModel.params.value.liquidGlassSubjectScalePercent
                 .coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
                 .toFloat() / 100f,
         )
@@ -8840,7 +8642,7 @@ class MainActivity : ComponentActivity() {
         val canvas = Canvas(out)
         canvas.drawColor(AndroidColor.TRANSPARENT)
 
-        val subjectShadowAlpha = liquidGlassSubjectShadowAlpha
+        val subjectShadowAlpha = mainViewModel.params.value.liquidGlassSubjectShadowAlpha
             .coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
         if (subjectShadowAlpha > 0) {
             val minSide = minOf(width, height).coerceAtLeast(1)
@@ -8858,7 +8660,7 @@ class MainActivity : ComponentActivity() {
         val outlineWidth = liquidGlassScaledWidth(
             width,
             height,
-            liquidGlassSubjectOutlineWidth.coerceIn(
+            mainViewModel.params.value.liquidGlassSubjectOutlineWidth.coerceIn(
                 MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
                 MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
             ),
@@ -8875,7 +8677,7 @@ class MainActivity : ComponentActivity() {
         val innerOutlineWidth = liquidGlassScaledWidth(
             width,
             height,
-            liquidGlassSubjectInnerOutlineWidth.coerceIn(
+            mainViewModel.params.value.liquidGlassSubjectInnerOutlineWidth.coerceIn(
                 MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
                 MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
             ),
@@ -8889,7 +8691,7 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        val subjectOpacity = liquidGlassSubjectOpacityPercent
+        val subjectOpacity = mainViewModel.params.value.liquidGlassSubjectOpacityPercent
             .coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
         if (subjectOpacity > 0) {
             canvas.drawBitmap(
@@ -9004,8 +8806,8 @@ class MainActivity : ComponentActivity() {
     internal fun drawLayeredLiquidGlassLight(canvas: Canvas, width: Int, height: Int, radius: Float) {
         val rect = RectF(0f, 0f, width.toFloat(), height.toFloat())
         val bottom = height.toFloat()
-        val topAlpha = liquidGlassTopAlpha.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
-        val bottomAlpha = liquidGlassBottomAlpha.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+        val topAlpha = mainViewModel.params.value.liquidGlassTopAlpha.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
+        val bottomAlpha = mainViewModel.params.value.liquidGlassBottomAlpha.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
 
         canvas.drawRoundRect(
             rect,
@@ -9030,7 +8832,7 @@ class MainActivity : ComponentActivity() {
             },
         )
 
-        val bottomDarkAlpha = liquidGlassBottomDarkAlpha
+        val bottomDarkAlpha = mainViewModel.params.value.liquidGlassBottomDarkAlpha
             .coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
         if (bottomDarkAlpha > 0) {
             canvas.drawRoundRect(
@@ -9056,7 +8858,7 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        val outerWidth = liquidGlassOuterWidth
+        val outerWidth = mainViewModel.params.value.liquidGlassOuterWidth
             .coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)
             .toFloat() * liquidGlassScaleForSize(width, height)
         if (outerWidth <= 0f) {
@@ -9091,7 +8893,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun liquidGlassRadiusForSize(width: Int, height: Int): Float {
         val minSide = minOf(width, height).toFloat().coerceAtLeast(1f)
-        return (liquidGlassRadius.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS) * liquidGlassScaleForSize(width, height))
+        return (mainViewModel.params.value.liquidGlassRadius.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS) * liquidGlassScaleForSize(width, height))
             .coerceIn(0f, minSide / 2f)
     }
 
@@ -9379,7 +9181,7 @@ class MainActivity : ComponentActivity() {
         if (rowChoice != PreviewChoice.ComposedBackground) {
             return rowChoice
         }
-        val currentChoice = previewSelections.choiceFor(mode)
+        val currentChoice = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).choiceFor(mode)
         val target = when (currentChoice) {
             PreviewChoice.Rmbg,
             PreviewChoice.RmbgComposedBackground -> PreviewChoice.RmbgComposedBackground
@@ -9457,7 +9259,7 @@ class MainActivity : ComponentActivity() {
     }
 
     internal fun scaleMonochromeForTheme(source: Bitmap): Bitmap =
-        scaleBitmapAroundAlphaCenter(source, monochromeThemeScale)
+        scaleBitmapAroundAlphaCenter(source, mainViewModel.params.value.monochromeThemeScale)
 
 
 
@@ -9473,7 +9275,7 @@ class MainActivity : ComponentActivity() {
         val nightPreview = run {
             val nightRecfg = renderCandidateForeground(night)
             val nightRecbg = liquidGlassBackgroundForSize(night.recbg, SIZE_1X1, SIZE_1X1)
-            normalDarkForeground(nightRecfg, nightRecbg)
+            normalDarkForeground(nightRecfg, nightRecbg, mainViewModel.params.value.nightSubjectLightBackgroundEnabled)
         }
 
         val monochromeLight = monochromeForCandidate(
@@ -9529,7 +9331,7 @@ class MainActivity : ComponentActivity() {
         return PreviewAssets(
             recbg = recbg,
             recfg = recfg,
-            recNight = normalDarkForeground(recfg, recbg),
+            recNight = normalDarkForeground(recfg, recbg, mainViewModel.params.value.nightSubjectLightBackgroundEnabled),
             monochromeLight = monochromeForCandidate(candidate, invertLuma = true),
             monochromeDark = monochromeForCandidate(candidate, invertLuma = false),
         )
@@ -9537,14 +9339,14 @@ class MainActivity : ComponentActivity() {
 
     internal fun renderCandidateForegroundBase(candidate: IconCandidate): Bitmap =
         renderCandidateBitmap(rmbgTunedForegroundRaw(candidate) ?: candidate.recfgRaw).let { bitmap ->
-            if (candidate.isLocal && !candidate.applyLocalEdgePolish) bitmap else polishForegroundEdges(bitmap)
+            if (candidate.isLocal && !candidate.applyLocalEdgePolish) bitmap else polishForegroundEdges(bitmap, mainViewModel.params.value.edgePolishPercent)
         }
 
     internal fun renderCandidateForeground(candidate: IconCandidate): Bitmap =
         foregroundForSize(renderCandidateForegroundBase(candidate), SIZE_1X1, SIZE_1X1)
 
     internal fun applyForegroundShadow(source: Bitmap): Bitmap {
-        val level = foregroundShadowLevel.coerceIn(MIN_FOREGROUND_SHADOW_LEVEL, MAX_FOREGROUND_SHADOW_LEVEL)
+        val level = mainViewModel.params.value.foregroundShadowLevel.coerceIn(MIN_FOREGROUND_SHADOW_LEVEL, MAX_FOREGROUND_SHADOW_LEVEL)
         if (level <= 0) {
             return source
         }
@@ -9689,7 +9491,7 @@ class MainActivity : ComponentActivity() {
     }
 
     internal fun renderCandidateBitmap(bitmap: Bitmap): Bitmap =
-        normalizeForegroundSubjectSize(bitmap)
+        normalizeForegroundSubjectSize(bitmap, mainViewModel.params.value.foregroundSubjectPercent)
 
     internal fun applyPreviewChoice(mode: PreviewMode, choice: PreviewChoice) {
         val session = activeGenerationSession ?: return
@@ -9710,8 +9512,8 @@ class MainActivity : ComponentActivity() {
             statusText = "先生成 RMBG 候选，再使用拼合背景"
             return
         }
-        val selections = previewSelections.withChoice(mode, choice)
-        previewSelections = selections
+        val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).withChoice(mode, choice)
+        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
         saveUiState()
         writeActivePreviewOutputs(session, selections, closeDialog = false)
     }
@@ -9748,7 +9550,7 @@ class MainActivity : ComponentActivity() {
             return
         }
         val selections = PreviewSelections.default(choice)
-        previewSelections = selections
+        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
         previewChoiceMode = null
         saveUiState()
         writeActivePreviewOutputs(session, selections, closeDialog = true)
@@ -9839,13 +9641,13 @@ class MainActivity : ComponentActivity() {
                 }
                 runOnUiThread {
                     if (successes.isNotEmpty()) {
-                        updateGeneratedPackageCache(generatedPackageNames + successes)
+                        generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames + successes)
                         multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
                     }
                     val result = selectedResult
                     if (result != null && selectedPackageName == selectedAtStart) {
                         activeGenerationSession = result.session
-                        previewSelections = result.selections
+                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
                         previewChoiceMode = null
                         previewPackageName = result.session.packageName
                         previewDirPath = result.outDir.absolutePath
@@ -9960,7 +9762,7 @@ class MainActivity : ComponentActivity() {
         statusText = "导入${kind.label}: ${mode.label}"
         startUiFriendlyThread("ArtPlusCustomImageImport") {
             try {
-                val bitmap = loadCustomImageBitmap(uri)
+                val bitmap = loadCustomImageBitmap(contentResolver, uri)
                 val updatedSession = session.copy(
                     customForegrounds = if (kind == CustomImageKind.Foreground) {
                         session.customForegrounds + (mode to bitmap)
@@ -9973,14 +9775,14 @@ class MainActivity : ComponentActivity() {
                         session.customBackgrounds
                     },
                 )
-                val selections = previewSelections
+                val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)
                 writePackageOutputs(updatedSession, selections)
                 if (false && outputTreeUri != null) {
                     exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
-                    previewSelections = selections
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                     previewVersion += 1
                     statusText = "已导入${kind.label}: ${mode.label}"
                     saveUiState()
@@ -10014,11 +9816,11 @@ class MainActivity : ComponentActivity() {
         isGptPreviewLoading = true
         incrementGptRunCount()
         statusText = "AI候选生成中: ${session.packageName}"
-        val selections = previewSelections.withChoice(mode, PreviewChoice.Gpt)
+        val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).withChoice(mode, PreviewChoice.Gpt)
         startUiFriendlyThread("ArtPlusGptCandidate") {
             try {
                 // P4 交界：GPT 图层收敛进 pipeline/，显式传调参 + 凭证 + 状态回调。
-                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent, gptImageMode, gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
+                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, mainViewModel.params.value.gptCustomPrompt, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset), mainViewModel.params.value.foregroundSubjectPercent, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode), gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
                 val updatedSession = session.copy(
                     candidates = session.candidates + (
                         PreviewChoice.Gpt to IconCandidate(
@@ -10035,7 +9837,7 @@ class MainActivity : ComponentActivity() {
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
-                    previewSelections = selections
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                     previewVersion += 1
                     val msg = "AI候选已生成并应用到 ${mode.label}"
                     statusText = msg
@@ -10080,7 +9882,7 @@ class MainActivity : ComponentActivity() {
         startUiFriendlyThread("ArtPlusGptCandidateAll") {
             try {
                 // P4 交界：GPT 图层收敛进 pipeline/，显式传调参 + 凭证 + 状态回调。
-                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent, gptImageMode, gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
+                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, mainViewModel.params.value.gptCustomPrompt, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset), mainViewModel.params.value.foregroundSubjectPercent, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode), gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
                 val updatedSession = session.copy(
                     candidates = session.candidates + (
                         PreviewChoice.Gpt to IconCandidate(
@@ -10097,7 +9899,7 @@ class MainActivity : ComponentActivity() {
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
-                    previewSelections = selections
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                     previewChoiceMode = null
                     previewVersion += 1
                     val msg = "AI候选已生成并应用到全部"
@@ -10157,7 +9959,7 @@ class MainActivity : ComponentActivity() {
         rmbgCandidateFailurePackageName = null
         rmbgCandidateFailureMode = null
         statusText = "RMBG候选生成中(${RmbgInferenceBackend.Cpu.label}): ${session.packageName}"
-        val selections = previewSelections.withChoice(mode, PreviewChoice.Rmbg)
+        val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).withChoice(mode, PreviewChoice.Rmbg)
         startUiFriendlyThread("ArtPlusRmbgCandidate") {
             try {
                 val source = resizeBitmap(session.sourceIcon, SIZE_1X1, SIZE_1X1)
@@ -10174,7 +9976,7 @@ class MainActivity : ComponentActivity() {
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
-                    previewSelections = selections
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                     previewVersion += 1
                     lastRmbgCandidateError = null
                     lastRmbgInferenceReport = inferenceReport
@@ -10269,7 +10071,7 @@ class MainActivity : ComponentActivity() {
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
-                    previewSelections = selections
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                     previewChoiceMode = null
                     previewVersion += 1
                     lastRmbgCandidateError = null
@@ -10361,7 +10163,7 @@ class MainActivity : ComponentActivity() {
         val packageName = currentSession.packageName
         val app = apps.firstOrNull { it.packageName == packageName }
         val outDir = currentSession.outDir
-        val currentSelections = previewSelections
+        val currentSelections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)
         val outputUri = outputTreeUri
         val requestRevision = ++previewOutputRevision
         previewOutputJob?.cancel()
@@ -10394,7 +10196,7 @@ class MainActivity : ComponentActivity() {
                 withContext(Dispatchers.Main) {
                     if (requestRevision == previewOutputRevision) {
                         activeGenerationSession = updatedSession
-                        previewSelections = selections
+                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                         previewVersion += 1
                         saveUiState()
                     }
@@ -10432,7 +10234,7 @@ class MainActivity : ComponentActivity() {
                 withContext(Dispatchers.Main) {
                     if (requestRevision == previewOutputRevision) {
                         activeGenerationSession = session
-                        previewSelections = selections
+                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                         previewVersion += 1
                         if (closeDialog) {
                             previewChoiceMode = null
@@ -10454,147 +10256,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
-    internal fun gptEditImage(source: Bitmap, prompt: String, background: String): Bitmap =
-        gptEditImage(source, prompt, background, gptImageMode, gptModelId, gptBaseUrl, gptApiKey, isDebugBuild())
 
-    // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
-    internal fun loadCustomImageBitmap(uri: Uri): Bitmap = loadCustomImageBitmap(contentResolver, uri)
 
-    // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
-    internal fun buildTransparentForegroundPrompt(): String =
-        buildTransparentForegroundPrompt(gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent)
 
-    // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
-    internal fun buildChromaForegroundPrompt(chromaHex: String): String =
-        buildChromaForegroundPrompt(chromaHex, gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent)
 
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun buildLocalIconLayers(
-        icon: Drawable,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): LocalIconLayers = buildLocalIconLayers(
-        icon,
-        pipeline,
-        backgroundSeparationPercent,
-        adaptiveForegroundMode,
-        adaptiveDirectMaxCoveragePercent,
-        adaptiveDirectMaxCoverageIncreasePercent,
-        adaptiveMaskEdgeCoveragePercent,
-        adaptiveMaskMinCoveragePercent,
-        adaptiveCenterEpsilonPercent,
-    )
 
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun chooseBetterAdaptiveForeground(
-        fromComposed: Bitmap,
-        directForeground: Bitmap,
-        background: Bitmap,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): AdaptiveForegroundSelection = chooseBetterAdaptiveForeground(
-        fromComposed,
-        directForeground,
-        background,
-        pipeline,
-        adaptiveForegroundMode,
-        adaptiveDirectMaxCoveragePercent,
-        adaptiveDirectMaxCoverageIncreasePercent,
-        adaptiveMaskEdgeCoveragePercent,
-        adaptiveMaskMinCoveragePercent,
-        adaptiveCenterEpsilonPercent,
-    )
 
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun subtractPlainIconBackground(
-        source: Bitmap,
-        background: Bitmap,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): Bitmap = subtractPlainIconBackground(source, background, pipeline, backgroundSeparationPercent)
 
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun hasAdaptiveMaskArtifact(source: Bitmap): Boolean =
-        hasAdaptiveMaskArtifact(source, adaptiveMaskEdgeCoveragePercent, adaptiveMaskMinCoveragePercent)
 
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun isUsableDirectAdaptiveForeground(source: Bitmap, composedCoverage: Double): Boolean =
-        isUsableDirectAdaptiveForeground(
-            source,
-            composedCoverage,
-            adaptiveDirectMaxCoveragePercent,
-            adaptiveDirectMaxCoverageIncreasePercent,
-        )
 
-    // 调参映射委托到 imaging/PipelineTuning.kt（显式传参版本），本体重构期间保留无参 wrapper。
-    internal fun effectiveBackgroundSeparationDistance(): Double =
-        effectiveBackgroundSeparationDistance(backgroundSeparationPercent)
 
-    internal fun effectivePlateRemovalDistance(): Double =
-        effectivePlateRemovalDistance(plateRemovalPercent)
 
-    internal fun effectiveShadowRemovalAlpha(): Int =
-        effectiveShadowRemovalAlpha(shadowRemovalPercent)
 
-    internal fun effectiveShadowMaxSaturation(): Double =
-        effectiveShadowMaxSaturation(shadowRemovalPercent)
 
-    internal fun effectiveShadowMaxLuminance(): Int =
-        effectiveShadowMaxLuminance(shadowRemovalPercent)
 
-    internal fun effectiveShadowMinVisibleRatio(): Double =
-        effectiveShadowMinVisibleRatio(shadowRemovalPercent)
 
-    internal fun effectiveShadowMinOffset(): Double =
-        effectiveShadowMinOffset(shadowRemovalPercent)
 
-    internal fun effectiveShadowMinDownOffset(): Double =
-        effectiveShadowMinDownOffset(shadowRemovalPercent)
 
-    internal fun effectiveShadowMinLumaDrop(): Int =
-        effectiveShadowMinLumaDrop(shadowRemovalPercent)
-
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun subtractBackground(
-        composed: Bitmap,
-        background: Bitmap,
-        colorSource: Bitmap? = null,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): Bitmap = subtractBackground(composed, background, colorSource, pipeline, backgroundSeparationPercent)
-
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun separateLocalForeground(
-        source: Bitmap,
-        background: Bitmap,
-        mode: LocalSeparationMode,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): LocalSeparationResult =
-        separateLocalForeground(source, background, mode, pipeline, plateRemovalPercent, shadowRemovalPercent)
-
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun removeForegroundPlate(
-        source: Bitmap,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): ForegroundCleanupResult = removeForegroundPlate(source, pipeline, plateRemovalPercent)
-
-    internal fun residueDistanceThreshold(): Double =
-        residueDistanceThreshold(plateRemovalPercent)
-
-    internal fun edgeConnectedResidueDistanceThreshold(): Double =
-        edgeConnectedResidueDistanceThreshold(plateRemovalPercent)
-
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun removeOffsetShadow(
-        source: Bitmap,
-        background: Bitmap,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): ShadowCleanupResult = removeOffsetShadow(source, background, pipeline, shadowRemovalPercent)
-
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun normalizeForegroundSubjectSize(source: Bitmap): Bitmap =
-        normalizeForegroundSubjectSize(source, foregroundSubjectPercent)
-
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun normalDarkForeground(source: Bitmap, darkBackground: Bitmap): Bitmap =
-        normalDarkForeground(source, darkBackground, nightSubjectLightBackgroundEnabled)
 
     internal fun simpleMonochromeAlphaFromDefaultSubject(source: Bitmap, invertLuma: Boolean): Bitmap {
         val width = source.width
@@ -10625,19 +10303,9 @@ class MainActivity : ComponentActivity() {
         return out
     }
 
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P5 状态收敛后删除。
-    internal fun polishForegroundEdges(source: Bitmap): Bitmap =
-        polishForegroundEdges(source, edgePolishPercent)
 
-    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
-    internal fun polishMonochromeEdges(source: Bitmap): Bitmap =
-        polishMonochromeEdges(source, edgePolishPercent)
 
-    internal fun foregroundEdgePolishStrength(): Double =
-        foregroundEdgePolishStrength(edgePolishPercent)
 
-    internal fun monochromeEdgePolishStrength(): Double =
-        monochromeEdgePolishStrength(edgePolishPercent)
 
     internal fun bitmapStatsJson(bitmap: Bitmap): JSONObject {
         val visibleBounds = alphaBounds(bitmap, LOCAL_ALPHA_VISIBLE_THRESHOLD)
@@ -11053,34 +10721,34 @@ class MainActivity : ComponentActivity() {
             .put("port", DEBUG_HTTP_PORT)
             .put("busy", isBusy)
             .put("status", statusText)
-            .put("foreground_subject_percent", foregroundSubjectPercent)
-            .put("foreground_shadow_level", foregroundShadowLevel)
-            .put("monochrome_theme_scale", (monochromeThemeScale * 100).roundToInt())
-            .put("gpt_mode", gptImageMode.value)
-            .put("gpt_prompt_preset", gptPromptPreset.value)
-            .put("gpt_custom_prompt", gptCustomPrompt)
+            .put("foreground_subject_percent", mainViewModel.params.value.foregroundSubjectPercent)
+            .put("foreground_shadow_level", mainViewModel.params.value.foregroundShadowLevel)
+            .put("monochrome_theme_scale", (mainViewModel.params.value.monochromeThemeScale * 100).roundToInt())
+            .put("gpt_mode", GptImageMode.fromValue(mainViewModel.params.value.gptImageMode).value)
+            .put("gpt_prompt_preset", GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset).value)
+            .put("gpt_custom_prompt", mainViewModel.params.value.gptCustomPrompt)
             .put("gpt_base_url", gptBaseUrl)
             .put("gpt_api_key_set", gptApiKey.isNotBlank())
-            .put("background_separation_percent", backgroundSeparationPercent)
-            .put("plate_removal_percent", plateRemovalPercent)
-            .put("shadow_removal_percent", shadowRemovalPercent)
-            .put("edge_polish_percent", edgePolishPercent)
-            .put("rmbg_alpha_strength_percent", rmbgAlphaStrengthPercent)
-            .put("rmbg_edge_feather_percent", rmbgEdgeFeatherPercent)
-            .put("rmbg_edge_adjust_percent", rmbgEdgeAdjustPercent)
-            .put("rmbg_weak_alpha_keep_percent", rmbgWeakAlphaKeepPercent)
-            .put("liquid_glass_enabled", liquidGlassEnabled)
-            .put("liquid_glass_radius", liquidGlassRadius)
-            .put("liquid_glass_outer_width", liquidGlassOuterWidth)
-            .put("liquid_glass_top_alpha", liquidGlassTopAlpha)
-            .put("liquid_glass_bottom_alpha", liquidGlassBottomAlpha)
-            .put("liquid_glass_background_mist_alpha", liquidGlassBackgroundMistAlpha)
-            .put("liquid_glass_bottom_dark_alpha", liquidGlassBottomDarkAlpha)
-            .put("liquid_glass_subject_scale_percent", liquidGlassSubjectScalePercent)
-            .put("liquid_glass_subject_outline_width", liquidGlassSubjectOutlineWidth)
-            .put("liquid_glass_subject_inner_outline_width", liquidGlassSubjectInnerOutlineWidth)
-            .put("liquid_glass_subject_shadow_alpha", liquidGlassSubjectShadowAlpha)
-            .put("liquid_glass_subject_opacity_percent", liquidGlassSubjectOpacityPercent)
+            .put("background_separation_percent", mainViewModel.params.value.backgroundSeparationPercent)
+            .put("plate_removal_percent", mainViewModel.params.value.plateRemovalPercent)
+            .put("shadow_removal_percent", mainViewModel.params.value.shadowRemovalPercent)
+            .put("edge_polish_percent", mainViewModel.params.value.edgePolishPercent)
+            .put("rmbg_alpha_strength_percent", mainViewModel.params.value.rmbgAlphaStrengthPercent)
+            .put("rmbg_edge_feather_percent", mainViewModel.params.value.rmbgEdgeFeatherPercent)
+            .put("rmbg_edge_adjust_percent", mainViewModel.params.value.rmbgEdgeAdjustPercent)
+            .put("rmbg_weak_alpha_keep_percent", mainViewModel.params.value.rmbgWeakAlphaKeepPercent)
+            .put("liquid_glass_enabled", mainViewModel.params.value.liquidGlassEnabled)
+            .put("liquid_glass_radius", mainViewModel.params.value.liquidGlassRadius)
+            .put("liquid_glass_outer_width", mainViewModel.params.value.liquidGlassOuterWidth)
+            .put("liquid_glass_top_alpha", mainViewModel.params.value.liquidGlassTopAlpha)
+            .put("liquid_glass_bottom_alpha", mainViewModel.params.value.liquidGlassBottomAlpha)
+            .put("liquid_glass_background_mist_alpha", mainViewModel.params.value.liquidGlassBackgroundMistAlpha)
+            .put("liquid_glass_bottom_dark_alpha", mainViewModel.params.value.liquidGlassBottomDarkAlpha)
+            .put("liquid_glass_subject_scale_percent", mainViewModel.params.value.liquidGlassSubjectScalePercent)
+            .put("liquid_glass_subject_outline_width", mainViewModel.params.value.liquidGlassSubjectOutlineWidth)
+            .put("liquid_glass_subject_inner_outline_width", mainViewModel.params.value.liquidGlassSubjectInnerOutlineWidth)
+            .put("liquid_glass_subject_shadow_alpha", mainViewModel.params.value.liquidGlassSubjectShadowAlpha)
+            .put("liquid_glass_subject_opacity_percent", mainViewModel.params.value.liquidGlassSubjectOpacityPercent)
             .put("liquid_glass_param_labels", liquidGlassParamLabelsJson())
             .put("rmbg_model_installed", findRmbgComponent() != null)
             .put("rmbg_component_installed", findRmbgComponent() != null)
@@ -11090,36 +10758,36 @@ class MainActivity : ComponentActivity() {
             .put("rmbg_actual_backend", lastRmbgInferenceReport?.actualBackend?.value ?: "")
             .put("rmbg_inference_elapsed_ms", lastRmbgInferenceReport?.elapsedMs ?: JSONObject.NULL)
             .put("rmbg_last_error", lastRmbgCandidateError ?: "")
-            .put("adaptive_foreground_mode", adaptiveForegroundMode.value)
+            .put("adaptive_foreground_mode", AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode).value)
             .put("adaptive_foreground_modes", JSONArray().also { array ->
                 AdaptiveForegroundMode.entries.forEach { mode ->
                     array.put(JSONObject().put("value", mode.value).put("label", mode.label))
                 }
             })
-            .put("adaptive_direct_max_coverage_percent", adaptiveDirectMaxCoveragePercent)
-            .put("adaptive_direct_max_coverage_increase_percent", adaptiveDirectMaxCoverageIncreasePercent)
-            .put("adaptive_mask_edge_coverage_percent", adaptiveMaskEdgeCoveragePercent)
-            .put("adaptive_mask_min_coverage_percent", adaptiveMaskMinCoveragePercent)
-            .put("adaptive_center_epsilon_percent", adaptiveCenterEpsilonPercent)
-            .put("original_foreground_cleanup_mode", originalForegroundCleanupMode.value)
-            .put("local_background_separation_enabled", localBackgroundSeparationEnabled)
-            .put("local_adaptive_selection_enabled", localAdaptiveSelectionEnabled)
-            .put("local_corner_mask_cleanup_enabled", localCornerMaskCleanupEnabled)
-            .put("local_alpha_edge_color_repair_enabled", localAlphaEdgeColorRepairEnabled)
-            .put("local_plain_background_estimation_enabled", localPlainBackgroundEstimationEnabled)
-            .put("local_original_cleanup_enabled", localOriginalCleanupEnabled)
-            .put("local_plate_cleanup_enabled", localPlateCleanupEnabled)
-            .put("local_plate_edge_repair_enabled", localPlateEdgeRepairEnabled)
-            .put("local_plate_residue_cleanup_enabled", localPlateResidueCleanupEnabled)
-            .put("local_shadow_cleanup_enabled", localShadowCleanupEnabled)
-            .put("local_shadow_edge_repair_enabled", localShadowEdgeRepairEnabled)
-            .put("local_edge_trim_enabled", localEdgeTrimEnabled)
-            .put("local_composed_background_enabled", localComposedBackgroundEnabled)
-            .put("local_two_layer_candidate_enabled", localTwoLayerCandidateEnabled)
-            .put("local_component_candidates_enabled", localComponentCandidatesEnabled)
-            .put("local_text_safe_candidate_enabled", localTextSafeCandidateEnabled)
-            .put("local_auto_selection_enabled", localAutoSelectionEnabled)
-            .put("local_edge_polish_enabled", localEdgePolishEnabled)
+            .put("adaptive_direct_max_coverage_percent", mainViewModel.params.value.adaptiveDirectMaxCoveragePercent)
+            .put("adaptive_direct_max_coverage_increase_percent", mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent)
+            .put("adaptive_mask_edge_coverage_percent", mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent)
+            .put("adaptive_mask_min_coverage_percent", mainViewModel.params.value.adaptiveMaskMinCoveragePercent)
+            .put("adaptive_center_epsilon_percent", mainViewModel.params.value.adaptiveCenterEpsilonPercent)
+            .put("original_foreground_cleanup_mode", OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode).value)
+            .put("local_background_separation_enabled", mainViewModel.params.value.localBackgroundSeparationEnabled)
+            .put("local_adaptive_selection_enabled", mainViewModel.params.value.localAdaptiveSelectionEnabled)
+            .put("local_corner_mask_cleanup_enabled", mainViewModel.params.value.localCornerMaskCleanupEnabled)
+            .put("local_alpha_edge_color_repair_enabled", mainViewModel.params.value.localAlphaEdgeColorRepairEnabled)
+            .put("local_plain_background_estimation_enabled", mainViewModel.params.value.localPlainBackgroundEstimationEnabled)
+            .put("local_original_cleanup_enabled", mainViewModel.params.value.localOriginalCleanupEnabled)
+            .put("local_plate_cleanup_enabled", mainViewModel.params.value.localPlateCleanupEnabled)
+            .put("local_plate_edge_repair_enabled", mainViewModel.params.value.localPlateEdgeRepairEnabled)
+            .put("local_plate_residue_cleanup_enabled", mainViewModel.params.value.localPlateResidueCleanupEnabled)
+            .put("local_shadow_cleanup_enabled", mainViewModel.params.value.localShadowCleanupEnabled)
+            .put("local_shadow_edge_repair_enabled", mainViewModel.params.value.localShadowEdgeRepairEnabled)
+            .put("local_edge_trim_enabled", mainViewModel.params.value.localEdgeTrimEnabled)
+            .put("local_composed_background_enabled", mainViewModel.params.value.localComposedBackgroundEnabled)
+            .put("local_two_layer_candidate_enabled", mainViewModel.params.value.localTwoLayerCandidateEnabled)
+            .put("local_component_candidates_enabled", mainViewModel.params.value.localComponentCandidatesEnabled)
+            .put("local_text_safe_candidate_enabled", mainViewModel.params.value.localTextSafeCandidateEnabled)
+            .put("local_auto_selection_enabled", mainViewModel.params.value.localAutoSelectionEnabled)
+            .put("local_edge_polish_enabled", mainViewModel.params.value.localEdgePolishEnabled)
             .put("original_foreground_cleanup_modes", JSONArray().also { array ->
                 OriginalForegroundCleanupMode.entries.forEach { mode ->
                     array.put(JSONObject().put("value", mode.value).put("label", mode.label))
