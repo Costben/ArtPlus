@@ -54,11 +54,11 @@ ArtPlus 自动将第三方应用普通图标解构并标准化生成 ColorOS ART
     <th align="center">单色图标 (monochrome)</th>
   </tr>
   <tr>
-    <td align="center"><img src="docs/assets/demo_original.png" width="80" alt="Original" /><br /><sub><b>原始图标</b></sub></td>
-    <td align="center"><img src="docs/assets/demo_recfg.png" width="80" alt="recfg" /><br /><sub><b>主体前景</b></sub></td>
-    <td align="center"><img src="docs/assets/demo_recbg.png" width="80" alt="recbg" /><br /><sub><b>背景延展</b></sub></td>
-    <td align="center"><img src="docs/assets/demo_rec_night.png" width="80" alt="rec_night" /><br /><sub><b>暗色适配</b></sub></td>
-    <td align="center"><img src="docs/assets/demo_monochrome.png" width="80" alt="monochrome" /><br /><sub><b>单色提取</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_original.png" width="96" alt="Original" /><br /><sub><b>原始图标</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_recfg.png" width="96" alt="recfg" /><br /><sub><b>主体前景</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_recbg.png" width="96" alt="recbg" /><br /><sub><b>背景延展</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_rec_night.png" width="96" alt="rec_night" /><br /><sub><b>暗色适配</b></sub></td>
+    <td align="center"><img src="docs/assets/demo_monochrome.png" width="96" alt="monochrome" /><br /><sub><b>单色提取</b></sub></td>
   </tr>
   <tr>
     <td align="center"><code>icon.png</code></td>
