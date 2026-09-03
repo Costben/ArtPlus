@@ -5117,28 +5117,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun loadBatchPreviewSnapshot(preset: TuningPreset): BatchPreviewResult? {
-        val datas = BatchPreviewStore.loadSnapshot(filesDir, preset) ?: return null
-        val items = datas.map { data ->
-            BatchPreviewItem(
-                packageName = data.packageName,
-                label = data.label,
-                assets = PreviewAssets(
-                    recbg = data.recbg,
-                    recfg = data.recfg,
-                    recNight = data.recNight,
-                    monochromeLight = data.monochromeLight,
-                    monochromeDark = data.monochromeDark,
-                ).preparedForDraw(),
-            )
-        }
-        return BatchPreviewResult(preset = preset, items = items)
-    }
-
     private fun openBatchPreviewForPreset(preset: TuningPreset) {
         activeBatchPreviewPreset = preset
         if (BatchPreviewStore.hasSnapshot(filesDir, preset.id)) {
-            val cached = loadBatchPreviewSnapshot(preset)
+            // P4 交界：快照读取收敛进 pipeline/，显式传 filesDir。
+            val cached = loadBatchPreviewSnapshot(filesDir, preset)
             if (cached != null) {
                 batchPreviewResult = cached
                 currentPage = AppPage.BatchPreview
@@ -11906,7 +11889,8 @@ class MainActivity : ComponentActivity() {
         val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, localPipeline)
         val localCandidates = localCandidateSet.candidates
         val candidates = if (useGpt) {
-            val gptLayers = generateGptLayers(gptSourceIcon, localSource.recfg, localSource.recbg)
+            // P4 交界：GPT 图层收敛进 pipeline/，显式传调参 + 凭证 + 状态回调。
+            val gptLayers = generateGptLayers(gptSourceIcon, localSource.recfg, localSource.recbg, gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent, gptImageMode, gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
             localCandidates + (PreviewChoice.Gpt to IconCandidate(gptLayers.recfg, gptLayers.recbg, monochromeRaw = null, isLocal = false))
         } else {
             localCandidates
@@ -14129,7 +14113,8 @@ class MainActivity : ComponentActivity() {
         val selections = previewSelections.withChoice(mode, PreviewChoice.Gpt)
         startUiFriendlyThread("ArtPlusGptCandidate") {
             try {
-                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg)
+                // P4 交界：GPT 图层收敛进 pipeline/，显式传调参 + 凭证 + 状态回调。
+                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent, gptImageMode, gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
                 val updatedSession = session.copy(
                     candidates = session.candidates + (
                         PreviewChoice.Gpt to IconCandidate(
@@ -14190,7 +14175,8 @@ class MainActivity : ComponentActivity() {
         val selections = PreviewSelections.default(PreviewChoice.Gpt)
         startUiFriendlyThread("ArtPlusGptCandidateAll") {
             try {
-                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg)
+                // P4 交界：GPT 图层收敛进 pipeline/，显式传调参 + 凭证 + 状态回调。
+                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, gptCustomPrompt, gptPromptPreset, foregroundSubjectPercent, gptImageMode, gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
                 val updatedSession = session.copy(
                     candidates = session.candidates + (
                         PreviewChoice.Gpt to IconCandidate(
@@ -14481,7 +14467,8 @@ class MainActivity : ComponentActivity() {
                 delay(if (rebuildLocalCandidates) PREVIEW_REBUILD_DEBOUNCE_MS else PREVIEW_OUTPUT_DEBOUNCE_MS)
                 val updatedSession = when {
                     rebuildLocalCandidates && app != null && currentSession.canRebuildLocalCandidates ->
-                        rebuildLocalSession(currentSession, app)
+                        // P4 交界：会话重建收敛进 pipeline/，显式传 pm + 调参快照。
+                        rebuildLocalSession(currentSession, app, packageManager, currentTuningParams())
                     else -> currentSession
                 }
                 val previousDefault = retargetFrom
@@ -14520,50 +14507,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    private fun buildLocalSessionForPreview(app: AppEntry, outDir: File): GenerationSession {
-        val icon = app.applicationInfo.loadIcon(packageManager)
-        val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
-        val gptSourceIcon = drawDrawable(icon, GPT_SOURCE_SIZE, GPT_SOURCE_SIZE, transparent = false)
-        val localPipeline = currentLocalPipelineConfig()
-        val localSource = buildLocalIconLayers(icon, localPipeline)
-        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, localPipeline)
-        return GenerationSession(
-            packageName = app.packageName,
-            outDir = outDir,
-            sourceIcon = gptSourceIcon,
-            baseRecfg = localSource.recfg,
-            baseRecbg = localSource.recbg,
-            monochromeRaw = localSource.monochrome,
-            candidates = localCandidateSet.candidates,
-            autoLocalChoice = localCandidateSet.autoChoice,
-        )
-    }
-
-    private fun rebuildLocalSession(session: GenerationSession, app: AppEntry): GenerationSession {
-        val icon = app.applicationInfo.loadIcon(packageManager)
-        val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
-        val gptSourceIcon = drawDrawable(icon, GPT_SOURCE_SIZE, GPT_SOURCE_SIZE, transparent = false)
-        val localPipeline = currentLocalPipelineConfig()
-        val localSource = buildLocalIconLayers(icon, localPipeline)
-        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, localPipeline)
-        val localCandidates = localCandidateSet.candidates
-        val retainedCandidates = buildMap {
-            session.candidates[PreviewChoice.Gpt]?.let { put(PreviewChoice.Gpt, it) }
-            session.candidates[PreviewChoice.Rmbg]?.let { put(PreviewChoice.Rmbg, it) }
-        }
-        val candidates = localCandidates + retainedCandidates
-        return session.copy(
-            sourceIcon = gptSourceIcon,
-            baseRecfg = localSource.recfg,
-            baseRecbg = localSource.recbg,
-            monochromeRaw = localSource.monochrome,
-            candidates = candidates,
-            customForegrounds = session.customForegrounds,
-            customBackgrounds = session.customBackgrounds,
-            autoLocalChoice = localCandidateSet.autoChoice,
-        )
     }
 
     private fun writeActivePreviewOutputs(
@@ -14605,54 +14548,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    private fun generateGptLayers(sourceIcon: Bitmap, localRecfg: Bitmap, localRecbg: Bitmap): IconLayers {
-        val chromaKey = chooseChromaKey(sourceIcon)
-        val chromaHex = "#%02x%02x%02x".format(
-            AndroidColor.red(chromaKey),
-            AndroidColor.green(chromaKey),
-            AndroidColor.blue(chromaKey),
-        )
-        val transparentForegroundPrompt = buildTransparentForegroundPrompt()
-        val chromaForegroundPrompt = buildChromaForegroundPrompt(chromaHex)
-        val backgroundPrompt = buildBackgroundPrompt()
-
-        status("AI生成前景...")
-        var usedChromaForeground = false
-        val rawForeground = try {
-            val transparentForeground = gptEditImage(sourceIcon, transparentForegroundPrompt, "transparent")
-            if (hasRealAlpha(transparentForeground)) {
-                transparentForeground
-            } else {
-                usedChromaForeground = true
-                status("AI未返回透明前景，改用纯色抠底兜底")
-                gptEditImage(sourceIcon, chromaForegroundPrompt, "opaque")
-            }
-        } catch (error: Exception) {
-            usedChromaForeground = true
-            status("AI透明前景失败，改用纯色抠底兜底: ${error.message ?: error.javaClass.simpleName}")
-            gptEditImage(sourceIcon, chromaForegroundPrompt, "opaque")
-        }
-        status("AI生成背景...")
-        val rawBackground = gptEditImage(sourceIcon, backgroundPrompt, "opaque")
-
-        val recbg = Bitmap.createScaledBitmap(rawBackground, SIZE_1X1, SIZE_1X1, true)
-        val recfg = when {
-            hasRealAlpha(rawForeground) -> {
-                Bitmap.createScaledBitmap(rawForeground, SIZE_1X1, SIZE_1X1, true)
-            }
-            usedChromaForeground -> {
-                val keyed = removeChromaKeyBackground(rawForeground, chromaKey)
-                if (alphaCoverage(keyed) in 0.002..0.95) {
-                    Bitmap.createScaledBitmap(keyed, SIZE_1X1, SIZE_1X1, true)
-                } else {
-                    localRecfg
-                }
-            }
-            else -> localRecfg
-        }
-        return IconLayers(recfg, recbg)
     }
 
     // 过渡 wrapper（重构期间保留）：委托 pipeline/ 显式参数版本，P5 状态收敛后删除。
@@ -16132,22 +16027,6 @@ class MainActivity : ComponentActivity() {
         val currentLabel: String,
     )
 
-    private data class BatchPreviewItem(
-        val packageName: String,
-        val label: String,
-        val assets: PreviewAssets,
-    )
-
-    private data class BatchPreviewResult(
-        val preset: TuningPreset,
-        val items: List<BatchPreviewItem>,
-    )
-
-    private data class IconLayers(
-        val recfg: Bitmap,
-        val recbg: Bitmap,
-    )
-
     private data class ComponentCandidates(
         val subject: IconCandidate?,
         val background: IconCandidate?,
@@ -16166,31 +16045,6 @@ class MainActivity : ComponentActivity() {
         val session: GenerationSession,
         val selections: PreviewSelections,
     )
-
-    private data class PreviewAssets(
-        val recbg: Bitmap?,
-        val recfg: Bitmap?,
-        val recNight: Bitmap?,
-        val monochromeLight: Bitmap?,
-        val monochromeDark: Bitmap?,
-    ) {
-        fun missingMessage(mode: PreviewMode): String? =
-            when (mode) {
-                PreviewMode.NormalLight -> if (recbg == null || recfg == null) "缺少 recbg/recfg" else null
-                PreviewMode.NormalDark -> if (recNight == null) "缺少 rec_night" else null
-                PreviewMode.MonochromeLight -> if (monochromeLight == null) "缺少 monochrome" else null
-                PreviewMode.MonochromeDark -> if (monochromeDark == null) "缺少 monochrome" else null
-            }
-    }
-
-    private fun PreviewAssets.preparedForDraw(): PreviewAssets {
-        recbg?.prepareToDraw()
-        recfg?.prepareToDraw()
-        recNight?.prepareToDraw()
-        monochromeLight?.prepareToDraw()
-        monochromeDark?.prepareToDraw()
-        return this
-    }
 
     private enum class PreviewDesktopBackground(val label: String, val fallbackColor: Color) {
         LightGray("浅灰", Color(0xFFE8E8E8)),
@@ -16459,7 +16313,6 @@ class MainActivity : ComponentActivity() {
         private const val EXTRA_DEBUG_GENERATE_TOKEN = "dev.artplus.mobile.DEBUG_GENERATE_TOKEN"
         private const val CURRENT_IMAGE_TUNING_VERSION = 4
         private const val SIZE_2X2 = 704
-        private const val GPT_SOURCE_SIZE = 1024
         private const val RMBG_COMPONENT_DIR = "rmbg_component"
         private const val RMBG_MODEL_NAME = "bria-rmbg.onnx"
         private const val DEFAULT_RMBG_INPUT_SIZE = 1024
