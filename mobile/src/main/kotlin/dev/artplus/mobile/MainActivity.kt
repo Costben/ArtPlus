@@ -13348,74 +13348,6 @@ class MainActivity : ComponentActivity() {
         return AndroidColor.rgb(median(reds), median(greens), median(blues))
     }
 
-    private fun medianVisibleColor(source: Bitmap): Int {
-        val pixels = IntArray(source.width * source.height)
-        source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
-        val reds = mutableListOf<Int>()
-        val greens = mutableListOf<Int>()
-        val blues = mutableListOf<Int>()
-        for (pixel in pixels) {
-            if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                continue
-            }
-            reds += AndroidColor.red(pixel)
-            greens += AndroidColor.green(pixel)
-            blues += AndroidColor.blue(pixel)
-        }
-        if (reds.isEmpty()) {
-            return AndroidColor.WHITE
-        }
-        return AndroidColor.rgb(median(reds), median(greens), median(blues))
-    }
-
-    private fun medianVisibleColorInRect(source: Bitmap, left: Int, top: Int, right: Int, bottom: Int): Int {
-        val reds = mutableListOf<Int>()
-        val greens = mutableListOf<Int>()
-        val blues = mutableListOf<Int>()
-        val safeLeft = left.coerceIn(0, source.width)
-        val safeTop = top.coerceIn(0, source.height)
-        val safeRight = right.coerceIn(safeLeft, source.width)
-        val safeBottom = bottom.coerceIn(safeTop, source.height)
-        for (y in safeTop until safeBottom) {
-            for (x in safeLeft until safeRight) {
-                val pixel = source.getPixel(x, y)
-                if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                    continue
-                }
-                reds += AndroidColor.red(pixel)
-                greens += AndroidColor.green(pixel)
-                blues += AndroidColor.blue(pixel)
-            }
-        }
-        if (reds.isEmpty()) {
-            return medianVisibleColor(source)
-        }
-        return AndroidColor.rgb(median(reds), median(greens), median(blues))
-    }
-
-    private fun medianColor(colors: IntArray): Int {
-        val reds = mutableListOf<Int>()
-        val greens = mutableListOf<Int>()
-        val blues = mutableListOf<Int>()
-        colors.forEach { color ->
-            reds += AndroidColor.red(color)
-            greens += AndroidColor.green(color)
-            blues += AndroidColor.blue(color)
-        }
-        return AndroidColor.rgb(median(reds), median(greens), median(blues))
-    }
-
-    private fun lerpColor(start: Int, end: Int, amount: Double): Int {
-        val t = amount.coerceIn(0.0, 1.0)
-        fun channel(a: Int, b: Int): Int =
-            (a + (b - a) * t).roundToInt().coerceIn(0, 255)
-        return AndroidColor.rgb(
-            channel(AndroidColor.red(start), AndroidColor.red(end)),
-            channel(AndroidColor.green(start), AndroidColor.green(end)),
-            channel(AndroidColor.blue(start), AndroidColor.blue(end)),
-        )
-    }
-
     private fun maskColorStd(pixels: IntArray, mask: BooleanArray): Double {
         var count = 0
         var redSum = 0.0
@@ -13650,18 +13582,6 @@ class MainActivity : ComponentActivity() {
         }
         val bounds = meaningfulAlphaBounds(candidate) ?: return false
         return !hasAutoCropRisk(bounds, candidate.width, candidate.height)
-    }
-
-    private fun hasAutoCropRisk(bounds: Bounds, width: Int, height: Int): Boolean {
-        val margin = AUTO_EDGE_TOUCH_MARGIN_PX
-        val touchesLeft = bounds.left <= margin
-        val touchesTop = bounds.top <= margin
-        val touchesRight = bounds.right >= width - margin
-        val touchesBottom = bounds.bottom >= height - margin
-        val touchCount = listOf(touchesLeft, touchesTop, touchesRight, touchesBottom).count { it }
-        return touchCount >= AUTO_EDGE_TOUCH_COUNT_LIMIT ||
-            (touchesLeft && touchesRight) ||
-            (touchesTop && touchesBottom)
     }
 
     private fun writePackageOutputs(session: GenerationSession, selections: PreviewSelections) {
@@ -15926,340 +15846,40 @@ class MainActivity : ComponentActivity() {
     private fun buildBackgroundPrompt(): String =
         "Remove the app icon main subject/logo. Rebuild only the clean original background plate. No logo, no text, no symbol."
 
+    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
     private fun buildLocalIconLayers(
         icon: Drawable,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): LocalIconLayers {
-        val renderSize = SIZE_1X1 * LOCAL_ICON_RENDER_SCALE
-        if (icon is AdaptiveIconDrawable) {
-            val background = drawDrawable(
-                icon.background ?: ColorDrawable(AndroidColor.WHITE),
-                renderSize,
-                renderSize,
-                transparent = false,
-            )
-            val directForeground = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
-            val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
-            val foreground = if (pipeline.backgroundSeparationEnabled) {
-                subtractBackground(composed, background, pipeline = pipeline)
-            } else {
-                composed
-            }
-            val recbg = resizeBitmap(background, SIZE_1X1, SIZE_1X1)
-            val foregroundSelection = chooseBetterAdaptiveForeground(foreground, directForeground, background, pipeline)
-            val monochrome = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                icon.monochrome?.let {
-                    resizeBitmap(drawDrawable(it, renderSize, renderSize, transparent = true), SIZE_1X1, SIZE_1X1)
-                }
-            } else {
-                null
-            }?.takeIf { alphaCoverage(it) >= MONOCHROME_MIN_COVERAGE }
-            val selectedForeground = resizeBitmap(
-                foregroundSelection.bitmap,
-                SIZE_1X1,
-                SIZE_1X1,
-            )
-            val recfg = if (pipeline.cornerMaskCleanupEnabled) {
-                removeCornerMaskResidue(selectedForeground, recbg, pipeline = pipeline)
-            } else {
-                selectedForeground
-            }
-            val textSafeRecfg = if (!pipeline.textSafeCandidateEnabled) {
-                null
-            } else if (pipeline.cornerMaskCleanupEnabled) {
-                removeCornerMaskResidue(
-                    source = selectedForeground,
-                    background = recbg,
-                    removeNearWhite = false,
-                    pipeline = pipeline,
-                )
-            } else {
-                selectedForeground
-            }
-            val componentCandidates = if (pipeline.componentCandidatesEnabled) {
-                buildAdaptiveComponentCandidates(
-                    background = background,
-                    composed = composed,
-                    directForeground = directForeground,
-                    monochrome = monochrome,
-                    pipeline = pipeline,
-                )
-            } else {
-                ComponentCandidates(subject = null, background = null)
-            }
-            return LocalIconLayers(
-                recfg = recfg,
-                recbg = recbg,
-                monochrome = monochrome,
-                monochromeIsNative = monochrome != null,
-                preserveGeometry = foregroundSelection.preserveGeometry,
-                textSafe = textSafeRecfg?.let { textSafeForeground ->
-                    IconCandidate(
-                        recfgRaw = textSafeForeground,
-                        recbg = recbg,
-                        monochromeRaw = monochrome,
-                        monochromeIsNative = monochrome != null,
-                        preserveGeometry = foregroundSelection.preserveGeometry,
-                        applyLocalEdgePolish = pipeline.edgePolishEnabled,
-                    )
-                },
-                componentSubject = componentCandidates.subject,
-                componentBackground = componentCandidates.background,
-            )
-        }
+    ): LocalIconLayers = buildLocalIconLayers(
+        icon,
+        pipeline,
+        backgroundSeparationPercent,
+        adaptiveForegroundMode,
+        adaptiveDirectMaxCoveragePercent,
+        adaptiveDirectMaxCoverageIncreasePercent,
+        adaptiveMaskEdgeCoveragePercent,
+        adaptiveMaskMinCoveragePercent,
+        adaptiveCenterEpsilonPercent,
+    )
 
-        val source = resizeBitmap(drawDrawable(icon, renderSize, renderSize, transparent = true), SIZE_1X1, SIZE_1X1)
-        val recbg = solidBitmap(
-            SIZE_1X1,
-            SIZE_1X1,
-            if (pipeline.plainBackgroundEstimationEnabled) {
-                estimatePlainIconBackground(source)
-            } else {
-                AndroidColor.TRANSPARENT
-            },
-        )
-        return LocalIconLayers(
-            recfg = if (pipeline.backgroundSeparationEnabled && pipeline.plainBackgroundEstimationEnabled) {
-                subtractPlainIconBackground(source, recbg, pipeline)
-            } else {
-                source
-            },
-            recbg = recbg,
-            monochrome = null,
-            monochromeIsNative = false,
-            preserveGeometry = false,
-            textSafe = null,
-            componentSubject = null,
-            componentBackground = null,
-        )
-    }
-
-    private fun buildAdaptiveComponentCandidates(
-        background: Bitmap,
-        composed: Bitmap,
-        directForeground: Bitmap,
-        monochrome: Bitmap?,
-        pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): ComponentCandidates {
-        if (
-            !hasDetailedAdaptiveBackground(background) ||
-            !isUsableDirectAdaptiveForeground(
-                source = directForeground,
-                composedCoverage = alphaCoverage(
-                    if (pipeline.backgroundSeparationEnabled) {
-                        subtractBackground(composed, background, pipeline = pipeline)
-                    } else {
-                        composed
-                    },
-                ),
-            )
-        ) {
-            return ComponentCandidates(subject = null, background = null)
-        }
-        val cleanBackground = estimateAdaptiveCleanBackground(background)
-        val subjectForeground = if (pipeline.backgroundSeparationEnabled) {
-            subtractPlainIconBackground(composed, cleanBackground, pipeline)
-        } else {
-            composed
-        }
-        val subjectCandidate = IconCandidate(
-            recfgRaw = resizeBitmap(subjectForeground, SIZE_1X1, SIZE_1X1),
-            recbg = resizeBitmap(cleanBackground, SIZE_1X1, SIZE_1X1),
-            monochromeRaw = null,
-            preserveGeometry = true,
-            applyLocalEdgePolish = pipeline.edgePolishEnabled,
-        )
-        val backgroundCandidate = IconCandidate(
-            recfgRaw = resizeBitmap(repairLocalTransparentEdgeColors(directForeground, pipeline), SIZE_1X1, SIZE_1X1),
-            recbg = resizeBitmap(background, SIZE_1X1, SIZE_1X1),
-            monochromeRaw = monochrome,
-            monochromeIsNative = monochrome != null,
-            preserveGeometry = true,
-            applyLocalEdgePolish = pipeline.edgePolishEnabled,
-        )
-        return ComponentCandidates(subject = subjectCandidate, background = backgroundCandidate)
-    }
-
+    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
     private fun chooseBetterAdaptiveForeground(
         fromComposed: Bitmap,
         directForeground: Bitmap,
         background: Bitmap,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): AdaptiveForegroundSelection {
-        val composedBounds = alphaBounds(fromComposed, LOCAL_ALPHA_VISIBLE_THRESHOLD)
-        val directBounds = alphaBounds(directForeground, LOCAL_ALPHA_VISIBLE_THRESHOLD)
-        if (composedBounds == null) {
-            return AdaptiveForegroundSelection(repairLocalTransparentEdgeColors(directForeground, pipeline), preserveGeometry = true)
-        }
-        if (directBounds == null) {
-            return AdaptiveForegroundSelection(fromComposed, preserveGeometry = false)
-        }
-        if (!pipeline.adaptiveSelectionEnabled) {
-            return AdaptiveForegroundSelection(fromComposed, preserveGeometry = false)
-        }
-        if (adaptiveForegroundMode == AdaptiveForegroundMode.Composed) {
-            return AdaptiveForegroundSelection(fromComposed, preserveGeometry = false)
-        }
-        if (adaptiveForegroundMode == AdaptiveForegroundMode.Direct) {
-            return AdaptiveForegroundSelection(repairLocalTransparentEdgeColors(directForeground, pipeline), preserveGeometry = true)
-        }
-        if (
-            hasDetailedAdaptiveBackground(background) &&
-            isUsableDirectAdaptiveForeground(
-                source = directForeground,
-                composedCoverage = alphaCoverage(fromComposed),
-            )
-        ) {
-            return AdaptiveForegroundSelection(repairLocalTransparentEdgeColors(directForeground, pipeline), preserveGeometry = true)
-        }
-        if (shouldPreferDirectAdaptiveForeground(fromComposed, directForeground, background)) {
-            return AdaptiveForegroundSelection(repairLocalTransparentEdgeColors(directForeground, pipeline), preserveGeometry = true)
-        }
-        val composedCenterOffset = centerOffsetRatio(composedBounds, fromComposed.width, fromComposed.height)
-        val directCenterOffset = centerOffsetRatio(directBounds, directForeground.width, directForeground.height)
-        if (
-            hasAdaptiveMaskArtifact(fromComposed) &&
-            isUsableDirectAdaptiveForeground(
-                source = directForeground,
-                composedCoverage = alphaCoverage(fromComposed),
-            )
-        ) {
-            return AdaptiveForegroundSelection(repairLocalTransparentEdgeColors(directForeground, pipeline), preserveGeometry = true)
-        }
-        if (alphaCoverage(directForeground) > ratioPercent(adaptiveDirectMaxCoveragePercent)) {
-            return AdaptiveForegroundSelection(fromComposed, preserveGeometry = false)
-        }
-        return if (composedCenterOffset <= directCenterOffset + ratioPercent(adaptiveCenterEpsilonPercent)) {
-            AdaptiveForegroundSelection(fromComposed, preserveGeometry = false)
-        } else {
-            AdaptiveForegroundSelection(repairLocalTransparentEdgeColors(directForeground, pipeline), preserveGeometry = true)
-        }
-    }
-
-    private fun hasDetailedAdaptiveBackground(background: Bitmap): Boolean {
-        val width = background.width
-        val height = background.height
-        if (width <= 0 || height <= 0) {
-            return false
-        }
-        val pixels = IntArray(width * height)
-        background.getPixels(pixels, 0, width, 0, 0, width, height)
-        val baseColor = medianVisibleColor(background)
-        var visible = 0
-        var detail = 0
-        for (pixel in pixels) {
-            if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                continue
-            }
-            visible++
-            if (colorDistance(pixel, baseColor) >= ADAPTIVE_BACKGROUND_DETAIL_DISTANCE) {
-                detail++
-            }
-        }
-        if (visible == 0) {
-            return false
-        }
-        val detailRatio = detail.toDouble() / visible.toDouble()
-        return detailRatio in ADAPTIVE_BACKGROUND_DETAIL_MIN_RATIO..ADAPTIVE_BACKGROUND_DETAIL_MAX_RATIO
-    }
-
-    private fun estimateAdaptiveCleanBackground(background: Bitmap): Bitmap {
-        val width = background.width
-        val height = background.height
-        if (width <= 0 || height <= 0) {
-            return background
-        }
-        val cornerSize = maxOf(4, (minOf(width, height) * ADAPTIVE_CLEAN_CORNER_RATIO + 0.5f).toInt())
-        val topLeft = medianVisibleColorInRect(background, 0, 0, cornerSize, cornerSize)
-        val topRight = medianVisibleColorInRect(background, width - cornerSize, 0, width, cornerSize)
-        val bottomLeft = medianVisibleColorInRect(background, 0, height - cornerSize, cornerSize, height)
-        val bottomRight = medianVisibleColorInRect(
-            background,
-            width - cornerSize,
-            height - cornerSize,
-            width,
-            height,
-        )
-        val colors = intArrayOf(topLeft, topRight, bottomLeft, bottomRight)
-        var maxDistance = 0.0
-        for (i in colors.indices) {
-            for (j in i + 1 until colors.size) {
-                maxDistance = maxOf(maxDistance, colorDistance(colors[i], colors[j]))
-            }
-        }
-        if (maxDistance <= ADAPTIVE_CLEAN_SOLID_DISTANCE) {
-            return solidBitmap(width, height, medianColor(colors))
-        }
-
-        val outPixels = IntArray(width * height)
-        for (y in 0 until height) {
-            val fy = if (height <= 1) 0.0 else y.toDouble() / (height - 1).toDouble()
-            for (x in 0 until width) {
-                val fx = if (width <= 1) 0.0 else x.toDouble() / (width - 1).toDouble()
-                val top = lerpColor(topLeft, topRight, fx)
-                val bottom = lerpColor(bottomLeft, bottomRight, fx)
-                outPixels[y * width + x] = lerpColor(top, bottom, fy)
-            }
-        }
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        out.setPixels(outPixels, 0, width, 0, 0, width, height)
-        return out
-    }
-
-    private fun shouldPreferDirectAdaptiveForeground(
-        fromComposed: Bitmap,
-        directForeground: Bitmap,
-        background: Bitmap,
-    ): Boolean {
-        val directCoverage = alphaCoverage(directForeground)
-        val composedCoverage = alphaCoverage(fromComposed)
-        if (directCoverage < ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE) {
-            return false
-        }
-        if (composedCoverage >= directCoverage - ADAPTIVE_DIRECT_MIN_LOST_COVERAGE) {
-            return false
-        }
-        val directBounds = alphaBounds(directForeground, LOCAL_ALPHA_VISIBLE_THRESHOLD) ?: return false
-        if (!hasAutoCropRisk(directBounds, directForeground.width, directForeground.height)) {
-            return false
-        }
-        val backgroundColor = medianVisibleColor(background)
-        return hasLayeredAdaptiveForegroundPlate(directForeground, backgroundColor)
-    }
-
-    private fun hasLayeredAdaptiveForegroundPlate(source: Bitmap, backgroundColor: Int): Boolean {
-        val width = source.width
-        val height = source.height
-        val pixels = IntArray(width * height)
-        source.getPixels(pixels, 0, width, 0, 0, width, height)
-        var visible = 0
-        var plateLike = 0
-        var detailLike = 0
-        for (pixel in pixels) {
-            if (AndroidColor.alpha(pixel) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
-                continue
-            }
-            visible++
-            val saturation = saturation(pixel)
-            val luma = luma(pixel)
-            if (
-                luma >= ADAPTIVE_DIRECT_PLATE_MIN_LUMA &&
-                saturation <= ADAPTIVE_DIRECT_PLATE_MAX_SATURATION &&
-                colorDistance(pixel, backgroundColor) >= ADAPTIVE_DIRECT_PLATE_BACKGROUND_DISTANCE
-            ) {
-                plateLike++
-            } else if (colorDistance(pixel, backgroundColor) >= ADAPTIVE_DIRECT_DETAIL_BACKGROUND_DISTANCE) {
-                detailLike++
-            }
-        }
-        if (visible == 0) {
-            return false
-        }
-        val plateRatio = plateLike.toDouble() / visible.toDouble()
-        val detailRatio = detailLike.toDouble() / visible.toDouble()
-        return plateRatio >= ADAPTIVE_DIRECT_PLATE_MIN_RATIO &&
-            detailRatio >= ADAPTIVE_DIRECT_DETAIL_MIN_RATIO
-    }
+    ): AdaptiveForegroundSelection = chooseBetterAdaptiveForeground(
+        fromComposed,
+        directForeground,
+        background,
+        pipeline,
+        adaptiveForegroundMode,
+        adaptiveDirectMaxCoveragePercent,
+        adaptiveDirectMaxCoverageIncreasePercent,
+        adaptiveMaskEdgeCoveragePercent,
+        adaptiveMaskMinCoveragePercent,
+        adaptiveCenterEpsilonPercent,
+    )
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
     private fun subtractPlainIconBackground(
@@ -16268,29 +15888,18 @@ class MainActivity : ComponentActivity() {
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
     ): Bitmap = subtractPlainIconBackground(source, background, pipeline, backgroundSeparationPercent)
 
-    private fun hasAdaptiveMaskArtifact(source: Bitmap): Boolean {
-        val bounds = alphaBounds(source, LOCAL_ALPHA_VISIBLE_THRESHOLD) ?: return false
-        if (!hasAutoCropRisk(bounds, source.width, source.height)) {
-            return false
-        }
-        val pixels = IntArray(source.width * source.height)
-        source.getPixels(pixels, 0, source.width, 0, 0, source.width, source.height)
-        val edge = dominantEdgeColor(pixels, source.width, bounds)
-        return edge.coverage >= ratioPercent(adaptiveMaskEdgeCoveragePercent) &&
-            alphaCoverage(source) >= ratioPercent(adaptiveMaskMinCoveragePercent)
-    }
+    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
+    private fun hasAdaptiveMaskArtifact(source: Bitmap): Boolean =
+        hasAdaptiveMaskArtifact(source, adaptiveMaskEdgeCoveragePercent, adaptiveMaskMinCoveragePercent)
 
-    private fun isUsableDirectAdaptiveForeground(source: Bitmap, composedCoverage: Double): Boolean {
-        val coverage = alphaCoverage(source)
-        if (coverage !in ADAPTIVE_DIRECT_MIN_COVERAGE..ratioPercent(adaptiveDirectMaxCoveragePercent)) {
-            return false
-        }
-        if (coverage > composedCoverage + ratioPercent(adaptiveDirectMaxCoverageIncreasePercent)) {
-            return false
-        }
-        val bounds = alphaBounds(source, LOCAL_ALPHA_VISIBLE_THRESHOLD) ?: return false
-        return !hasAutoCropRisk(bounds, source.width, source.height)
-    }
+    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
+    private fun isUsableDirectAdaptiveForeground(source: Bitmap, composedCoverage: Double): Boolean =
+        isUsableDirectAdaptiveForeground(
+            source,
+            composedCoverage,
+            adaptiveDirectMaxCoveragePercent,
+            adaptiveDirectMaxCoverageIncreasePercent,
+        )
 
     // 调参映射委托到 imaging/PipelineTuning.kt（显式传参版本），本体重构期间保留无参 wrapper。
     private fun effectiveBackgroundSeparationDistance(): Double =
@@ -19109,8 +18718,6 @@ class MainActivity : ComponentActivity() {
         private const val NIGHT_DEFAULT_BOOST_MAX_BLEND = 0.16
         private const val NIGHT_FILL_BACKGROUND_MAX_BLEND = 0.30
         private const val AUTO_COVERAGE_CHANGE_THRESHOLD = 0.012
-        private const val AUTO_EDGE_TOUCH_MARGIN_PX = 1
-        private const val AUTO_EDGE_TOUCH_COUNT_LIMIT = 2
         private const val RMBG_MIN_MANUAL_COVERAGE = 0.02
         private const val RMBG_MAX_MANUAL_COVERAGE = 0.62
         private const val RMBG_MIN_AUTO_COVERAGE = 0.02

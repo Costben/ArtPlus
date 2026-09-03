@@ -332,3 +332,15 @@ internal fun isInCornerMaskZone(x: Int, y: Int, width: Int, height: Int): Boolea
     val zone = minOf(CORNER_MASK_ZONE_SIZE, width / 2, height / 2).coerceAtLeast(1)
     return (x < zone || x >= width - zone) && (y < zone || y >= height - zone)
 }
+
+internal fun hasAutoCropRisk(bounds: Bounds, width: Int, height: Int): Boolean {
+    val margin = AUTO_EDGE_TOUCH_MARGIN_PX
+    val touchesLeft = bounds.left <= margin
+    val touchesTop = bounds.top <= margin
+    val touchesRight = bounds.right >= width - margin
+    val touchesBottom = bounds.bottom >= height - margin
+    val touchCount = listOf(touchesLeft, touchesTop, touchesRight, touchesBottom).count { it }
+    return touchCount >= AUTO_EDGE_TOUCH_COUNT_LIMIT ||
+        (touchesLeft && touchesRight) ||
+        (touchesTop && touchesBottom)
+}
