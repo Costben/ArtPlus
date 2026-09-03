@@ -12930,11 +12930,6 @@ class MainActivity : ComponentActivity() {
         ).joinToString("|")
     }
 
-    private data class RmbgInferenceReport(
-        val actualBackend: RmbgInferenceBackend,
-        val elapsedMs: Long,
-    )
-
     private data class RmbgModelOutput(
         val output: FloatArray,
         val report: RmbgInferenceReport,
@@ -18709,39 +18704,9 @@ class MainActivity : ComponentActivity() {
         val recbg: Bitmap,
     )
 
-    private data class LocalIconLayers(
-        val recfg: Bitmap,
-        val recbg: Bitmap,
-        val monochrome: Bitmap?,
-        val monochromeIsNative: Boolean,
-        val preserveGeometry: Boolean,
-        val textSafe: IconCandidate?,
-        val componentSubject: IconCandidate?,
-        val componentBackground: IconCandidate?,
-    )
-
-    private data class AdaptiveForegroundSelection(
-        val bitmap: Bitmap,
-        val preserveGeometry: Boolean,
-    )
-
     private data class ComponentCandidates(
         val subject: IconCandidate?,
         val background: IconCandidate?,
-    )
-
-    private data class IconCandidate(
-        val recfgRaw: Bitmap,
-        val recbg: Bitmap,
-        val monochromeRaw: Bitmap?,
-        val monochromeIsNative: Boolean = false,
-        val monochromeFromDefaultSubject: Boolean = false,
-        val preserveGeometry: Boolean = false,
-        val customFinalBitmap: Bitmap? = null,
-        val rmbgSourceRaw: Bitmap? = null,
-        val rmbgAlphaRaw: IntArray? = null,
-        val isLocal: Boolean = true,
-        val applyLocalEdgePolish: Boolean = true,
     )
 
     private data class GenerationSession(
@@ -18770,25 +18735,6 @@ class MainActivity : ComponentActivity() {
         val outDir: File,
         val session: GenerationSession,
         val selections: PreviewSelections,
-    )
-
-    private data class LocalSeparationResult(
-        val bitmap: Bitmap,
-        val summary: String,
-    )
-
-    private data class LocalCandidateSet(
-        val candidates: Map<PreviewChoice, IconCandidate>,
-        val autoChoice: PreviewChoice,
-    )
-
-    private data class CandidateBuildResult(
-        val candidate: IconCandidate?,
-        val autoUsable: Boolean,
-        val coverage: Double,
-        val rmbgInference: RmbgInferenceReport? = null,
-        val manualUsable: Boolean = true,
-        val validationWarning: String? = null,
     )
 
     private data class PreviewAssets(
@@ -18833,39 +18779,6 @@ class MainActivity : ComponentActivity() {
             fun fromName(name: String?): PreviewDesktopBackground =
                 entries.firstOrNull { it.name == name } ?: DarkGray
         }
-    }
-
-    private enum class PreviewChoice(
-        val label: String,
-        val summary: String,
-        val customKind: CustomImageKind? = null,
-    ) {
-        Original("原始", "保留原层"),
-        TextSafe("字标保全", "保护白字"),
-        Plate("清理", "兼容旧去底板规则"),
-        Full("清理", "合并底板与阴影清理"),
-        ComposedBackground("拼合背景", "从完整图标提取背景"),
-        ComponentSubject("底座当主体", "保留复杂底座"),
-        ComponentBackground("底座当背景", "底座作为背景"),
-        TwoLayer("二层", "底板和主体分层"),
-        Rmbg("RMBG", "模型抠图"),
-        Gpt("AI", "AI生成"),
-        RmbgComposedBackground("拼合背景", "RMBG 主体 + 原图背景"),
-        GptComposedBackground("拼合背景", "AI 主体 + 原图背景"),
-        CustomForeground("自定义主体", "导入主体", CustomImageKind.Foreground),
-        CustomBackground("自定义背景", "导入背景", CustomImageKind.Background);
-
-        val isCustom: Boolean
-            get() = customKind != null
-    }
-
-    private val PreviewChoice.isComposedBackgroundCombination: Boolean
-        get() = this == PreviewChoice.RmbgComposedBackground ||
-            this == PreviewChoice.GptComposedBackground
-
-    private enum class CustomImageKind(val label: String) {
-        Foreground("自定义主体"),
-        Background("自定义背景"),
     }
 
     private data class PreviewSelections(
@@ -19023,52 +18936,6 @@ class MainActivity : ComponentActivity() {
         val summary: String,
         val url: String,
     )
-
-    private enum class RmbgInferenceBackend(
-        val value: String,
-        val label: String,
-    ) {
-        Cpu("cpu", "CPU"),
-    }
-
-    private enum class LocalSeparationMode(val value: String, val label: String, val summary: String) {
-        Auto("auto", "自动", "按图标特征自动选择底板清理、边缘修复或阴影清理"),
-        Original("original", "原始", "完全保留系统绘制的前景层"),
-        Plate("plate", "清理", "兼容旧去底板规则"),
-        Full("full", "清理", "合并底板和长阴影清理"),
-        ComposedBackground("composed_background", "拼合背景", "先拼合完整图标，再从拼合图里估算背景并分离主体"),
-        ComponentSubject("component_subject", "底座当主体", "把 adaptive background 里的复杂底座合进主体，背景重建为纯色或渐变"),
-        ComponentBackground("component_background", "底座当背景", "保留 adaptive background 为背景，只取 foreground 当主体");
-
-        companion object {
-            fun fromValue(value: String?): LocalSeparationMode =
-                entries.firstOrNull { it.value == value }
-                    ?.let { if (it == Plate) Full else it }
-                    ?: Auto
-        }
-    }
-
-    private enum class AdaptiveForegroundMode(val value: String, val label: String) {
-        Auto("auto", "自动"),
-        Composed("composed", "合成减背景"),
-        Direct("direct", "直接前景");
-
-        companion object {
-            fun fromValue(value: String?): AdaptiveForegroundMode =
-                entries.firstOrNull { it.value == value } ?: Auto
-        }
-    }
-
-    private enum class OriginalForegroundCleanupMode(val value: String, val label: String) {
-        Auto("auto", "自动安全清理"),
-        Off("off", "关闭"),
-        Plate("plate", "强制去底板");
-
-        companion object {
-            fun fromValue(value: String?): OriginalForegroundCleanupMode =
-                entries.firstOrNull { it.value == value } ?: Auto
-        }
-    }
 
     private enum class GeneratedFilter(val label: String) {
         All("全部"),
