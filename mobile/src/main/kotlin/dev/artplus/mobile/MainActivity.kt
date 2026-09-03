@@ -16462,85 +16462,14 @@ class MainActivity : ComponentActivity() {
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
     ): Bitmap = subtractBackground(composed, background, colorSource, pipeline, backgroundSeparationPercent)
 
+    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
     private fun separateLocalForeground(
         source: Bitmap,
         background: Bitmap,
         mode: LocalSeparationMode,
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
-    ): LocalSeparationResult {
-        if (
-            mode == LocalSeparationMode.Original ||
-            mode == LocalSeparationMode.ComposedBackground ||
-            mode == LocalSeparationMode.ComponentSubject ||
-            mode == LocalSeparationMode.ComponentBackground
-        ) {
-            if (mode != LocalSeparationMode.ComposedBackground) {
-                return LocalSeparationResult(source, "${mode.label}: 不清理")
-            }
-        }
-
-        var current = source
-        val actions = mutableListOf<String>()
-
-        if (
-            mode == LocalSeparationMode.Auto ||
-            mode == LocalSeparationMode.Plate ||
-            mode == LocalSeparationMode.Full ||
-            mode == LocalSeparationMode.ComposedBackground
-        ) {
-            val plate = if (pipeline.plateCleanupEnabled) {
-                removeForegroundPlate(current, pipeline)
-            } else {
-                ForegroundCleanupResult(current, changed = false, removedRatio = 0.0, repairedRatio = 0.0)
-            }
-            current = plate.bitmap
-            if (plate.changed) {
-                actions += "去底板 ${percentText(plate.removedRatio)}"
-                if (plate.repairedRatio > 0.0) {
-                    actions += "修边 ${percentText(plate.repairedRatio)}"
-                }
-            } else if (mode == LocalSeparationMode.Plate) {
-                actions += "未触发底板"
-            }
-        }
-
-        if (
-            mode == LocalSeparationMode.Auto ||
-            mode == LocalSeparationMode.Full ||
-            mode == LocalSeparationMode.ComposedBackground
-        ) {
-            val shadow = if (pipeline.shadowCleanupEnabled) {
-                removeOffsetShadow(current, background, pipeline)
-            } else {
-                ShadowCleanupResult(current, changed = false, removedRatio = 0.0)
-            }
-            current = shadow.bitmap
-            if (shadow.changed) {
-                actions += "柔化长阴影 ${percentText(shadow.removedRatio)}"
-            }
-        }
-
-        if (pipeline.edgeTrimEnabled) {
-            current = trimForegroundEdge(current, pipeline)
-            actions += "收边"
-        } else {
-            actions += "跳过收边"
-        }
-
-        val prefix = when (mode) {
-            LocalSeparationMode.Auto -> "自动"
-            LocalSeparationMode.Original -> "原始"
-            LocalSeparationMode.Plate -> "清理"
-            LocalSeparationMode.ComposedBackground -> "拼合背景"
-            LocalSeparationMode.ComponentSubject -> "组件主体"
-            LocalSeparationMode.ComponentBackground -> "组件背景"
-            LocalSeparationMode.Full -> "清理"
-        }
-        return LocalSeparationResult(
-            bitmap = current,
-            summary = if (actions.isEmpty()) "$prefix: 保持原样" else "$prefix: ${actions.joinToString(" / ")}",
-        )
-    }
+    ): LocalSeparationResult =
+        separateLocalForeground(source, background, mode, pipeline, plateRemovalPercent, shadowRemovalPercent)
 
     // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
     private fun removeForegroundPlate(
