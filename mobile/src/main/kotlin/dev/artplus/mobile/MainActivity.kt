@@ -15415,32 +15415,9 @@ class MainActivity : ComponentActivity() {
         pipeline: LocalPipelineConfig = currentLocalPipelineConfig(),
     ): ShadowCleanupResult = removeOffsetShadow(source, background, pipeline, shadowRemovalPercent)
 
-    private fun normalizeForegroundSubjectSize(source: Bitmap): Bitmap {
-        val bounds = meaningfulAlphaBounds(source) ?: return source
-        val originalCenter = meaningfulAlphaCentroid(source)
-        val currentMax = maxOf(bounds.width(), bounds.height()).toFloat()
-        if (currentMax <= 0f) {
-            return source
-        }
-        val targetMax = source.width * (foregroundSubjectPercent.toFloat() / 100f)
-        val scale = targetMax / currentMax
-        if (scale in 0.97f..1.03f) {
-            return source
-        }
-        val scaledWidth = (source.width * scale).toInt().coerceAtLeast(1)
-        val scaledHeight = (source.height * scale).toInt().coerceAtLeast(1)
-        val scaled = Bitmap.createScaledBitmap(source, scaledWidth, scaledHeight, true)
-        val scaledCenter = meaningfulAlphaCentroid(scaled) ?: return source
-        val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(out)
-        canvas.drawColor(AndroidColor.TRANSPARENT)
-        val originalCenterX = originalCenter?.first ?: (bounds.left + bounds.width() / 2f)
-        val originalCenterY = originalCenter?.second ?: (bounds.top + bounds.height() / 2f)
-        val dx = originalCenterX - scaledCenter.first
-        val dy = originalCenterY - scaledCenter.second
-        canvas.drawBitmap(scaled, dx, dy, null)
-        return out
-    }
+    // 过渡 wrapper（重构期间保留）：委托 imaging/ 显式参数版本，P2 状态收敛后删除。
+    private fun normalizeForegroundSubjectSize(source: Bitmap): Bitmap =
+        normalizeForegroundSubjectSize(source, foregroundSubjectPercent)
 
     private fun normalDarkForeground(source: Bitmap, darkBackground: Bitmap): Bitmap {
         val preserved = nightForeground(

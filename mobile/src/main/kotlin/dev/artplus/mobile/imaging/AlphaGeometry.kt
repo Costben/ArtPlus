@@ -333,6 +333,40 @@ internal fun isInCornerMaskZone(x: Int, y: Int, width: Int, height: Int): Boolea
     return (x < zone || x >= width - zone) && (y < zone || y >= height - zone)
 }
 
+/**
+ * 主体尺寸归一化：把可见包围盒缩放到约 [foregroundSubjectPercent]% 的正方形画布。
+ *
+ * 从 MainActivity 迁移而来（P1.2-c）：原 `private fun` 直读 Activity 状态
+ * `foregroundSubjectPercent`，新版本显式收参，不读 Activity 状态；
+ * Activity 内保留同名 wrapper 委托（重构期间保留，P2 后删除），调用点零改动。
+ */
+internal fun normalizeForegroundSubjectSize(source: Bitmap, foregroundSubjectPercent: Int): Bitmap {
+    val bounds = meaningfulAlphaBounds(source) ?: return source
+    val originalCenter = meaningfulAlphaCentroid(source)
+    val currentMax = maxOf(bounds.width(), bounds.height()).toFloat()
+    if (currentMax <= 0f) {
+        return source
+    }
+    val targetMax = source.width * (foregroundSubjectPercent.toFloat() / 100f)
+    val scale = targetMax / currentMax
+    if (scale in 0.97f..1.03f) {
+        return source
+    }
+    val scaledWidth = (source.width * scale).toInt().coerceAtLeast(1)
+    val scaledHeight = (source.height * scale).toInt().coerceAtLeast(1)
+    val scaled = Bitmap.createScaledBitmap(source, scaledWidth, scaledHeight, true)
+    val scaledCenter = meaningfulAlphaCentroid(scaled) ?: return source
+    val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(out)
+    canvas.drawColor(AndroidColor.TRANSPARENT)
+    val originalCenterX = originalCenter?.first ?: (bounds.left + bounds.width() / 2f)
+    val originalCenterY = originalCenter?.second ?: (bounds.top + bounds.height() / 2f)
+    val dx = originalCenterX - scaledCenter.first
+    val dy = originalCenterY - scaledCenter.second
+    canvas.drawBitmap(scaled, dx, dy, null)
+    return out
+}
+
 internal fun hasAutoCropRisk(bounds: Bounds, width: Int, height: Int): Boolean {
     val margin = AUTO_EDGE_TOUCH_MARGIN_PX
     val touchesLeft = bounds.left <= margin
