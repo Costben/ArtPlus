@@ -109,3 +109,89 @@ internal fun featherVisibleEdges(source: Bitmap, blend: Double): Bitmap {
     out.setPixels(outPixels, 0, width, 0, 0, width, height)
     return out
 }
+
+internal fun trimForegroundEdge(
+    source: Bitmap,
+    pipeline: LocalPipelineConfig,
+): Bitmap {
+    val width = source.width
+    val height = source.height
+    val pixels = IntArray(width * height)
+    source.getPixels(pixels, 0, width, 0, 0, width, height)
+    val visible = BooleanArray(pixels.size)
+    for (i in pixels.indices) {
+        visible[i] = AndroidColor.alpha(pixels[i]) > LOCAL_ALPHA_VISIBLE_THRESHOLD
+    }
+
+    val eroded = BooleanArray(pixels.size)
+    for (y in 1 until height - 1) {
+        for (x in 1 until width - 1) {
+            val index = y * width + x
+            if (!visible[index]) {
+                continue
+            }
+            var keep = true
+            for (dy in -1..1) {
+                for (dx in -1..1) {
+                    if (!visible[(y + dy) * width + (x + dx)]) {
+                        keep = false
+                        break
+                    }
+                }
+                if (!keep) {
+                    break
+                }
+            }
+            eroded[index] = keep
+        }
+    }
+
+    val outPixels = pixels.copyOf()
+    for (y in 0 until height) {
+        for (x in 0 until width) {
+            val index = y * width + x
+            if (!visible[index] || eroded[index]) {
+                continue
+            }
+            var nearEroded = false
+            for (dy in -1..1) {
+                for (dx in -1..1) {
+                    val nx = x + dx
+                    val ny = y + dy
+                    if (nx !in 0 until width || ny !in 0 until height) {
+                        continue
+                    }
+                    if (eroded[ny * width + nx]) {
+                        nearEroded = true
+                        break
+                    }
+                }
+                if (nearEroded) {
+                    break
+                }
+            }
+            val pixel = outPixels[index]
+            if (!nearEroded) {
+                outPixels[index] = AndroidColor.TRANSPARENT
+                continue
+            }
+            val alpha = (AndroidColor.alpha(pixel) * FOREGROUND_EDGE_FEATHER_ALPHA_SCALE)
+                .toInt()
+                .coerceIn(0, 255)
+            outPixels[index] = if (alpha <= MONO_EDGE_ALPHA_DROP_THRESHOLD) {
+                AndroidColor.TRANSPARENT
+            } else {
+                AndroidColor.argb(
+                    alpha,
+                    AndroidColor.red(pixel),
+                    AndroidColor.green(pixel),
+                    AndroidColor.blue(pixel),
+                )
+            }
+        }
+    }
+
+    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    out.setPixels(outPixels, 0, width, 0, 0, width, height)
+    return repairLocalTransparentEdgeColors(out, pipeline)
+}
