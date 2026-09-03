@@ -599,7 +599,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
             // 自动在根目录创建 .nomedia，避免出现在相册
-            runCatching { ensureNomediaAtTreeRoot() }
+            runCatching { ensureNomediaAtTreeRoot(contentResolver, outputTreeUri) }
             toastStatus("已选择输出目录")
             saveUiState()
             // 若来自首次引导，自动执行全量备份
@@ -5235,7 +5235,7 @@ class MainActivity : ComponentActivity() {
                     try {
                         val result = generateArtPlusPackage(app, useGpt = false)
                         if (false && outputUri != null) {
-                            exportToTree(result.outDir)
+                            exportToTree(contentResolver, outputUri, result.outDir)
                         }
                         successes += packageName
                         if (packageName == selectedAtStart) {
@@ -5357,7 +5357,7 @@ class MainActivity : ComponentActivity() {
                     try {
                         val result = generateArtPlusPackage(app, useGpt = false)
                         if (false && outputUri != null) {
-                            exportToTree(result.outDir)
+                            exportToTree(contentResolver, outputUri, result.outDir)
                         }
                         successes += packageName
                         if (packageName == selectedAtStart) {
@@ -11380,7 +11380,7 @@ class MainActivity : ComponentActivity() {
                     saveUiState()
                 }
                 if (false && outputTreeUri != null) {
-                    exportToTree(result.outDir)
+                    exportToTree(contentResolver, outputTreeUri, result.outDir)
                 }
                 if (installWithRoot) {
                     installWithRoot(result.outDir, entry.packageName, rootWriteMode)
@@ -11445,7 +11445,7 @@ class MainActivity : ComponentActivity() {
                 try {
                     writePackageOutputs(session, selections)
                     if (false && outputTreeUri != null) {
-                        exportToTree(session.outDir)
+                        exportToTree(contentResolver, outputTreeUri, session.outDir)
                     }
                     installWithRoot(session.outDir, entry.packageName, rootWriteMode)
                     runOnUiThread {
@@ -13916,7 +13916,7 @@ class MainActivity : ComponentActivity() {
                     try {
                         val result = generatePackageForPreviewChoice(app, choice)
                         if (false && outputUri != null) {
-                            exportToTree(result.outDir)
+                            exportToTree(contentResolver, outputUri, result.outDir)
                         }
                         installWithRoot(result.outDir, packageName, RootWriteMode.All)
                         successes += packageName
@@ -14072,7 +14072,7 @@ class MainActivity : ComponentActivity() {
                 val selections = previewSelections
                 writePackageOutputs(updatedSession, selections)
                 if (false && outputTreeUri != null) {
-                    exportToTree(updatedSession.outDir)
+                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
@@ -14127,7 +14127,7 @@ class MainActivity : ComponentActivity() {
                 )
                 writePackageOutputs(updatedSession, selections)
                 if (false && outputTreeUri != null) {
-                    exportToTree(updatedSession.outDir)
+                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
@@ -14189,7 +14189,7 @@ class MainActivity : ComponentActivity() {
                 )
                 writePackageOutputs(updatedSession, selections)
                 if (false && outputTreeUri != null) {
-                    exportToTree(updatedSession.outDir)
+                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
@@ -14266,7 +14266,7 @@ class MainActivity : ComponentActivity() {
                 )
                 writePackageOutputs(updatedSession, selections)
                 if (false && outputTreeUri != null) {
-                    exportToTree(updatedSession.outDir)
+                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
@@ -14361,7 +14361,7 @@ class MainActivity : ComponentActivity() {
                 )
                 writePackageOutputs(updatedSession, selections)
                 if (false && outputTreeUri != null) {
-                    exportToTree(updatedSession.outDir)
+                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
                     activeGenerationSession = updatedSession
@@ -14485,7 +14485,7 @@ class MainActivity : ComponentActivity() {
                 val selections = normalizePreviewSelections(updatedSession, retargetedSelections)
                 writePackageOutputs(updatedSession, selections)
                 if (false && outputUri != null) {
-                    exportToTree(updatedSession.outDir)
+                    exportToTree(contentResolver, outputUri, updatedSession.outDir)
                 }
                 withContext(Dispatchers.Main) {
                     if (requestRevision == previewOutputRevision) {
@@ -14523,7 +14523,7 @@ class MainActivity : ComponentActivity() {
                 delay(PREVIEW_OUTPUT_DEBOUNCE_MS)
                 writePackageOutputs(session, selections)
                 if (false && outputUri != null) {
-                    exportToTree(session.outDir)
+                    exportToTree(contentResolver, outputUri, session.outDir)
                 }
                 withContext(Dispatchers.Main) {
                     if (requestRevision == previewOutputRevision) {
@@ -14772,103 +14772,6 @@ class MainActivity : ComponentActivity() {
                 .put("height", bounds.height())
         }
 
-    private fun exportToTree(packageDir: File) {
-        val treeUri = outputTreeUri ?: return
-        val rootDoc = DocumentsContract.buildDocumentUriUsingTree(
-            treeUri,
-            DocumentsContract.getTreeDocumentId(treeUri),
-        )
-        var packageDoc = findChild(treeUri, rootDoc, packageDir.name)
-        if (packageDoc == null) {
-            packageDoc = DocumentsContract.createDocument(
-                contentResolver,
-                rootDoc,
-                DocumentsContract.Document.MIME_TYPE_DIR,
-                packageDir.name,
-            )
-        }
-        if (packageDoc == null) {
-            error("无法创建输出目录")
-        }
-
-        val files = packageDir.listFiles { _, name -> name.endsWith(".png") } ?: return
-        for (file in files) {
-            findChild(treeUri, packageDoc, file.name)?.let {
-                DocumentsContract.deleteDocument(contentResolver, it)
-            }
-            val doc = DocumentsContract.createDocument(contentResolver, packageDoc, "image/png", file.name)
-                ?: error("无法创建文件: ${file.name}")
-            FileInputStream(file).use { input ->
-                contentResolver.openOutputStream(doc, "w").useRequired { output ->
-                    copyStream(input, output)
-                }
-            }
-        }
-    }
-
-    private fun findChild(treeUri: Uri, parentDoc: Uri, displayName: String): Uri? {
-        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
-            treeUri,
-            DocumentsContract.getDocumentId(parentDoc),
-        )
-        return try {
-            var found: Uri? = null
-            contentResolver.query(
-                childrenUri,
-                arrayOf(
-                    DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-                    DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-                ),
-                null,
-                null,
-                null,
-            )?.use { cursor ->
-                while (cursor.moveToNext()) {
-                    val childName = cursor.getString(1)
-                    if (displayName == childName) {
-                        val documentId = cursor.getString(0)
-                        found = DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
-                        break
-                    }
-                }
-            }
-            found
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    private fun installWithRoot(packageDir: File, packageName: String, mode: RootWriteMode) {
-        val target = "$ROOT_UXICONS_DIR/$packageName"
-        val source = packageDir.absolutePath
-        val copyCommand = when (mode) {
-            RootWriteMode.All -> """
-                find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' -exec cp -f {} ${shQuote(target)}/ \;
-            """.trimIndent()
-            RootWriteMode.StandardOnly -> """
-                find ${shQuote(target)} -maxdepth 1 -type f -name 'monochrome*.png' -delete
-                find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' ! -name 'monochrome*.png' -exec cp -f {} ${shQuote(target)}/ \;
-            """.trimIndent()
-            RootWriteMode.MonochromeOnly -> """
-                find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome*.png' -exec cp -f {} ${shQuote(target)}/ \;
-            """.trimIndent()
-        }
-        val command = """
-            set -e
-            mkdir -p ${shQuote(target)}
-            $copyCommand
-            find ${shQuote(target)} -maxdepth 1 -type f -name '*.png' -exec chmod 0644 {} +
-            restorecon -RF ${shQuote(target)} 2>/dev/null || true
-        """.trimIndent()
-        val process = ProcessBuilder("su", "-c", command)
-            .redirectErrorStream(true)
-            .start()
-        val code = process.waitFor()
-        if (code != 0) {
-            error("su 退出码: $code")
-        }
-    }
-
     private fun showKeyboardFor(editText: EditText) {
         editText.post {
             editText.requestFocus()
@@ -14924,69 +14827,6 @@ class MainActivity : ComponentActivity() {
         backupDotJob = null
     }
 
-    private fun ensureNomediaAtTreeRoot() {
-        val treeUri = outputTreeUri ?: return
-        // 优先尝试文件系统快速路径（su touch），失败再走 SAF
-        resolveTreeUriToFilePath(treeUri)?.let { path ->
-            runCatching {
-                runRootCommand("mkdir -p ${shQuote(path)} && touch ${shQuote("$path/.nomedia")} && chmod 0644 ${shQuote("$path/.nomedia")} 2>/dev/null; echo ok", 3000)
-            }.onSuccess { if (it.contains("ok")) return }
-        }
-        val rootDoc = DocumentsContract.buildDocumentUriUsingTree(
-            treeUri,
-            DocumentsContract.getTreeDocumentId(treeUri),
-        )
-        if (findChild(treeUri, rootDoc, ".nomedia") != null) return
-        runCatching {
-            val doc = DocumentsContract.createDocument(
-                contentResolver,
-                rootDoc,
-                "application/octet-stream",
-                ".nomedia",
-            ) ?: return@runCatching
-            contentResolver.openOutputStream(doc, "w")?.use { it.write(ByteArray(0)) }
-        }
-    }
-
-    private fun resolveTreeUriToFilePath(treeUri: Uri): String? {
-        return try {
-            val docId = DocumentsContract.getTreeDocumentId(treeUri) // e.g. primary:Download/ArtPlus
-            val colon = docId.indexOf(':')
-            if (colon <= 0) return null
-            val volume = docId.substring(0, colon)
-            val rel = java.net.URLDecoder.decode(docId.substring(colon + 1), "UTF-8")
-            val base = when (volume) {
-                "primary" -> Environment.getExternalStorageDirectory().absolutePath // /storage/emulated/0
-                "home" -> Environment.getExternalStorageDirectory().absolutePath + "/Documents"
-                else -> "/storage/$volume" // 外置 SD 卡: 1234-5678
-            }
-            if (rel.isBlank()) base else "$base/$rel"
-        } catch (_: Exception) { null }
-    }
-
-    private fun exportToTreeFast(packageDir: File): Boolean {
-        val treeUri = outputTreeUri ?: return false
-        val destRoot = resolveTreeUriToFilePath(treeUri) ?: return false
-        val destPkg = "$destRoot/${packageDir.name}"
-        val src = packageDir.absolutePath
-        // 单次 su 完成：建目录 + 拷贝 + 权限
-        val cmd = "mkdir -p ${shQuote(destPkg)} && cp -f ${shQuote(src)}/*.png ${shQuote(destPkg)}/ 2>/dev/null && chmod 0644 ${shQuote(destPkg)}/*.png 2>/dev/null && echo ok"
-        return try {
-            val out = runRootCommand(cmd, 8000)
-            out.contains("ok")
-        } catch (_: Exception) { false }
-    }
-
-    private fun backupPackageFast(pkgName: String, destRoot: String): Boolean {
-        val src = "$ROOT_UXICONS_DIR/$pkgName"
-        val destPkg = "$destRoot/$pkgName"
-        val cmd = "mkdir -p ${shQuote(destPkg)} && cp -f ${shQuote(src)}/*.png ${shQuote(destPkg)}/ 2>/dev/null && chmod 0644 ${shQuote(destPkg)}/*.png 2>/dev/null && echo ok"
-        return try {
-            val out = runRootCommand(cmd, 6000)
-            out.contains("ok")
-        } catch (_: Exception) { false }
-    }
-
     private fun exportSelectedToExternal() {
         if (outputTreeUri == null) {
             toastStatus("还没有设置目录")
@@ -15013,14 +14853,14 @@ class MainActivity : ComponentActivity() {
         singleExportJob?.cancel()
         singleExportJob = mainScope.launch(Dispatchers.IO) {
             try {
-                runCatching { ensureNomediaAtTreeRoot() }
+                runCatching { ensureNomediaAtTreeRoot(contentResolver, outputTreeUri) }
                 // 优先尝试文件系统直拷（su cp），速度为 SAF 的 10-20 倍，失败再回退 SAF
-                val fastOk = runCatching { exportToTreeFast(dir) }.getOrDefault(false)
+                val fastOk = runCatching { exportToTreeFast(outputTreeUri, dir) }.getOrDefault(false)
                 if (fastOk) {
                     withContext(Dispatchers.Main) { toastStatus("已导出到外部目录: ${dir.name}") }
                 } else {
                     withContext(Dispatchers.Main) {
-                        runCatching { exportToTree(dir) }
+                        runCatching { exportToTree(contentResolver, outputTreeUri, dir) }
                             .onSuccess { toastStatus("已导出到外部目录: ${dir.name}") }
                             .onFailure { error -> toastStatus("导出失败: ${error.message ?: error.javaClass.simpleName}") }
                     }
@@ -15071,7 +14911,7 @@ class MainActivity : ComponentActivity() {
         backupDotJob?.cancel()
         backupJob = mainScope.launch(Dispatchers.IO) {
             try {
-                runCatching { ensureNomediaAtTreeRoot() }
+                runCatching { ensureNomediaAtTreeRoot(contentResolver, outputTreeUri) }
                 val pkgs = listRootIconPackages()
                 if (pkgs.isEmpty()) {
                     withContext(Dispatchers.Main) {
@@ -15172,7 +15012,7 @@ class MainActivity : ComponentActivity() {
                                 continue
                             }
                             withContext(Dispatchers.Main) {
-                                runCatching { exportToTree(stagingDir) }.onSuccess { successCount++ }.onFailure { failCount++ }
+                                runCatching { exportToTree(contentResolver, treeUri, stagingDir) }.onSuccess { successCount++ }.onFailure { failCount++ }
                                 backupProgress = ExportProgress(
                                     title = "备份中",
                                     completed = index + 1,
@@ -15989,22 +15829,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun copyStream(input: InputStream, output: OutputStream) {
-        val buffer = ByteArray(64 * 1024)
-        while (true) {
-            val read = input.read(buffer)
-            if (read == -1) {
-                return
-            }
-            output.write(buffer, 0, read)
-        }
-    }
-
-    private fun OutputStream?.useRequired(block: (OutputStream) -> Unit) {
-        val output = this ?: error("无法打开输出流")
-        output.use { block(it) }
-    }
-
     private fun loadPreviewAssets(dir: File): PreviewAssets =
         PreviewAssets(
             recbg = decodePreviewBitmap(dir, "recbg.png"),
@@ -16191,17 +16015,6 @@ class MainActivity : ComponentActivity() {
     private enum class BatchOutputMode(val label: String) {
         Root("Root 写入"),
         Saf("SAF 导出"),
-    }
-
-    private enum class RootWriteMode(val value: String, val label: String) {
-        All("all", "全部"),
-        StandardOnly("standard", "标准"),
-        MonochromeOnly("monochrome", "单色");
-
-        companion object {
-            fun fromValue(value: String?): RootWriteMode =
-                entries.firstOrNull { it.value == value || (it == StandardOnly && value == "default") } ?: All
-        }
     }
 
     companion object {
