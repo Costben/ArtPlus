@@ -314,6 +314,29 @@ const val NIGHT_DEFAULT_BOOST_MAX_BLEND = 0.16
 const val NIGHT_FILL_BACKGROUND_MAX_BLEND = 0.30
 
 /**
+ * 应用数据层（data/ 与 MainActivity 共用）。
+ *
+ * 从 MainActivity companion object 迁移而来（P3 拆分）：原为 private，
+ * 现为顶层公开常量，数值与类型未变。同包直接引用，Activity 内原有调用点零改动。
+ */
+const val ICON_CACHE_SIZE = 96
+const val PRELOAD_ICON_COUNT = 64
+const val ROOT_UXICONS_DIR = "/data/oplus/uxicons"
+const val ROOT_SCAN_TIMEOUT_MS = 8_000L
+const val PREF_GENERATED_PACKAGE_NAMES = "generated_package_names"
+const val PREF_GENERATED_PACKAGE_NAMES_UPDATED_AT = "generated_package_names_updated_at"
+const val ARTPLUS_ICON_REFRESH_TIMEOUT_MS = 12_000L
+const val COLOROS_UX_ICON_CONFIG_KEY = "key_ux_icon_config"
+const val COLOROS_DEFAULT_ICON_THEME = 2
+const val COLOROS_INSPIRATION_ICON_THEME = 3
+const val COLOROS_ARTPLUS_ON = 1
+const val COLOROS_UXICON_THEME_SHIFT = 4
+const val COLOROS_UXICON_ARTPLUS_SHIFT = 8
+const val COLOROS_UXICON_THEME_MASK = 0x0fL shl COLOROS_UXICON_THEME_SHIFT
+const val COLOROS_UXICON_ARTPLUS_MASK = 0x07L shl COLOROS_UXICON_ARTPLUS_SHIFT
+const val FALLBACK_ARTPLUS_INSPIRATION_UXICON_CONFIG = 2314313028685793584L
+
+/**
  * 全部可调参数的不可变快照（预设/撤销/批量传输用）。
  *
  * 数字与布尔为强类型；模式（LocalSeparationMode / AdaptiveForegroundMode /

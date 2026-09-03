@@ -9329,8 +9329,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun getCachedAppIcon(key: String): Bitmap? =
-        synchronized(appIconCache) { appIconCache.get(key) }
+    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
+    private fun getCachedAppIcon(key: String): Bitmap? = getCachedAppIcon(appIconCache, key)
 
     private suspend fun loadCachedAppIcon(entry: AppEntry): Bitmap? =
         withContext(Dispatchers.IO) {
@@ -9349,9 +9349,9 @@ class MainActivity : ComponentActivity() {
             bitmap
         }
 
+    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
     private fun loadAppIconBitmap(entry: AppEntry): Bitmap =
-        drawDrawable(entry.applicationInfo.loadIcon(packageManager), ICON_CACHE_SIZE, ICON_CACHE_SIZE, transparent = true)
-            .also { it.prepareToDraw() }
+        loadAppIconBitmap(entry, packageManager, ICON_CACHE_SIZE)
 
     /**
      * 读取当前设备桌面壁纸并保留原始宽高比（短边缩放到 480 左右）。
@@ -9381,40 +9381,6 @@ class MainActivity : ComponentActivity() {
             }
             sampled?.also { it.prepareToDraw() }
         }.getOrNull()
-
-    /** 等比缩放：短边对齐目标尺寸（已达标则原图返回，共享位图不回收）。 */
-    private fun sampleBitmapShortEdge(source: Bitmap, shortEdge: Int): Bitmap {
-        val srcW = source.width
-        val srcH = source.height
-        if (srcW <= 0 || srcH <= 0 || minOf(srcW, srcH) == shortEdge) {
-            return source
-        }
-        val scale = shortEdge.toFloat() / minOf(srcW, srcH).toFloat()
-        return Bitmap.createScaledBitmap(
-            source,
-            (srcW * scale).roundToInt().coerceAtLeast(1),
-            (srcH * scale).roundToInt().coerceAtLeast(1),
-            true,
-        )
-    }
-
-    /** Cover 模式绘制：等比放大铺满目标并居中裁切，不拉伸变形。 */
-    private fun drawDrawableCover(drawable: Drawable, width: Int, height: Int): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawColor(AndroidColor.BLACK)
-        val copy = drawable.constantState?.newDrawable()?.mutate() ?: drawable.mutate()
-        val srcW = copy.intrinsicWidth.takeIf { it > 0 } ?: width
-        val srcH = copy.intrinsicHeight.takeIf { it > 0 } ?: height
-        val scale = maxOf(width.toFloat() / srcW, height.toFloat() / srcH)
-        val dstW = (srcW * scale).roundToInt()
-        val dstH = (srcH * scale).roundToInt()
-        val left = (width - dstW) / 2
-        val top = (height - dstH) / 2
-        copy.setBounds(left, top, left + dstW, top + dstH)
-        copy.draw(canvas)
-        return bitmap
-    }
 
     private fun loadBundledPreviewWallpaperBitmap(): Bitmap? =
         runCatching {
@@ -9569,32 +9535,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadApps(refreshGenerated: Boolean = false) {
+        // P3 交界：数据核收敛进 data/AppRepository.loadApps(pm)，线程/UI/状态写入留本编排。
         didRequestAppLoad = true
         Thread {
-            val pm = packageManager
-            val intent = Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER)
-            val launchablePackages = queryLaunchablePackages(pm, intent)
-            val installedApps = getInstalledApplications(pm)
-            val entries = installedApps.mapNotNull { info ->
-                val packageName = info.packageName ?: return@mapNotNull null
-                val label = runCatching { info.loadLabel(pm)?.toString() }
-                    .getOrNull()
-                    ?.takeIf { it.isNotBlank() }
-                    ?: packageName
-                AppEntry(
-                    label = label,
-                    packageName = packageName,
-                    applicationInfo = info,
-                    launchable = packageName in launchablePackages,
-                    iconKey = "${packageName}:${info.uid}:${info.sourceDir}",
-                )
-            }
-                .sortedWith(
-                    compareByDescending<AppEntry> { it.launchable }
-                        .thenBy { it.label.lowercase(Locale.ROOT) }
-                        .thenBy { it.packageName },
-                )
-            preloadAppIcons(entries)
+            val result = loadApps(packageManager)
+            val entries = result.entries
+            val launchablePackages = result.launchablePackages
+            // P3 交界：图标预热收敛进 data/IconCache（显式传 cache + pm + 尺寸 + 条数）。
+            preloadAppIcons(appIconCache, packageManager, entries, ICON_CACHE_SIZE, PRELOAD_ICON_COUNT)
             runOnUiThread {
                 refreshPermissionState()
                 apps.clear()
@@ -9639,69 +9587,27 @@ class MainActivity : ComponentActivity() {
         }.start()
     }
 
-    private fun scanRootGeneratedPackages(packageNames: Set<String>): Set<String> {
-        if (packageNames.isEmpty()) {
-            return emptySet()
-        }
-        val command = """
-            if [ -d ${shQuote(ROOT_UXICONS_DIR)} ]; then
-                while IFS= read -r name; do
-                    [ -n "${'$'}name" ] || continue
-                    dir=${shQuote(ROOT_UXICONS_DIR)}/"${'$'}name"
-                    [ -d "${'$'}dir" ] || continue
-                    if [ -f "${'$'}dir/recbg.png" ] ||
-                        [ -f "${'$'}dir/recfg.png" ] ||
-                        [ -f "${'$'}dir/rec_night.png" ] ||
-                        [ -f "${'$'}dir/monochrome.png" ] ||
-                        ls "${'$'}dir"/*.png >/dev/null 2>&1; then
-                        printf '%s\n' "${'$'}name"
-                    fi
-                done
-            fi
-        """.trimIndent()
-        val input = packageNames
-            .asSequence()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .sorted()
-            .joinToString(separator = "\n", postfix = "\n")
-        val output = runRootCommand(command, ROOT_SCAN_TIMEOUT_MS, input)
-        return output
-            .lineSequence()
-            .map { it.trim() }
-            .filter { it in packageNames }
-            .toSet()
-    }
-
+    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
     private fun loadGeneratedPackageCache() {
-        val cached = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .getStringSet(PREF_GENERATED_PACKAGE_NAMES, emptySet())
-            .orEmpty()
-            .asSequence()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .toSet()
-        generatedPackageNames = cached
+        generatedPackageNames =
+            loadGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE))
         generatedScanFailed = false
         isScanningGeneratedPackages = false
     }
 
+    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
     private fun updateGeneratedPackageCache(packages: Set<String>) {
-        val normalized = packages
-            .asSequence()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .toSet()
-        generatedPackageNames = normalized
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .edit()
-            .putStringSet(PREF_GENERATED_PACKAGE_NAMES, normalized)
-            .putLong(PREF_GENERATED_PACKAGE_NAMES_UPDATED_AT, System.currentTimeMillis())
-            .apply()
+        generatedPackageNames =
+            updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), packages)
     }
 
+    // 过渡 wrapper（重构期间保留）：委托 data/ 显式参数版本，P5 状态收敛后删除。
     private fun markPackageGenerated(packageName: String) {
-        updateGeneratedPackageCache(generatedPackageNames + packageName)
+        generatedPackageNames = markPackageGenerated(
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            generatedPackageNames,
+            packageName,
+        )
     }
 
     private fun loadUiState() {
@@ -9803,58 +9709,6 @@ class MainActivity : ComponentActivity() {
             .apply()
     }
 
-    private fun runRootCommand(command: String, timeoutMs: Long, stdin: String? = null): String {
-        val process = ProcessBuilder("su", "-c", command)
-            .redirectErrorStream(true)
-            .start()
-        val outputBuilder = StringBuilder()
-        val outputReader = Thread {
-            process.inputStream.bufferedReader().useLines { lines ->
-                lines.forEach { line ->
-                    outputBuilder
-                        .append(line)
-                        .append('\n')
-                }
-            }
-        }.apply {
-            isDaemon = true
-            start()
-        }
-        runCatching {
-            process.outputStream.bufferedWriter().use { writer ->
-                if (stdin != null) {
-                    writer.write(stdin)
-                }
-            }
-        }
-        val finished = process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)
-        if (!finished) {
-            process.destroyForcibly()
-            outputReader.join(250)
-            error("su 超时")
-        }
-        outputReader.join(1_000)
-        val output = outputBuilder.toString()
-        val code = process.exitValue()
-        if (code != 0) {
-            val detail = output.lineSequence()
-                .map { it.trim() }
-                .firstOrNull { it.isNotEmpty() }
-                ?.take(120)
-            error(
-                buildString {
-                    append("su 退出码: ")
-                    append(code)
-                    if (detail != null) {
-                        append(": ")
-                        append(detail)
-                    }
-                },
-            )
-        }
-        return output
-    }
-
     private fun refreshArtPlusIcons() {
         if (isBusy || isRefreshingArtPlusIcons) {
             return
@@ -9862,7 +9716,8 @@ class MainActivity : ComponentActivity() {
         isRefreshingArtPlusIcons = true
         statusText = "正在刷新 ART+ 图标..."
         Thread {
-            val result = runCatching { refreshArtPlusIconsBlocking() }
+            // P3 交界：阻塞核收敛进 system/RootShell（显式传 ContentResolver + apkPath）。
+            val result = runCatching { refreshArtPlusIconsBlocking(contentResolver, applicationInfo.sourceDir) }
             runOnUiThread {
                 result
                     .onSuccess { summary ->
@@ -9878,73 +9733,6 @@ class MainActivity : ComponentActivity() {
                 isRefreshingArtPlusIcons = false
             }
         }.start()
-    }
-
-    private fun refreshArtPlusIconsBlocking(): String {
-        val currentConfig = Settings.System
-            .getString(contentResolver, COLOROS_UX_ICON_CONFIG_KEY)
-            ?.trim()
-            ?.toLongOrNull()
-            ?: FALLBACK_ARTPLUS_INSPIRATION_UXICON_CONFIG
-        val finalTheme = currentConfig.uxIconTheme()
-        val temporaryTheme = when (finalTheme) {
-            COLOROS_DEFAULT_ICON_THEME -> COLOROS_INSPIRATION_ICON_THEME
-            COLOROS_INSPIRATION_ICON_THEME -> COLOROS_DEFAULT_ICON_THEME
-            else -> COLOROS_DEFAULT_ICON_THEME
-        }
-        val finalConfig = currentConfig
-            .withUxIconArtPlusOn(COLOROS_ARTPLUS_ON)
-        val temporaryConfig = finalConfig.withUxIconTheme(temporaryTheme)
-        val apkPath = applicationInfo.sourceDir
-        val command = """
-            set -e
-            APP_APK=${shQuote(apkPath)}
-            apply_uxicon_config() {
-                value="${'$'}1"
-                app_process -Djava.class.path="${'$'}APP_APK" /system/bin ${UxIconConfigCli::class.java.name} "${'$'}value"
-                settings put system ${shQuote(COLOROS_UX_ICON_CONFIG_KEY)} "${'$'}value"
-                am broadcast -a oplus.intent.action.SKIN_CHANGED >/dev/null 2>&1 || true
-            }
-            apply_uxicon_config ${temporaryConfig}
-            sleep 1
-            apply_uxicon_config ${finalConfig}
-            am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1 ||
-                input keyevent 3 >/dev/null 2>&1 || true
-        """.trimIndent()
-        return runRootCommand(command, ARTPLUS_ICON_REFRESH_TIMEOUT_MS)
-            .lineSequence()
-            .map { it.trim() }
-            .filter { it.startsWith("mUxIconConfig=") }
-            .joinToString(" -> ")
-    }
-
-    private fun Long.withUxIconTheme(theme: Int): Long =
-        (this and COLOROS_UXICON_THEME_MASK.inv()) or
-            (((theme.toLong()) and 0x0fL) shl COLOROS_UXICON_THEME_SHIFT)
-
-    private fun Long.uxIconTheme(): Int =
-        ((this and COLOROS_UXICON_THEME_MASK) shr COLOROS_UXICON_THEME_SHIFT).toInt()
-
-    private fun Long.withUxIconArtPlusOn(value: Int): Long =
-        (this and COLOROS_UXICON_ARTPLUS_MASK.inv()) or
-            (((value.toLong()) and 0x07L) shl COLOROS_UXICON_ARTPLUS_SHIFT)
-
-    private fun preloadAppIcons(entries: List<AppEntry>) {
-        Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-        entries.asSequence()
-            .filter { it.launchable }
-            .take(PRELOAD_ICON_COUNT)
-            .forEach { entry ->
-                if (getCachedAppIcon(entry.iconKey) != null) {
-                    return@forEach
-                }
-                val bitmap = runCatching { loadAppIconBitmap(entry) }.getOrNull() ?: return@forEach
-                synchronized(appIconCache) {
-                    if (appIconCache.get(entry.iconKey) == null) {
-                        appIconCache.put(entry.iconKey, bitmap)
-                    }
-                }
-            }
     }
 
     private fun refreshPermissionState() {
@@ -10098,31 +9886,6 @@ class MainActivity : ComponentActivity() {
         }
         return mode == AppOpsManager.MODE_ALLOWED
     }
-
-    @Suppress("DEPRECATION")
-    private fun queryLaunchablePackages(pm: PackageManager, intent: Intent): Set<String> {
-        val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            pm.queryIntentActivities(
-                intent,
-                PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_ALL.toLong()),
-            )
-        } else {
-            pm.queryIntentActivities(intent, PackageManager.MATCH_ALL)
-        }
-        return resolveInfos
-            .mapNotNull { it.activityInfo?.packageName }
-            .toSet()
-    }
-
-    @Suppress("DEPRECATION")
-    private fun getInstalledApplications(pm: PackageManager): List<ApplicationInfo> =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            pm.getInstalledApplications(
-                PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
-            )
-        } else {
-            pm.getInstalledApplications(PackageManager.GET_META_DATA)
-        }
 
     private fun getApplicationInfoCompat(packageName: String): ApplicationInfo =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -15584,8 +15347,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun shQuote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
-
     private fun showKeyboardFor(editText: EditText) {
         editText.post {
             editText.requestFocus()
@@ -15702,16 +15463,6 @@ class MainActivity : ComponentActivity() {
             val out = runRootCommand(cmd, 6000)
             out.contains("ok")
         } catch (_: Exception) { false }
-    }
-
-    private fun listRootIconPackages(): List<String> {
-        val cmd = "ls -1 ${shQuote(ROOT_UXICONS_DIR)} 2>/dev/null || echo ''"
-        val output = try {
-            runRootCommand(cmd, timeoutMs = 3000)
-        } catch (_: Exception) {
-            return emptyList()
-        }
-        return output.lines().map { it.trim() }.filter { it.isNotEmpty() }
     }
 
     private fun exportSelectedToExternal() {
@@ -16746,13 +16497,6 @@ class MainActivity : ComponentActivity() {
     private fun decodePreviewBitmap(dir: File, name: String): Bitmap? =
         BitmapFactory.decodeFile(File(dir, name).absolutePath)?.also { it.prepareToDraw() }
 
-    private data class AppEntry(
-        val label: String,
-        override val packageName: String,
-        val applicationInfo: ApplicationInfo,
-        override val launchable: Boolean,
-        val iconKey: String,
-    ) : BatchSampleTarget
 
     private data class BatchPreviewProgress(
         val presetName: String,
@@ -17057,8 +16801,6 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val PREFS_NAME = "artplus_mobile"
-        private const val PREF_GENERATED_PACKAGE_NAMES = "generated_package_names"
-        private const val PREF_GENERATED_PACKAGE_NAMES_UPDATED_AT = "generated_package_names_updated_at"
         private const val PREF_GPT_MODE = "gpt_mode"
         private const val PREF_GPT_PROMPT_PRESET = "gpt_prompt_preset"
         private const val PREF_GPT_CUSTOM_PROMPT = "gpt_custom_prompt"
@@ -17289,21 +17031,7 @@ class MainActivity : ComponentActivity() {
         private const val CHOICE_ROW_HORIZONTAL_BLEED_DP = 16
         private const val SECTION_CARD_VERTICAL_PADDING_DP = 12
         private val SETTINGS_ROW_INSIDE_MARGIN = PaddingValues(vertical = 6.dp)
-        private const val ICON_CACHE_SIZE = 96
-        private const val PRELOAD_ICON_COUNT = 64
-        private const val ROOT_UXICONS_DIR = "/data/oplus/uxicons"
-        private const val ROOT_SCAN_TIMEOUT_MS = 8_000L
-        private const val ARTPLUS_ICON_REFRESH_TIMEOUT_MS = 12_000L
-        private const val COLOROS_UX_ICON_CONFIG_KEY = "key_ux_icon_config"
-        private const val COLOROS_DEFAULT_ICON_THEME = 2
-        private const val COLOROS_INSPIRATION_ICON_THEME = 3
-        private const val COLOROS_ARTPLUS_ON = 1
-        private const val FOREGROUND_ORIGINAL_BACKUP_NAME = "recfg_original_artplus.png"
-        private const val COLOROS_UXICON_THEME_SHIFT = 4
-        private const val COLOROS_UXICON_ARTPLUS_SHIFT = 8
-        private const val COLOROS_UXICON_THEME_MASK = 0x0fL shl COLOROS_UXICON_THEME_SHIFT
-        private const val COLOROS_UXICON_ARTPLUS_MASK = 0x07L shl COLOROS_UXICON_ARTPLUS_SHIFT
-        private const val FALLBACK_ARTPLUS_INSPIRATION_UXICON_CONFIG = 2314313028685793584L
+
         private const val BACK_GESTURE_COMMIT_PROGRESS = 0.28f
         private const val BACK_GESTURE_PAGE_TRANSLATION_RATIO = 1.0f
         private const val GITHUB_REPO_URL = "https://github.com/Costben/ArtPlus"
@@ -17334,6 +17062,8 @@ class MainActivity : ComponentActivity() {
         }
         private val SIZE_1X2 = intArrayOf(240, 820)
         private val SIZE_2X1 = intArrayOf(820, 240)
+        // P4 pipeline 用（误删恢复）：recfg 原图备份文件名。
+        private const val FOREGROUND_ORIGINAL_BACKUP_NAME = "recfg_original_artplus.png"
         private const val RMBG_MIN_MANUAL_COVERAGE = 0.02
         private const val RMBG_MAX_MANUAL_COVERAGE = 0.62
         private const val RMBG_MIN_AUTO_COVERAGE = 0.02

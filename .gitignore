@@ -28,12 +28,12 @@ docs/*
 *.swp
 *.swo
 
-# 输出文件
+# 输出文件（仓库根运行时目录；锚定根，勿让 mobile 源码包 data/ 被误忽略）
 outputs/
 reports/
 mobile_extracted/
 uxicons/
-data/
+/data/
 openlist
 *.html
 !webui_static/*.html
