@@ -3604,1039 +3604,690 @@ class MainActivity : ComponentActivity() {
             monochromeFor = ::monochromeForCandidate,
         )
 
-    internal fun loadGptSettings() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        mainViewModel.updateLive { p -> p.copy(gptImageMode = (GptImageMode.fromValue(prefs.getString(PREF_GPT_MODE, GptImageMode.Images.value))).value) }
-        mainViewModel.updateLive { p -> p.copy(gptPromptPreset = (GptPromptPreset.fromValue(
-            prefs.getString(PREF_GPT_PROMPT_PRESET, GptPromptPreset.StableCutout.value),
-        )).value) }
-        mainViewModel.updateLive { p -> p.copy(gptCustomPrompt = prefs.getString(PREF_GPT_CUSTOM_PROMPT, "") ?: "") }
-        gptModelId = prefs.getString(PREF_GPT_MODEL_ID, "") ?: ""
-        val storedBaseUrl = prefs.getString(PREF_GPT_BASE_URL, "") ?: ""
-        gptBaseUrl = if (storedBaseUrl == LEGACY_DEFAULT_GPT_BASE_URL) "" else storedBaseUrl
-        gptApiKey = loadGptApiKey(prefs)
-        if (storedBaseUrl == LEGACY_DEFAULT_GPT_BASE_URL) {
-            prefs.edit().putString(PREF_GPT_BASE_URL, "").apply()
-        }
-    }
-
-    internal fun saveGptSettings(): Boolean {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val encryptedKey = encryptSecret(gptApiKey.trim())
-        return prefs
-            .edit()
-            .putString(PREF_GPT_MODE, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode).value)
-            .putString(PREF_GPT_PROMPT_PRESET, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset).value)
-            .putString(PREF_GPT_CUSTOM_PROMPT, mainViewModel.params.value.gptCustomPrompt.trim())
-            .putString(PREF_GPT_MODEL_ID, gptModelId.trim())
-            .putString(PREF_GPT_BASE_URL, gptBaseUrl.trim())
-            .remove(PREF_GPT_API_KEY)
-            .apply {
-                if (encryptedKey.isBlank()) {
-                    remove(PREF_GPT_API_KEY_ENCRYPTED)
-                } else {
-                    putString(PREF_GPT_API_KEY_ENCRYPTED, encryptedKey)
-                }
-            }
-            .commit()
-    }
-
-    internal fun saveSettingsPage() {
-        val gptSaved = runCatching { saveGptSettings() }.getOrDefault(false)
-        val rmbgSaved = runCatching { saveRmbgSettings() }.getOrDefault(false)
-        saveLocalSeparationSettings()
-        saveImageTuningSettings()
-        saveLiquidGlassSettings()
-        saveUiState()
-        gptSettingsSaveStatus = ""
-        rmbgComponentSaveStatus = ""
-        statusText = if (gptSaved && rmbgSaved) "设置已保存" else "设置保存失败"
-    }
-
-    internal fun loadGptApiKey(prefs: android.content.SharedPreferences): String {
-        val encrypted = prefs.getString(PREF_GPT_API_KEY_ENCRYPTED, null)
-        val decrypted = encrypted
-            ?.takeIf { it.isNotBlank() }
-            ?.let { runCatching { decryptSecret(it) }.getOrNull() }
-        if (decrypted != null) {
-            if (prefs.contains(PREF_GPT_API_KEY)) {
-                prefs.edit().remove(PREF_GPT_API_KEY).apply()
-            }
-            return decrypted
-        }
-        val legacyPlain = prefs.getString(PREF_GPT_API_KEY, "") ?: ""
-        if (legacyPlain.isNotBlank()) {
-            val migrated = encryptSecret(legacyPlain)
-            prefs.edit()
-                .remove(PREF_GPT_API_KEY)
-                .putString(PREF_GPT_API_KEY_ENCRYPTED, migrated)
-                .apply()
-        }
-        return legacyPlain
-    }
-
-    internal fun encryptSecret(value: String): String {
-        if (value.isBlank()) {
-            return ""
-        }
-        val cipher = Cipher.getInstance(KEYSTORE_CIPHER_TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, gptSecretKey())
-        val encrypted = cipher.doFinal(value.toByteArray(StandardCharsets.UTF_8))
-        return listOf(cipher.iv, encrypted)
-            .joinToString(":") { Base64.encodeToString(it, Base64.NO_WRAP) }
-    }
-
-    internal fun decryptSecret(value: String): String {
-        val parts = value.split(':')
-        if (parts.size != 2) {
-            error("invalid encrypted secret")
-        }
-        val iv = Base64.decode(parts[0], Base64.NO_WRAP)
-        val encrypted = Base64.decode(parts[1], Base64.NO_WRAP)
-        val cipher = Cipher.getInstance(KEYSTORE_CIPHER_TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, gptSecretKey(), GCMParameterSpec(KEYSTORE_GCM_TAG_BITS, iv))
-        return String(cipher.doFinal(encrypted), StandardCharsets.UTF_8)
-    }
-
-    internal fun gptSecretKey(): SecretKey {
-        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
-        (keyStore.getKey(KEYSTORE_GPT_KEY_ALIAS, null) as? SecretKey)?.let { return it }
-        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
-        keyGenerator.init(
-            KeyGenParameterSpec.Builder(
-                KEYSTORE_GPT_KEY_ALIAS,
-                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
-            )
-                .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setRandomizedEncryptionRequired(true)
-                .build(),
+    // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
+    internal fun loadGptSettings(): Unit =
+        paramsLoadGptSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            updateLive = mainViewModel::updateLive,
+            setGptModelId = { gptModelId = it },
+            setGptBaseUrl = { gptBaseUrl = it },
+            setGptApiKey = { gptApiKey = it },
         )
-        return keyGenerator.generateKey()
-    }
 
-    internal fun loadRmbgSettings() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        rmbgComponentUrl = prefs.getString(PREF_RMBG_COMPONENT_URL, DEFAULT_RMBG_COMPONENT_URL)
-            ?.takeIf { it.isNotBlank() }
-            ?: DEFAULT_RMBG_COMPONENT_URL
-        val storedInputSize = prefs.getInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
-        if (
-            !prefs.getBoolean(PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024, false) ||
-            storedInputSize != DEFAULT_RMBG_INPUT_SIZE
-        ) {
-            prefs.edit()
-                .putInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
-                .putBoolean(PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024, true)
-                .apply()
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
+    internal fun saveGptSettings(): Boolean =
+        paramsSaveGptSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            getParams = { mainViewModel.params.value },
+            getGptApiKey = { gptApiKey },
+            getGptModelId = { gptModelId },
+            getGptBaseUrl = { gptBaseUrl },
+        )
 
+    // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
+    internal fun saveSettingsPage(): Unit =
+        paramsSaveSettingsPage(
+            saveGpt = { saveGptSettings() },
+            saveRmbg = { saveRmbgSettings() },
+            saveLocalSeparation = { saveLocalSeparationSettings() },
+            saveImageTuning = { saveImageTuningSettings() },
+            saveLiquidGlass = { saveLiquidGlassSettings() },
+            saveUi = { saveUiState() },
+            setGptSaveStatus = { gptSettingsSaveStatus = it },
+            setRmbgSaveStatus = { rmbgComponentSaveStatus = it },
+            setStatusText = { statusText = it },
+        )
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsCrypto.kt 显式参数版本，调用点零改动。
+    internal fun loadGptApiKey(prefs: android.content.SharedPreferences): String =
+        paramsLoadGptApiKey(prefs)
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsCrypto.kt 显式参数版本，调用点零改动。
+    internal fun encryptSecret(value: String): String =
+        paramsEncryptSecret(value)
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsCrypto.kt 显式参数版本，调用点零改动。
+    internal fun decryptSecret(value: String): String =
+        paramsDecryptSecret(value)
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsCrypto.kt 显式参数版本，调用点零改动。
+    internal fun gptSecretKey(): SecretKey =
+        paramsGptSecretKey()
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
+    internal fun loadRmbgSettings(): Unit =
+        paramsLoadRmbgSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            setComponentUrl = { rmbgComponentUrl = it },
+        )
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
     internal fun saveRmbgSettings(): Boolean =
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .edit()
-            .putString(PREF_RMBG_COMPONENT_URL, rmbgComponentUrl.trim())
-            .putInt(PREF_RMBG_INPUT_SIZE, DEFAULT_RMBG_INPUT_SIZE)
-            .commit()
-
-    internal fun loadLocalSeparationSettings() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        mainViewModel.updateLive { p -> p.copy(localSeparationMode = (LocalSeparationMode.fromValue(
-            prefs.getString(PREF_LOCAL_SEPARATION_MODE, LocalSeparationMode.Auto.value),
-        )).value) }
-    }
-
-    internal fun saveLocalSeparationSettings() {
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .edit()
-            .putString(PREF_LOCAL_SEPARATION_MODE, LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode).value)
-            .apply()
-    }
-
-    internal fun updateLocalSeparationMode(mode: LocalSeparationMode) {
-        if (LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode) == mode) {
-            return
-        }
-        val session = activeGenerationSession
-        val previousDefault = session?.let {
-            defaultPreviewChoiceForMode(LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode), it.autoLocalChoice)
-        }
-        mainViewModel.updateLive { p -> p.copy(localSeparationMode = (mode).value) }
-        saveLocalSeparationSettings()
-        refreshActivePreviewOutputs(
-            rebuildLocalCandidates = true,
-            retargetFrom = previousDefault,
+        paramsSaveRmbgSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            getComponentUrl = { rmbgComponentUrl },
         )
-    }
 
-    internal fun updateLocalWorkflowToggle(name: String, enabled: Boolean) {
-        val previous = when (name) {
-            "background" -> mainViewModel.params.value.localBackgroundSeparationEnabled
-            "adaptive" -> mainViewModel.params.value.localAdaptiveSelectionEnabled
-            "corner" -> mainViewModel.params.value.localCornerMaskCleanupEnabled
-            "alpha_edge_repair" -> mainViewModel.params.value.localAlphaEdgeColorRepairEnabled
-            "plain_background" -> mainViewModel.params.value.localPlainBackgroundEstimationEnabled
-            "original" -> mainViewModel.params.value.localOriginalCleanupEnabled
-            "plate" -> mainViewModel.params.value.localPlateCleanupEnabled
-            "plate_edge" -> mainViewModel.params.value.localPlateEdgeRepairEnabled
-            "plate_residue" -> mainViewModel.params.value.localPlateResidueCleanupEnabled
-            "shadow" -> mainViewModel.params.value.localShadowCleanupEnabled
-            "shadow_edge" -> mainViewModel.params.value.localShadowEdgeRepairEnabled
-            "edge_trim" -> mainViewModel.params.value.localEdgeTrimEnabled
-            "composed" -> mainViewModel.params.value.localComposedBackgroundEnabled
-            "two_layer" -> mainViewModel.params.value.localTwoLayerCandidateEnabled
-            "component" -> mainViewModel.params.value.localComponentCandidatesEnabled
-            "text_safe" -> mainViewModel.params.value.localTextSafeCandidateEnabled
-            "auto" -> mainViewModel.params.value.localAutoSelectionEnabled
-            "edge_polish" -> mainViewModel.params.value.localEdgePolishEnabled
-            else -> return
-        }
-        if (previous == enabled) {
-            return
-        }
-        when (name) {
-            "background" -> mainViewModel.updateLive { p -> p.copy(localBackgroundSeparationEnabled = enabled) }
-            "adaptive" -> mainViewModel.updateLive { p -> p.copy(localAdaptiveSelectionEnabled = enabled) }
-            "corner" -> mainViewModel.updateLive { p -> p.copy(localCornerMaskCleanupEnabled = enabled) }
-            "alpha_edge_repair" -> mainViewModel.updateLive { p -> p.copy(localAlphaEdgeColorRepairEnabled = enabled) }
-            "plain_background" -> mainViewModel.updateLive { p -> p.copy(localPlainBackgroundEstimationEnabled = enabled) }
-            "original" -> mainViewModel.updateLive { p -> p.copy(localOriginalCleanupEnabled = enabled) }
-            "plate" -> mainViewModel.updateLive { p -> p.copy(localPlateCleanupEnabled = enabled) }
-            "plate_edge" -> mainViewModel.updateLive { p -> p.copy(localPlateEdgeRepairEnabled = enabled) }
-            "plate_residue" -> mainViewModel.updateLive { p -> p.copy(localPlateResidueCleanupEnabled = enabled) }
-            "shadow" -> mainViewModel.updateLive { p -> p.copy(localShadowCleanupEnabled = enabled) }
-            "shadow_edge" -> mainViewModel.updateLive { p -> p.copy(localShadowEdgeRepairEnabled = enabled) }
-            "edge_trim" -> mainViewModel.updateLive { p -> p.copy(localEdgeTrimEnabled = enabled) }
-            "composed" -> mainViewModel.updateLive { p -> p.copy(localComposedBackgroundEnabled = enabled) }
-            "two_layer" -> mainViewModel.updateLive { p -> p.copy(localTwoLayerCandidateEnabled = enabled) }
-            "component" -> mainViewModel.updateLive { p -> p.copy(localComponentCandidatesEnabled = enabled) }
-            "text_safe" -> mainViewModel.updateLive { p -> p.copy(localTextSafeCandidateEnabled = enabled) }
-            "auto" -> mainViewModel.updateLive { p -> p.copy(localAutoSelectionEnabled = enabled) }
-            "edge_polish" -> mainViewModel.updateLive { p -> p.copy(localEdgePolishEnabled = enabled) }
-        }
-        saveImageTuningSettings()
-        statusText = if (enabled) "已启用本地步骤" else "已关闭本地步骤"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = true)
-    }
-
-    internal fun loadImageSettings() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val storedValue = prefs.getInt(
-            PREF_FOREGROUND_SUBJECT_PERCENT,
-            DEFAULT_FOREGROUND_SUBJECT_PERCENT,
+    // 重构期间保留：委托到 ui/pages/params/ParamsLocalSeparation.kt 显式参数版本，调用点零改动。
+    internal fun loadLocalSeparationSettings(): Unit =
+        paramsLoadLocalSeparationSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            updateLive = mainViewModel::updateLive,
         )
-        mainViewModel.updateLive { p -> p.copy(foregroundSubjectPercent = if (storedValue == LEGACY_FOREGROUND_SUBJECT_PERCENT) {
-            DEFAULT_FOREGROUND_SUBJECT_PERCENT
-        } else {
-            storedValue.coerceIn(MIN_FOREGROUND_SUBJECT_PERCENT, MAX_FOREGROUND_SUBJECT_PERCENT)
-        }) }
-        draftForegroundSubjectPercentText = mainViewModel.params.value.foregroundSubjectPercent.toString()
-        mainViewModel.updateLive { p -> p.copy(foregroundShadowLevel = prefs.getInt(
-            PREF_FOREGROUND_SHADOW_LEVEL,
-            DEFAULT_FOREGROUND_SHADOW_LEVEL,
-        ).coerceIn(MIN_FOREGROUND_SHADOW_LEVEL, MAX_FOREGROUND_SHADOW_LEVEL)) }
-        draftForegroundShadowLevelText = mainViewModel.params.value.foregroundShadowLevel.toString()
-        mainViewModel.updateLive { p -> p.copy(monochromeThemeScale = prefs.getFloat(
-            PREF_MONOCHROME_THEME_SCALE,
-            DEFAULT_MONOCHROME_THEME_SCALE,
-        ).coerceIn(MIN_MONOCHROME_THEME_SCALE, MAX_MONOCHROME_THEME_SCALE)) }
-        draftMonochromeThemeScaleText = (mainViewModel.params.value.monochromeThemeScale * 100).roundToInt().toString()
-        val tuningVersion = prefs.getInt(PREF_IMAGE_TUNING_VERSION, 1)
-        mainViewModel.updateLive { p -> p.copy(backgroundSeparationPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
-            DEFAULT_BACKGROUND_SEPARATION_PERCENT
-        } else {
-            prefs.getInt(PREF_BACKGROUND_SEPARATION_PERCENT, DEFAULT_BACKGROUND_SEPARATION_PERCENT)
-                .let { migrateLegacyPercent(it, DEFAULT_BACKGROUND_SEPARATION_PERCENT) }
-        }.coerceIn(MIN_BACKGROUND_SEPARATION_PERCENT, MAX_BACKGROUND_SEPARATION_PERCENT)) }
-        draftBackgroundSeparationText = mainViewModel.params.value.backgroundSeparationPercent.toString()
-        mainViewModel.updateLive { p -> p.copy(plateRemovalPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
-            DEFAULT_PLATE_REMOVAL_PERCENT
-        } else {
-            prefs.getInt(PREF_PLATE_REMOVAL_PERCENT, DEFAULT_PLATE_REMOVAL_PERCENT)
-                .let { migrateLegacyPercent(it, DEFAULT_PLATE_REMOVAL_PERCENT) }
-        }.coerceIn(MIN_PLATE_REMOVAL_PERCENT, MAX_PLATE_REMOVAL_PERCENT)) }
-        draftPlateRemovalText = mainViewModel.params.value.plateRemovalPercent.toString()
-        mainViewModel.updateLive { p -> p.copy(shadowRemovalPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
-            DEFAULT_SHADOW_REMOVAL_PERCENT
-        } else {
-            prefs.getInt(PREF_SHADOW_REMOVAL_PERCENT, DEFAULT_SHADOW_REMOVAL_PERCENT)
-                .let { migrateLegacyPercent(it, DEFAULT_SHADOW_REMOVAL_PERCENT) }
-        }.coerceIn(MIN_SHADOW_REMOVAL_PERCENT, MAX_SHADOW_REMOVAL_PERCENT)) }
-        draftShadowRemovalText = mainViewModel.params.value.shadowRemovalPercent.toString()
-        mainViewModel.updateLive { p -> p.copy(edgePolishPercent = if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
-            DEFAULT_EDGE_POLISH_PERCENT
-        } else {
-            prefs.getInt(PREF_EDGE_POLISH_PERCENT, DEFAULT_EDGE_POLISH_PERCENT)
-        }.coerceIn(MIN_EDGE_POLISH_PERCENT, MAX_EDGE_POLISH_PERCENT)) }
-        draftEdgePolishText = mainViewModel.params.value.edgePolishPercent.toString()
-        mainViewModel.updateLive { p -> p.copy(rmbgAlphaStrengthPercent = prefs.getInt(
-            PREF_RMBG_ALPHA_STRENGTH_PERCENT,
-            DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT,
-        ).coerceIn(MIN_RMBG_ALPHA_STRENGTH_PERCENT, MAX_RMBG_ALPHA_STRENGTH_PERCENT)) }
-        draftRmbgAlphaStrengthText = mainViewModel.params.value.rmbgAlphaStrengthPercent.toString()
-        mainViewModel.updateLive { p -> p.copy(rmbgEdgeFeatherPercent = prefs.getInt(
-            PREF_RMBG_EDGE_FEATHER_PERCENT,
-            DEFAULT_RMBG_EDGE_FEATHER_PERCENT,
-        ).coerceIn(MIN_RMBG_EDGE_FEATHER_PERCENT, MAX_RMBG_EDGE_FEATHER_PERCENT)) }
-        draftRmbgEdgeFeatherText = mainViewModel.params.value.rmbgEdgeFeatherPercent.toString()
-        mainViewModel.updateLive { p -> p.copy(rmbgEdgeAdjustPercent = prefs.getInt(
-            PREF_RMBG_EDGE_ADJUST_PERCENT,
-            DEFAULT_RMBG_EDGE_ADJUST_PERCENT,
-        ).coerceIn(MIN_RMBG_EDGE_ADJUST_PERCENT, MAX_RMBG_EDGE_ADJUST_PERCENT)) }
-        draftRmbgEdgeAdjustText = mainViewModel.params.value.rmbgEdgeAdjustPercent.toString()
-        mainViewModel.updateLive { p -> p.copy(rmbgWeakAlphaKeepPercent = prefs.getInt(
-            PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-            DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-        ).coerceIn(MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT, MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT)) }
-        draftRmbgWeakAlphaKeepText = mainViewModel.params.value.rmbgWeakAlphaKeepPercent.toString()
-        mainViewModel.updateLive { p -> p.copy(adaptiveForegroundMode = (if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
-            AdaptiveForegroundMode.Auto
-        } else {
-            AdaptiveForegroundMode.fromValue(
-                prefs.getString(PREF_ADAPTIVE_FOREGROUND_MODE, AdaptiveForegroundMode.Auto.value),
-            )
-        }).value) }
-        mainViewModel.updateLive { p -> p.copy(adaptiveDirectMaxCoveragePercent = prefs.getInt(
-            PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT,
-            DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT,
-        ).coerceIn(MIN_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, MAX_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT)) }
-        mainViewModel.updateLive { p -> p.copy(adaptiveDirectMaxCoverageIncreasePercent = prefs.getInt(
-            PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT,
-            DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT,
-        ).coerceIn(
-            MIN_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT,
-            MAX_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT,
-        )) }
-        mainViewModel.updateLive { p -> p.copy(adaptiveMaskEdgeCoveragePercent = prefs.getInt(
-            PREF_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT,
-            DEFAULT_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT,
-        ).coerceIn(MIN_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT, MAX_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT)) }
-        mainViewModel.updateLive { p -> p.copy(adaptiveMaskMinCoveragePercent = prefs.getInt(
-            PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT,
-            DEFAULT_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT,
-        ).coerceIn(MIN_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, MAX_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT)) }
-        mainViewModel.updateLive { p -> p.copy(adaptiveCenterEpsilonPercent = prefs.getInt(
-            PREF_ADAPTIVE_CENTER_EPSILON_PERCENT,
-            DEFAULT_ADAPTIVE_CENTER_EPSILON_PERCENT,
-        ).coerceIn(MIN_ADAPTIVE_CENTER_EPSILON_PERCENT, MAX_ADAPTIVE_CENTER_EPSILON_PERCENT)) }
-        mainViewModel.updateLive { p -> p.copy(originalForegroundCleanupMode = (if (tuningVersion < CURRENT_IMAGE_TUNING_VERSION) {
-            OriginalForegroundCleanupMode.Auto
-        } else {
-            OriginalForegroundCleanupMode.fromValue(
-                prefs.getString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, OriginalForegroundCleanupMode.Auto.value),
-            )
-        }).value) }
-        mainViewModel.updateLive { p -> p.copy(localBackgroundSeparationEnabled = prefs.getBoolean(PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localAdaptiveSelectionEnabled = prefs.getBoolean(PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localCornerMaskCleanupEnabled = prefs.getBoolean(PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localAlphaEdgeColorRepairEnabled = prefs.getBoolean(PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localPlainBackgroundEstimationEnabled = prefs.getBoolean(PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localOriginalCleanupEnabled = prefs.getBoolean(PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localPlateCleanupEnabled = prefs.getBoolean(PREF_LOCAL_PLATE_CLEANUP_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localPlateEdgeRepairEnabled = prefs.getBoolean(PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localPlateResidueCleanupEnabled = prefs.getBoolean(PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localShadowCleanupEnabled = prefs.getBoolean(PREF_LOCAL_SHADOW_CLEANUP_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localShadowEdgeRepairEnabled = prefs.getBoolean(PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localEdgeTrimEnabled = prefs.getBoolean(PREF_LOCAL_EDGE_TRIM_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localComposedBackgroundEnabled = prefs.getBoolean(PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localTwoLayerCandidateEnabled = prefs.getBoolean(PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localComponentCandidatesEnabled = prefs.getBoolean(PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localTextSafeCandidateEnabled = prefs.getBoolean(PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localAutoSelectionEnabled = prefs.getBoolean(PREF_LOCAL_AUTO_SELECTION_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(localEdgePolishEnabled = prefs.getBoolean(PREF_LOCAL_EDGE_POLISH_ENABLED, true)) }
-        mainViewModel.updateLive { p -> p.copy(nightSubjectLightBackgroundEnabled = prefs.getBoolean(
-            PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED,
-            false,
-        )) }
-        prefs.edit()
-            .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, mainViewModel.params.value.foregroundSubjectPercent)
-            .putInt(PREF_FOREGROUND_SHADOW_LEVEL, mainViewModel.params.value.foregroundShadowLevel)
-            .putFloat(PREF_MONOCHROME_THEME_SCALE, mainViewModel.params.value.monochromeThemeScale)
-            .putInt(PREF_BACKGROUND_SEPARATION_PERCENT, mainViewModel.params.value.backgroundSeparationPercent)
-            .putInt(PREF_PLATE_REMOVAL_PERCENT, mainViewModel.params.value.plateRemovalPercent)
-            .putInt(PREF_SHADOW_REMOVAL_PERCENT, mainViewModel.params.value.shadowRemovalPercent)
-            .putInt(PREF_EDGE_POLISH_PERCENT, mainViewModel.params.value.edgePolishPercent)
-            .putInt(PREF_RMBG_ALPHA_STRENGTH_PERCENT, mainViewModel.params.value.rmbgAlphaStrengthPercent)
-            .putInt(PREF_RMBG_EDGE_FEATHER_PERCENT, mainViewModel.params.value.rmbgEdgeFeatherPercent)
-            .putInt(PREF_RMBG_EDGE_ADJUST_PERCENT, mainViewModel.params.value.rmbgEdgeAdjustPercent)
-            .putInt(PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT, mainViewModel.params.value.rmbgWeakAlphaKeepPercent)
-            .putString(PREF_ADAPTIVE_FOREGROUND_MODE, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode).value)
-            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveDirectMaxCoveragePercent)
-            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent)
-            .putInt(PREF_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent)
-            .putInt(PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveMaskMinCoveragePercent)
-            .putInt(PREF_ADAPTIVE_CENTER_EPSILON_PERCENT, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
-            .putString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode).value)
-            .putBoolean(PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED, mainViewModel.params.value.localBackgroundSeparationEnabled)
-            .putBoolean(PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED, mainViewModel.params.value.localAdaptiveSelectionEnabled)
-            .putBoolean(PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED, mainViewModel.params.value.localCornerMaskCleanupEnabled)
-            .putBoolean(PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED, mainViewModel.params.value.localAlphaEdgeColorRepairEnabled)
-            .putBoolean(PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED, mainViewModel.params.value.localPlainBackgroundEstimationEnabled)
-            .putBoolean(PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED, mainViewModel.params.value.localOriginalCleanupEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_CLEANUP_ENABLED, mainViewModel.params.value.localPlateCleanupEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED, mainViewModel.params.value.localPlateEdgeRepairEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED, mainViewModel.params.value.localPlateResidueCleanupEnabled)
-            .putBoolean(PREF_LOCAL_SHADOW_CLEANUP_ENABLED, mainViewModel.params.value.localShadowCleanupEnabled)
-            .putBoolean(PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED, mainViewModel.params.value.localShadowEdgeRepairEnabled)
-            .putBoolean(PREF_LOCAL_EDGE_TRIM_ENABLED, mainViewModel.params.value.localEdgeTrimEnabled)
-            .putBoolean(PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED, mainViewModel.params.value.localComposedBackgroundEnabled)
-            .putBoolean(PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED, mainViewModel.params.value.localTwoLayerCandidateEnabled)
-            .putBoolean(PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED, mainViewModel.params.value.localComponentCandidatesEnabled)
-            .putBoolean(PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED, mainViewModel.params.value.localTextSafeCandidateEnabled)
-            .putBoolean(PREF_LOCAL_AUTO_SELECTION_ENABLED, mainViewModel.params.value.localAutoSelectionEnabled)
-            .putBoolean(PREF_LOCAL_EDGE_POLISH_ENABLED, mainViewModel.params.value.localEdgePolishEnabled)
-            .putBoolean(PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED, mainViewModel.params.value.nightSubjectLightBackgroundEnabled)
-            .putInt(PREF_IMAGE_TUNING_VERSION, CURRENT_IMAGE_TUNING_VERSION)
-            .putBoolean(PREF_FOREGROUND_SUBJECT_PERCENT_MIGRATED, true)
-            .apply()
-    }
 
-    internal fun updateForegroundSubjectPercent(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(foregroundSubjectPercent = value.coerceIn(
-            MIN_FOREGROUND_SUBJECT_PERCENT,
-            MAX_FOREGROUND_SUBJECT_PERCENT,
-        )) }
-        draftForegroundSubjectPercentText = mainViewModel.params.value.foregroundSubjectPercent.toString()
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .edit()
-            .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, mainViewModel.params.value.foregroundSubjectPercent)
-            .apply()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLocalSeparation.kt 显式参数版本，调用点零改动。
+    internal fun saveLocalSeparationSettings(): Unit =
+        paramsSaveLocalSeparationSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            getParams = { mainViewModel.params.value },
+        )
 
-    internal fun updateForegroundShadowLevel(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(foregroundShadowLevel = value.coerceIn(
-            MIN_FOREGROUND_SHADOW_LEVEL,
-            MAX_FOREGROUND_SHADOW_LEVEL,
-        )) }
-        draftForegroundShadowLevelText = mainViewModel.params.value.foregroundShadowLevel.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLocalSeparation.kt 显式参数版本，调用点零改动。
+    internal fun updateLocalSeparationMode(mode: LocalSeparationMode): Unit =
+        paramsUpdateLocalSeparationMode(
+            mode = mode,
+            getParams = { mainViewModel.params.value },
+            updateLive = mainViewModel::updateLive,
+            getSession = { activeGenerationSession },
+            defaultPreviewChoiceForMode = ::defaultPreviewChoiceForMode,
+            onSave = { saveLocalSeparationSettings() },
+            onRefresh = { rebuild, retarget -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild, retargetFrom = retarget) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/params/ParamsLocalSeparation.kt 显式参数版本，调用点零改动。
+    internal fun updateLocalWorkflowToggle(name: String, enabled: Boolean): Unit =
+        paramsUpdateLocalWorkflowToggle(
+            name = name,
+            enabled = enabled,
+            getParams = { mainViewModel.params.value },
+            updateLive = mainViewModel::updateLive,
+            onSaveImageTuning = { saveImageTuningSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun loadImageSettings(): Unit =
+        paramsLoadImageSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+            setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+            setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+            setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+            setDraftPlateRemovalText = { draftPlateRemovalText = it },
+            setDraftShadowRemovalText = { draftShadowRemovalText = it },
+            setDraftEdgePolishText = { draftEdgePolishText = it },
+            setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+            setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+            setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+            setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+        )
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateForegroundSubjectPercent(value: Int): Unit =
+        paramsUpdateForegroundSubjectPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            setDraftText = { draftForegroundSubjectPercentText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateForegroundShadowLevel(value: Int): Unit =
+        paramsUpdateForegroundShadowLevel(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftText = { draftForegroundShadowLevelText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
+
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
     internal fun migrateLegacyPercent(value: Int, fallback: Int): Int =
-        when {
-            value in 1..100 -> value
-            value <= 0 -> 1
-            else -> fallback
-        }
+        paramsMigrateLegacyPercent(value = value, fallback = fallback)
 
-    internal fun updateMonochromeThemeScalePercent(value: Int) {
-        val percent = value.coerceIn(MIN_MONOCHROME_THEME_SCALE_PERCENT, MAX_MONOCHROME_THEME_SCALE_PERCENT)
-        mainViewModel.updateLive { p -> p.copy(monochromeThemeScale = (percent.toFloat() / 100f).coerceIn(
-            MIN_MONOCHROME_THEME_SCALE,
-            MAX_MONOCHROME_THEME_SCALE,
-        )) }
-        draftMonochromeThemeScaleText = percent.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateMonochromeThemeScalePercent(value: Int): Unit =
+        paramsUpdateMonochromeThemeScalePercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftMonochromeThemeScaleText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateBackgroundSeparationPercent(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(backgroundSeparationPercent = value.coerceIn(
-            MIN_BACKGROUND_SEPARATION_PERCENT,
-            MAX_BACKGROUND_SEPARATION_PERCENT,
-        )) }
-        draftBackgroundSeparationText = mainViewModel.params.value.backgroundSeparationPercent.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = true)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateBackgroundSeparationPercent(value: Int): Unit =
+        paramsUpdateBackgroundSeparationPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftText = { draftBackgroundSeparationText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updatePlateRemovalPercent(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(plateRemovalPercent = value.coerceIn(
-            MIN_PLATE_REMOVAL_PERCENT,
-            MAX_PLATE_REMOVAL_PERCENT,
-        )) }
-        draftPlateRemovalText = mainViewModel.params.value.plateRemovalPercent.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = true)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updatePlateRemovalPercent(value: Int): Unit =
+        paramsUpdatePlateRemovalPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftText = { draftPlateRemovalText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateShadowRemovalPercent(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(shadowRemovalPercent = value.coerceIn(
-            MIN_SHADOW_REMOVAL_PERCENT,
-            MAX_SHADOW_REMOVAL_PERCENT,
-        )) }
-        draftShadowRemovalText = mainViewModel.params.value.shadowRemovalPercent.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = true)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateShadowRemovalPercent(value: Int): Unit =
+        paramsUpdateShadowRemovalPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftText = { draftShadowRemovalText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateEdgePolishPercent(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(edgePolishPercent = value.coerceIn(
-            MIN_EDGE_POLISH_PERCENT,
-            MAX_EDGE_POLISH_PERCENT,
-        )) }
-        draftEdgePolishText = mainViewModel.params.value.edgePolishPercent.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateEdgePolishPercent(value: Int): Unit =
+        paramsUpdateEdgePolishPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftText = { draftEdgePolishText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateRmbgAlphaStrengthPercent(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(rmbgAlphaStrengthPercent = value.coerceIn(
-            MIN_RMBG_ALPHA_STRENGTH_PERCENT,
-            MAX_RMBG_ALPHA_STRENGTH_PERCENT,
-        )) }
-        draftRmbgAlphaStrengthText = mainViewModel.params.value.rmbgAlphaStrengthPercent.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateRmbgAlphaStrengthPercent(value: Int): Unit =
+        paramsUpdateRmbgAlphaStrengthPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftText = { draftRmbgAlphaStrengthText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateRmbgEdgeFeatherPercent(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(rmbgEdgeFeatherPercent = value.coerceIn(
-            MIN_RMBG_EDGE_FEATHER_PERCENT,
-            MAX_RMBG_EDGE_FEATHER_PERCENT,
-        )) }
-        draftRmbgEdgeFeatherText = mainViewModel.params.value.rmbgEdgeFeatherPercent.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateRmbgEdgeFeatherPercent(value: Int): Unit =
+        paramsUpdateRmbgEdgeFeatherPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftText = { draftRmbgEdgeFeatherText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateRmbgEdgeAdjustPercent(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(rmbgEdgeAdjustPercent = value.coerceIn(
-            MIN_RMBG_EDGE_ADJUST_PERCENT,
-            MAX_RMBG_EDGE_ADJUST_PERCENT,
-        )) }
-        draftRmbgEdgeAdjustText = mainViewModel.params.value.rmbgEdgeAdjustPercent.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateRmbgEdgeAdjustPercent(value: Int): Unit =
+        paramsUpdateRmbgEdgeAdjustPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftText = { draftRmbgEdgeAdjustText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateRmbgWeakAlphaKeepPercent(value: Int) {
-        mainViewModel.updateLive { p -> p.copy(rmbgWeakAlphaKeepPercent = value.coerceIn(
-            MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-            MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-        )) }
-        draftRmbgWeakAlphaKeepText = mainViewModel.params.value.rmbgWeakAlphaKeepPercent.toString()
-        saveImageTuningSettings()
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateRmbgWeakAlphaKeepPercent(value: Int): Unit =
+        paramsUpdateRmbgWeakAlphaKeepPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftText = { draftRmbgWeakAlphaKeepText = it },
+            onSave = { saveImageTuningSettings() },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun currentRmbgModelPreset(): RmbgModelPreset {
-        val url = rmbgComponentUrl.trim()
-        return RMBG_MODEL_PRESETS.firstOrNull { preset ->
-            preset.url.isNotBlank() && preset.url == url
-        } ?: RMBG_MODEL_PRESET_CUSTOM
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
+    internal fun currentRmbgModelPreset(): RmbgModelPreset =
+        paramsCurrentRmbgModelPreset(componentUrl = rmbgComponentUrl)
 
-    internal fun updateRmbgModelPreset(preset: RmbgModelPreset) {
-        if (preset == RMBG_MODEL_PRESET_CUSTOM) {
-            rmbgComponentSaveStatus = ""
-            statusText = "RMBG 使用自定义 URL"
-            return
-        }
-        if (preset.url.isBlank()) {
-            rmbgComponentSaveStatus = "该预设缺少 URL"
-            statusText = "RMBG ${preset.label} 还没有下载地址"
-            return
-        }
-        rmbgComponentUrl = preset.url
-        rmbgComponentSaveStatus = ""
-        statusText = "RMBG 预设已选择: ${preset.label}"
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
+    internal fun updateRmbgModelPreset(preset: RmbgModelPreset): Unit =
+        paramsUpdateRmbgModelPreset(
+            preset = preset,
+            setComponentUrl = { rmbgComponentUrl = it },
+            setSaveStatus = { rmbgComponentSaveStatus = it },
+            setStatusText = { statusText = it },
+        )
 
-    internal fun rmbgInferenceStatusSummary(): String {
-        if (isGeneratingRmbgCandidate) {
-            return rmbgCandidateStatusText.ifBlank { "RMBG运行中" }
-        }
-        val report = lastRmbgInferenceReport
-        if (report != null) {
-            return "${report.actualBackend.label}，耗时 ${report.elapsedMs}ms"
-        }
-        return "尚未运行"
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
+    internal fun rmbgInferenceStatusSummary(): String =
+        paramsRmbgInferenceStatusSummary(
+            isGenerating = isGeneratingRmbgCandidate,
+            candidateStatusText = rmbgCandidateStatusText,
+            report = lastRmbgInferenceReport,
+        )
 
-    internal fun saveImageTuningSettings() {
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .edit()
-            .putInt(PREF_FOREGROUND_SUBJECT_PERCENT, mainViewModel.params.value.foregroundSubjectPercent)
-            .putInt(PREF_FOREGROUND_SHADOW_LEVEL, mainViewModel.params.value.foregroundShadowLevel)
-            .putFloat(PREF_MONOCHROME_THEME_SCALE, mainViewModel.params.value.monochromeThemeScale)
-            .putInt(PREF_BACKGROUND_SEPARATION_PERCENT, mainViewModel.params.value.backgroundSeparationPercent)
-            .putInt(PREF_PLATE_REMOVAL_PERCENT, mainViewModel.params.value.plateRemovalPercent)
-            .putInt(PREF_SHADOW_REMOVAL_PERCENT, mainViewModel.params.value.shadowRemovalPercent)
-            .putInt(PREF_EDGE_POLISH_PERCENT, mainViewModel.params.value.edgePolishPercent)
-            .putInt(PREF_RMBG_ALPHA_STRENGTH_PERCENT, mainViewModel.params.value.rmbgAlphaStrengthPercent)
-            .putInt(PREF_RMBG_EDGE_FEATHER_PERCENT, mainViewModel.params.value.rmbgEdgeFeatherPercent)
-            .putInt(PREF_RMBG_EDGE_ADJUST_PERCENT, mainViewModel.params.value.rmbgEdgeAdjustPercent)
-            .putInt(PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT, mainViewModel.params.value.rmbgWeakAlphaKeepPercent)
-            .putString(PREF_ADAPTIVE_FOREGROUND_MODE, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode).value)
-            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveDirectMaxCoveragePercent)
-            .putInt(PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent)
-            .putInt(PREF_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent)
-            .putInt(PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT, mainViewModel.params.value.adaptiveMaskMinCoveragePercent)
-            .putInt(PREF_ADAPTIVE_CENTER_EPSILON_PERCENT, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
-            .putString(PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode).value)
-            .putBoolean(PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED, mainViewModel.params.value.localBackgroundSeparationEnabled)
-            .putBoolean(PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED, mainViewModel.params.value.localAdaptiveSelectionEnabled)
-            .putBoolean(PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED, mainViewModel.params.value.localCornerMaskCleanupEnabled)
-            .putBoolean(PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED, mainViewModel.params.value.localAlphaEdgeColorRepairEnabled)
-            .putBoolean(PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED, mainViewModel.params.value.localPlainBackgroundEstimationEnabled)
-            .putBoolean(PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED, mainViewModel.params.value.localOriginalCleanupEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_CLEANUP_ENABLED, mainViewModel.params.value.localPlateCleanupEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED, mainViewModel.params.value.localPlateEdgeRepairEnabled)
-            .putBoolean(PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED, mainViewModel.params.value.localPlateResidueCleanupEnabled)
-            .putBoolean(PREF_LOCAL_SHADOW_CLEANUP_ENABLED, mainViewModel.params.value.localShadowCleanupEnabled)
-            .putBoolean(PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED, mainViewModel.params.value.localShadowEdgeRepairEnabled)
-            .putBoolean(PREF_LOCAL_EDGE_TRIM_ENABLED, mainViewModel.params.value.localEdgeTrimEnabled)
-            .putBoolean(PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED, mainViewModel.params.value.localComposedBackgroundEnabled)
-            .putBoolean(PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED, mainViewModel.params.value.localTwoLayerCandidateEnabled)
-            .putBoolean(PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED, mainViewModel.params.value.localComponentCandidatesEnabled)
-            .putBoolean(PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED, mainViewModel.params.value.localTextSafeCandidateEnabled)
-            .putBoolean(PREF_LOCAL_AUTO_SELECTION_ENABLED, mainViewModel.params.value.localAutoSelectionEnabled)
-            .putBoolean(PREF_LOCAL_EDGE_POLISH_ENABLED, mainViewModel.params.value.localEdgePolishEnabled)
-            .putBoolean(PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED, mainViewModel.params.value.nightSubjectLightBackgroundEnabled)
-            .putInt(PREF_IMAGE_TUNING_VERSION, CURRENT_IMAGE_TUNING_VERSION)
-            .apply()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun saveImageTuningSettings(): Unit =
+        paramsSaveImageTuningSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            getParams = { mainViewModel.params.value },
+        )
 
     /** 汇总当前全部调参字段为不可变快照（预设保存、撤销、debug 往返共用）。 */
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
     internal fun currentTuningParams(): TuningParams =
-        mainViewModel.params.value
+        paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
 
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
     internal fun currentLocalPipelineConfig(): LocalPipelineConfig =
-        LocalPipelineConfig.from(currentTuningParams())
+        paramsCurrentLocalPipelineConfig(getParams = { mainViewModel.params.value })
 
     /**
      * 应用一份参数快照：写全部字段 + draft 文本，可选持久化并刷新预览。
      * 预设、debug HTTP、撤销/批量都走这里。
      */
+    // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
     internal fun applyTuningParams(
         params: TuningParams,
         rebuildCandidates: Boolean = true,
         persist: Boolean = true,
         captureUndo: Boolean = true,
         refreshPreview: Boolean = true,
-    ) {
-        val before = currentTuningParams()
-        if (captureUndo) {
-            lastParamsSnapshot = before
-        }
-        // P2 交界：历史/快照单源在 MainViewModel，用快照显式同步（VM 不读 Activity 字段）；
-        // 186 live vars 仍是 UI 真源（P5 重写），applied 传本函数收到的快照参数。
-        mainViewModel.onParamsApplied(before = before, applied = params, captureUndo = captureUndo)
-        draftForegroundSubjectPercentText = params.foregroundSubjectPercent.toString()
-        draftForegroundShadowLevelText = params.foregroundShadowLevel.toString()
-        draftMonochromeThemeScaleText = (params.monochromeThemeScale * 100).roundToInt().toString()
-        draftBackgroundSeparationText = params.backgroundSeparationPercent.toString()
-        draftPlateRemovalText = params.plateRemovalPercent.toString()
-        draftShadowRemovalText = params.shadowRemovalPercent.toString()
-        draftEdgePolishText = params.edgePolishPercent.toString()
-        draftRmbgAlphaStrengthText = params.rmbgAlphaStrengthPercent.toString()
-        draftRmbgEdgeFeatherText = params.rmbgEdgeFeatherPercent.toString()
-        draftRmbgEdgeAdjustText = params.rmbgEdgeAdjustPercent.toString()
-        draftRmbgWeakAlphaKeepText = params.rmbgWeakAlphaKeepPercent.toString()
-        draftLiquidGlassRadiusText = params.liquidGlassRadius.toString()
-        draftLiquidGlassOuterWidthText = params.liquidGlassOuterWidth.toString()
-        draftLiquidGlassTopAlphaText = params.liquidGlassTopAlpha.toString()
-        draftLiquidGlassBottomAlphaText = params.liquidGlassBottomAlpha.toString()
-        draftLiquidGlassBackgroundMistAlphaText = params.liquidGlassBackgroundMistAlpha.toString()
-        draftLiquidGlassBottomDarkAlphaText = params.liquidGlassBottomDarkAlpha.toString()
-        draftLiquidGlassSubjectScaleText = params.liquidGlassSubjectScalePercent.toString()
-        draftLiquidGlassSubjectOutlineWidthText = params.liquidGlassSubjectOutlineWidth.toString()
-        draftLiquidGlassSubjectInnerOutlineWidthText = params.liquidGlassSubjectInnerOutlineWidth.toString()
-        draftLiquidGlassSubjectShadowAlphaText = params.liquidGlassSubjectShadowAlpha.toString()
-        draftLiquidGlassSubjectOpacityText = params.liquidGlassSubjectOpacityPercent.toString()
-        draftJsonParamsText = params.toJson().toString(4)
-        if (persist) {
-            saveLocalSeparationSettings()
-            saveImageTuningSettings()
-            saveLiquidGlassSettings()
-            if (
-                before.gptImageMode != params.gptImageMode ||
-                before.gptPromptPreset != params.gptPromptPreset ||
-                before.gptCustomPrompt != params.gptCustomPrompt
-            ) {
-                saveGptSettings()
-            }
-            saveUiState()
-        }
-        if (refreshPreview && !isBusy && activeGenerationSession != null) {
-            refreshActivePreviewOutputs(rebuildLocalCandidates = rebuildCandidates)
-        }
-    }
+    ): Unit =
+        paramsApplyTuningParams(
+            params = params,
+            rebuildCandidates = rebuildCandidates,
+            persist = persist,
+            captureUndo = captureUndo,
+            refreshPreview = refreshPreview,
+            getBefore = { currentTuningParams() },
+            onCaptureUndo = { lastParamsSnapshot = it },
+            onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+            setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+            setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+            setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+            setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+            setDraftPlateRemovalText = { draftPlateRemovalText = it },
+            setDraftShadowRemovalText = { draftShadowRemovalText = it },
+            setDraftEdgePolishText = { draftEdgePolishText = it },
+            setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+            setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+            setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+            setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+            setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
+            setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
+            setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
+            setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
+            setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
+            setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
+            setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
+            setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
+            setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+            setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
+            setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
+            setDraftJsonParamsText = { draftJsonParamsText = it },
+            onSaveLocalSeparation = { saveLocalSeparationSettings() },
+            onSaveImageTuning = { saveImageTuningSettings() },
+            onSaveLiquidGlass = { saveLiquidGlassSettings() },
+            onSaveGpt = { saveGptSettings() },
+            onSaveUi = { saveUiState() },
+            isBusy = { isBusy },
+            getSession = { activeGenerationSession },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
     /** 撤销上一次参数应用（预设/批量前自动捕获快照）。 */
-    internal fun restoreLastParams() {
-        val snapshot = lastParamsSnapshot ?: run {
-            statusText = "没有可还原的参数"
-            return
-        }
-        lastParamsSnapshot = null
-        applyTuningParams(snapshot, captureUndo = false)
-        statusText = "已还原上一个参数"
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
+    internal fun restoreLastParams(): Unit =
+        paramsRestoreLastParams(
+            getSnapshot = { lastParamsSnapshot },
+            clearSnapshot = { lastParamsSnapshot = null },
+            setStatusText = { statusText = it },
+            onApply = { applyTuningParams(it, captureUndo = false) },
+        )
 
     /**
      * 恢复默认配置（Issue #4）。
      * 仅重置全部调参到出厂默认值（TuningParams 默认构造），不清除已下载的 RMBG 模型与已生成的图标包。
      * 通过 TuningParams 默认值 + applyTuningParams 统一持久化，保证与各迁移逻辑一致。
      */
-    internal fun resetToDefaults(confirmed: Boolean = false) {
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        if (!confirmed) {
-            requestServiceConfirm(
-                title = "恢复默认配置",
-                message = "将把全部调参恢复为出厂默认值（不影响已下载的 RMBG 模型与已生成的图标包），可通过「还原上一步」撤销。确认继续？",
-                confirmLabel = "恢复默认",
-            ) { resetToDefaults(confirmed = true) }
-            return
-        }
-        val defaults = TuningParams()
-        applyTuningParams(defaults, rebuildCandidates = true)
-        presetStore.activePresetId = null
-        activePresetId = null
-        statusText = "已恢复默认配置"
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
+    internal fun resetToDefaults(confirmed: Boolean = false): Unit =
+        paramsResetToDefaults(
+            confirmed = confirmed,
+            isBusy = { isBusy },
+            isGeneratingGpt = { isGeneratingGptCandidate },
+            isGeneratingRmbg = { isGeneratingRmbgCandidate },
+            setStatusText = { statusText = it },
+            onRequestConfirm = { title, message, confirmLabel, onConfirm ->
+                requestServiceConfirm(title = title, message = message, confirmLabel = confirmLabel, onConfirm = onConfirm)
+            },
+            onApplyDefaults = { applyTuningParams(it, rebuildCandidates = true) },
+            onClearPreset = {
+                presetStore.activePresetId = null
+                activePresetId = null
+            },
+        )
 
-    internal fun initTuningHistory() {
-        // P2 交界：历史基线进 MainViewModel（冷启动时快照显式同步一次）。
-        mainViewModel.resetHistory(currentTuningParams())
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
+    internal fun initTuningHistory(): Unit =
+        paramsInitTuningHistory(
+            getParams = { mainViewModel.params.value },
+            resetHistory = mainViewModel::resetHistory,
+        )
 
-    internal fun undoTuning() {
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        // P2 交界：取栈顶目标由 MainViewModel 判定（null 即已到最早），UI 状态留 Activity。
-        val target = mainViewModel.undo()
-        if (target == null) {
-            statusText = "已到最早的配置"
-            return
-        }
-        applyTuningParams(target, captureUndo = false)
-        presetStore.activePresetId = null
-        activePresetId = null
-        statusText = "已后退到上一个配置"
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
+    internal fun undoTuning(): Unit =
+        paramsUndoTuning(
+            isBusy = { isBusy },
+            isGeneratingGpt = { isGeneratingGptCandidate },
+            isGeneratingRmbg = { isGeneratingRmbgCandidate },
+            setStatusText = { statusText = it },
+            onUndo = { mainViewModel.undo() },
+            onApply = { applyTuningParams(it, captureUndo = false) },
+            onClearPreset = {
+                presetStore.activePresetId = null
+                activePresetId = null
+            },
+        )
 
-    internal fun redoTuning() {
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        // P2 交界：取栈顶目标由 MainViewModel 判定（null 即已到最新），UI 状态留 Activity。
-        val target = mainViewModel.redo()
-        if (target == null) {
-            statusText = "已到最新的配置"
-            return
-        }
-        applyTuningParams(target, captureUndo = false)
-        presetStore.activePresetId = null
-        activePresetId = null
-        statusText = "已前进到下一个配置"
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
+    internal fun redoTuning(): Unit =
+        paramsRedoTuning(
+            isBusy = { isBusy },
+            isGeneratingGpt = { isGeneratingGptCandidate },
+            isGeneratingRmbg = { isGeneratingRmbgCandidate },
+            setStatusText = { statusText = it },
+            onRedo = { mainViewModel.redo() },
+            onApply = { applyTuningParams(it, captureUndo = false) },
+            onClearPreset = {
+                presetStore.activePresetId = null
+                activePresetId = null
+            },
+        )
 
     /** 启动时统一加载调参相关设置（保留各迁移分支）。 */
-    internal fun loadTuningParams() {
-        loadLocalSeparationSettings()
-        loadImageSettings()
-        loadLiquidGlassSettings()
-        draftJsonParamsText = currentTuningParams().toJson().toString(4)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
+    internal fun loadTuningParams(): Unit =
+        paramsLoadTuningParams(
+            onLoadLocal = { loadLocalSeparationSettings() },
+            onLoadImage = { loadImageSettings() },
+            onLoadLiquid = { loadLiquidGlassSettings() },
+            getParams = { currentTuningParams() },
+            setDraftJsonParamsText = { draftJsonParamsText = it },
+        )
 
-    internal fun updateNightSubjectLightBackgroundEnabled(enabled: Boolean) {
-        if (mainViewModel.params.value.nightSubjectLightBackgroundEnabled == enabled) {
-            return
-        }
-        mainViewModel.updateLive { p -> p.copy(nightSubjectLightBackgroundEnabled = enabled) }
-        saveImageTuningSettings()
-        statusText = if (enabled) {
-            "标准暗色已开启填充背景色"
-        } else {
-            "标准暗色已关闭填充背景色"
-        }
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
+    internal fun updateNightSubjectLightBackgroundEnabled(enabled: Boolean): Unit =
+        paramsUpdateNightSubjectLightBackgroundEnabled(
+            enabled = enabled,
+            getParams = { mainViewModel.params.value },
+            updateLive = mainViewModel::updateLive,
+            onSave = { saveImageTuningSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updatePreviewCornerRadiusDp(value: Int) {
-        val next = value.coerceIn(MIN_PREVIEW_CORNER_RADIUS_DP, MAX_PREVIEW_CORNER_RADIUS_DP)
-        previewCornerRadiusDp = next
-        draftPreviewCornerRadiusDpText = next.toString()
-        saveUiState()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsPreviewDisplay.kt 显式参数版本，调用点零改动。
+    internal fun updatePreviewCornerRadiusDp(value: Int): Unit =
+        paramsUpdatePreviewCornerRadiusDp(
+            value = value,
+            setValue = { previewCornerRadiusDp = it },
+            setDraftText = { draftPreviewCornerRadiusDpText = it },
+            onSave = { saveUiState() },
+        )
 
-    internal fun updatePreviewIconSizeDp(value: Int) {
-        val next = value.coerceIn(MIN_PREVIEW_ICON_SIZE_DP, MAX_PREVIEW_ICON_SIZE_DP)
-        previewIconSizeDp = next
-        draftPreviewIconSizeDpText = next.toString()
-        saveUiState()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsPreviewDisplay.kt 显式参数版本，调用点零改动。
+    internal fun updatePreviewIconSizeDp(value: Int): Unit =
+        paramsUpdatePreviewIconSizeDp(
+            value = value,
+            setValue = { previewIconSizeDp = it },
+            setDraftText = { draftPreviewIconSizeDpText = it },
+            onSave = { saveUiState() },
+        )
 
-    internal fun updateBatchPreviewCount(value: Int) {
-        val next = value.coerceIn(MIN_BATCH_PREVIEW_COUNT, MAX_BATCH_PREVIEW_COUNT)
-        batchPreviewCount = next
-        draftBatchPreviewCountText = next.toString()
-        saveUiState()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsPreviewDisplay.kt 显式参数版本，调用点零改动。
+    internal fun updateBatchPreviewCount(value: Int): Unit =
+        paramsUpdateBatchPreviewCount(
+            value = value,
+            setValue = { batchPreviewCount = it },
+            setDraftText = { draftBatchPreviewCountText = it },
+            onSave = { saveUiState() },
+        )
 
-    internal fun updateBatchPreviewColumns(value: Int) {
-        val next = value.coerceIn(2, 5)
-        batchPreviewColumns = next
-        draftBatchPreviewColumnsText = next.toString()
-        val autoSize = when (next) {
-            2 -> 72
-            3 -> 64
-            4 -> 54
-            5 -> 46
-            else -> 54
-        }
-        batchPreviewIconSizeDp = autoSize
-        draftBatchPreviewIconSizeDpText = autoSize.toString()
-        saveUiState()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsPreviewDisplay.kt 显式参数版本，调用点零改动。
+    internal fun updateBatchPreviewColumns(value: Int): Unit =
+        paramsUpdateBatchPreviewColumns(
+            value = value,
+            setColumns = { batchPreviewColumns = it },
+            setDraftColumnsText = { draftBatchPreviewColumnsText = it },
+            setIconSize = { batchPreviewIconSizeDp = it },
+            setDraftIconSizeText = { draftBatchPreviewIconSizeDpText = it },
+            onSave = { saveUiState() },
+        )
 
-    internal fun updateBatchPreviewIconSizeDp(value: Int) {
-        val next = value.coerceIn(40, 84)
-        batchPreviewIconSizeDp = next
-        draftBatchPreviewIconSizeDpText = next.toString()
-        saveUiState()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsPreviewDisplay.kt 显式参数版本，调用点零改动。
+    internal fun updateBatchPreviewIconSizeDp(value: Int): Unit =
+        paramsUpdateBatchPreviewIconSizeDp(
+            value = value,
+            setValue = { batchPreviewIconSizeDp = it },
+            setDraftText = { draftBatchPreviewIconSizeDpText = it },
+            onSave = { saveUiState() },
+        )
 
-    internal fun updateBatchPreviewCornerRadiusDp(value: Int) {
-        val next = value.coerceIn(0, 36)
-        batchPreviewCornerRadiusDp = next
-        draftBatchPreviewCornerRadiusDpText = next.toString()
-        saveUiState()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsPreviewDisplay.kt 显式参数版本，调用点零改动。
+    internal fun updateBatchPreviewCornerRadiusDp(value: Int): Unit =
+        paramsUpdateBatchPreviewCornerRadiusDp(
+            value = value,
+            setValue = { batchPreviewCornerRadiusDp = it },
+            setDraftText = { draftBatchPreviewCornerRadiusDpText = it },
+            onSave = { saveUiState() },
+        )
 
-    internal fun updateBatchPreviewDesktopBackground(option: PreviewDesktopBackground) {
-        if (batchPreviewDesktopBackground == option) {
-            return
-        }
-        batchPreviewDesktopBackground = option
-        saveUiState()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsPreviewDisplay.kt 显式参数版本，调用点零改动。
+    internal fun updateBatchPreviewDesktopBackground(option: PreviewDesktopBackground): Unit =
+        paramsUpdateBatchPreviewDesktopBackground(
+            option = option,
+            getValue = { batchPreviewDesktopBackground },
+            setValue = { batchPreviewDesktopBackground = it },
+            onSave = { saveUiState() },
+        )
 
-    internal fun updatePreviewDesktopBackground(option: PreviewDesktopBackground) {
-        if (previewDesktopBackground == option) {
-            return
-        }
-        previewDesktopBackground = option
-        saveUiState()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsPreviewDisplay.kt 显式参数版本，调用点零改动。
+    internal fun updatePreviewDesktopBackground(option: PreviewDesktopBackground): Unit =
+        paramsUpdatePreviewDesktopBackground(
+            option = option,
+            getValue = { previewDesktopBackground },
+            setValue = { previewDesktopBackground = it },
+            onSave = { saveUiState() },
+        )
 
-    internal fun updatePreviewStripEnabled(enabled: Boolean) {
-        if (previewStripEnabled == enabled) {
-            return
-        }
-        previewStripEnabled = enabled
-        saveUiState()
-        statusText = if (enabled) {
-            "已开启主页面顶部预览条"
-        } else {
-            "已关闭主页面顶部预览条"
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsPreviewDisplay.kt 显式参数版本，调用点零改动。
+    internal fun updatePreviewStripEnabled(enabled: Boolean): Unit =
+        paramsUpdatePreviewStripEnabled(
+            enabled = enabled,
+            getValue = { previewStripEnabled },
+            setValue = { previewStripEnabled = it },
+            onSave = { saveUiState() },
+            setStatusText = { statusText = it },
+        )
 
-    internal fun loadLiquidGlassSettings() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val migratedToLayered = prefs.getBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, false)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassEnabled = if (migratedToLayered) {
-            prefs.getBoolean(PREF_LIQUID_GLASS_ENABLED, true)
-        } else {
-            true
-        }) }
-        mainViewModel.updateLive { p -> p.copy(liquidGlassRadius = prefs.getInt(
-            PREF_LIQUID_GLASS_RADIUS,
-            DEFAULT_LIQUID_GLASS_RADIUS,
-        ).coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)) }
-        draftLiquidGlassRadiusText = mainViewModel.params.value.liquidGlassRadius.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassOuterWidth = prefs.getInt(
-            PREF_LIQUID_GLASS_OUTER_WIDTH,
-            prefs.getInt(PREF_LIQUID_GLASS_BACKGROUND_LEVEL_LEGACY, DEFAULT_LIQUID_GLASS_OUTER_WIDTH),
-        ).coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)) }
-        draftLiquidGlassOuterWidthText = mainViewModel.params.value.liquidGlassOuterWidth.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassTopAlpha = prefs.getInt(
-            PREF_LIQUID_GLASS_TOP_ALPHA,
-            DEFAULT_LIQUID_GLASS_TOP_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)) }
-        draftLiquidGlassTopAlphaText = mainViewModel.params.value.liquidGlassTopAlpha.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassBottomAlpha = prefs.getInt(
-            PREF_LIQUID_GLASS_BOTTOM_ALPHA,
-            DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)) }
-        draftLiquidGlassBottomAlphaText = mainViewModel.params.value.liquidGlassBottomAlpha.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassBackgroundMistAlpha = prefs.getInt(
-            PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA,
-            DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)) }
-        draftLiquidGlassBackgroundMistAlphaText = mainViewModel.params.value.liquidGlassBackgroundMistAlpha.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassBottomDarkAlpha = prefs.getInt(
-            PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-            DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)) }
-        draftLiquidGlassBottomDarkAlphaText = mainViewModel.params.value.liquidGlassBottomDarkAlpha.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectScalePercent = prefs.getInt(
-            PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-            DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)) }
-        draftLiquidGlassSubjectScaleText = mainViewModel.params.value.liquidGlassSubjectScalePercent.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectOutlineWidth = prefs.getInt(
-            PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-            DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)) }
-        draftLiquidGlassSubjectOutlineWidthText = mainViewModel.params.value.liquidGlassSubjectOutlineWidth.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectInnerOutlineWidth = prefs.getInt(
-            PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH,
-            DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)) }
-        draftLiquidGlassSubjectInnerOutlineWidthText = mainViewModel.params.value.liquidGlassSubjectInnerOutlineWidth.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectShadowAlpha = prefs.getInt(
-            PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-            DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)) }
-        draftLiquidGlassSubjectShadowAlphaText = mainViewModel.params.value.liquidGlassSubjectShadowAlpha.toString()
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectOpacityPercent = prefs.getInt(
-            PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
-            DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
-        ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)) }
-        draftLiquidGlassSubjectOpacityText = mainViewModel.params.value.liquidGlassSubjectOpacityPercent.toString()
-        liquidGlassBottomBarEnabled = prefs.getBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED, true)
-        liquidGlassBottomBarBlurEnabled = prefs.getBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_BLUR_ENABLED, true)
-        if (!migratedToLayered) {
-            prefs.edit()
-                .putLiquidGlassSettings()
-                .apply()
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun loadLiquidGlassSettings(): Unit =
+        paramsLoadLiquidGlassSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            updateLive = mainViewModel::updateLive,
+            getParams = { mainViewModel.params.value },
+            setDraftRadiusText = { draftLiquidGlassRadiusText = it },
+            setDraftOuterWidthText = { draftLiquidGlassOuterWidthText = it },
+            setDraftTopAlphaText = { draftLiquidGlassTopAlphaText = it },
+            setDraftBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
+            setDraftBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
+            setDraftBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
+            setDraftSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
+            setDraftSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
+            setDraftSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+            setDraftSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
+            setDraftSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
+            setBottomBarEnabled = { liquidGlassBottomBarEnabled = it },
+            setBottomBarBlurEnabled = { liquidGlassBottomBarBlurEnabled = it },
+            getBottomBarEnabled = { liquidGlassBottomBarEnabled },
+            getBottomBarBlurEnabled = { liquidGlassBottomBarBlurEnabled },
+            onSave = { saveLiquidGlassSettings() },
+        )
 
-    internal fun saveLiquidGlassSettings() {
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .edit()
-            .putLiquidGlassSettings()
-            .apply()
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun saveLiquidGlassSettings(): Unit =
+        paramsSaveLiquidGlassSettings(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            getParams = { mainViewModel.params.value },
+            getBottomBarEnabled = { liquidGlassBottomBarEnabled },
+            getBottomBarBlurEnabled = { liquidGlassBottomBarBlurEnabled },
+        )
 
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
     internal fun SharedPreferences.Editor.putLiquidGlassSettings(): SharedPreferences.Editor =
-        putBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, true)
-            .putBoolean(PREF_LIQUID_GLASS_ENABLED, mainViewModel.params.value.liquidGlassEnabled)
-            .putBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED, liquidGlassBottomBarEnabled)
-            .putBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_BLUR_ENABLED, liquidGlassBottomBarBlurEnabled)
-            .putInt(PREF_LIQUID_GLASS_RADIUS, mainViewModel.params.value.liquidGlassRadius)
-            .putInt(PREF_LIQUID_GLASS_OUTER_WIDTH, mainViewModel.params.value.liquidGlassOuterWidth)
-            .putInt(PREF_LIQUID_GLASS_TOP_ALPHA, mainViewModel.params.value.liquidGlassTopAlpha)
-            .putInt(PREF_LIQUID_GLASS_BOTTOM_ALPHA, mainViewModel.params.value.liquidGlassBottomAlpha)
-            .putInt(PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA, mainViewModel.params.value.liquidGlassBackgroundMistAlpha)
-            .putInt(PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA, mainViewModel.params.value.liquidGlassBottomDarkAlpha)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, mainViewModel.params.value.liquidGlassSubjectScalePercent)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, mainViewModel.params.value.liquidGlassSubjectOutlineWidth)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH, mainViewModel.params.value.liquidGlassSubjectInnerOutlineWidth)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, mainViewModel.params.value.liquidGlassSubjectShadowAlpha)
-            .putInt(PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, mainViewModel.params.value.liquidGlassSubjectOpacityPercent)
+        paramsPutLiquidGlassSettings(
+            params = mainViewModel.params.value,
+            bottomBarEnabled = liquidGlassBottomBarEnabled,
+            bottomBarBlurEnabled = liquidGlassBottomBarBlurEnabled,
+        )
 
-    internal fun updateLiquidGlassEnabled(enabled: Boolean) {
-        if (mainViewModel.params.value.liquidGlassEnabled == enabled) {
-            return
-        }
-        mainViewModel.updateLive { p -> p.copy(liquidGlassEnabled = enabled) }
-        saveLiquidGlassSettings()
-        statusText = if (enabled) "液态玻璃风格已开启" else "液态玻璃风格已关闭"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassEnabled(enabled: Boolean): Unit =
+        paramsUpdateLiquidGlassEnabled(
+            enabled = enabled,
+            getParams = { mainViewModel.params.value },
+            updateLive = mainViewModel::updateLive,
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassRadius(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassRadius = next) }
-        draftLiquidGlassRadiusText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃圆角 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassRadius(value: Int): Unit =
+        paramsUpdateLiquidGlassRadius(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassRadiusText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassOuterWidth(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassOuterWidth = next) }
-        draftLiquidGlassOuterWidthText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃外框高度 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassOuterWidth(value: Int): Unit =
+        paramsUpdateLiquidGlassOuterWidth(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassOuterWidthText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassTopAlpha(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassTopAlpha = next) }
-        draftLiquidGlassTopAlphaText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃顶部强度 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassTopAlpha(value: Int): Unit =
+        paramsUpdateLiquidGlassTopAlpha(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassTopAlphaText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassBottomAlpha(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassBottomAlpha = next) }
-        draftLiquidGlassBottomAlphaText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃底边强度 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassBottomAlpha(value: Int): Unit =
+        paramsUpdateLiquidGlassBottomAlpha(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassBottomAlphaText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassBackgroundMistAlpha(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassBackgroundMistAlpha = next) }
-        draftLiquidGlassBackgroundMistAlphaText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃背景灰雾 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassBackgroundMistAlpha(value: Int): Unit =
+        paramsUpdateLiquidGlassBackgroundMistAlpha(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassBackgroundMistAlphaText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassBottomDarkAlpha(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassBottomDarkAlpha = next) }
-        draftLiquidGlassBottomDarkAlphaText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃底部灰雾 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassBottomDarkAlpha(value: Int): Unit =
+        paramsUpdateLiquidGlassBottomDarkAlpha(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassBottomDarkAlphaText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassSubjectScalePercent(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectScalePercent = next) }
-        draftLiquidGlassSubjectScaleText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃主体比例 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassSubjectScalePercent(value: Int): Unit =
+        paramsUpdateLiquidGlassSubjectScalePercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassSubjectScaleText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassSubjectOutlineWidth(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectOutlineWidth = next) }
-        draftLiquidGlassSubjectOutlineWidthText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃主体外框 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassSubjectOutlineWidth(value: Int): Unit =
+        paramsUpdateLiquidGlassSubjectOutlineWidth(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassSubjectOutlineWidthText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassSubjectInnerOutlineWidth(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectInnerOutlineWidth = next) }
-        draftLiquidGlassSubjectInnerOutlineWidthText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃主体内框 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassSubjectInnerOutlineWidth(value: Int): Unit =
+        paramsUpdateLiquidGlassSubjectInnerOutlineWidth(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassSubjectShadowAlpha(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectShadowAlpha = next) }
-        draftLiquidGlassSubjectShadowAlphaText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃主体阴影 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassSubjectShadowAlpha(value: Int): Unit =
+        paramsUpdateLiquidGlassSubjectShadowAlpha(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassSubjectShadowAlphaText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
-    internal fun updateLiquidGlassSubjectOpacityPercent(value: Int) {
-        val next = value.coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)
-        mainViewModel.updateLive { p -> p.copy(liquidGlassSubjectOpacityPercent = next) }
-        draftLiquidGlassSubjectOpacityText = next.toString()
-        saveLiquidGlassSettings()
-        statusText = "液态玻璃主体透明度 $next"
-        refreshActivePreviewOutputs(rebuildLocalCandidates = false)
-    }
+    // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
+    internal fun updateLiquidGlassSubjectOpacityPercent(value: Int): Unit =
+        paramsUpdateLiquidGlassSubjectOpacityPercent(
+            value = value,
+            updateLive = mainViewModel::updateLive,
+            setDraftText = { draftLiquidGlassSubjectOpacityText = it },
+            onSave = { saveLiquidGlassSettings() },
+            setStatusText = { statusText = it },
+            onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
+        )
 
     // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
     internal fun generateSelected(
@@ -6925,78 +6576,12 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val PREFS_NAME = "artplus_mobile"
-        private const val PREF_GPT_MODE = "gpt_mode"
-        private const val PREF_GPT_PROMPT_PRESET = "gpt_prompt_preset"
-        private const val PREF_GPT_CUSTOM_PROMPT = "gpt_custom_prompt"
-        private const val PREF_GPT_MODEL_ID = "gpt_model_id"
-        private const val PREF_GPT_BASE_URL = "gpt_base_url"
-        private const val PREF_GPT_API_KEY = "gpt_api_key"
-        private const val PREF_GPT_API_KEY_ENCRYPTED = "gpt_api_key_encrypted"
         private const val PREF_AUTO_CONFIRM_ROOT_WRITE = "auto_confirm_root_write"
         private const val PREF_AUTO_CONFIRM_REFRESH = "auto_confirm_refresh"
         private const val PREF_SKIP_ROOT_WRITE_CONFIRM = "skip_root_write_confirm"
-        private const val PREF_RMBG_COMPONENT_URL = "rmbg_component_url"
-        private const val PREF_RMBG_INPUT_SIZE = "rmbg_input_size"
-        private const val PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024 = "rmbg_input_size_migrated_to_1024"
-        private const val PREF_LOCAL_SEPARATION_MODE = "local_separation_mode"
-        private const val PREF_FOREGROUND_SUBJECT_PERCENT = "foreground_subject_percent"
-        private const val PREF_FOREGROUND_SHADOW_LEVEL = "foreground_shadow_level"
-        private const val PREF_MONOCHROME_THEME_SCALE = "monochrome_theme_scale"
-        private const val PREF_BACKGROUND_SEPARATION_PERCENT = "background_separation_percent"
-        private const val PREF_PLATE_REMOVAL_PERCENT = "plate_removal_percent"
-        private const val PREF_SHADOW_REMOVAL_PERCENT = "shadow_removal_percent"
-        private const val PREF_EDGE_POLISH_PERCENT = "edge_polish_percent"
-        private const val PREF_RMBG_ALPHA_STRENGTH_PERCENT = "rmbg_alpha_strength_percent"
-        private const val PREF_RMBG_EDGE_FEATHER_PERCENT = "rmbg_edge_feather_percent"
-        private const val PREF_RMBG_EDGE_ADJUST_PERCENT = "rmbg_edge_adjust_percent"
-        private const val PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT = "rmbg_weak_alpha_keep_percent"
-        private const val PREF_LIQUID_GLASS_ENABLED = "liquid_glass_enabled"
-        private const val PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED = "liquid_glass_bottom_bar_enabled"
-        private const val PREF_LIQUID_GLASS_BOTTOM_BAR_BLUR_ENABLED = "liquid_glass_bottom_bar_blur_enabled"
-        private const val PREF_LIQUID_GLASS_LAYERED_MIGRATED = "liquid_glass_layered_migrated"
-        private const val PREF_LIQUID_GLASS_RADIUS = "liquid_glass_radius"
-        private const val PREF_LIQUID_GLASS_OUTER_WIDTH = "liquid_glass_outer_width"
-        private const val PREF_LIQUID_GLASS_TOP_ALPHA = "liquid_glass_top_alpha"
-        private const val PREF_LIQUID_GLASS_BOTTOM_ALPHA = "liquid_glass_bottom_alpha"
-        private const val PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA = "liquid_glass_background_mist_alpha"
-        private const val PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA = "liquid_glass_bottom_dark_alpha"
-        private const val PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT = "liquid_glass_subject_scale_percent"
-        private const val PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH = "liquid_glass_subject_outline_width"
-        private const val PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH = "liquid_glass_subject_inner_outline_width"
-        private const val PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA = "liquid_glass_subject_shadow_alpha"
-        private const val PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = "liquid_glass_subject_opacity_percent"
-        private const val PREF_LIQUID_GLASS_BACKGROUND_LEVEL_LEGACY = "liquid_glass_background_level"
-        private const val PREF_ADAPTIVE_FOREGROUND_MODE = "adaptive_foreground_mode"
-        private const val PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT = "adaptive_direct_max_coverage_percent"
-        private const val PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT = "adaptive_direct_max_coverage_increase_percent"
-        private const val PREF_ADAPTIVE_MASK_EDGE_COVERAGE_PERCENT = "adaptive_mask_edge_coverage_percent"
-        private const val PREF_ADAPTIVE_MASK_MIN_COVERAGE_PERCENT = "adaptive_mask_min_coverage_percent"
-        private const val PREF_ADAPTIVE_CENTER_EPSILON_PERCENT = "adaptive_center_epsilon_percent"
-        private const val PREF_ORIGINAL_FOREGROUND_CLEANUP_MODE = "original_foreground_cleanup_mode"
-        private const val PREF_LOCAL_BACKGROUND_SEPARATION_ENABLED = "local_background_separation_enabled"
-        private const val PREF_LOCAL_ADAPTIVE_SELECTION_ENABLED = "local_adaptive_selection_enabled"
-        private const val PREF_LOCAL_CORNER_MASK_CLEANUP_ENABLED = "local_corner_mask_cleanup_enabled"
-        private const val PREF_LOCAL_ALPHA_EDGE_COLOR_REPAIR_ENABLED = "local_alpha_edge_color_repair_enabled"
-        private const val PREF_LOCAL_PLAIN_BACKGROUND_ESTIMATION_ENABLED = "local_plain_background_estimation_enabled"
-        private const val PREF_LOCAL_ORIGINAL_CLEANUP_ENABLED = "local_original_cleanup_enabled"
-        private const val PREF_LOCAL_PLATE_CLEANUP_ENABLED = "local_plate_cleanup_enabled"
-        private const val PREF_LOCAL_PLATE_EDGE_REPAIR_ENABLED = "local_plate_edge_repair_enabled"
-        private const val PREF_LOCAL_PLATE_RESIDUE_CLEANUP_ENABLED = "local_plate_residue_cleanup_enabled"
-        private const val PREF_LOCAL_SHADOW_CLEANUP_ENABLED = "local_shadow_cleanup_enabled"
-        private const val PREF_LOCAL_SHADOW_EDGE_REPAIR_ENABLED = "local_shadow_edge_repair_enabled"
-        private const val PREF_LOCAL_EDGE_TRIM_ENABLED = "local_edge_trim_enabled"
-        private const val PREF_LOCAL_COMPOSED_BACKGROUND_ENABLED = "local_composed_background_enabled"
-        private const val PREF_LOCAL_TWO_LAYER_CANDIDATE_ENABLED = "local_two_layer_candidate_enabled"
-        private const val PREF_LOCAL_COMPONENT_CANDIDATES_ENABLED = "local_component_candidates_enabled"
-        private const val PREF_LOCAL_TEXT_SAFE_CANDIDATE_ENABLED = "local_text_safe_candidate_enabled"
-        private const val PREF_LOCAL_AUTO_SELECTION_ENABLED = "local_auto_selection_enabled"
-        private const val PREF_LOCAL_EDGE_POLISH_ENABLED = "local_edge_polish_enabled"
-        private const val PREF_NIGHT_SUBJECT_LIGHT_BACKGROUND_ENABLED = "night_subject_light_background_enabled"
-        private const val PREF_IMAGE_TUNING_VERSION = "image_tuning_version"
         private const val PREF_BATCH_OUTPUT_MODE = "batch_output_mode"
         private const val PREF_GPT_RUN_COUNT = "gpt_run_count"
         private const val PREF_RMBG_RUN_COUNT = "rmbg_run_count"
-        private const val PREF_FOREGROUND_SUBJECT_PERCENT_MIGRATED = "foreground_subject_percent_migrated"
         private const val PREF_USAGE_PERMISSION_PROMPTED = "usage_permission_prompted"
         private const val PREF_DEBUG_TOKEN = "debug_token"
         private const val PREF_SELECTED_PACKAGE_NAME = "selected_package_name"
@@ -7021,18 +6606,12 @@ class MainActivity : ComponentActivity() {
         private const val PREF_OUTPUT_TREE_URI = "output_tree_uri"
         private const val PREF_HAS_COMPLETED_ONBOARDING = "has_completed_onboarding"
         // Slice 1.6 已提升到 TuningParams.kt：EXTRA_DEBUG_GENERATE_*（6 项），同包直接引用。
-        private const val CURRENT_IMAGE_TUNING_VERSION = 4
         // Slice 1.4 已提升到 TuningParams.kt：SIZE_2X2 / SIZE_1X2 / SIZE_2X1 /
         // FOREGROUND_ORIGINAL_BACKUP_NAME，同包直接引用。
         // Slice 1.3 已提升到 TuningParams.kt：RMBG_COMPONENT_DIR / RMBG_MODEL_NAME /
         // DEFAULT_RMBG_INPUT_SIZE / RMBG_MIN_* / RMBG_MAX_* / RMBG_DOWNLOAD_* /
         // RMBG_MODEL_URL_* / DEFAULT_RMBG_COMPONENT_URL / RMBG_MODEL_PRESETS(PRESET_CUSTOM) /
         // RMBG_NORMALIZE_MEAN/STD，同包直接引用。
-        private const val LEGACY_DEFAULT_GPT_BASE_URL = "http://192.168.31.179:3002/v1"
-        private const val ANDROID_KEYSTORE = "AndroidKeyStore"
-        private const val KEYSTORE_GPT_KEY_ALIAS = "artplus_gpt_api_key"
-        private const val KEYSTORE_CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
-        private const val KEYSTORE_GCM_TAG_BITS = 128
         // Slice 2.2 已提升到 TuningParams.kt：PREVIEW_OUTPUT_DEBOUNCE_MS /
         // PREVIEW_REBUILD_DEBOUNCE_MS / DEFAULT_PREVIEW_ICON_SIZE_DP /
         // MIN_PREVIEW_ICON_SIZE_DP / MAX_PREVIEW_ICON_SIZE_DP /
