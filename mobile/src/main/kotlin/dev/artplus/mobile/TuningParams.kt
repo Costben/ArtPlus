@@ -1083,3 +1083,13 @@ const val SIZE_2X2 = 704
 val SIZE_1X2 = intArrayOf(240, 820)
 val SIZE_2X1 = intArrayOf(820, 240)
 const val FOREGROUND_ORIGINAL_BACKUP_NAME = "recfg_original_artplus.png"
+
+// 主页预览尺寸/圆角/防抖（原 MainActivity companion，Slice 2.2 提升）。
+const val PREVIEW_OUTPUT_DEBOUNCE_MS = 140L
+const val PREVIEW_REBUILD_DEBOUNCE_MS = 180L
+const val DEFAULT_PREVIEW_ICON_SIZE_DP = 70
+const val MIN_PREVIEW_ICON_SIZE_DP = 42
+const val MAX_PREVIEW_ICON_SIZE_DP = 96
+const val DEFAULT_PREVIEW_CORNER_RADIUS_DP = 20
+const val MIN_PREVIEW_CORNER_RADIUS_DP = 0
+const val MAX_PREVIEW_CORNER_RADIUS_DP = 36

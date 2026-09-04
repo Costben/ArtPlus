@@ -881,116 +881,65 @@ class MainActivity : ComponentActivity() {
 
 
 
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun GeneratedPreviewCard() {
-        val dirPath = previewDirPath ?: return
-        val packageName = previewPackageName ?: return
-        val session = activeGenerationSession?.takeIf {
-            it.packageName == packageName && it.outDir.absolutePath == dirPath
-        }
-        val displayAssets = sharedPreviewAssets
-        val previewLoading = isGptPreviewLoading || isPreviewAssetsRefreshing || isPreviewOutputRefreshing
-
-        SectionCard {
-            if (displayAssets == null) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AiIconLoadingPreview(modifier = Modifier.size(42.dp), overlay = true)
-                    Text(
-                        text = "加载预览中",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+    internal fun GeneratedPreviewCard() =
+        GeneratedPreviewCard(
+            dirPath = previewDirPath,
+            packageName = previewPackageName,
+            session = activeGenerationSession?.takeIf {
+                it.packageName == previewPackageName && it.outDir.absolutePath == previewDirPath
+            },
+            displayAssets = sharedPreviewAssets,
+            previewLoading = isGptPreviewLoading || isPreviewAssetsRefreshing || isPreviewOutputRefreshing,
+            desktopBackground = previewDesktopBackground,
+            iconSizeDp = previewIconSizeDp,
+            cornerRadiusDp = previewCornerRadiusDp,
+            wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
+            wallpaperKey = customWallpaperPath,
+            loadWallpaper = {
+                withContext(Dispatchers.IO) {
+                    loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
                 }
-                return@SectionCard
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                PreviewTile(
-                    label = "标准亮色",
-                    assets = displayAssets,
-                    mode = PreviewMode.NormalLight,
-                    desktopBackground = previewDesktopBackground,
-                    iconSizeDp = previewIconSizeDp,
-                    loading = previewLoading,
-                    choiceEnabled = session != null,
-                    onClick = { previewChoiceMode = PreviewMode.NormalLight },
-                    modifier = Modifier.weight(1f),
-                )
-                PreviewTile(
-                    label = "标准暗色",
-                    assets = displayAssets,
-                    mode = PreviewMode.NormalDark,
-                    desktopBackground = previewDesktopBackground,
-                    iconSizeDp = previewIconSizeDp,
-                    loading = previewLoading,
-                    choiceEnabled = session != null,
-                    onClick = { previewChoiceMode = PreviewMode.NormalDark },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                PreviewTile(
-                    label = "单色亮色",
-                    assets = displayAssets,
-                    mode = PreviewMode.MonochromeLight,
-                    desktopBackground = previewDesktopBackground,
-                    iconSizeDp = previewIconSizeDp,
-                    loading = previewLoading,
-                    choiceEnabled = session != null,
-                    onClick = { previewChoiceMode = PreviewMode.MonochromeLight },
-                    modifier = Modifier.weight(1f),
-                )
-                PreviewTile(
-                    label = "单色暗色",
-                    assets = displayAssets,
-                    mode = PreviewMode.MonochromeDark,
-                    desktopBackground = previewDesktopBackground,
-                    iconSizeDp = previewIconSizeDp,
-                    loading = previewLoading,
-                    choiceEnabled = session != null,
-                    onClick = { previewChoiceMode = PreviewMode.MonochromeDark },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            var activeChooserMode by remember { mutableStateOf<PreviewMode?>(null) }
-            var activeChooserSession by remember { mutableStateOf<GenerationSession?>(null) }
-            if (previewChoiceMode != null && session != null) {
-                activeChooserMode = previewChoiceMode
-                activeChooserSession = session
-            }
-            val currentChooserMode = activeChooserMode
-            val currentChooserSession = activeChooserSession
-            if (currentChooserMode != null && currentChooserSession != null) {
-                PreviewChoiceBottomSheet(
-                    show = previewChoiceMode != null && session != null,
-                    mode = currentChooserMode,
-                    session = currentChooserSession,
-                    onDismissRequest = { previewChoiceMode = null },
-                    onDismissFinished = {
-                        if (previewChoiceMode == null) {
-                            activeChooserMode = null
-                            activeChooserSession = null
-                        }
-                    },
-                )
-            }
-        }
-    }
+            },
+            materialColorProvider = ::systemMaterialColor,
+            previewChoiceMode = previewChoiceMode,
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            isGeneratingGptCandidate = isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
+            isDark = isSystemInDarkTheme(),
+            nightSubjectLightBackgroundEnabled = mainViewModel.params.collectAsState().value.nightSubjectLightBackgroundEnabled,
+            rmbgCandidatePackageName = rmbgCandidatePackageName,
+            rmbgCandidateMode = rmbgCandidateMode,
+            rmbgCandidateFailurePackageName = rmbgCandidateFailurePackageName,
+            rmbgCandidateFailureMode = rmbgCandidateFailureMode,
+            lastRmbgCandidateError = lastRmbgCandidateError,
+            rmbgCandidateStatusText = rmbgCandidateStatusText,
+            gptBaseUrl = gptBaseUrl,
+            gptApiKey = gptApiKey,
+            hasRmbgComponent = findRmbgComponent() != null,
+            loadCandidateAssets = { candidate, mode ->
+                withContext(previewWorkerDispatcher) {
+                    previewAssetsForCandidate(candidate, mode).preparedForDraw()
+                }
+            },
+            onChoiceClick = { previewChoiceMode = it },
+            onNightFill = { updateNightSubjectLightBackgroundEnabled(it) },
+            onDraftForegroundSubjectPercent = { draftForegroundSubjectPercentText = it },
+            onSaveForegroundSubjectPercent = { updateForegroundSubjectPercent(it) },
+            onGenerateGpt = { generateGptCandidateForMode(it) },
+            onGenerateRmbg = { generateRmbgCandidateForMode(it) },
+            onChooseCustom = { mode, kind -> chooseCustomImageForMode(mode, kind) },
+            onApplyPreviewChoice = { mode, choice -> applyPreviewChoice(mode, choice) },
+            onApplyPreviewChoiceToAll = { applyPreviewChoiceToAll(it) },
+            onDismissChoice = { previewChoiceMode = null },
+            onDismissChoiceFinished = { },
+        )
 
 
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewTiles.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun TopPreviewStripTile(
         assets: PreviewAssets?,
@@ -1000,555 +949,160 @@ class MainActivity : ComponentActivity() {
         iconSizeDp: Int,
         cornerRadiusDp: Int,
         modifier: Modifier = Modifier,
-    ) {
-        val ready = assets != null && assets.missingMessage(mode) == null
-        val scaleRatio = (iconSizeDp.toFloat() / DEFAULT_PREVIEW_ICON_SIZE_DP.toFloat()).coerceIn(0.6f, 1.35f)
-        val scaledCornerDp = (cornerRadiusDp.toFloat() * (scaleRatio * 0.72f)).roundToInt().coerceAtLeast(0)
-        val iconFraction = (0.76f * scaleRatio).coerceIn(0.42f, 0.95f)
-
-        Box(
-            modifier = modifier
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            PreviewDesktopBackgroundSurface(
-                option = desktopBackground,
-                modifier = Modifier.fillMaxSize(),
-            )
-            if (ready) {
-                GeneratedIconPreview(
-                    assets = assets,
-                    mode = mode,
-                    modifier = Modifier.fillMaxSize(iconFraction),
-                    cornerRadiusDp = scaledCornerDp,
-                )
-            } else {
-                MissingIconPreview(
-                    modifier = Modifier.fillMaxSize(iconFraction),
-                    mode = mode,
-                    compact = true,
-                    cornerRadiusDp = scaledCornerDp,
-                )
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.42f))
-                    .padding(horizontal = 3.dp, vertical = 1.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = mode.label,
-                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            if (loading) {
-                AiIconLoadingPreview(
-                    modifier = Modifier.size(34.dp),
-                    overlay = true,
-                )
-            }
-        }
-    }
+    ) =
+        TopPreviewStripTile(
+            assets = assets,
+            mode = mode,
+            loading = loading,
+            desktopBackground = desktopBackground,
+            iconSizeDp = iconSizeDp,
+            cornerRadiusDp = cornerRadiusDp,
+            wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
+            wallpaperKey = customWallpaperPath,
+            loadWallpaper = {
+                withContext(Dispatchers.IO) {
+                    loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
+                }
+            },
+            materialColorProvider = ::systemMaterialColor,
+            modifier = modifier,
+        )
 
     /** 调试图层卡片：前景 / 背景 / alpha 蒙版小图。 */
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun LayerDebugCard() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        val dirPath = previewDirPath ?: return
-        val packageName = previewPackageName ?: return
-        val session = activeGenerationSession?.takeIf {
-            it.packageName == packageName && it.outDir.absolutePath == dirPath
-        } ?: return
-        val assets = sharedPreviewAssets ?: return
-
-        val choice = PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark).normalLight
-        val candidate = candidateForChoice(session, choice)
-        val alphaMask = remember(candidate) {
-            candidate?.recfgRaw?.let { bitmap ->
-                val width = bitmap.width
-                val height = bitmap.height
-                if (width <= 0 || height <= 0) {
-                    null
-                } else {
-                    val pixels = IntArray(width * height)
-                    bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-                    val outPixels = IntArray(pixels.size)
-                    for (i in pixels.indices) {
-                        val alpha = AndroidColor.alpha(pixels[i])
-                        outPixels[i] = AndroidColor.rgb(alpha, alpha, alpha)
-                    }
-                    Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { out ->
-                        out.setPixels(outPixels, 0, width, 0, 0, width, height)
-                    }
-                }
-            }
-        }
-
-        SectionCard {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                LayerDebugTile(label = "前景", bitmap = assets.recfg?.asImageBitmap(), modifier = Modifier.weight(1f))
-                LayerDebugTile(label = "背景", bitmap = assets.recbg?.asImageBitmap(), modifier = Modifier.weight(1f))
-                LayerDebugTile(label = "蒙版", bitmap = alphaMask?.asImageBitmap(), modifier = Modifier.weight(1f))
-            }
-        }
-    }
+    internal fun LayerDebugCard() =
+        LayerDebugCard(
+            dirPath = previewDirPath,
+            packageName = previewPackageName,
+            session = activeGenerationSession?.takeIf {
+                it.packageName == previewPackageName && it.outDir.absolutePath == previewDirPath
+            },
+            assets = sharedPreviewAssets,
+            tuningState = mainViewModel.params.collectAsState().value,
+        )
 
 
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun PreviewControlCard() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        SectionCard(rowsFullBleed = true) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "前景主体大小",
-                    summary = "控制前景主体在图标画布中的占比",
-                    value = tuningState.foregroundSubjectPercent,
-                    draftText = draftForegroundSubjectPercentText,
-                    min = MIN_FOREGROUND_SUBJECT_PERCENT,
-                    max = MAX_FOREGROUND_SUBJECT_PERCENT,
-                    step = 1,
-                    onDraftChange = { draftForegroundSubjectPercentText = it },
-                    onSave = { updateForegroundSubjectPercent(it) },
-                    icon = SettingsIconKind.Scale,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "预览圆角",
-                    summary = "控制预览图标的圆角大小",
-                    value = previewCornerRadiusDp,
-                    draftText = draftPreviewCornerRadiusDpText,
-                    min = MIN_PREVIEW_CORNER_RADIUS_DP,
-                    max = MAX_PREVIEW_CORNER_RADIUS_DP,
-                    step = 1,
-                    onDraftChange = { draftPreviewCornerRadiusDpText = it },
-                    onSave = { updatePreviewCornerRadiusDp(it) },
-                    icon = SettingsIconKind.Radius,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "预览缩放",
-                    summary = "预览图显示大小",
-                    value = previewIconSizeDp,
-                    draftText = draftPreviewIconSizeDpText,
-                    min = MIN_PREVIEW_ICON_SIZE_DP,
-                    max = MAX_PREVIEW_ICON_SIZE_DP,
-                    step = 1,
-                    onDraftChange = { draftPreviewIconSizeDpText = it },
-                    onSave = { updatePreviewIconSizeDp(it) },
-                    icon = SettingsIconKind.Grid,
-                )
-                LibrarySettingRow(
-                    title = "顶部 1×4 预览条",
-                    summary = "在主页、生成参数与预设页置顶显示",
-                    icon = SettingsIconKind.Palette,
-                    showSwitch = true,
-                    checked = previewStripEnabled,
-                    enabled = !isBusy,
-                    onCheckedChange = { updatePreviewStripEnabled(it) },
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    PreviewDesktopBackground.entries.forEach { option ->
-                        PreviewBackgroundOption(
-                            option = option,
-                            selected = option == previewDesktopBackground,
-                            modifier = Modifier.weight(1f),
-                            onClick = { updatePreviewDesktopBackground(option) },
-                        )
-                    }
+    internal fun PreviewControlCard() =
+        PreviewControlCard(
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            previewCornerRadiusDp = previewCornerRadiusDp,
+            draftPreviewCornerRadiusDpText = draftPreviewCornerRadiusDpText,
+            previewIconSizeDp = previewIconSizeDp,
+            draftPreviewIconSizeDpText = draftPreviewIconSizeDpText,
+            draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
+            previewStripEnabled = previewStripEnabled,
+            previewDesktopBackground = previewDesktopBackground,
+            wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
+            wallpaperKey = customWallpaperPath,
+            loadWallpaper = {
+                withContext(Dispatchers.IO) {
+                    loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
                 }
-            }
-        }
-    }
+            },
+            onDraftForegroundSubjectPercent = { draftForegroundSubjectPercentText = it },
+            onSaveForegroundSubjectPercent = { updateForegroundSubjectPercent(it) },
+            onDraftPreviewCornerRadiusDp = { draftPreviewCornerRadiusDpText = it },
+            onSavePreviewCornerRadiusDp = { updatePreviewCornerRadiusDp(it) },
+            onDraftPreviewIconSizeDp = { draftPreviewIconSizeDpText = it },
+            onSavePreviewIconSizeDp = { updatePreviewIconSizeDp(it) },
+            onPreviewStripEnabled = { updatePreviewStripEnabled(it) },
+            onPreviewDesktopBackground = { updatePreviewDesktopBackground(it) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewTiles.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun PreviewBackgroundOption(
         option: PreviewDesktopBackground,
         selected: Boolean,
         modifier: Modifier = Modifier,
         onClick: () -> Unit,
-    ) {
-        val borderColor = if (selected) {
-            MiuixTheme.colorScheme.primaryVariant
-        } else {
-            MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.18f)
-        }
-        Column(
-            modifier = modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(MiuixTheme.colorScheme.secondaryContainer.copy(alpha = if (selected) 0.82f else 0.52f))
-                .clickable(enabled = !isBusy && !selected, onClick = onClick)
-                .padding(horizontal = 6.dp, vertical = 7.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(5.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(22.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(borderColor.copy(alpha = 0.14f))
-                    .padding(2.dp),
-            ) {
-                PreviewDesktopBackgroundSurface(
-                    option = option,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(6.dp)),
-                )
-            }
-            Text(
-                text = option.label,
-                style = MiuixTheme.textStyles.footnote1,
-                color = if (selected) {
-                    MiuixTheme.colorScheme.onSurface
-                } else {
-                    MiuixTheme.colorScheme.onSurfaceVariantSummary
-                },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-
-    @Composable
-    internal fun PreviewTile(
-        label: String,
-        assets: PreviewAssets?,
-        mode: PreviewMode,
-        desktopBackground: PreviewDesktopBackground,
-        iconSizeDp: Int,
-        loading: Boolean,
-        choiceEnabled: Boolean,
-        onClick: () -> Unit,
-        modifier: Modifier,
-    ) {
-        val missingMessage = assets?.missingMessage(mode)
-        val loadingAlpha by animateFloatAsState(
-            targetValue = if (loading) 1f else 0f,
-            animationSpec = tween(durationMillis = if (loading) 260 else 360),
-            label = "PreviewLoadingAlpha",
+    ) =
+        PreviewBackgroundOption(
+            option = option,
+            selected = selected,
+            isBusy = isBusy,
+            wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
+            wallpaperKey = customWallpaperPath,
+            loadWallpaper = {
+                withContext(Dispatchers.IO) {
+                    loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
+                }
+            },
+            modifier = modifier,
+            onClick = onClick,
         )
-        Column(
-            modifier = modifier
-                .clip(RoundedCornerShape(18.dp))
-                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                .clickable(enabled = choiceEnabled, onClick = onClick)
-                .padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = label,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(118.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (missingMessage == null) {
-                    DesktopIconPreview(
-                        desktopBackground = desktopBackground,
-                        iconSize = iconSizeDp.dp,
-                    ) {
-                        GeneratedIconPreview(
-                            assets = assets,
-                            mode = mode,
-                            modifier = Modifier.size(iconSizeDp.dp),
-                            cornerRadiusDp = previewCornerRadiusDp,
-                        )
-                    }
-                } else {
-                    DesktopIconPreview(
-                        desktopBackground = desktopBackground,
-                        iconSize = iconSizeDp.dp,
-                    ) {
-                        MissingIconPreview(
-                            modifier = Modifier.size(iconSizeDp.dp),
-                            mode = mode,
-                            cornerRadiusDp = previewCornerRadiusDp,
-                        )
-                    }
-                }
-                if (loadingAlpha > 0.01f) {
-                    AiIconLoadingPreview(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .graphicsLayer { alpha = loadingAlpha },
-                        overlay = true,
-                    )
-                }
-            }
-        }
-    }
 
 
-    @Composable
-    internal fun DesktopIconPreview(
-        desktopBackground: PreviewDesktopBackground,
-        iconSize: Dp,
-        content: @Composable () -> Unit,
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(116.dp)
-                .clip(RoundedCornerShape(18.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            PreviewDesktopBackgroundSurface(
-                option = desktopBackground,
-                modifier = Modifier.fillMaxSize(),
-            )
-            Box(
-                modifier = Modifier.size(iconSize),
-                contentAlignment = Alignment.Center,
-            ) {
-                content()
-            }
-        }
-    }
 
+
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewTiles.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun PreviewDesktopBackgroundSurface(
         option: PreviewDesktopBackground,
         modifier: Modifier = Modifier,
-    ) {
-        val wallpaper by produceState<Bitmap?>(
-            initialValue = if (option == PreviewDesktopBackground.Wallpaper) {
-                cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper
-            } else null,
-            key1 = option,
-            key2 = customWallpaperPath,
-        ) {
-            if (option == PreviewDesktopBackground.Wallpaper) {
-                if (value == null) {
-                    value = withContext(Dispatchers.IO) {
-                        loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
-                    }
+    ) =
+        PreviewDesktopBackgroundSurface(
+            option = option,
+            modifier = modifier,
+            wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
+            wallpaperKey = customWallpaperPath,
+            loadWallpaper = {
+                withContext(Dispatchers.IO) {
+                    loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
                 }
-            } else {
-                value = null
-            }
-        }
-        val wallpaperImage = remember(wallpaper) { wallpaper?.asImageBitmap() }
-        Box(modifier = modifier.background(option.fallbackColor)) {
-            if (wallpaperImage != null) {
-                Image(
-                    bitmap = wallpaperImage,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
-        }
-    }
+            },
+        )
 
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewTiles.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun GeneratedIconPreview(
         assets: PreviewAssets?,
         mode: PreviewMode,
         modifier: Modifier = Modifier.size(72.dp),
         cornerRadiusDp: Int = previewCornerRadiusDp,
-    ) {
-        val iconShape = RoundedCornerShape(cornerRadiusDp.dp)
-        val md3LightBackground = systemMaterialColor("system_accent1_100", Color(0xFFEADDFF))
-        val md3LightForeground = systemMaterialColor("system_accent1_700", Color(0xFF21005D))
-        val md3DarkBackground = systemMaterialColor("system_accent1_700", Color(0xFF4F378B))
-        val md3DarkForeground = systemMaterialColor("system_accent1_100", Color(0xFFEADDFF))
-        val background = when (mode) {
-            PreviewMode.NormalLight -> Color.White
-            PreviewMode.NormalDark -> Color(0xFF1C1B1F)
-            PreviewMode.MonochromeLight -> md3LightBackground
-            PreviewMode.MonochromeDark -> md3DarkBackground
-        }
+    ) =
+        GeneratedIconPreview(
+            assets = assets,
+            mode = mode,
+            modifier = modifier,
+            cornerRadiusDp = cornerRadiusDp,
+            materialColorProvider = ::systemMaterialColor,
+        )
 
-        Box(
-            modifier = modifier
-                .clip(iconShape)
-                .background(background),
-            contentAlignment = Alignment.Center,
-        ) {
-            when (mode) {
-                PreviewMode.NormalLight -> {
-                    assets?.recbg?.let { bitmap ->
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.FillBounds,
-                        )
-                    }
-                    assets?.recfg?.let { bitmap ->
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                }
-                PreviewMode.NormalDark -> {
-                    assets?.recNight?.let { bitmap ->
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                }
-                PreviewMode.MonochromeLight -> {
-                    assets?.monochromeLight?.let { bitmap ->
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                            colorFilter = ColorFilter.tint(md3LightForeground),
-                        )
-                    }
-                }
-                PreviewMode.MonochromeDark -> {
-                    assets?.monochromeDark?.let { bitmap ->
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
-                            colorFilter = ColorFilter.tint(md3DarkForeground),
-                        )
-                    }
-                }
-            }
-        }
-    }
-
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewTiles.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun MissingIconPreview(
         modifier: Modifier = Modifier.size(72.dp),
         mode: PreviewMode? = null,
         compact: Boolean = false,
         cornerRadiusDp: Int = previewCornerRadiusDp,
-    ) {
-        val md3LightBackground = systemMaterialColor("system_accent1_100", Color(0xFFEADDFF))
-        val md3DarkBackground = systemMaterialColor("system_accent1_700", Color(0xFF4F378B))
-        val iconBackground = when (mode) {
-            PreviewMode.NormalDark -> Color(0xFF1C1B1F)
-            PreviewMode.MonochromeLight -> md3LightBackground
-            PreviewMode.MonochromeDark -> md3DarkBackground
-            PreviewMode.NormalLight,
-            null -> MiuixTheme.colorScheme.surfaceContainerHigh
-        }
-        val markColor = when (mode) {
-            PreviewMode.MonochromeDark -> Color.White
-            PreviewMode.NormalDark -> Color(0xFFE7E1E5)
-            else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
-        }
-        val outerRadius = cornerRadiusDp.dp
-        val innerRadius = (cornerRadiusDp * 0.7f).dp
-        val innerPadding = if (compact) 11.dp else 14.dp
-
-        Box(
-            modifier = modifier
-                .clip(RoundedCornerShape(outerRadius))
-                .background(iconBackground),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .clip(RoundedCornerShape(innerRadius))
-                    .background(markColor.copy(alpha = 0.10f)),
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize(if (compact) 0.38f else 0.40f)
-                    .clip(RoundedCornerShape(if (compact) 7.dp else 9.dp))
-                    .background(markColor.copy(alpha = 0.18f)),
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(if (compact) 9.dp else 11.dp)
-                    .size(if (compact) 9.dp else 11.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(markColor.copy(alpha = 0.28f)),
-            )
-        }
-    }
+    ) =
+        MissingIconPreview(
+            modifier = modifier,
+            mode = mode,
+            compact = compact,
+            cornerRadiusDp = cornerRadiusDp,
+            materialColorProvider = ::systemMaterialColor,
+        )
 
 
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewCards.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun PreviewNightFillBackgroundRow(
         checked: Boolean = mainViewModel.params.collectAsState().value.nightSubjectLightBackgroundEnabled,
         onCheckedChange: (Boolean) -> Unit = { updateNightSubjectLightBackgroundEnabled(it) },
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 78.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                .clickable(enabled = !isBusy) {
-                    onCheckedChange(!checked)
-                }
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = "填充背景色",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "将暗色背景颜色填补到主体暗部",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Switch(
-                checked = checked,
-                onCheckedChange = null,
-                enabled = !isBusy,
-            )
-        }
-    }
+    ) =
+        PreviewNightFillBackgroundRow(
+            checked = checked,
+            isBusy = isBusy,
+            onCheckedChange = onCheckedChange,
+        )
 
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewChoice.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun PreviewChoiceBottomSheet(
         show: Boolean,
@@ -1556,463 +1110,113 @@ class MainActivity : ComponentActivity() {
         session: GenerationSession,
         onDismissRequest: () -> Unit,
         onDismissFinished: () -> Unit,
-    ) {
-        val tuningState = mainViewModel.params.collectAsState().value
-        val defaultChoices = listOf(
-            PreviewChoice.Original,
-            PreviewChoice.ComposedBackground,
-            PreviewChoice.Rmbg,
-            PreviewChoice.Gpt,
-        )
-        val customChoices = listOf(
-            PreviewChoice.CustomForeground,
-            PreviewChoice.CustomBackground,
-        )
-        val moreChoices = listOf(
-            PreviewChoice.TextSafe,
-            PreviewChoice.ComponentSubject,
-            PreviewChoice.ComponentBackground,
-            PreviewChoice.TwoLayer,
-        )
-        val selectedMoreRule = PreviewSelections.fromNames(
-            tuningState.previewNormalLight,
-            tuningState.previewNormalDark,
-            tuningState.previewMonochromeLight,
-            tuningState.previewMonochromeDark,
-        ).choiceFor(mode).let { choice ->
-            when {
-                choice == PreviewChoice.Plate -> PreviewChoice.Full
-                choice in moreChoices -> choice
-                else -> null
-            }
-        }
-        var showMoreRules by remember(mode) { mutableStateOf(false) }
-        val scrollState = rememberScrollState()
-
-        LaunchedEffect(showMoreRules) {
-            if (showMoreRules) {
-                delay(60)
-                scrollState.animateScrollTo(
-                    scrollState.maxValue,
-                    animationSpec = tween(durationMillis = 120, easing = LinearEasing),
-                )
-                delay(140)
-                scrollState.animateScrollTo(
-                    scrollState.maxValue,
-                    animationSpec = tween(durationMillis = 180, easing = LinearEasing),
-                )
-                delay(80)
-                if (scrollState.value < scrollState.maxValue) {
-                    scrollState.animateScrollTo(scrollState.maxValue)
-                }
-            }
-        }
-
-        WindowBottomSheet(
+    ) =
+        PreviewChoiceBottomSheet(
             show = show,
-            title = "${mode.label} 来源",
+            mode = mode,
+            session = session,
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            isGeneratingGptCandidate = isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
+            isDark = isSystemInDarkTheme(),
+            nightSubjectLightBackgroundEnabled = mainViewModel.params.collectAsState().value.nightSubjectLightBackgroundEnabled,
+            rmbgCandidatePackageName = rmbgCandidatePackageName,
+            rmbgCandidateMode = rmbgCandidateMode,
+            rmbgCandidateFailurePackageName = rmbgCandidateFailurePackageName,
+            rmbgCandidateFailureMode = rmbgCandidateFailureMode,
+            lastRmbgCandidateError = lastRmbgCandidateError,
+            rmbgCandidateStatusText = rmbgCandidateStatusText,
+            gptBaseUrl = gptBaseUrl,
+            gptApiKey = gptApiKey,
+            hasRmbgComponent = findRmbgComponent() != null,
+            cornerRadiusDp = previewCornerRadiusDp,
+            materialColorProvider = ::systemMaterialColor,
+            loadCandidateAssets = { candidate, m ->
+                withContext(previewWorkerDispatcher) {
+                    previewAssetsForCandidate(candidate, m).preparedForDraw()
+                }
+            },
+            onNightFill = { updateNightSubjectLightBackgroundEnabled(it) },
+            onDraftForegroundSubjectPercent = { draftForegroundSubjectPercentText = it },
+            onSaveForegroundSubjectPercent = { updateForegroundSubjectPercent(it) },
+            onGenerateGpt = { generateGptCandidateForMode(it) },
+            onGenerateRmbg = { generateRmbgCandidateForMode(it) },
+            onChooseCustom = { m, kind -> chooseCustomImageForMode(m, kind) },
+            onApply = { m, choice -> applyPreviewChoice(m, choice) },
+            onApplyAll = { applyPreviewChoiceToAll(it) },
             onDismissRequest = onDismissRequest,
             onDismissFinished = onDismissFinished,
-            insideMargin = DpSize(16.dp, 0.dp),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .imePadding()
-                    .verticalScroll(scrollState)
-                    .padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = "每个槽位单独选择",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 4.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+        )
 
-                if (mode == PreviewMode.NormalDark) {
-                    PreviewNightFillBackgroundRow(
-                        checked = tuningState.nightSubjectLightBackgroundEnabled,
-                        onCheckedChange = { updateNightSubjectLightBackgroundEnabled(it) },
-                    )
-                }
-
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "主体占比",
-                    summary = "复杂游戏图标建议 100%",
-                    value = tuningState.foregroundSubjectPercent,
-                    draftText = draftForegroundSubjectPercentText,
-                    min = MIN_FOREGROUND_SUBJECT_PERCENT,
-                    max = MAX_FOREGROUND_SUBJECT_PERCENT,
-                    step = 1,
-                    onDraftChange = { draftForegroundSubjectPercentText = it },
-                    onSave = { updateForegroundSubjectPercent(it) },
-                    showIcon = false,
-                    icon = null,
-                    standaloneCard = true,
-                    cardHeight = 78.dp,
-                    inputBackgroundColor = if (isSystemInDarkTheme()) {
-                        Color.Black.copy(alpha = 0.36f)
-                    } else {
-                        Color.Black.copy(alpha = 0.09f)
-                    },
-                )
-
-                defaultChoices.forEach { choice ->
-                    PreviewChoiceRow(
-                        mode = mode,
-                        choice = choice,
-                        session = session,
-                    )
-                }
-                if (shouldShowPreviewChoiceRow(PreviewChoice.Full, session)) {
-                    PreviewChoiceRow(
-                        mode = mode,
-                        choice = PreviewChoice.Full,
-                        session = session,
-                    )
-                }
-
-                customChoices.forEach { choice ->
-                    PreviewChoiceRow(
-                        mode = mode,
-                        choice = choice,
-                        session = session,
-                    )
-                }
-
-                MoreRulesGroupRow(
-                    selectedRule = selectedMoreRule,
-                    expanded = showMoreRules,
-                    onToggle = { showMoreRules = !showMoreRules },
-                )
-                AnimatedVisibility(
-                    visible = showMoreRules,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                        expandVertically(animationSpec = tween(durationMillis = 180)),
-                    exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                        shrinkVertically(animationSpec = tween(durationMillis = 160)),
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        moreChoices.forEach { choice ->
-                            if (shouldShowPreviewChoiceRow(choice, session)) {
-                                PreviewChoiceRow(
-                                    mode = mode,
-                                    choice = choice,
-                                    session = session,
-                                )
-                            }
-                        }
-                    }
-                }
-                AnimatedVisibility(
-                    visible = !showMoreRules && selectedMoreRule != null,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                        expandVertically(animationSpec = tween(durationMillis = 180)),
-                    exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                        shrinkVertically(animationSpec = tween(durationMillis = 160)),
-                ) {
-                    moreChoices
-                        .firstOrNull { it == selectedMoreRule && shouldShowPreviewChoiceRow(it, session) }
-                        ?.let { choice ->
-                            PreviewChoiceRow(
-                                mode = mode,
-                                choice = choice,
-                                session = session,
-                            )
-                        }
-                }
-            }
-        }
-    }
-
-    internal fun shouldShowPreviewChoiceRow(choice: PreviewChoice, session: GenerationSession): Boolean =
-        when {
-            choice.isCustom -> true
-            choice == PreviewChoice.Full -> session.candidates[PreviewChoice.Full] != null ||
-                session.candidates[PreviewChoice.Plate] != null
-            else -> candidateForChoice(session, choice) != null
-        }
-
+    // Slice 2.2 已搬入 ui/pages/home/HomePreviewChoice.kt：shouldShowPreviewChoiceRow（纯函数，同包直接用）。
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewChoice.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun MoreRulesGroupRow(
         selectedRule: PreviewChoice?,
         expanded: Boolean,
         onToggle: () -> Unit,
-    ) {
-        val selected = selectedRule != null
-        val background = if (selected) {
-            MiuixTheme.colorScheme.primaryVariant
-        } else {
-            MiuixTheme.colorScheme.surfaceContainerHigh
-        }
-        val titleColor = if (selected) {
-            MiuixTheme.colorScheme.onPrimaryVariant
-        } else {
-            MiuixTheme.colorScheme.onSurface
-        }
-        val summaryColor = if (selected) {
-            MiuixTheme.colorScheme.onPrimaryVariant
-        } else {
-            MiuixTheme.colorScheme.onSurfaceVariantSummary
-        }
+    ) =
+        MoreRulesGroupRow(
+            selectedRule = selectedRule,
+            expanded = expanded,
+            isBusy = isBusy,
+            isGeneratingGptCandidate = isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            onToggle = onToggle,
+        )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 78.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(background)
-                .clickable(
-                    enabled = !isBusy && !isGeneratingGptCandidate && !isGeneratingRmbgCandidate,
-                    onClick = onToggle,
-                )
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = "更多规则",
-                    style = MiuixTheme.textStyles.body1,
-                    color = titleColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = selectedRule?.let { "当前使用: ${it.label}" }
-                        ?: "字标保全 / 底座 / 二层",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = summaryColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            MetricPill(label = if (expanded) "收起" else "展开")
-        }
-    }
-
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewChoice.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun PreviewChoiceRow(mode: PreviewMode, choice: PreviewChoice, session: GenerationSession) {
-        val tuningState = mainViewModel.params.collectAsState().value
-        val currentChoice = PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark).choiceFor(mode)
-        val effectiveChoice = effectiveChoiceForPreviewRow(mode, choice, session)
-        val selected = currentChoice == effectiveChoice ||
-            (choice == PreviewChoice.ComposedBackground && currentChoice.isComposedBackgroundCombination)
-        val customKind = choice.customKind
-        val candidate = if (customKind == null) {
-            candidateForChoice(session, effectiveChoice)
-        } else {
-            customCandidateForPreview(mode, customKind, session)
-        }
-        val gptMissing = effectiveChoice == PreviewChoice.Gpt && candidate == null
-        val rmbgMissing = effectiveChoice == PreviewChoice.Rmbg && candidate == null
-        val customMissing = customKind != null && candidate == null
-        val rmbgRunning = choice == PreviewChoice.Rmbg &&
-            isGeneratingRmbgCandidate &&
-            rmbgCandidatePackageName == session.packageName &&
-            (rmbgCandidateMode == null || rmbgCandidateMode == mode)
-        val rmbgFailure = if (
-            choice == PreviewChoice.Rmbg &&
-            rmbgCandidateFailurePackageName == session.packageName &&
-            (rmbgCandidateFailureMode == null || rmbgCandidateFailureMode == mode)
-        ) {
-            lastRmbgCandidateError
-        } else {
-            null
-        }
-        val canGenerateGpt = gptBaseUrl.trim().isNotEmpty() && gptApiKey.trim().isNotEmpty()
-        val canGenerateRmbg = rmbgMissing && findRmbgComponent() != null
-        val missingLocalCandidate = choice != PreviewChoice.Gpt &&
-            customKind == null &&
-            candidate == null &&
-            !canGenerateRmbg
-        val canImportCustom = customMissing
-        val missingCandidate = missingLocalCandidate && !canImportCustom
-        val enabled = !isBusy && !isGeneratingGptCandidate && !isGeneratingRmbgCandidate && !missingCandidate
-        val background = if (selected) {
-            MiuixTheme.colorScheme.primaryVariant
-        } else {
-            MiuixTheme.colorScheme.surfaceContainerHigh
-        }
-        val titleColor = if (selected) {
-            MiuixTheme.colorScheme.onPrimaryVariant
-        } else {
-            MiuixTheme.colorScheme.onSurface
-        }
-        val summaryColor = if (selected) {
-            MiuixTheme.colorScheme.onPrimaryVariant
-        } else {
-            MiuixTheme.colorScheme.onSurfaceVariantSummary
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(background)
-                .clickable(enabled = enabled) {
-                    if (gptMissing) {
-                        generateGptCandidateForMode(mode)
-                    } else if (rmbgMissing) {
-                        generateRmbgCandidateForMode(mode)
-                    } else if (customKind != null) {
-                        chooseCustomImageForMode(mode, customKind)
-                    } else {
-                        applyPreviewChoice(mode, effectiveChoice)
-                    }
+    internal fun PreviewChoiceRow(mode: PreviewMode, choice: PreviewChoice, session: GenerationSession) =
+        PreviewChoiceRow(
+            mode = mode,
+            choice = choice,
+            session = session,
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            isGeneratingGptCandidate = isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            rmbgCandidatePackageName = rmbgCandidatePackageName,
+            rmbgCandidateMode = rmbgCandidateMode,
+            rmbgCandidateFailurePackageName = rmbgCandidateFailurePackageName,
+            rmbgCandidateFailureMode = rmbgCandidateFailureMode,
+            lastRmbgCandidateError = lastRmbgCandidateError,
+            rmbgCandidateStatusText = rmbgCandidateStatusText,
+            gptBaseUrl = gptBaseUrl,
+            gptApiKey = gptApiKey,
+            hasRmbgComponent = findRmbgComponent() != null,
+            cornerRadiusDp = previewCornerRadiusDp,
+            materialColorProvider = ::systemMaterialColor,
+            loadCandidateAssets = { candidate, m ->
+                withContext(previewWorkerDispatcher) {
+                    previewAssetsForCandidate(candidate, m).preparedForDraw()
                 }
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(58.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MiuixTheme.colorScheme.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (choice == PreviewChoice.Gpt && isGeneratingGptCandidate) {
-                    AiIconLoadingPreview(modifier = Modifier.fillMaxSize())
-                } else if (rmbgRunning) {
-                    AiIconLoadingPreview(modifier = Modifier.fillMaxSize(), overlay = true)
-                } else if (candidate != null) {
-                    CandidateIconPreview(candidate, mode)
-                } else {
-                    MissingIconPreview(
-                        modifier = Modifier.fillMaxSize(),
-                        mode = mode,
-                        compact = true,
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = choice.label,
-                    style = MiuixTheme.textStyles.body1,
-                    color = titleColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = when {
-                        selected -> "当前使用"
-                        missingCandidate && choice == PreviewChoice.TwoLayer -> "当前图标不符合二层结构"
-                        missingCandidate && choice == PreviewChoice.Rmbg -> "未安装组件"
-                        rmbgRunning -> rmbgCandidateStatusText.ifBlank { "RMBG运行中" }
-                        rmbgMissing && rmbgFailure != null -> rmbgFailure
-                        rmbgMissing -> "点击运行"
-                        customMissing -> "选择 PNG/SVG"
-                        customKind != null -> "已导入"
-                        missingCandidate -> "不可用"
-                        choice == PreviewChoice.Gpt && isGeneratingGptCandidate -> "正在生成"
-                        gptMissing && !canGenerateGpt -> "请填写AI提供商信息"
-                        gptMissing -> "点击生成"
-                        effectiveChoice.isComposedBackgroundCombination -> effectiveChoice.summary
-                        else -> choice.summary
-                    },
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = summaryColor,
-                    maxLines = if (choice == PreviewChoice.Rmbg && rmbgFailure != null) 4 else 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            PreviewChoiceActions(
-                showApplyAll = customKind == null,
-                applyEnabled = enabled && customKind == null,
-                onApplyAll = { applyPreviewChoiceToAll(effectiveChoice) },
-            )
-    }
-    }
+            },
+            onGenerateGpt = { generateGptCandidateForMode(it) },
+            onGenerateRmbg = { generateRmbgCandidateForMode(it) },
+            onChooseCustom = { m, kind -> chooseCustomImageForMode(m, kind) },
+            onApply = { m, c -> applyPreviewChoice(m, c) },
+            onApplyAll = { applyPreviewChoiceToAll(it) },
+        )
 
 
+    // 重构期间保留：委托到 ui/pages/home/HomePreviewChoice.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun CandidateIconPreview(candidate: IconCandidate, mode: PreviewMode) {
-        val tuningState = mainViewModel.params.collectAsState().value
-        var assets by remember(
-            candidate,
-            mode,
-            tuningState.foregroundSubjectPercent,
-            tuningState.foregroundShadowLevel,
-            tuningState.edgePolishPercent,
-            tuningState.rmbgAlphaStrengthPercent,
-            tuningState.rmbgEdgeFeatherPercent,
-            tuningState.rmbgEdgeAdjustPercent,
-            tuningState.rmbgWeakAlphaKeepPercent,
-            tuningState.liquidGlassEnabled,
-            tuningState.liquidGlassRadius,
-            tuningState.liquidGlassOuterWidth,
-            tuningState.liquidGlassTopAlpha,
-            tuningState.liquidGlassBottomAlpha,
-            tuningState.liquidGlassBackgroundMistAlpha,
-            tuningState.liquidGlassBottomDarkAlpha,
-            tuningState.liquidGlassSubjectScalePercent,
-            tuningState.liquidGlassSubjectOutlineWidth,
-            tuningState.liquidGlassSubjectInnerOutlineWidth,
-            tuningState.liquidGlassSubjectShadowAlpha,
-            tuningState.liquidGlassSubjectOpacityPercent,
-            tuningState.nightSubjectLightBackgroundEnabled,
-        ) {
-            mutableStateOf<PreviewAssets?>(null)
-        }
-        LaunchedEffect(
-            candidate,
-            mode,
-            tuningState.foregroundSubjectPercent,
-            tuningState.foregroundShadowLevel,
-            tuningState.edgePolishPercent,
-            tuningState.rmbgAlphaStrengthPercent,
-            tuningState.rmbgEdgeFeatherPercent,
-            tuningState.rmbgEdgeAdjustPercent,
-            tuningState.rmbgWeakAlphaKeepPercent,
-            tuningState.liquidGlassEnabled,
-            tuningState.liquidGlassRadius,
-            tuningState.liquidGlassOuterWidth,
-            tuningState.liquidGlassTopAlpha,
-            tuningState.liquidGlassBottomAlpha,
-            tuningState.liquidGlassBackgroundMistAlpha,
-            tuningState.liquidGlassBottomDarkAlpha,
-            tuningState.liquidGlassSubjectScalePercent,
-            tuningState.liquidGlassSubjectOutlineWidth,
-            tuningState.liquidGlassSubjectInnerOutlineWidth,
-            tuningState.liquidGlassSubjectShadowAlpha,
-            tuningState.liquidGlassSubjectOpacityPercent,
-            tuningState.nightSubjectLightBackgroundEnabled,
-        ) {
-            assets = null
-            try {
-                assets = withContext(previewWorkerDispatcher) {
-                    previewAssetsForCandidate(candidate, mode).preparedForDraw()
+    internal fun CandidateIconPreview(candidate: IconCandidate, mode: PreviewMode) =
+        CandidateIconPreview(
+            candidate = candidate,
+            mode = mode,
+            tuningState = mainViewModel.params.collectAsState().value,
+            cornerRadiusDp = previewCornerRadiusDp,
+            materialColorProvider = ::systemMaterialColor,
+            loadAssets = { c, m ->
+                withContext(previewWorkerDispatcher) {
+                    previewAssetsForCandidate(c, m).preparedForDraw()
                 }
-            } catch (_: CancellationException) {
-                throw CancellationException()
-            } catch (_: Throwable) {
-                assets = null
-            }
-        }
-        val readyAssets = assets
-        if (readyAssets == null) {
-            AiIconLoadingPreview(modifier = Modifier.fillMaxSize(), overlay = true)
-        } else {
-            GeneratedIconPreview(readyAssets, mode)
-        }
-    }
+            },
+        )
     internal fun systemMaterialColor(resourceName: String, fallback: Color): Color {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             return fallback
@@ -2024,177 +1228,40 @@ class MainActivity : ComponentActivity() {
         return runCatching { Color(getColor(colorId)) }.getOrDefault(fallback)
     }
 
+    // 重构期间保留：委托到 ui/pages/home/HomeStatusCards.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun StatusCard(
         selectedApp: AppEntry?,
         launcherCount: Int,
         totalCount: Int,
         generatedCount: Int,
-    ) {
-        val statusLabel = if (isBusy) "运行中" else "就绪"
-        val enabled = !isBusy && apps.isNotEmpty()
+    ) =
+        StatusCard(
+            selectedApp = selectedApp,
+            launcherCount = launcherCount,
+            totalCount = totalCount,
+            generatedCount = generatedCount,
+            isBusy = isBusy,
+            hasApps = apps.isNotEmpty(),
+            statusText = statusText,
+            onOpenPicker = { currentPage = AppPage.AppPicker },
+            appIcon = { entry -> AppIcon(entry, 48.dp) },
+        )
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(16.dp),
-        ) {
-            val interactionSource = remember { MutableInteractionSource() }
-            val pressed by interactionSource.collectIsPressedAsState()
-            val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
-            val bridge = remember { SectionCardPressBridge() }
-            CompositionLocalProvider(LocalSectionCardPressBridge provides bridge) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .sectionPressOverlay(bridge, extendTopEdge = true),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .trackSectionPress(bridge, pressed)
-                            .cardRowBleed(bleedPx)
-                            .background(cardRowPressedColor(pressed))
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null,
-                                enabled = enabled,
-                                onClick = { currentPage = AppPage.AppPicker },
-                            )
-                            .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        if (selectedApp == null) {
-                            BrandMark(size = 48.dp, text = "UX")
-                        } else {
-                            AppIcon(selectedApp, 48.dp)
-                        }
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                StatusDot(active = isBusy)
-                                Text(
-                                    text = statusLabel,
-                                    style = MiuixTheme.textStyles.title4,
-                                    color = MiuixTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            Text(
-                                text = selectedApp?.label ?: "选择一个应用开始生成",
-                                style = MiuixTheme.textStyles.body1,
-                                color = MiuixTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = selectedApp?.packageName ?: statusText,
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                text = "启动器 $launcherCount 个 / 全部 $totalCount 个 / 已生成 $generatedCount 个",
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        Image(
-                            imageVector = Lucide.ChevronRight,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                        )
-                    }
-                }
-            }
-        }
-    }
-
+    // 重构期间保留：委托到 ui/pages/home/HomeStatusCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun EmptyAppListCard() {
-        val hasHiddenSystemApps = !showSystemApps && apps.any { AppVisibility.isSystemAppFlags(it.applicationInfo.flags) && it.packageName != packageName }
-        val hintText = when {
-            queryText.isNotBlank() && !showSystemApps && hasHiddenSystemApps ->
-                "没有匹配“${queryText.trim()}”的应用。尝试清空搜索词或打开“显示系统应用”开关查看系统应用。"
-            queryText.isNotBlank() ->
-                "没有匹配“${queryText.trim()}”的应用，尝试清空搜索词。"
-            hasHiddenSystemApps ->
-                "当前已隐藏系统应用。打开“显示系统应用”开关可查看系统应用，或在系统设置中允许 ArtPlus 读取应用列表后刷新。"
-            else ->
-                "清空搜索词，或在系统设置中允许 ArtPlus 读取应用列表后刷新。"
-        }
-        Card(
-            modifier = Modifier.fillMaxWidth().semantics {
-                contentDescription = "空应用列表提示"
+    internal fun EmptyAppListCard() =
+        EmptyAppListCard(
+            queryText = queryText,
+            showSystemApps = showSystemApps,
+            hasHiddenSystemApps = apps.any { AppVisibility.isSystemAppFlags(it.applicationInfo.flags) && it.packageName != packageName },
+            isBusy = isBusy,
+            onShowSystemApps = {
+                showSystemApps = true
+                saveUiState()
             },
-            insideMargin = PaddingValues(16.dp),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Image(
-                    imageVector = Lucide.Layers,
-                    contentDescription = null,
-                    modifier = Modifier.size(36.dp),
-                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
-                )
-                Text(
-                    text = "没有可显示的应用",
-                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.semantics { contentDescription = "没有可显示的应用" },
-                )
-                Text(
-                    text = hintText,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.semantics { contentDescription = hintText },
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                if (hasHiddenSystemApps && !showSystemApps) {
-                    TextButton(
-                        text = "显示系统应用",
-                        onClick = {
-                            showSystemApps = true
-                            saveUiState()
-                        },
-                        enabled = !isBusy,
-                        modifier = Modifier.fillMaxWidth().semantics {
-                            contentDescription = "显示系统应用按钮"
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-                TextButton(
-                    text = "刷新应用列表",
-                    onClick = { loadApps() },
-                    enabled = !isBusy,
-                    modifier = Modifier.fillMaxWidth().semantics {
-                        contentDescription = "刷新应用列表"
-                    },
-                )
-            }
-        }
-    }
+            onRefresh = { loadApps() },
+        )
 
     @Composable
     internal fun LocalSeparationModeControl() {
@@ -2217,43 +1284,26 @@ class MainActivity : ComponentActivity() {
     }
 
     /** 第二层级「生成设置」：顶部「滑块 / JSON」切换 + 保存成预设 + 滑块分类导航。 */
+    // 重构期间保留：委托到 ui/pages/home/HomeStatusCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun GenerationNavCard() {
-        SectionCard {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                SegmentedControl(
-                    enabled = !isBusy,
-                    labels = AdvancedSettingsTab.entries.map { it.label },
-                    selectedIndex = AdvancedSettingsTab.entries.indexOf(advancedSettingsTab).coerceAtLeast(0),
-                    onSelected = { index ->
-                        advancedSettingsTab = AdvancedSettingsTab.entries[index]
-                        saveUiState()
-                    },
-                )
-                TextButton(
-                    text = "保存成预设",
-                    onClick = {
-                        presetSaveName = ""
-                        presetSaveDialogVisible = true
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                if (advancedSettingsTab == AdvancedSettingsTab.Sliders) {
-                    AdvancedCategoryTabs(
-                        enabled = !isBusy,
-                        selected = advancedSettingsCategory,
-                        onSelected = { category ->
-                            advancedSettingsCategory = category
-                            saveUiState()
-                        },
-                    )
-                }
-            }
-        }
-    }
+    internal fun GenerationNavCard() =
+        GenerationNavCard(
+            isBusy = isBusy,
+            advancedSettingsTab = advancedSettingsTab,
+            advancedSettingsCategory = advancedSettingsCategory,
+            onTabSelected = {
+                advancedSettingsTab = it
+                saveUiState()
+            },
+            onRequestSavePreset = {
+                presetSaveName = ""
+                presetSaveDialogVisible = true
+            },
+            onCategorySelected = {
+                advancedSettingsCategory = it
+                saveUiState()
+            },
+        )
 
 
     @Composable
@@ -3626,75 +2676,18 @@ class MainActivity : ComponentActivity() {
 
 
 
+    // 重构期间保留：委托到 ui/pages/home/HomeStatusCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun GenerationActionCard(selectedApp: AppEntry?) {
-        val canRun = selectedApp != null && !isBusy
-        SectionCard {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Button(
-                    onClick = { generateSelected(installWithRoot = false, useGpt = false) },
-                    enabled = canRun,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = "本地生成",
-                        style = MiuixTheme.textStyles.button,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Button(
-                    onClick = { exportSelectedToExternal() },
-                    enabled = !isBusy,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = "本地导出",
-                        style = MiuixTheme.textStyles.button,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                CompactActionButton(
-                    text = "写入全部",
-                    onClick = {
-                        writeSelectedWithRoot(rootWriteMode = RootWriteMode.All)
-                    },
-                    enabled = canRun,
-                    modifier = Modifier.weight(1f),
-                )
-                CompactActionButton(
-                    text = "写入标准",
-                    onClick = {
-                        writeSelectedWithRoot(rootWriteMode = RootWriteMode.StandardOnly)
-                    },
-                    enabled = canRun,
-                    modifier = Modifier.weight(1f),
-                )
-                CompactActionButton(
-                    text = "写入单色",
-                    onClick = {
-                        writeSelectedWithRoot(rootWriteMode = RootWriteMode.MonochromeOnly)
-                    },
-                    enabled = canRun,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
+    internal fun GenerationActionCard(selectedApp: AppEntry?) =
+        GenerationActionCard(
+            selectedApp = selectedApp,
+            isBusy = isBusy,
+            onLocalGenerate = { generateSelected(installWithRoot = false, useGpt = false) },
+            onLocalExport = { exportSelectedToExternal() },
+            onWriteAll = { writeSelectedWithRoot(rootWriteMode = RootWriteMode.All) },
+            onWriteStandard = { writeSelectedWithRoot(rootWriteMode = RootWriteMode.StandardOnly) },
+            onWriteMono = { writeSelectedWithRoot(rootWriteMode = RootWriteMode.MonochromeOnly) },
+        )
 
 
 
@@ -6407,210 +5400,143 @@ class MainActivity : ComponentActivity() {
         refreshActivePreviewOutputs(rebuildLocalCandidates = false)
     }
 
+    // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
     internal fun generateSelected(
         installWithRoot: Boolean,
         useGpt: Boolean,
         rootWriteMode: RootWriteMode = RootWriteMode.All,
         confirmed: Boolean = false,
-    ) {
-        val entry = apps.firstOrNull { it.packageName == selectedPackageName }
-        if (entry == null) {
-            statusText = "先选择一个应用"
-            return
-        }
-        if (useGpt && gptApiKey.trim().isEmpty()) {
-            statusText = "请填写AI提供商信息"
-            return
-        }
-        if (useGpt && gptBaseUrl.trim().isEmpty()) {
-            statusText = "请填写AI提供商信息"
-            return
-        }
-        if (isBusy) {
-            statusText = "当前有任务在运行"
-            return
-        }
-        if (useGpt && !confirmed) {
-            requestServiceConfirm(
-                title = "使用 AI 生成",
-                message = "将调用云端图像接口（已累计 $gptRunCount 次）生成图标包。确认继续？",
-                confirmLabel = "继续",
-            ) {
-                generateSelected(installWithRoot, true, rootWriteMode, confirmed = true)
-            }
-            return
-        }
-
-        isBusy = true
-        if (useGpt) {
-            isGptPreviewLoading = true
-            incrementGptRunCount()
-        }
-        statusText = if (useGpt) {
-            "AI处理中: ${entry.packageName}"
-        } else {
-            "本地处理中(自动): ${entry.packageName}"
-        }
-        startUiFriendlyThread(if (useGpt) "ArtPlusGptGenerate" else "ArtPlusLocalGenerate") {
-            try {
-                val result = generateArtPlusPackage(entry, useGpt)
+    ): Unit =
+        homeGenerateSelected(
+            entry = apps.firstOrNull { it.packageName == selectedPackageName },
+            installWithRoot = installWithRoot,
+            useGpt = useGpt,
+            rootWriteMode = rootWriteMode,
+            confirmed = confirmed,
+            gptApiKey = gptApiKey,
+            gptBaseUrl = gptBaseUrl,
+            isBusy = isBusy,
+            gptRunCount = gptRunCount,
+            onStatusText = { statusText = it },
+            onRequestConfirm = { title, message, confirmLabel, onConfirm ->
+                requestServiceConfirm(title = title, message = message, confirmLabel = confirmLabel, onConfirm = onConfirm)
+            },
+            onBeginBusy = { gpt ->
+                isBusy = true
+                if (gpt) {
+                    isGptPreviewLoading = true
+                    incrementGptRunCount()
+                }
+            },
+            onLaunch = { name, block -> startUiFriendlyThread(name, block) },
+            onGenerate = { e, g -> generateArtPlusPackage(e, g) },
+            onPostGenerate = { result, e ->
                 runOnUiThread {
                     activeGenerationSession = result.session
                     mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
                     previewChoiceMode = null
-                    previewPackageName = entry.packageName
+                    previewPackageName = e.packageName
                     previewDirPath = result.outDir.absolutePath
                     previewVersion += 1
                     saveUiState()
                 }
-                if (false && outputTreeUri != null) {
-                    exportToTree(contentResolver, outputTreeUri, result.outDir)
-                }
-                if (installWithRoot) {
-                    installWithRoot(result.outDir, entry.packageName, rootWriteMode)
-                    runOnUiThread {
-                        generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, entry.packageName)
-                    }
-                    if (useGpt) {
-                        toastStatus("已生成AI版并${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
-                    } else {
-                        statusText = "已生成本地版并${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}"
-                    }
-                } else {
-                    if (useGpt) {
-                        toastStatus("已生成AI版: ${result.outDir.absolutePath}")
-                    } else {
-                        statusText = "已生成本地版: ${result.outDir.absolutePath}"
-                    }
-                }
-            } catch (error: Exception) {
-                val msg = "失败: ${error.message ?: error.javaClass.simpleName}"
-                if (useGpt) {
-                    toastStatus(msg)
-                } else {
-                    statusText = msg
-                }
-            } finally {
+            },
+            onInstall = { outDir, pkg, mode -> installWithRoot(outDir, pkg, mode) },
+            onMarkGenerated = { pkg -> generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, pkg) },
+            onToast = { toastStatus(it) },
+            onStatus = { status(it) },
+            onFinish = { gpt ->
                 runOnUiThread {
                     isBusy = false
-                    if (useGpt) {
+                    if (gpt) {
                         isGptPreviewLoading = false
                     }
                 }
-            }
-        }
-    }
+            },
+            onConfirmedRetry = { root: Boolean, gpt: Boolean, mode: RootWriteMode -> generateSelected(root, gpt, mode, confirmed = true) },
+        )
 
-    internal fun writeSelectedWithRoot(rootWriteMode: RootWriteMode) {
-        val entry = apps.firstOrNull { it.packageName == selectedPackageName }
-        if (entry == null) {
-            statusText = "先选择一个应用"
-            return
-        }
-        if (isBusy) {
-            return
-        }
-
-        fun executeWrite() {
-            val session = activeGenerationSession?.takeIf { it.packageName == entry.packageName }
-            if (session == null) {
-                generateSelected(
-                    installWithRoot = true,
-                    useGpt = false,
-                    rootWriteMode = rootWriteMode,
+    // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本（含内嵌 executeWrite），调用点零改动。
+    internal fun writeSelectedWithRoot(rootWriteMode: RootWriteMode): Unit =
+        homeWriteSelectedWithRoot(
+            entry = apps.firstOrNull { it.packageName == selectedPackageName },
+            rootWriteMode = rootWriteMode,
+            isBusy = isBusy,
+            activeSession = activeGenerationSession,
+            selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
+            autoConfirmRootWrite = autoConfirmRootWrite,
+            targetPath = apps.firstOrNull { it.packageName == selectedPackageName }?.let { "$ROOT_UXICONS_DIR/${it.packageName}" },
+            onStatusText = { statusText = it },
+            onGenerateFallback = { generateSelected(installWithRoot = true, useGpt = false, rootWriteMode = rootWriteMode) },
+            onBeginBusy = { msg ->
+                isBusy = true
+                statusText = msg
+            },
+            onLaunch = { name, block -> startUiFriendlyThread(name, block) },
+            onWrite = { session, selections -> writePackageOutputs(session, selections) },
+            onInstall = { outDir, pkg, mode -> installWithRoot(outDir, pkg, mode) },
+            onPostWrite = { session, selections, e ->
+                runOnUiThread {
+                    generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, e.packageName)
+                    activeGenerationSession = session
+                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
+                    previewPackageName = e.packageName
+                    previewDirPath = session.outDir.absolutePath
+                    previewVersion += 1
+                    saveUiState()
+                }
+            },
+            onToast = { toastStatus(it) },
+            onFinish = { runOnUiThread { isBusy = false } },
+            onRequestConfirm = { pkg, targetPath, mode, onConfirm ->
+                rootWriteConfirmRememberSkip = false
+                pendingRootWriteConfirm = RootWriteConfirmRequest(
+                    packageName = pkg,
+                    targetPath = targetPath,
+                    rootWriteMode = mode,
+                    onConfirm = { onConfirm() },
                 )
-                return
-            }
+            },
+        )
 
-            isBusy = true
-            statusText = "按当前预览写入${rootWriteMode.label}: ${entry.packageName}"
-            val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)
-            startUiFriendlyThread("ArtPlusPreviewRootWrite") {
-                try {
-                    writePackageOutputs(session, selections)
-                    if (false && outputTreeUri != null) {
-                        exportToTree(contentResolver, outputTreeUri, session.outDir)
-                    }
-                    installWithRoot(session.outDir, entry.packageName, rootWriteMode)
-                    runOnUiThread {
-                        generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, entry.packageName)
-                        activeGenerationSession = session
-                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                        previewPackageName = entry.packageName
-                        previewDirPath = session.outDir.absolutePath
-                        previewVersion += 1
-                        saveUiState()
-                    }
-                    toastStatus("已按当前预览${rootWriteMode.label}写入，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}")
-                } catch (error: Exception) {
-                    toastStatus("写入失败: ${error.message ?: error.javaClass.simpleName}")
-                } finally {
-                    runOnUiThread {
-                        isBusy = false
-                    }
-                }
-            }
-        }
-
-        if (autoConfirmRootWrite) {
-            executeWrite()
-        } else {
-            rootWriteConfirmRememberSkip = false
-            val targetPath = "$ROOT_UXICONS_DIR/${entry.packageName}"
-            pendingRootWriteConfirm = RootWriteConfirmRequest(
-                packageName = entry.packageName,
-                targetPath = targetPath,
-                rootWriteMode = rootWriteMode,
-                onConfirm = { executeWrite() },
-            )
-        }
-    }
-
+    // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
     internal fun selectAppAndRestoreGeneratedPreview(entry: AppEntry) {
-        val packageName = entry.packageName
         val revision = ++generatedPreviewRestoreRevision
-        selectedPackageName = packageName
-        activeGenerationSession = null
-        previewChoiceMode = null
-        previewPackageName = null
-        previewDirPath = null
-        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
-        previewVersion += 1
-        clearRmbgCandidateUiState()
-        val localDir = artPlusPackageDir(packageName)
-        val knownGenerated = packageName in generatedPackageNames || hasGeneratedPackageBaseAssets(localDir)
-        statusText = if (knownGenerated) {
-            "正在读取现有图标包: ${entry.label} ($packageName)"
-        } else {
-            "已选择: ${entry.label} ($packageName)"
-        }
-        saveUiState()
-        if (isBusy) {
-            return
-        }
-        startUiFriendlyThread("ArtPlusRestoreGeneratedPreview") {
-            val result = runCatching { existingGeneratedPackageDir(packageName) }
-            runOnUiThread {
-                if (revision != generatedPreviewRestoreRevision || selectedPackageName != packageName) {
-                    return@runOnUiThread
-                }
-                result
-                    .onSuccess { packageDir ->
-                        generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, packageName)
-                        activeGenerationSession = buildGeneratedPackageSession(packageName, packageDir)
-                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
-                        previewChoiceMode = null
-                        previewPackageName = packageName
-                        previewDirPath = packageDir.absolutePath
-                        previewVersion += 1
-                        statusText = "已读取现有图标包: ${entry.label} ($packageName)"
-                        saveUiState()
-                    }
-                    .onFailure { error ->
-                        statusText = "未读取到现有图标包: ${error.message ?: error.javaClass.simpleName}"
-                    }
-            }
-        }
+        val localDir = artPlusPackageDir(entry.packageName)
+        val known = entry.packageName in generatedPackageNames || hasGeneratedPackageBaseAssets(localDir)
+        homeSelectAppAndRestore(
+            entry = entry,
+            revision = revision,
+            isBusy = isBusy,
+            knownGenerated = known,
+            getSelected = { selectedPackageName },
+            getRevision = { generatedPreviewRestoreRevision },
+            onResetSelection = { pkg ->
+                selectedPackageName = pkg
+                activeGenerationSession = null
+                previewChoiceMode = null
+                previewPackageName = null
+                previewDirPath = null
+                mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
+                previewVersion += 1
+            },
+            onStatusText = { statusText = it },
+            onSaveUi = { saveUiState() },
+            onClearRmbg = { clearRmbgCandidateUiState() },
+            onLaunch = { name, block -> startUiFriendlyThread(name, block) },
+            onLoadDir = { existingGeneratedPackageDir(entry.packageName) },
+            onUi = { block -> runOnUiThread(block) },
+            onMarkGenerated = { pkg -> generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, pkg) },
+            onBuildSession = { pkg, dir -> buildGeneratedPackageSession(pkg, dir) },
+            onCommitSession = { session, dir, e ->
+                activeGenerationSession = session
+                mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
+                previewChoiceMode = null
+                previewPackageName = e.packageName
+                previewDirPath = dir.absolutePath
+                previewVersion += 1
+            },
+        )
     }
 
     internal fun addLiquidGlassToSelectedGenerated() {
@@ -7376,164 +6302,79 @@ class MainActivity : ComponentActivity() {
             foregroundSubjectPercent = mainViewModel.params.value.foregroundSubjectPercent,
         )
 
-    internal fun applyPreviewChoice(mode: PreviewMode, choice: PreviewChoice) {
-        val session = activeGenerationSession ?: return
-        val customKind = choice.customKind
-        if (customKind != null) {
-            chooseCustomImageForMode(mode, customKind)
-            return
-        }
-        if (choice == PreviewChoice.Gpt && session.candidates[PreviewChoice.Gpt] == null) {
-            generateGptCandidateForMode(mode)
-            return
-        }
-        if (choice == PreviewChoice.GptComposedBackground && session.candidates[PreviewChoice.Gpt] == null) {
-            statusText = "先生成 AI 候选，再使用拼合背景"
-            return
-        }
-        if (choice == PreviewChoice.RmbgComposedBackground && session.candidates[PreviewChoice.Rmbg] == null) {
-            statusText = "先生成 RMBG 候选，再使用拼合背景"
-            return
-        }
-        val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).withChoice(mode, choice)
-        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-        saveUiState()
-        writeActivePreviewOutputs(session, selections, closeDialog = false)
-    }
-
-    internal fun applyPreviewChoiceToAll(choice: PreviewChoice) {
-        val session = activeGenerationSession ?: return
-        val batchPackageNames = multiSelectedPackageNames.toList().sorted()
-        if (batchPackageNames.isNotEmpty()) {
-            applyPreviewChoiceToSelectedPackages(choice, batchPackageNames)
-            return
-        }
-        if (choice == PreviewChoice.Gpt && session.candidates[PreviewChoice.Gpt] == null) {
-            generateGptCandidateForAll()
-            return
-        }
-        if (choice == PreviewChoice.Rmbg && session.candidates[PreviewChoice.Rmbg] == null) {
-            generateRmbgCandidateForAll()
-            return
-        }
-        if (choice == PreviewChoice.GptComposedBackground && session.candidates[PreviewChoice.Gpt] == null) {
-            statusText = "先生成 AI 候选，再使用拼合背景"
-            return
-        }
-        if (choice == PreviewChoice.RmbgComposedBackground && session.candidates[PreviewChoice.Rmbg] == null) {
-            statusText = "先生成 RMBG 候选，再使用拼合背景"
-            return
-        }
-        if (choice.isCustom) {
-            statusText = "自定义图片需要逐个槽位上传"
-            return
-        }
-        if (candidateForChoice(session, choice) == null) {
-            statusText = "${choice.label} 当前不可用"
-            return
-        }
-        val selections = PreviewSelections.default(choice)
-        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-        previewChoiceMode = null
-        saveUiState()
-        writeActivePreviewOutputs(session, selections, closeDialog = true)
-    }
-
-    internal fun applyPreviewChoiceToSelectedPackages(choice: PreviewChoice, packageNames: List<String>) {
-        if (choice.isCustom) {
-            statusText = "自定义图片需要逐个槽位上传"
-            return
-        }
-        if (choice == PreviewChoice.Gpt && (gptBaseUrl.trim().isEmpty() || gptApiKey.trim().isEmpty())) {
-            statusText = "请填写AI提供商信息"
-            return
-        }
-        if (
-            (choice == PreviewChoice.Rmbg || choice == PreviewChoice.RmbgComposedBackground) &&
-            findRmbgComponent() == null
-        ) {
-            statusText = "未安装 RMBG 组件 ZIP"
-            return
-        }
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        if (
-            (choice == PreviewChoice.Rmbg || choice == PreviewChoice.RmbgComposedBackground) &&
-            !rmbgGenerationGate.compareAndSet(false, true)
-        ) {
-            statusText = "RMBG正在运行，请等待"
-            return
-        }
-
-        isBusy = true
-        previewChoiceMode = null
-        batchApplyProgress = BatchApplyProgress(
-            title = "全部应用",
-            completed = 0,
-            total = packageNames.size,
-            currentLabel = "准备处理 ${packageNames.size} 个 APK",
-            failures = 0,
+    // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
+    internal fun applyPreviewChoice(mode: PreviewMode, choice: PreviewChoice): Unit =
+        homeApplyPreviewChoice(
+            mode = mode,
+            choice = choice,
+            session = activeGenerationSession,
+            selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
+            onChooseCustom = { chooseCustomImageForMode(mode, choice.customKind!!) },
+            onGenerateGpt = { generateGptCandidateForMode(mode) },
+            onStatusText = { statusText = it },
+            onCommitSelections = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
+            onSaveUi = { saveUiState() },
+            onWrite = { session, selections -> writeActivePreviewOutputs(session, selections, closeDialog = false) },
         )
-        statusText = "全部应用处理中: 0/${packageNames.size}"
-        val outputUri = outputTreeUri
-        val selectedAtStart = selectedPackageName
-        startUiFriendlyThread("ArtPlusBatchApplyRule") {
-            val successes = mutableListOf<String>()
-            val failures = mutableListOf<String>()
-            var selectedResult: GenerationResult? = null
-            try {
-                packageNames.forEachIndexed { index, packageName ->
-                    val app = apps.firstOrNull { it.packageName == packageName }
-                    if (app == null) {
-                        failures += "$packageName: 应用不存在"
-                        updateBatchApplyProgress(
-                            completed = index + 1,
-                            total = packageNames.size,
-                            currentLabel = "跳过: $packageName",
-                            failures = failures.size,
-                        )
-                        return@forEachIndexed
-                    }
-                    updateBatchApplyProgress(
-                        completed = index,
-                        total = packageNames.size,
-                        currentLabel = "处理中: ${app.label} (${packageName})",
-                        failures = failures.size,
-                    )
-                    try {
-                        val result = generatePackageForPreviewChoice(app, choice)
-                        if (false && outputUri != null) {
-                            exportToTree(contentResolver, outputUri, result.outDir)
-                        }
-                        installWithRoot(result.outDir, packageName, RootWriteMode.All)
-                        successes += packageName
-                        if (packageName == selectedAtStart) {
-                            selectedResult = result
-                        }
-                    } catch (error: Throwable) {
-                        failures += "$packageName: ${error.message ?: error.javaClass.simpleName}"
-                    }
-                    updateBatchApplyProgress(
-                        completed = index + 1,
-                        total = packageNames.size,
-                        currentLabel = "已完成: ${app.label} (${packageName})",
-                        failures = failures.size,
-                    )
-                }
+
+    // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
+    internal fun applyPreviewChoiceToAll(choice: PreviewChoice): Unit =
+        homeApplyPreviewChoiceToAll(
+            choice = choice,
+            session = activeGenerationSession,
+            batchPackageNames = multiSelectedPackageNames.toList().sorted(),
+            onApplyToSelected = { c, pkgs -> applyPreviewChoiceToSelectedPackages(c, pkgs) },
+            onGenerateGptAll = { generateGptCandidateForAll() },
+            onGenerateRmbgAll = { generateRmbgCandidateForAll() },
+            onStatusText = { statusText = it },
+            candidateAvailable = { s, c -> candidateForChoice(s, c) != null },
+            onCommitDefault = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
+            onClearChoiceMode = { previewChoiceMode = null },
+            onSaveUi = { saveUiState() },
+            onWriteClose = { session, selections -> writeActivePreviewOutputs(session, selections, closeDialog = true) },
+        )
+
+    // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
+    internal fun applyPreviewChoiceToSelectedPackages(choice: PreviewChoice, packageNames: List<String>): Unit =
+        homeApplyPreviewChoiceToSelectedPackages(
+            choice = choice,
+            packageNames = packageNames,
+            gptBaseUrl = gptBaseUrl,
+            gptApiKey = gptApiKey,
+            hasRmbgComponent = findRmbgComponent() != null,
+            isBusy = isBusy,
+            isGeneratingGpt = isGeneratingGptCandidate,
+            isGeneratingRmbg = isGeneratingRmbgCandidate,
+            tryAcquireRmbg = { rmbgGenerationGate.compareAndSet(false, true) },
+            onStatusText = { statusText = it },
+            onBegin = { total ->
+                isBusy = true
+                previewChoiceMode = null
+                batchApplyProgress = BatchApplyProgress(
+                    title = "全部应用",
+                    completed = 0,
+                    total = total,
+                    currentLabel = "准备处理 $total 个 APK",
+                    failures = 0,
+                )
+            },
+            selectedAtStart = selectedPackageName,
+            apps = apps,
+            onProgress = { completed, total, label, failures -> updateBatchApplyProgress(completed, total, label, failures) },
+            onGeneratePackage = { app, c -> generatePackageForPreviewChoice(app, c) },
+            onInstall = { outDir, pkg -> installWithRoot(outDir, pkg, RootWriteMode.All) },
+            onFinishBatch = { successes, failures, selectedResult, atStart ->
                 runOnUiThread {
                     if (successes.isNotEmpty()) {
                         generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames + successes)
                         multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
                     }
-                    val result = selectedResult
-                    if (result != null && selectedPackageName == selectedAtStart) {
-                        activeGenerationSession = result.session
-                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
+                    if (selectedResult != null && selectedPackageName == atStart) {
+                        activeGenerationSession = selectedResult.session
+                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selectedResult.selections).normalLight.name, previewNormalDark = (selectedResult.selections).normalDark.name, previewMonochromeLight = (selectedResult.selections).monochromeLight.name, previewMonochromeDark = (selectedResult.selections).monochromeDark.name) }
                         previewChoiceMode = null
-                        previewPackageName = result.session.packageName
-                        previewDirPath = result.outDir.absolutePath
+                        previewPackageName = selectedResult.session.packageName
+                        previewDirPath = selectedResult.outDir.absolutePath
                         previewVersion += 1
                         saveUiState()
                     }
@@ -7543,10 +6384,9 @@ class MainActivity : ComponentActivity() {
                         else -> "全部应用完成 ${successes.size} 个，失败 ${failures.size} 个: ${failures.firstOrNull().orEmpty()}"
                     }
                 }
-            } finally {
-                if (choice == PreviewChoice.Rmbg || choice == PreviewChoice.RmbgComposedBackground) {
-                    rmbgGenerationGate.set(false)
-                }
+            },
+            onReleaseRmbg = { rmbgGenerationGate.set(false) },
+            onResetBusy = {
                 runOnUiThread {
                     isBusy = false
                     isGptPreviewLoading = false
@@ -7557,9 +6397,9 @@ class MainActivity : ComponentActivity() {
                     rmbgCandidateStatusText = ""
                     batchApplyProgress = null
                 }
-            }
-        }
-    }
+            },
+            onLaunch = { name, block -> startUiFriendlyThread(name, block) },
+        )
 
     internal fun updateBatchApplyProgress(
         completed: Int,
@@ -7579,36 +6419,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    internal fun generatePackageForPreviewChoice(app: AppEntry, choice: PreviewChoice): GenerationResult {
-        val useGpt = choice == PreviewChoice.Gpt || choice == PreviewChoice.GptComposedBackground
-        val result = generateArtPlusPackage(app, useGpt)
-        var session = result.session
-        if (choice == PreviewChoice.Rmbg || choice == PreviewChoice.RmbgComposedBackground) {
-            val source = resizeBitmap(session.sourceIcon, SIZE_1X1, SIZE_1X1)
-            val rmbgResult = buildRmbgCandidate(source)
-                ?: error("未安装 RMBG 组件 ZIP")
-            val candidate = rmbgResult.candidate ?: error("RMBG候选为空")
-            session = session.copy(
-                candidates = session.candidates + (PreviewChoice.Rmbg to candidate),
-            )
-        }
-        val effectiveChoice = when {
-            choice == PreviewChoice.GptComposedBackground && candidateForChoice(session, PreviewChoice.GptComposedBackground) == null ->
-                PreviewChoice.Gpt
-            choice == PreviewChoice.RmbgComposedBackground && candidateForChoice(session, PreviewChoice.RmbgComposedBackground) == null ->
-                PreviewChoice.Rmbg
-            candidateForChoice(session, choice) != null -> choice
-            else -> defaultLocalPreviewChoice(session.autoLocalChoice)
-        }
-        val selections = PreviewSelections.default(effectiveChoice)
-        val finalSession = session.copy(outDir = result.outDir)
-        writePackageOutputs(finalSession, selections)
-        return GenerationResult(
-            outDir = result.outDir,
-            session = finalSession,
-            selections = selections,
+    // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
+    internal fun generatePackageForPreviewChoice(app: AppEntry, choice: PreviewChoice): GenerationResult =
+        homeGeneratePackageForPreviewChoice(
+            app = app,
+            choice = choice,
+            onGenerate = { a, g -> generateArtPlusPackage(a, g) },
+            onBuildRmbg = { src -> (buildRmbgCandidate(src) ?: error("未安装 RMBG 组件 ZIP")).candidate ?: error("RMBG候选为空") },
+            onResize = { src, w, h -> resizeBitmap(src, w, h) },
+            onWrite = { session, selections -> writePackageOutputs(session, selections) },
+            defaultLocal = { auto -> defaultLocalPreviewChoice(auto) },
+            candidateAvailable = { s, c -> candidateForChoice(s, c) },
         )
-    }
 
     internal fun clearRmbgCandidateUiState() {
         if (isGeneratingRmbgCandidate) {
@@ -8033,111 +6855,68 @@ class MainActivity : ComponentActivity() {
         return current
     }
 
+    // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
     internal fun refreshActivePreviewOutputs(
         rebuildLocalCandidates: Boolean,
         retargetFrom: PreviewChoice? = null,
-    ) {
-        val currentSession = activeGenerationSession
-        if (currentSession == null) {
-            previewOutputJob?.cancel()
-            isPreviewOutputRefreshing = false
-            return
-        }
-        val packageName = currentSession.packageName
-        val app = apps.firstOrNull { it.packageName == packageName }
-        val outDir = currentSession.outDir
-        val currentSelections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)
-        val outputUri = outputTreeUri
-        val requestRevision = ++previewOutputRevision
-        previewOutputJob?.cancel()
-        isPreviewOutputRefreshing = true
-        previewOutputJob = previewWorkerScope.launch {
-            try {
-                delay(if (rebuildLocalCandidates) PREVIEW_REBUILD_DEBOUNCE_MS else PREVIEW_OUTPUT_DEBOUNCE_MS)
-                val updatedSession = when {
-                    rebuildLocalCandidates && app != null && currentSession.canRebuildLocalCandidates ->
-                        // P4 交界：会话重建收敛进 pipeline/，显式传 pm + 调参快照。
-                        rebuildLocalSession(currentSession, app, packageManager, currentTuningParams())
-                    else -> currentSession
-                }
-                val previousDefault = retargetFrom
-                    ?: if (rebuildLocalCandidates && currentSession.canRebuildLocalCandidates) {
-                        defaultLocalPreviewChoice(currentSession.autoLocalChoice)
-                    } else {
-                        null
-                }
-                val nextDefault = defaultLocalPreviewChoice(updatedSession.autoLocalChoice)
-                val retargetedSelections = when {
-                    previousDefault == null -> currentSelections
-                    else -> currentSelections.retarget(previousDefault, nextDefault)
-                }
-                val selections = normalizePreviewSelections(updatedSession, retargetedSelections)
-                writePackageOutputs(updatedSession, selections)
-                if (false && outputUri != null) {
-                    exportToTree(contentResolver, outputUri, updatedSession.outDir)
-                }
-                withContext(Dispatchers.Main) {
-                    if (requestRevision == previewOutputRevision) {
-                        activeGenerationSession = updatedSession
-                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                        previewVersion += 1
-                        saveUiState()
-                    }
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                status("预览刷新失败: ${error.message ?: error.javaClass.simpleName}")
-            } finally {
-                withContext(Dispatchers.Main) {
-                    if (requestRevision == previewOutputRevision) {
-                        isPreviewOutputRefreshing = false
-                    }
-                }
-            }
-        }
-    }
+    ): Unit =
+        homeRefreshActivePreviewOutputs(
+            currentSession = activeGenerationSession,
+            rebuildLocalCandidates = rebuildLocalCandidates,
+            retargetFrom = retargetFrom,
+            app = activeGenerationSession?.let { s -> apps.firstOrNull { it.packageName == s.packageName } },
+            currentSelections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
+            scope = previewWorkerScope,
+            getJob = { previewOutputJob },
+            setJob = { previewOutputJob = it },
+            incRevision = { ++previewOutputRevision },
+            getRevision = { previewOutputRevision },
+            setRefreshing = { isPreviewOutputRefreshing = it },
+            rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
+            outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
+            tuning = currentTuningParams(),
+            onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
+            defaultLocal = { auto -> defaultLocalPreviewChoice(auto) },
+            normalize = { session, selections -> normalizePreviewSelections(session, selections) },
+            onWrite = { session, selections -> writePackageOutputs(session, selections) },
+            onCommit = { session, selections ->
+                activeGenerationSession = session
+                mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
+                previewVersion += 1
+                saveUiState()
+            },
+            onStatus = { status(it) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
     internal fun writeActivePreviewOutputs(
         session: GenerationSession,
         selections: PreviewSelections,
         closeDialog: Boolean,
-    ) {
-        val outputUri = outputTreeUri
-        val requestRevision = ++previewOutputRevision
-        previewOutputJob?.cancel()
-        isPreviewOutputRefreshing = true
-        previewOutputJob = previewWorkerScope.launch {
-            try {
-                delay(PREVIEW_OUTPUT_DEBOUNCE_MS)
-                writePackageOutputs(session, selections)
-                if (false && outputUri != null) {
-                    exportToTree(contentResolver, outputUri, session.outDir)
+    ): Unit =
+        homeWriteActivePreviewOutputs(
+            session = session,
+            selections = selections,
+            closeDialog = closeDialog,
+            scope = previewWorkerScope,
+            getJob = { previewOutputJob },
+            setJob = { previewOutputJob = it },
+            incRevision = { ++previewOutputRevision },
+            getRevision = { previewOutputRevision },
+            setRefreshing = { isPreviewOutputRefreshing = it },
+            outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
+            onWrite = { s, sel -> writePackageOutputs(s, sel) },
+            onCommit = { s, sel, close ->
+                activeGenerationSession = s
+                mainViewModel.updateLive { p -> p.copy(previewNormalLight = (sel).normalLight.name, previewNormalDark = (sel).normalDark.name, previewMonochromeLight = (sel).monochromeLight.name, previewMonochromeDark = (sel).monochromeDark.name) }
+                previewVersion += 1
+                if (close) {
+                    previewChoiceMode = null
                 }
-                withContext(Dispatchers.Main) {
-                    if (requestRevision == previewOutputRevision) {
-                        activeGenerationSession = session
-                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                        previewVersion += 1
-                        if (closeDialog) {
-                            previewChoiceMode = null
-                        }
-                        saveUiState()
-                    }
-                }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                status("预览刷新失败: ${error.message ?: error.javaClass.simpleName}")
-            } finally {
-                withContext(Dispatchers.Main) {
-                    if (requestRevision == previewOutputRevision) {
-                        isPreviewOutputRefreshing = false
-                    }
-                }
-            }
-        }
-    }
+                saveUiState()
+            },
+            onStatus = { status(it) },
+        )
 
 
 
@@ -9016,14 +7795,11 @@ class MainActivity : ComponentActivity() {
         private const val KEYSTORE_GPT_KEY_ALIAS = "artplus_gpt_api_key"
         private const val KEYSTORE_CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
         private const val KEYSTORE_GCM_TAG_BITS = 128
-        private const val PREVIEW_OUTPUT_DEBOUNCE_MS = 140L
-        private const val PREVIEW_REBUILD_DEBOUNCE_MS = 180L
-        private const val DEFAULT_PREVIEW_ICON_SIZE_DP = 70
-        private const val MIN_PREVIEW_ICON_SIZE_DP = 42
-        private const val MAX_PREVIEW_ICON_SIZE_DP = 96
-        private const val DEFAULT_PREVIEW_CORNER_RADIUS_DP = 20
-        private const val MIN_PREVIEW_CORNER_RADIUS_DP = 0
-        private const val MAX_PREVIEW_CORNER_RADIUS_DP = 36
+        // Slice 2.2 已提升到 TuningParams.kt：PREVIEW_OUTPUT_DEBOUNCE_MS /
+        // PREVIEW_REBUILD_DEBOUNCE_MS / DEFAULT_PREVIEW_ICON_SIZE_DP /
+        // MIN_PREVIEW_ICON_SIZE_DP / MAX_PREVIEW_ICON_SIZE_DP /
+        // DEFAULT_PREVIEW_CORNER_RADIUS_DP / MIN_PREVIEW_CORNER_RADIUS_DP /
+        // MAX_PREVIEW_CORNER_RADIUS_DP，同包直接引用。
         private const val DEFAULT_BATCH_PREVIEW_COUNT = BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT
         private const val MIN_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MIN_BATCH_PREVIEW_COUNT
         private const val MAX_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MAX_BATCH_PREVIEW_COUNT
