@@ -1509,402 +1509,98 @@ class MainActivity : ComponentActivity() {
             onStatus = { statusText = it },
         )
 
-    internal fun startBatchPreview(preset: TuningPreset) {
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate || isGeneratingBatchPreview) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        val sampledApps = BatchPreviewSampler.sample(
-            candidates = apps,
-            generatedPackageNames = generatedPackageNames,
-            count = batchPreviewCount,
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun startBatchPreview(preset: TuningPreset) =
+        mainViewModel.startBatchPreview(
+            preset = preset,
+            apps = apps.toList(),
             selfPackageName = packageName,
+            batchPreviewCount = batchPreviewCount,
+            generatedPackageNames = generatedPackageNames,
+            originalParams = currentTuningParams(),
+            cacheDir = cacheDir,
+            loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
+            defaultChoiceForMode = { mode, auto -> defaultPreviewChoiceForMode(mode, auto) },
+            composeAssets = { session, selections -> previewAssetsForSelections(session, selections) },
+            onApplyMerged = { merged ->
+                applyTuningParams(merged, rebuildCandidates = false, persist = false, captureUndo = false, refreshPreview = false)
+            },
+            onRestoreOriginal = { original ->
+                applyTuningParams(original, rebuildCandidates = true, persist = false, captureUndo = false, refreshPreview = true)
+            },
+            onSaveSnapshot = { p, dataList -> BatchPreviewStore.saveSnapshot(filesDir, p, dataList) },
         )
-        if (sampledApps.isEmpty()) {
-            statusText = "未找到可供预览的启动器应用"
-            return
-        }
 
-        isBusy = true
-        isGeneratingBatchPreview = true
-        batchPreviewCancelled = false
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun openBatchPreviewForPreset(preset: TuningPreset) =
+        mainViewModel.openBatchPreviewForPreset(preset = preset, filesDir = filesDir)
 
-        val originalParams = currentTuningParams()
-        val merged = TuningParams.fromParamMap(preset.params.toParamMap(), originalParams)
-        applyTuningParams(merged, rebuildCandidates = false, persist = false, captureUndo = false, refreshPreview = false)
-        val pipeline = currentLocalPipelineConfig()
-
-        batchPreviewProgress = BatchPreviewProgress(
-            presetName = preset.name,
-            completed = 0,
-            total = sampledApps.size,
-            currentLabel = "准备渲染 ${sampledApps.size} 个应用",
-        )
-        statusText = "预设「${preset.name}」批量预览渲染中..."
-
-        startUiFriendlyThread("ArtPlusBatchPreview") {
-            val items = mutableListOf<BatchPreviewItem>()
-            var wasCancelled = false
-            try {
-                for ((index, app) in sampledApps.withIndex()) {
-                    if (batchPreviewCancelled) {
-                        wasCancelled = true
-                        break
-                    }
-                    runOnUiThread {
-                        batchPreviewProgress = BatchPreviewProgress(
-                            presetName = preset.name,
-                            completed = index,
-                            total = sampledApps.size,
-                            currentLabel = "渲染中: ${app.label}",
-                        )
-                    }
-                    try {
-                        val assets = generateMemoryPreviewAssetsForApp(app, pipeline)
-                        items.add(BatchPreviewItem(packageName = app.packageName, label = app.label, assets = assets))
-                    } catch (e: Throwable) {
-                        // 跳过单应用渲染异常
-                    }
-                    runOnUiThread {
-                        batchPreviewProgress = BatchPreviewProgress(
-                            presetName = preset.name,
-                            completed = index + 1,
-                            total = sampledApps.size,
-                            currentLabel = "已完成: ${app.label}",
-                        )
-                    }
-                }
-                runOnUiThread {
-                    if (!wasCancelled && items.isNotEmpty()) {
-                        val result = BatchPreviewResult(preset = preset, items = items)
-                        batchPreviewResult = result
-                        activeBatchPreviewPreset = preset
-
-                        // 持久化保存快照到磁盘
-                        val dataList = items.map { item ->
-                            BatchPreviewItemData(
-                                packageName = item.packageName,
-                                label = item.label,
-                                recbg = item.assets.recbg,
-                                recfg = item.assets.recfg,
-                                recNight = item.assets.recNight,
-                                monochromeLight = item.assets.monochromeLight,
-                                monochromeDark = item.assets.monochromeDark,
-                            )
-                        }
-                        BatchPreviewStore.saveSnapshot(filesDir, preset, dataList)
-
-                        currentPage = AppPage.BatchPreview
-                        statusText = "已生成预设「${preset.name}」批量预览并保存快照 (${items.size} 个应用)"
-                    } else if (wasCancelled) {
-                        statusText = "已取消批量预览"
-                    } else {
-                        statusText = "批量预览生成失败"
-                    }
-                }
-            } finally {
-                runOnUiThread {
-                    applyTuningParams(originalParams, rebuildCandidates = true, persist = false, captureUndo = false, refreshPreview = true)
-                    isBusy = false
-                    isGeneratingBatchPreview = false
-                    batchPreviewProgress = null
-                    batchPreviewCancelled = false
-                }
-            }
-        }
-    }
-
-    internal fun openBatchPreviewForPreset(preset: TuningPreset) {
-        activeBatchPreviewPreset = preset
-        if (BatchPreviewStore.hasSnapshot(filesDir, preset.id)) {
-            // P4 交界：快照读取收敛进 pipeline/，显式传 filesDir。
-            val cached = loadBatchPreviewSnapshot(filesDir, preset)
-            if (cached != null) {
-                batchPreviewResult = cached
-                currentPage = AppPage.BatchPreview
-                statusText = "已加载预设「${preset.name}」批量预览快照"
-                return
-            }
-        }
-        presetBatchPreviewConfirmTarget = preset
-    }
-
-    internal fun generateMemoryPreviewAssetsForApp(
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel suspend 显式参数版本，调用点零改动（唯一调用方为批量预览渲染协程）。
+    internal suspend fun generateMemoryPreviewAssetsForApp(
         app: AppEntry,
         pipeline: LocalPipelineConfig,
-    ): PreviewAssets {
-        val icon = app.applicationInfo.loadIcon(packageManager)
-        val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
-        val localSource = buildLocalIconLayers(icon, pipeline, mainViewModel.params.value.backgroundSeparationPercent, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
-        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, pipeline, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode), mainViewModel.params.value.plateRemovalPercent, mainViewModel.params.value.shadowRemovalPercent, mainViewModel.params.value.backgroundSeparationPercent)
-        val localCandidates = localCandidateSet.candidates
-        val defaultChoice = defaultPreviewChoiceForMode(LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode), localCandidateSet.autoChoice)
-            .takeIf { localCandidates.containsKey(it) }
-            ?: localCandidateSet.autoChoice.takeIf { localCandidates.containsKey(it) }
-            ?: PreviewChoice.Original
-        val selections = PreviewSelections.default(defaultChoice)
-        val dummyOutDir = File(cacheDir, "preview_tmp")
-        val session = GenerationSession(
-            packageName = app.packageName,
-            outDir = dummyOutDir,
-            sourceIcon = localSourceIcon,
-            baseRecfg = localSource.recfg,
-            baseRecbg = localSource.recbg,
-            monochromeRaw = localSource.monochrome,
-            candidates = localCandidates,
-            autoLocalChoice = localCandidateSet.autoChoice,
+    ): PreviewAssets =
+        mainViewModel.generateMemoryPreviewAssetsForApp(
+            app = app,
+            pipeline = pipeline,
+            tuning = mainViewModel.params.value,
+            cacheDir = cacheDir,
+            loadIcon = { a -> a.applicationInfo.loadIcon(packageManager) },
+            defaultChoiceForMode = { mode, auto -> defaultPreviewChoiceForMode(mode, auto) },
+            composeAssets = { session, selections -> previewAssetsForSelections(session, selections) },
         )
-        return previewAssetsForSelections(session, selections).preparedForDraw()
-    }
 
-    internal fun applyPresetToSelectedApps(preset: TuningPreset) {
-        val session = activeGenerationSession
-        val batchPackageNames = if (multiSelectedPackageNames.isNotEmpty()) {
-            multiSelectedPackageNames.toList().sorted()
-        } else {
-            listOfNotNull(session?.packageName)
-        }
-        if (batchPackageNames.isEmpty()) {
-            statusText = "先在应用页多选或选中一个应用"
-            return
-        }
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        requestServiceConfirm(
-            title = "确认套用预设",
-            message = "将按预设「${preset.name}」批量处理 ${batchPackageNames.size} 个应用，会覆盖现有图标并写入对应分区，确认继续？",
-            confirmLabel = "确认套用",
-        ) {
-            executeApplyPresetToSelectedApps(preset, batchPackageNames)
-        }
-        return
-    }
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun applyPresetToSelectedApps(preset: TuningPreset) =
+        mainViewModel.applyPresetToSelectedApps(
+            preset = preset,
+            onRequestConfirm = { title, message, confirmLabel, onConfirm ->
+                requestServiceConfirm(title, message, confirmLabel, onConfirm)
+            },
+            onExecute = { p, pkgs -> executeApplyPresetToSelectedApps(p, pkgs) },
+        )
 
-    internal fun executeApplyPresetToSelectedApps(preset: TuningPreset, batchPackageNames: List<String>) {
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        isBusy = true
-        previewChoiceMode = null
-        batchApplyProgress = BatchApplyProgress(
-            title = "预设批量应用",
-            completed = 0,
-            total = batchPackageNames.size,
-            currentLabel = "准备处理 ${batchPackageNames.size} 个 APK",
-            failures = 0,
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun executeApplyPresetToSelectedApps(preset: TuningPreset, batchPackageNames: List<String>) =
+        mainViewModel.executeApplyPresetToSelectedApps(
+            preset = preset,
+            batchPackageNames = batchPackageNames,
+            beforeParams = currentTuningParams(),
+            store = presetStore,
+            selectedAtStart = selectedPackageName,
+            apps = apps.toList(),
+            onApplyPresetParams = { merged -> applyTuningParams(merged, rebuildCandidates = false) },
+            generatePackage = { app -> generateArtPlusPackage(app, useGpt = false) },
+            persistGenerated = { combined ->
+                updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), combined)
+            },
+            onSaveUiState = ::saveUiState,
         )
-        statusText = "预设「${preset.name}」批量处理中: 0/${batchPackageNames.size}"
-        val beforeParams = currentTuningParams()
-        applyTuningParams(
-            TuningParams.fromParamMap(preset.params.toParamMap(), beforeParams),
-            rebuildCandidates = false,
-        )
-        presetStore.activePresetId = preset.id
-        activePresetId = preset.id
-        val outputUri = outputTreeUri
-        val selectedAtStart = selectedPackageName
-        startUiFriendlyThread("ArtPlusPresetBatch") {
-            val successes = mutableListOf<String>()
-            val failures = mutableListOf<String>()
-            var selectedResult: GenerationResult? = null
-            try {
-                batchPackageNames.forEachIndexed { index, packageName ->
-                    val app = apps.firstOrNull { it.packageName == packageName }
-                    if (app == null) {
-                        failures += "$packageName: 应用不存在"
-                        updateBatchApplyProgress(
-                            completed = index + 1,
-                            total = batchPackageNames.size,
-                            currentLabel = "跳过: $packageName",
-                            failures = failures.size,
-                        )
-                        return@forEachIndexed
-                    }
-                    updateBatchApplyProgress(
-                        completed = index,
-                        total = batchPackageNames.size,
-                        currentLabel = "处理中: ${app.label} ($packageName)",
-                        failures = failures.size,
-                    )
-                    try {
-                        val result = generateArtPlusPackage(app, useGpt = false)
-                        if (false && outputUri != null) {
-                            exportToTree(contentResolver, outputUri, result.outDir)
-                        }
-                        successes += packageName
-                        if (packageName == selectedAtStart) {
-                            selectedResult = result
-                        }
-                    } catch (error: Throwable) {
-                        failures += "$packageName: ${error.message ?: error.javaClass.simpleName}"
-                    }
-                    updateBatchApplyProgress(
-                        completed = index + 1,
-                        total = batchPackageNames.size,
-                        currentLabel = "已完成: ${app.label} ($packageName)",
-                        failures = failures.size,
-                    )
-                }
-                runOnUiThread {
-                    if (successes.isNotEmpty()) {
-                        generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames + successes)
-                        multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
-                    }
-                    val result = selectedResult
-                    if (result != null && selectedPackageName == selectedAtStart) {
-                        activeGenerationSession = result.session
-                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
-                        previewChoiceMode = null
-                        previewPackageName = result.session.packageName
-                        previewDirPath = result.outDir.absolutePath
-                        previewVersion += 1
-                        saveUiState()
-                    }
-                    statusText = when {
-                        failures.isEmpty() -> "预设「${preset.name}」批量完成: ${successes.size}/${batchPackageNames.size}"
-                        successes.isEmpty() -> "预设批量失败: ${failures.firstOrNull().orEmpty()}"
-                        else -> "预设批量完成 ${successes.size} 个，失败 ${failures.size} 个：${failures.firstOrNull().orEmpty()}"
-                    }
-                }
-            } finally {
-                runOnUiThread {
-                    isBusy = false
-                    isGptPreviewLoading = false
-                    isGeneratingGptCandidate = false
-                    isGeneratingRmbgCandidate = false
-                    rmbgCandidatePackageName = null
-                    rmbgCandidateMode = null
-                    rmbgCandidateStatusText = ""
-                    batchApplyProgress = null
-                }
-            }
-        }
-    }
 
     /** 在 APK 选择页多选态下套用当前预设/当前调参批量生成（本地）。 */
-    internal fun applyCurrentPresetBatch() {
-        val preset = activePresetId?.let { presetStore.get(it) }
-        if (preset != null) {
-            applyPresetToSelectedApps(preset)
-            return
-        }
-        // 未选择任何预设：直接按当前调参批量生成
-        val batchPackageNames = multiSelectedPackageNames.toList().sorted()
-        if (batchPackageNames.isEmpty()) {
-            statusText = "先在应用页多选要批量处理的应用"
-            return
-        }
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        requestServiceConfirm(
-            title = "确认套用预设",
-            message = "将按当前调参批量处理 ${batchPackageNames.size} 个应用，会覆盖现有图标并写入对应分区，确认继续？",
-            confirmLabel = "确认套用",
-        ) {
-            executeApplyCurrentBatch(batchPackageNames)
-        }
-        return
-    }
-
-    internal fun executeApplyCurrentBatch(batchPackageNames: List<String>) {
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        isBusy = true
-        previewChoiceMode = null
-        batchApplyProgress = BatchApplyProgress(
-            title = "批量生成",
-            completed = 0,
-            total = batchPackageNames.size,
-            currentLabel = "准备处理 ${batchPackageNames.size} 个 APK",
-            failures = 0,
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun applyCurrentPresetBatch() =
+        mainViewModel.applyCurrentPresetBatch(
+            store = presetStore,
+            onRequestConfirm = { title, message, confirmLabel, onConfirm ->
+                requestServiceConfirm(title, message, confirmLabel, onConfirm)
+            },
+            onExecutePreset = { p, pkgs -> executeApplyPresetToSelectedApps(p, pkgs) },
+            onExecuteCurrent = { pkgs -> executeApplyCurrentBatch(pkgs) },
         )
-        statusText = "按当前调参批量处理中: 0/${batchPackageNames.size}"
-        val outputUri = outputTreeUri
-        val selectedAtStart = selectedPackageName
-        startUiFriendlyThread("ArtPlusCurrentBatch") {
-            val successes = mutableListOf<String>()
-            val failures = mutableListOf<String>()
-            var selectedResult: GenerationResult? = null
-            try {
-                batchPackageNames.forEachIndexed { index, packageName ->
-                    val app = apps.firstOrNull { it.packageName == packageName }
-                    if (app == null) {
-                        failures += "$packageName: 应用不存在"
-                        updateBatchApplyProgress(
-                            completed = index + 1,
-                            total = batchPackageNames.size,
-                            currentLabel = "跳过: $packageName",
-                            failures = failures.size,
-                        )
-                        return@forEachIndexed
-                    }
-                    updateBatchApplyProgress(
-                        completed = index,
-                        total = batchPackageNames.size,
-                        currentLabel = "处理中: ${app.label} ($packageName)",
-                        failures = failures.size,
-                    )
-                    try {
-                        val result = generateArtPlusPackage(app, useGpt = false)
-                        if (false && outputUri != null) {
-                            exportToTree(contentResolver, outputUri, result.outDir)
-                        }
-                        successes += packageName
-                        if (packageName == selectedAtStart) {
-                            selectedResult = result
-                        }
-                    } catch (error: Throwable) {
-                        failures += "$packageName: ${error.message ?: error.javaClass.simpleName}"
-                    }
-                    updateBatchApplyProgress(
-                        completed = index + 1,
-                        total = batchPackageNames.size,
-                        currentLabel = "已完成: ${app.label} ($packageName)",
-                        failures = failures.size,
-                    )
-                }
-                runOnUiThread {
-                    if (successes.isNotEmpty()) {
-                        generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames + successes)
-                        multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
-                    }
-                    val result = selectedResult
-                    if (result != null && selectedPackageName == selectedAtStart) {
-                        activeGenerationSession = result.session
-                        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
-                        previewChoiceMode = null
-                        previewPackageName = result.session.packageName
-                        previewDirPath = result.outDir.absolutePath
-                        previewVersion += 1
-                        saveUiState()
-                    }
-                    statusText = when {
-                        failures.isEmpty() -> "按当前调参批量完成: ${successes.size}/${batchPackageNames.size}"
-                        successes.isEmpty() -> "批量失败: ${failures.firstOrNull().orEmpty()}"
-                        else -> "批量完成 ${successes.size} 个，失败 ${failures.size} 个：${failures.firstOrNull().orEmpty()}"
-                    }
-                }
-            } finally {
-                runOnUiThread {
-                    isBusy = false
-                    isGptPreviewLoading = false
-                    isGeneratingGptCandidate = false
-                    isGeneratingRmbgCandidate = false
-                    rmbgCandidatePackageName = null
-                    rmbgCandidateMode = null
-                    rmbgCandidateStatusText = ""
-                    batchApplyProgress = null
-                }
-            }
-        }
-    }
+
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun executeApplyCurrentBatch(batchPackageNames: List<String>) =
+        mainViewModel.executeApplyCurrentBatch(
+            batchPackageNames = batchPackageNames,
+            selectedAtStart = selectedPackageName,
+            apps = apps.toList(),
+            generatePackage = { app -> generateArtPlusPackage(app, useGpt = false) },
+            persistGenerated = { combined ->
+                updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), combined)
+            },
+            onSaveUiState = ::saveUiState,
+        )
 
 
     // 重构期间保留：委托到 ui/pages/presets/PresetCards.kt 显式参数版本，调用点零改动。
@@ -3736,128 +3432,47 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    internal fun addLiquidGlassToSelectedGenerated() {
-        val entry = apps.firstOrNull { it.packageName == selectedPackageName }
-        if (entry == null) {
-            statusText = "先选择一个应用"
-            return
-        }
-        if (isBusy) {
-            return
-        }
-        isBusy = true
-        statusText = "正在添加光影: ${entry.packageName}"
-        startUiFriendlyThread("ArtPlusAddLiquidGlass") {
-            try {
-                val packageDir = existingGeneratedPackageDir(entry.packageName)
-                applyLiquidGlassToGeneratedPackage(packageDir)
-                installLiquidGlassFilesWithRoot(packageDir, entry.packageName)
-                runOnUiThread {
-                    generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, entry.packageName)
-                    activeGenerationSession = buildGeneratedPackageSession(entry.packageName, packageDir)
-                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
-                    previewChoiceMode = null
-                    previewPackageName = entry.packageName
-                    previewDirPath = packageDir.absolutePath
-                    previewVersion += 1
-                    saveUiState()
-                    statusText = "已添加光影，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}"
-                }
-            } catch (error: Exception) {
-                status("添加光影失败: ${error.message ?: error.javaClass.simpleName}")
-            } finally {
-                runOnUiThread {
-                    isBusy = false
-                }
-            }
-        }
-    }
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun addLiquidGlassToSelectedGenerated() =
+        mainViewModel.addLiquidGlassToSelectedGenerated(
+            apps = apps.toList(),
+            resolvePackageDir = ::existingGeneratedPackageDir,
+            applyGlass = ::applyLiquidGlassToGeneratedPackage,
+            installGlass = ::installLiquidGlassFilesWithRoot,
+            buildSession = ::buildGeneratedPackageSession,
+            persistOne = { current, pkg ->
+                markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), current, pkg)
+            },
+            onSaveUiState = ::saveUiState,
+        )
 
-    internal fun toggleMultiSelectedPackage(packageName: String) {
-        multiSelectedPackageNames = if (packageName in multiSelectedPackageNames) {
-            multiSelectedPackageNames - packageName
-        } else {
-            multiSelectedPackageNames + packageName
-        }
-    }
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun toggleMultiSelectedPackage(packageName: String) =
+        mainViewModel.toggleMultiSelectedPackage(packageName = packageName, current = multiSelectedPackageNames)
 
-    internal fun addLiquidGlassToMultiSelectedGenerated() {
-        val packageNames = multiSelectedPackageNames.toList().sorted()
-        if (packageNames.isEmpty()) {
-            statusText = "先选择要添加光影的应用"
-            return
-        }
-        if (isBusy) {
-            return
-        }
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun addLiquidGlassToMultiSelectedGenerated() =
+        mainViewModel.addLiquidGlassToMultiSelectedGenerated(
+            onRequestConfirm = { title, message, confirmLabel, onConfirm ->
+                requestServiceConfirm(title, message, confirmLabel, onConfirm)
+            },
+            onExecute = { pkgs -> executeAddLiquidGlassToMultiSelectedGenerated(pkgs) },
+        )
 
-        requestServiceConfirm(
-            title = "确认添加光影",
-            message = "将为 ${packageNames.size} 个已选项添加光影并写入 data 分区，耗时较长且会覆盖现有图标，确认继续？",
-            confirmLabel = "确认添加",
-        ) {
-            executeAddLiquidGlassToMultiSelectedGenerated(packageNames)
-        }
-        return
-    }
-
-    internal fun executeAddLiquidGlassToMultiSelectedGenerated(packageNames: List<String>) {
-        if (isBusy) {
-            return
-        }
-        isBusy = true
-        statusText = "正在批量添加光影: ${packageNames.size} 个"
-        val selectedAtStart = selectedPackageName
-        startUiFriendlyThread("ArtPlusBatchAddLiquidGlass") {
-            val successes = mutableListOf<String>()
-            val failures = mutableListOf<String>()
-            var selectedSession: GenerationSession? = null
-            var selectedDirPath: String? = null
-
-            packageNames.forEachIndexed { index, packageName ->
-                status("添加光影中 ${index + 1}/${packageNames.size}: $packageName")
-                try {
-                    val packageDir = existingGeneratedPackageDir(packageName)
-                    applyLiquidGlassToGeneratedPackage(packageDir)
-                    installLiquidGlassFilesWithRoot(packageDir, packageName)
-                    successes += packageName
-                    if (packageName == selectedAtStart) {
-                        selectedSession = buildGeneratedPackageSession(packageName, packageDir)
-                        selectedDirPath = packageDir.absolutePath
-                    }
-                } catch (error: Exception) {
-                    failures += "$packageName: ${error.message ?: error.javaClass.simpleName}"
-                }
-            }
-
-            runOnUiThread {
-                if (successes.isNotEmpty()) {
-                    generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames + successes)
-                    multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
-                }
-                if (
-                    selectedAtStart != null &&
-                    selectedPackageName == selectedAtStart &&
-                    selectedSession != null &&
-                    selectedDirPath != null
-                ) {
-                    activeGenerationSession = selectedSession
-                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
-                    previewChoiceMode = null
-                    previewPackageName = selectedAtStart
-                    previewDirPath = selectedDirPath
-                    previewVersion += 1
-                    saveUiState()
-                }
-                statusText = when {
-                    failures.isEmpty() -> "已批量添加光影 ${successes.size} 个，未刷新，请手动点首页左上角刷新图标"
-                    successes.isEmpty() -> "批量添加光影失败: ${failures.first()}"
-                    else -> "已添加光影 ${successes.size} 个，失败 ${failures.size} 个: ${failures.first()}"
-                }
-                isBusy = false
-            }
-        }
-    }
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
+    internal fun executeAddLiquidGlassToMultiSelectedGenerated(packageNames: List<String>) =
+        mainViewModel.executeAddLiquidGlassToMultiSelectedGenerated(
+            packageNames = packageNames,
+            selectedAtStart = selectedPackageName,
+            resolvePackageDir = ::existingGeneratedPackageDir,
+            applyGlass = ::applyLiquidGlassToGeneratedPackage,
+            installGlass = ::installLiquidGlassFilesWithRoot,
+            buildSession = ::buildGeneratedPackageSession,
+            persistMany = { combined ->
+                updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), combined)
+            },
+            onSaveUiState = ::saveUiState,
+        )
 
     // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
     internal fun existingGeneratedPackageDir(packageName: String): File =
@@ -4598,23 +4213,19 @@ class MainActivity : ComponentActivity() {
             onLaunch = { name, block -> startUiFriendlyThread(name, block) },
         )
 
+    // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动（标题 "全部应用" 内聚进 wrapper）。
     internal fun updateBatchApplyProgress(
         completed: Int,
         total: Int,
         currentLabel: String,
         failures: Int,
-    ) {
-        runOnUiThread {
-            batchApplyProgress = BatchApplyProgress(
-                title = "全部应用",
-                completed = completed.coerceIn(0, total.coerceAtLeast(0)),
-                total = total,
-                currentLabel = currentLabel,
-                failures = failures,
-            )
-            statusText = "全部应用处理中: ${completed.coerceAtMost(total)}/$total"
-        }
-    }
+    ) = mainViewModel.updateBatchApplyProgress(
+        completed = completed,
+        total = total,
+        currentLabel = currentLabel,
+        failures = failures,
+        title = "全部应用",
+    )
 
     // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本，调用点零改动。
     internal fun generatePackageForPreviewChoice(app: AppEntry, choice: PreviewChoice): GenerationResult =
