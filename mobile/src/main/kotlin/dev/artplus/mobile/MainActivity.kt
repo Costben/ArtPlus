@@ -565,17 +565,22 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         title = "ArtPlus Mobile"
-        loadGptSettings()
-        loadTuningParams()
-        initTuningHistory()
-        loadRmbgSettings()
-        generatedPackageNames = loadGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE))
-        generatedScanFailed = false
-        isScanningGeneratedPackages = false
-        loadUiState()
-        loadPresetState()
-        startDebugHttpServerIfNeeded()
-        refreshPermissionState()
+        // Slice 3.3：初始化链下沉至 state/AppLoadOps.kt，顺序与条件不变；Activity 只留装配。
+        mainViewModel.onCreatePreContent(
+            onLoadGptSettings = ::loadGptSettings,
+            onLoadTuningParams = ::loadTuningParams,
+            onInitTuningHistory = ::initTuningHistory,
+            onLoadRmbgSettings = ::loadRmbgSettings,
+            onLoadGeneratedCache = {
+                generatedPackageNames = loadGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE))
+                generatedScanFailed = false
+                isScanningGeneratedPackages = false
+            },
+            onLoadUiState = ::loadUiState,
+            onLoadPresetState = ::loadPresetState,
+            onStartDebugServer = ::startDebugHttpServerIfNeeded,
+            onRefreshPermissions = ::refreshPermissionState,
+        )
 
         setContent {
             val darkMode = isSystemInDarkTheme()
@@ -604,59 +609,68 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        requestDeclaredPermissions()
-        if (!isDebugGenerateIntent(intent)) {
-            requestSpecialPermissionsOnce()
-        }
-        loadApps()
-        handleDebugGenerateIntent(intent)
+        mainViewModel.onCreatePostContent(
+            isDebugIntent = isDebugGenerateIntent(intent),
+            onRequestDeclaredPermissions = ::requestDeclaredPermissions,
+            onRequestSpecialPermissionsOnce = ::requestSpecialPermissionsOnce,
+            onLoadApps = { loadApps() },
+            onHandleDebugIntent = { handleDebugGenerateIntent(intent) },
+        )
     }
 
     override fun onDestroy() {
-        previewOutputJob?.cancel()
-        previewWorkerScope.cancel()
-        previewWorkerDispatcher.close()
-        debugHttpServer?.stop()
-        debugHttpServer = null
-        runCatching { rmbgRuntime?.close() }
-        rmbgRuntime = null
+        // Slice 3.3：清理顺序下沉至 state/AppLoadOps.kt，super.onDestroy 留装配。
+        mainViewModel.onDestroyCleanup(
+            onCancelPreviewJob = { previewOutputJob?.cancel() },
+            onCancelWorkerScope = { previewWorkerScope.cancel() },
+            onCloseWorkerDispatcher = { previewWorkerDispatcher.close() },
+            onStopDebugServer = {
+                debugHttpServer?.stop()
+                debugHttpServer = null
+            },
+            onCloseRmbgRuntime = {
+                runCatching { rmbgRuntime?.close() }
+                rmbgRuntime = null
+            },
+        )
         super.onDestroy()
     }
 
     override fun onPause() {
-        saveUiState()
+        // Slice 3.3：持久化下沉至 state/AppLoadOps.kt，super 留装配。
+        mainViewModel.onPausePersist(::saveUiState)
         super.onPause()
     }
 
     override fun onResume() {
         super.onResume()
+        // Slice 3.3：权限刷新与条件重载下沉至 state/AppLoadOps.kt，顺序与条件不变。
         val previousPackageListPermission = packageListPermissionGranted
         val previousUsageAccess = usageAccessGranted
-        refreshPermissionState()
-        if (
-            didRequestAppLoad &&
-            (apps.isEmpty() ||
-                previousPackageListPermission != packageListPermissionGranted ||
-                previousUsageAccess != usageAccessGranted)
-        ) {
-            loadApps()
-        }
+        mainViewModel.onResumeRefresh(
+            didRequestAppLoad = didRequestAppLoad,
+            appsEmpty = apps.isEmpty(),
+            previousQueryGranted = previousPackageListPermission,
+            previousUsageGranted = previousUsageAccess,
+            onRefreshPermissions = ::refreshPermissionState,
+            currentQueryGranted = { packageListPermissionGranted },
+            currentUsageGranted = { usageAccessGranted },
+            onLoadApps = { loadApps() },
+        )
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        setIntent(intent)
-        handleDebugGenerateIntent(intent)
+        // Slice 3.3：debug 入口下沉至 state/AppLoadOps.kt，顺序不变。
+        mainViewModel.onNewIntentDebug(
+            onSetIntent = { setIntent(intent) },
+            onHandleDebugIntent = { handleDebugGenerateIntent(intent) },
+        )
     }
 
+    // 重构期间保留：委托到 state/AppLoadOps.kt MainViewModel viewModelScope 版本，调用点零改动。
     internal fun startUiFriendlyThread(name: String, block: () -> Unit) {
-        Thread({
-            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-            block()
-        }, name).apply {
-            priority = Thread.MIN_PRIORITY
-            start()
-        }
+        mainViewModel.launchUiFriendly(name, block)
     }
 
 
@@ -2173,15 +2187,13 @@ class MainActivity : ComponentActivity() {
         )
 
 
-    // 重构期间保留：委托到 ui/pages/picker/PickerIo.kt 显式参数版本，调用点零改动。
+    // 重构期间保留：委托到 state/AppLoadOps.kt MainViewModel 显式参数版本，调用点零改动。
     internal suspend fun loadCachedAppIcon(entry: AppEntry): Bitmap? =
-        pickerLoadCachedAppIcon(
+        mainViewModel.loadCachedAppIconOp(
             entry = entry,
-            getCached = { key -> synchronized(appIconCache) { appIconCache.get(key) } },
-            putCached = { key, value -> synchronized(appIconCache) { appIconCache.put(key, value) } },
-            loadBitmap = { e ->
-                runCatching { loadAppIconBitmap(e, packageManager, ICON_CACHE_SIZE) }.getOrNull()
-            },
+            iconCache = appIconCache,
+            pm = packageManager,
+            cacheSize = ICON_CACHE_SIZE,
         )
 
 
@@ -2279,56 +2291,30 @@ class MainActivity : ComponentActivity() {
 
 
 
-    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    // 重构期间保留：委托到 state/AppLoadOps.kt MainViewModel 显式参数版本，调用点零改动。
     internal fun loadApps(refreshGenerated: Boolean = false) =
-        pickerLoadApps(
+        mainViewModel.requestAppLoad(
             refreshGenerated = refreshGenerated,
+            pm = packageManager,
+            iconCache = appIconCache,
+            cacheSize = ICON_CACHE_SIZE,
+            preloadCount = PRELOAD_ICON_COUNT,
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
             markLoad = { didRequestAppLoad = true },
-            queryApps = { loadApps(packageManager) },
-            preloadIcons = { entries ->
-                preloadAppIcons(appIconCache, packageManager, entries, ICON_CACHE_SIZE, PRELOAD_ICON_COUNT)
-            },
-            postOnUi = { result ->
-                runOnUiThread {
-                    refreshPermissionState()
-                    androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
-                        apps.clear()
-                        apps.addAll(result.entries)
-                    }
-                    statusText = when {
-                        result.entries.isEmpty() -> "没有读取到应用。请确认已允许读取应用列表。"
-                        !packageListPermissionGranted -> "读取到 ${apps.size} 个应用，但应用列表权限状态异常。"
-                        else -> "共 ${apps.size} 个应用，其中 ${result.launchablePackages.size} 个有启动器入口。"
-                    }
-                    if (refreshGenerated) {
-                        refreshGeneratedPackages(result.entries)
-                    }
+            onRefreshPermissions = { refreshPermissionState() },
+            applyEntries = { loaded ->
+                androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                    apps.clear()
+                    apps.addAll(loaded)
                 }
             },
         )
 
-    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    // 重构期间保留：委托到 state/AppLoadOps.kt MainViewModel 显式参数版本，调用点零改动。
     internal fun refreshGeneratedPackages(entries: List<AppEntry> = apps.toList()) =
-        pickerRefreshGeneratedPackages(
+        mainViewModel.refreshGeneratedPackagesAsync(
             entries = entries,
-            onEmpty = {
-                generatedScanFailed = false
-                isScanningGeneratedPackages = false
-                statusText = "应用列表为空，保留已生成缓存"
-            },
-            onScanningChange = { isScanningGeneratedPackages = it },
-            onScanFailed = { generatedScanFailed = it },
-            scan = ::scanRootGeneratedPackages,
-            postOnUi = { block -> runOnUiThread(Runnable { block() }) },
-            onSuccess = { generated ->
-                generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generated)
-                generatedScanFailed = false
-                statusText = "已刷新生成状态: ${generated.size} 个"
-            },
-            onFailure = {
-                generatedScanFailed = true
-                statusText = "生成状态刷新失败，保留上次缓存: ${it.message ?: it.javaClass.simpleName}"
-            },
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
         )
 
 
@@ -2414,27 +2400,11 @@ class MainActivity : ComponentActivity() {
             outputUri = outputTreeUri,
         )
 
-    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    // 重构期间保留：委托到 state/AppLoadOps.kt MainViewModel 显式参数版本，调用点零改动。
     internal fun refreshArtPlusIcons() =
-        pickerRefreshArtPlusIcons(
-            isBusy = isBusy,
-            isRefreshing = isRefreshingArtPlusIcons,
-            onRefreshingChange = { isRefreshingArtPlusIcons = it },
-            onStatusText = { statusText = it },
-            blockingRefresh = ::refreshArtPlusIconsBlocking,
+        mainViewModel.refreshArtPlusIconsAsync(
             contentResolver = contentResolver,
             apkPath = applicationInfo.sourceDir,
-            postOnUi = { block -> runOnUiThread(Runnable { block() }) },
-            onSuccess = { summary ->
-                statusText = if (summary.isBlank()) {
-                    "已刷新 ART+ 图标"
-                } else {
-                    "已刷新 ART+ 图标: $summary"
-                }
-            },
-            onFailure = { error ->
-                statusText = "刷新 ART+ 图标失败: ${error.message ?: error.javaClass.simpleName}"
-            },
         )
 
     // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
