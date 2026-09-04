@@ -8716,376 +8716,138 @@ class MainActivity : ComponentActivity() {
             liquidGlassRadius = mainViewModel.params.value.liquidGlassRadius,
         )
 
-    internal fun candidateOrFallback(
-        session: GenerationSession,
-        choice: PreviewChoice,
-    ): IconCandidate =
-        candidateForChoice(session, choice)
-            ?: session.candidates[PreviewChoice.Full]
-            ?: session.candidates[PreviewChoice.Plate]
-            ?: session.candidates.getValue(PreviewChoice.Original)
-
-    internal fun normalizePreviewSelections(
-        session: GenerationSession,
-        selections: PreviewSelections,
-    ): PreviewSelections {
-        val defaultChoice = listOf(
-            session.autoLocalChoice,
-            PreviewChoice.Full,
-            PreviewChoice.Original,
-            PreviewChoice.Gpt,
-            PreviewChoice.Rmbg,
-        ).firstOrNull { candidateForChoice(session, it) != null } ?: PreviewChoice.Original
-
-        fun normalize(choice: PreviewChoice): PreviewChoice {
-            if (candidateForChoice(session, choice) != null) {
-                return choice
-            }
-            val directFallback = when (choice) {
-                PreviewChoice.GptComposedBackground -> PreviewChoice.Gpt
-                PreviewChoice.RmbgComposedBackground -> PreviewChoice.Rmbg
-                else -> null
-            }
-            return directFallback?.takeIf { candidateForChoice(session, it) != null } ?: defaultChoice
-        }
-
-        return PreviewSelections(
-            normalLight = normalize(selections.normalLight),
-            normalDark = normalize(selections.normalDark),
-            monochromeLight = normalize(selections.monochromeLight),
-            monochromeDark = normalize(selections.monochromeDark),
-        )
-    }
-
-    internal fun candidateForChoice(session: GenerationSession, choice: PreviewChoice): IconCandidate? =
-        when (choice) {
-            PreviewChoice.RmbgComposedBackground -> candidateWithComposedBackground(
-                session = session,
-                foregroundChoice = PreviewChoice.Rmbg,
-            )
-            PreviewChoice.GptComposedBackground -> candidateWithComposedBackground(
-                session = session,
-                foregroundChoice = PreviewChoice.Gpt,
-            )
-            else -> session.candidates[choice]
-        }
-
-    internal fun candidateWithComposedBackground(
-        session: GenerationSession,
-        foregroundChoice: PreviewChoice,
-    ): IconCandidate? {
-        val foreground = session.candidates[foregroundChoice] ?: return null
-        val background = session.candidates[PreviewChoice.ComposedBackground]?.recbg ?: return null
-        return foreground.copy(
-            recbg = background,
-            customFinalBitmap = null,
-        )
-    }
-
+    // 重构期间保留：委托到 imaging/PreviewComposer.kt 显式参数版本，调用点零改动。
     internal fun effectiveChoiceForPreviewRow(
         mode: PreviewMode,
         rowChoice: PreviewChoice,
         session: GenerationSession,
     ): PreviewChoice {
-        if (rowChoice != PreviewChoice.ComposedBackground) {
-            return rowChoice
-        }
-        val currentChoice = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).choiceFor(mode)
-        val target = when (currentChoice) {
-            PreviewChoice.Rmbg,
-            PreviewChoice.RmbgComposedBackground -> PreviewChoice.RmbgComposedBackground
-            PreviewChoice.Gpt,
-            PreviewChoice.GptComposedBackground -> PreviewChoice.GptComposedBackground
-            else -> PreviewChoice.ComposedBackground
-        }
-        return if (target == PreviewChoice.ComposedBackground || candidateForChoice(session, target) != null) {
-            target
-        } else {
-            PreviewChoice.ComposedBackground
-        }
-    }
-
-    internal fun candidateWithCustomOverrides(
-        session: GenerationSession,
-        mode: PreviewMode,
-        choice: PreviewChoice,
-    ): IconCandidate {
-        val base = candidateOrFallback(session, choice)
-        val customForeground = session.customForegrounds[mode]
-        val customBackground = session.customBackgrounds[mode]
-        if (customForeground == null && customBackground == null) {
-            return base
-        }
-        return base.copy(
-            recfgRaw = customForeground ?: base.recfgRaw,
-            recbg = customBackground ?: base.recbg,
-            monochromeRaw = when {
-                customForeground != null -> customForeground
-                else -> base.monochromeRaw
-            },
-            preserveGeometry = if (customForeground != null) true else base.preserveGeometry,
-            customFinalBitmap = null,
-            rmbgSourceRaw = if (customForeground != null) null else base.rmbgSourceRaw,
-            rmbgAlphaRaw = if (customForeground != null) null else base.rmbgAlphaRaw,
-            isLocal = customForeground == null && base.isLocal,
-            applyLocalEdgePolish = customForeground == null && base.applyLocalEdgePolish,
+        val params = mainViewModel.params.value
+        return effectiveChoiceForPreviewRow(
+            mode = mode,
+            rowChoice = rowChoice,
+            session = session,
+            previewNormalLight = params.previewNormalLight,
+            previewNormalDark = params.previewNormalDark,
+            previewMonochromeLight = params.previewMonochromeLight,
+            previewMonochromeDark = params.previewMonochromeDark,
         )
     }
 
+    // 重构期间保留：委托到 imaging/PreviewComposer.kt 显式参数版本，调用点零改动。
     internal fun monochromeForCandidate(candidate: IconCandidate, invertLuma: Boolean = false): Bitmap {
-        if (candidate.monochromeFromDefaultSubject) {
-            return simpleMonochromeAlphaFromDefaultSubject(
-                renderCandidateBitmap(candidate.recfgRaw),
-                invertLuma = invertLuma,
-            )
-        }
-        val foreground = renderCandidateForegroundBase(candidate)
-        val rmbgSource = rmbgTunedForegroundRaw(candidate)?.let { renderCandidateBitmap(it) }
-        val nativeSource = candidate.monochromeRaw?.let { renderCandidateBitmap(it) }
-        val monochrome = when {
-            rmbgSource != null -> {
-                monochromeAlpha(rmbgSource, invertLuma = invertLuma)
-            }
-            hasForegroundTonalRange(foreground) -> {
-                monochromeAlpha(foreground, invertLuma = invertLuma)
-            }
-            nativeSource != null &&
-                candidate.monochromeIsNative &&
-                isUsableNativeMonochrome(nativeSource, foreground) -> {
-                cleanNativeMonochrome(nativeSource)
-            }
-            nativeSource != null && hasForegroundTonalRange(nativeSource) -> {
-                monochromeAlpha(nativeSource, invertLuma = invertLuma)
-            }
-            nativeSource != null && !candidate.monochromeIsNative -> {
-                monochromeAlpha(nativeSource, invertLuma = invertLuma)
-            }
-            else -> {
-                monochromeAlpha(foreground, invertLuma = invertLuma)
-            }
-        }
-        return trimMonochromeEdge(monochrome)
+        val params = mainViewModel.params.value
+        return monochromeForCandidate(
+            candidate = candidate,
+            invertLuma = invertLuma,
+            edgePolishPercent = params.edgePolishPercent,
+            foregroundSubjectPercent = params.foregroundSubjectPercent,
+            rmbgTunedForeground = ::rmbgTunedForegroundRaw,
+        )
     }
 
+    // 重构期间保留：委托到 imaging/PreviewComposer.kt 显式参数版本，调用点零改动。
     internal fun scaleMonochromeForTheme(source: Bitmap): Bitmap =
-        scaleBitmapAroundAlphaCenter(source, mainViewModel.params.value.monochromeThemeScale)
+        scaleMonochromeForTheme(
+            source = source,
+            monochromeThemeScale = mainViewModel.params.value.monochromeThemeScale,
+        )
 
 
 
+    // 重构期间保留：委托到 imaging/PreviewComposer.kt 显式参数版本，调用点零改动。
     internal fun previewAssetsForSelections(
         session: GenerationSession,
         selections: PreviewSelections,
     ): PreviewAssets {
-        val light = candidateWithCustomOverrides(session, PreviewMode.NormalLight, selections.normalLight)
-        val lightRecfg = renderCandidateForeground(light)
-        val lightRecbg = liquidGlassBackgroundForSize(light.recbg, SIZE_1X1, SIZE_1X1)
-
-        val night = candidateWithCustomOverrides(session, PreviewMode.NormalDark, selections.normalDark)
-        val nightPreview = run {
-            val nightRecfg = renderCandidateForeground(night)
-            val nightRecbg = liquidGlassBackgroundForSize(night.recbg, SIZE_1X1, SIZE_1X1)
-            normalDarkForeground(nightRecfg, nightRecbg, mainViewModel.params.value.nightSubjectLightBackgroundEnabled)
-        }
-
-        val monochromeLight = monochromeForCandidate(
-            candidateWithCustomOverrides(session, PreviewMode.MonochromeLight, selections.monochromeLight),
-            invertLuma = true,
-        )
-        val monochromeDark = monochromeForCandidate(
-            candidateWithCustomOverrides(session, PreviewMode.MonochromeDark, selections.monochromeDark),
-            invertLuma = false,
-        )
-
-        return PreviewAssets(
-            recbg = lightRecbg,
-            recfg = lightRecfg,
-            recNight = nightPreview,
-            monochromeLight = monochromeLight,
-            monochromeDark = monochromeDark,
+        val params = mainViewModel.params.value
+        return previewAssetsForSelections(
+            session = session,
+            selections = selections,
+            edgePolishPercent = params.edgePolishPercent,
+            foregroundSubjectPercent = params.foregroundSubjectPercent,
+            rmbgTunedForeground = ::rmbgTunedForegroundRaw,
+            liquidGlassEnabled = params.liquidGlassEnabled,
+            liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+            liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+            liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+            liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+            liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+            liquidGlassRadius = params.liquidGlassRadius,
+            liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+            liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+            liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+            liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+            liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+            foregroundShadowLevel = params.foregroundShadowLevel,
+            nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
         )
     }
 
+    // 重构期间保留：委托到 imaging/PreviewComposer.kt 显式参数版本，调用点零改动。
     internal fun previewAssetsForCandidate(candidate: IconCandidate, mode: PreviewMode? = null): PreviewAssets {
-        val customFinal = candidate.customFinalBitmap
-        if (customFinal != null) {
-            val transparent = solidBitmap(customFinal.width, customFinal.height, AndroidColor.TRANSPARENT)
-            return when (mode) {
-                PreviewMode.NormalLight -> PreviewAssets(
-                    recbg = transparent,
-                    recfg = customFinal,
-                    recNight = null,
-                    monochromeLight = null,
-                    monochromeDark = null,
-                )
-                PreviewMode.NormalDark -> PreviewAssets(
-                    recbg = null,
-                    recfg = null,
-                    recNight = customFinal,
-                    monochromeLight = null,
-                    monochromeDark = null,
-                )
-                PreviewMode.MonochromeLight,
-                PreviewMode.MonochromeDark,
-                null -> PreviewAssets(
-                    recbg = null,
-                    recfg = null,
-                    recNight = null,
-                    monochromeLight = monochromeForCandidate(candidate, invertLuma = true),
-                    monochromeDark = monochromeForCandidate(candidate, invertLuma = false),
-                )
-            }
-        }
-        val recfg = renderCandidateForeground(candidate)
-        val recbg = liquidGlassBackgroundForSize(candidate.recbg, SIZE_1X1, SIZE_1X1)
-        return PreviewAssets(
-            recbg = recbg,
-            recfg = recfg,
-            recNight = normalDarkForeground(recfg, recbg, mainViewModel.params.value.nightSubjectLightBackgroundEnabled),
-            monochromeLight = monochromeForCandidate(candidate, invertLuma = true),
-            monochromeDark = monochromeForCandidate(candidate, invertLuma = false),
+        val params = mainViewModel.params.value
+        return previewAssetsForCandidate(
+            candidate = candidate,
+            mode = mode,
+            edgePolishPercent = params.edgePolishPercent,
+            foregroundSubjectPercent = params.foregroundSubjectPercent,
+            rmbgTunedForeground = ::rmbgTunedForegroundRaw,
+            liquidGlassEnabled = params.liquidGlassEnabled,
+            liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+            liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+            liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+            liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+            liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+            liquidGlassRadius = params.liquidGlassRadius,
+            liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+            liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+            liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+            liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+            liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+            foregroundShadowLevel = params.foregroundShadowLevel,
+            nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
         )
     }
 
+    // 重构期间保留：委托到 imaging/PreviewComposer.kt 显式参数版本，调用点零改动。
     internal fun renderCandidateForegroundBase(candidate: IconCandidate): Bitmap =
-        renderCandidateBitmap(rmbgTunedForegroundRaw(candidate) ?: candidate.recfgRaw).let { bitmap ->
-            if (candidate.isLocal && !candidate.applyLocalEdgePolish) bitmap else polishForegroundEdges(bitmap, mainViewModel.params.value.edgePolishPercent)
-        }
+        renderCandidateForegroundBase(
+            candidate = candidate,
+            edgePolishPercent = mainViewModel.params.value.edgePolishPercent,
+            foregroundSubjectPercent = mainViewModel.params.value.foregroundSubjectPercent,
+            rmbgTunedForeground = ::rmbgTunedForegroundRaw,
+        )
 
-    internal fun renderCandidateForeground(candidate: IconCandidate): Bitmap =
-        foregroundForSize(renderCandidateForegroundBase(candidate), SIZE_1X1, SIZE_1X1)
-
-    internal fun applyForegroundShadow(source: Bitmap): Bitmap {
-        val level = mainViewModel.params.value.foregroundShadowLevel.coerceIn(MIN_FOREGROUND_SHADOW_LEVEL, MAX_FOREGROUND_SHADOW_LEVEL)
-        if (level <= 0) {
-            return source
-        }
-        val params = foregroundShadowParams(level, minOf(source.width, source.height))
-        val shadow = subjectShadowBitmap(source, params)
-        val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
-        Canvas(out).apply {
-            drawColor(AndroidColor.TRANSPARENT)
-            drawBitmap(shadow, params.offsetX.toFloat(), params.offsetY.toFloat(), Paint(Paint.FILTER_BITMAP_FLAG))
-            drawBitmap(source, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
-        }
-        return out
-    }
-
-    internal fun foregroundShadowParams(level: Int, baseSize: Int): ForegroundShadowParams {
-        val ratio = (level.toDouble() / MAX_FOREGROUND_SHADOW_LEVEL.toDouble()).coerceIn(0.0, 1.0)
-        val scale = baseSize.toDouble() / SIZE_1X1.toDouble()
-        return ForegroundShadowParams(
-            alpha = (ratio * FOREGROUND_SHADOW_MAX_ALPHA).roundToInt().coerceIn(0, 255),
-            blurRadius = (ratio * FOREGROUND_SHADOW_MAX_BLUR * scale).toFloat(),
-            offsetX = (ratio * FOREGROUND_SHADOW_MAX_OFFSET_X * scale).roundToInt(),
-            offsetY = (ratio * FOREGROUND_SHADOW_MAX_OFFSET_Y * scale).roundToInt(),
-            spread = (ratio * FOREGROUND_SHADOW_MAX_SPREAD * scale).roundToInt().coerceAtLeast(0),
+    // 重构期间保留：委托到 imaging/PreviewComposer.kt 显式参数版本，调用点零改动。
+    internal fun renderCandidateForeground(candidate: IconCandidate): Bitmap {
+        val params = mainViewModel.params.value
+        return renderCandidateForeground(
+            candidate = candidate,
+            edgePolishPercent = params.edgePolishPercent,
+            foregroundSubjectPercent = params.foregroundSubjectPercent,
+            rmbgTunedForeground = ::rmbgTunedForegroundRaw,
+            liquidGlassEnabled = params.liquidGlassEnabled,
+            liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+            liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+            liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+            liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+            liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+            liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+            liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+            liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+            liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+            liquidGlassRadius = params.liquidGlassRadius,
+            foregroundShadowLevel = params.foregroundShadowLevel,
         )
     }
 
-    internal fun subjectShadowBitmap(source: Bitmap, params: ForegroundShadowParams): Bitmap {
-        val width = source.width
-        val height = source.height
-        val sourcePixels = IntArray(width * height)
-        val shadowPixels = IntArray(sourcePixels.size)
-        source.getPixels(sourcePixels, 0, width, 0, 0, width, height)
-        for (i in sourcePixels.indices) {
-            val alpha = (AndroidColor.alpha(sourcePixels[i]) * params.alpha / 255.0)
-                .roundToInt()
-                .coerceIn(0, 255)
-            shadowPixels[i] = if (alpha <= 0) AndroidColor.TRANSPARENT else AndroidColor.argb(alpha, 0, 0, 0)
-        }
-        val alphaMask = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        alphaMask.setPixels(shadowPixels, 0, width, 0, 0, width, height)
-        val shadow = if (params.spread > 0) growAlphaMask(alphaMask, params.spread) else alphaMask
-        return if (params.blurRadius > 0f) {
-            blurAlphaMask(shadow, params.blurRadius)
-        } else {
-            shadow
-        }
-    }
-
-    internal fun growAlphaMask(source: Bitmap, radius: Int): Bitmap {
-        val width = source.width
-        val height = source.height
-        val sourcePixels = IntArray(width * height)
-        val outPixels = IntArray(sourcePixels.size)
-        source.getPixels(sourcePixels, 0, width, 0, 0, width, height)
-        val safeRadius = radius.coerceAtLeast(1)
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                var maxAlpha = 0
-                for (dy in -safeRadius..safeRadius) {
-                    val ny = y + dy
-                    if (ny !in 0 until height) continue
-                    for (dx in -safeRadius..safeRadius) {
-                        val nx = x + dx
-                        if (nx !in 0 until width) continue
-                        maxAlpha = maxOf(maxAlpha, AndroidColor.alpha(sourcePixels[ny * width + nx]))
-                    }
-                }
-                outPixels[y * width + x] = if (maxAlpha <= 0) {
-                    AndroidColor.TRANSPARENT
-                } else {
-                    AndroidColor.argb(maxAlpha, 0, 0, 0)
-                }
-            }
-        }
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        out.setPixels(outPixels, 0, width, 0, 0, width, height)
-        return out
-    }
-
-    internal fun blurAlphaMask(source: Bitmap, radius: Float): Bitmap {
-        val safeRadius = radius.roundToInt().coerceIn(0, 25)
-        if (safeRadius <= 0) {
-            return source
-        }
-        val width = source.width
-        val height = source.height
-        val sourcePixels = IntArray(width * height)
-        source.getPixels(sourcePixels, 0, width, 0, 0, width, height)
-        val horizontal = IntArray(sourcePixels.size)
-        val outPixels = IntArray(sourcePixels.size)
-        val window = safeRadius * 2 + 1
-
-        for (y in 0 until height) {
-            var sum = 0
-            for (x in -safeRadius..safeRadius) {
-                val cx = x.coerceIn(0, width - 1)
-                sum += AndroidColor.alpha(sourcePixels[y * width + cx])
-            }
-            for (x in 0 until width) {
-                horizontal[y * width + x] = sum / window
-                val removeX = (x - safeRadius).coerceIn(0, width - 1)
-                val addX = (x + safeRadius + 1).coerceIn(0, width - 1)
-                sum += AndroidColor.alpha(sourcePixels[y * width + addX])
-                sum -= AndroidColor.alpha(sourcePixels[y * width + removeX])
-            }
-        }
-
-        for (x in 0 until width) {
-            var sum = 0
-            for (y in -safeRadius..safeRadius) {
-                val cy = y.coerceIn(0, height - 1)
-                sum += horizontal[cy * width + x]
-            }
-            for (y in 0 until height) {
-                val alpha = (sum / window).coerceIn(0, 255)
-                outPixels[y * width + x] = if (alpha <= 0) {
-                    AndroidColor.TRANSPARENT
-                } else {
-                    AndroidColor.argb(alpha, 0, 0, 0)
-                }
-                val removeY = (y - safeRadius).coerceIn(0, height - 1)
-                val addY = (y + safeRadius + 1).coerceIn(0, height - 1)
-                sum += horizontal[addY * width + x]
-                sum -= horizontal[removeY * width + x]
-            }
-        }
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        out.setPixels(outPixels, 0, width, 0, 0, width, height)
-        return out
-    }
+    // 重构期间保留：委托到 imaging/PreviewComposer.kt 显式参数版本，调用点零改动。
+    internal fun applyForegroundShadow(source: Bitmap): Bitmap =
+        applyForegroundShadow(
+            source = source,
+            foregroundShadowLevel = mainViewModel.params.value.foregroundShadowLevel,
+        )
 
     internal fun rmbgTunedForegroundRaw(candidate: IconCandidate): Bitmap? {
         val source = candidate.rmbgSourceRaw ?: return null
@@ -9099,8 +8861,12 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    // 重构期间保留：委托到 imaging/PreviewComposer.kt 显式参数版本，调用点零改动。
     internal fun renderCandidateBitmap(bitmap: Bitmap): Bitmap =
-        normalizeForegroundSubjectSize(bitmap, mainViewModel.params.value.foregroundSubjectPercent)
+        renderCandidateBitmap(
+            bitmap = bitmap,
+            foregroundSubjectPercent = mainViewModel.params.value.foregroundSubjectPercent,
+        )
 
     internal fun applyPreviewChoice(mode: PreviewMode, choice: PreviewChoice) {
         val session = activeGenerationSession ?: return
@@ -9882,76 +9648,6 @@ class MainActivity : ComponentActivity() {
 
 
 
-
-    internal fun simpleMonochromeAlphaFromDefaultSubject(source: Bitmap, invertLuma: Boolean): Bitmap {
-        val width = source.width
-        val height = source.height
-        val sourcePixels = IntArray(width * height)
-        val outPixels = IntArray(sourcePixels.size)
-        source.getPixels(sourcePixels, 0, width, 0, 0, width, height)
-        for (i in sourcePixels.indices) {
-            val pixel = sourcePixels[i]
-            val sourceAlpha = AndroidColor.alpha(pixel)
-            if (sourceAlpha <= 0) {
-                outPixels[i] = AndroidColor.TRANSPARENT
-                continue
-            }
-            val gray = luma(pixel)
-            val tonal = if (invertLuma) 255 - gray else gray
-            val outAlpha = (sourceAlpha * tonal / 255.0)
-                .roundToInt()
-                .coerceIn(0, 255)
-            outPixels[i] = if (outAlpha <= 0) {
-                AndroidColor.TRANSPARENT
-            } else {
-                (outAlpha shl 24) or 0x00ffffff
-            }
-        }
-        val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        out.setPixels(outPixels, 0, width, 0, 0, width, height)
-        return out
-    }
-
-
-
-
-
-    internal fun bitmapStatsJson(bitmap: Bitmap): JSONObject {
-        val visibleBounds = alphaBounds(bitmap, LOCAL_ALPHA_VISIBLE_THRESHOLD)
-        val meaningfulBounds = meaningfulAlphaBounds(bitmap)
-        val centroid = meaningfulAlphaCentroid(bitmap)
-        return JSONObject()
-            .put("width", bitmap.width)
-            .put("height", bitmap.height)
-            .put("alpha_coverage", alphaCoverage(bitmap))
-            .put("meaningful_alpha_coverage", meaningfulAlphaCoverage(bitmap))
-            .put("visible_bounds", boundsJson(visibleBounds))
-            .put("meaningful_bounds", boundsJson(meaningfulBounds))
-            .put(
-                "centroid",
-                if (centroid == null) {
-                    JSONObject.NULL
-                } else {
-                    JSONObject()
-                        .put("x", centroid.first)
-                        .put("y", centroid.second)
-                },
-            )
-            .put("touches_edge", meaningfulBounds?.let { hasAutoCropRisk(it, bitmap.width, bitmap.height) } ?: false)
-    }
-
-    internal fun boundsJson(bounds: Bounds?): Any =
-        if (bounds == null) {
-            JSONObject.NULL
-        } else {
-            JSONObject()
-                .put("left", bounds.left)
-                .put("top", bounds.top)
-                .put("right", bounds.right)
-                .put("bottom", bounds.bottom)
-                .put("width", bounds.width())
-                .put("height", bounds.height())
-        }
 
     internal fun showKeyboardFor(editText: EditText) {
         editText.post {
