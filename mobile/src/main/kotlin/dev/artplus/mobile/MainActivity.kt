@@ -2610,22 +2610,32 @@ class MainActivity : ComponentActivity() {
 
     // ---------- 预设：保存 / 应用 / 批量 / 导入导出 ----------
 
-    internal fun refreshPresets() {
-        presetListVersion += 1
-        val stored = presetStore.activePresetId
-        val preset = if (stored != null) presetStore.get(stored) else null
-        activePresetId = preset?.id
-        activePresetBaseParams = preset?.params
-    }
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun refreshPresets() =
+        refreshPresets(
+            store = presetStore,
+            onBumpVersion = { presetListVersion += 1 },
+            onRefreshed = { id, base ->
+                activePresetId = id
+                activePresetBaseParams = base
+            },
+        )
 
-    internal fun loadPresetState() {
-        refreshPresets()
-        batchOutputMode = runCatching {
-            BatchOutputMode.valueOf(getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(PREF_BATCH_OUTPUT_MODE, BatchOutputMode.Root.name) ?: BatchOutputMode.Root.name)
-        }.getOrDefault(BatchOutputMode.Root)
-        gptRunCount = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getInt(PREF_GPT_RUN_COUNT, 0)
-        rmbgRunCount = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getInt(PREF_RMBG_RUN_COUNT, 0)
-    }
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun loadPresetState() =
+        loadPresetState(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            batchOutputModeKey = PREF_BATCH_OUTPUT_MODE,
+            batchOutputModeFallbackName = BatchOutputMode.Root.name,
+            gptRunCountKey = PREF_GPT_RUN_COUNT,
+            rmbgRunCountKey = PREF_RMBG_RUN_COUNT,
+            onRefreshPresets = { refreshPresets() },
+            onLoaded = { mode, gpt, rmbg ->
+                batchOutputMode = mode
+                gptRunCount = gpt
+                rmbgRunCount = rmbg
+            },
+        )
 
     internal fun incrementGptRunCount() {
         gptRunCount += 1
@@ -2669,156 +2679,154 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    internal fun saveCurrentAsPreset(rawName: String) {
-        // P2 交界：预设域收敛进 MainViewModel，这里只做 UI 状态（文案/镜像/版本/弹窗）。
-        when (val outcome = mainViewModel.savePreset(presetStore, currentTuningParams(), rawName)) {
-            SavePresetOutcome.BlankName -> {
-                statusText = "预设名称不能为空"
-                return
-            }
-            is SavePresetOutcome.DuplicateName -> {
-                statusText = "预设「${outcome.name}」已存在，请换一个名称"
-                return
-            }
-            is SavePresetOutcome.Saved -> {
-                val preset = outcome.preset
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun saveCurrentAsPreset(rawName: String) =
+        saveCurrentAsPreset(
+            rawName = rawName,
+            store = presetStore,
+            current = currentTuningParams(),
+            viewModel = mainViewModel,
+            onSaved = { preset, msg ->
                 activePresetId = preset.id
                 activePresetBaseParams = preset.params
                 presetListVersion += 1
                 presetSaveDialogVisible = false
-                statusText = "已保存预设「${preset.name}」（${preset.params.toParamMap().size} 项参数）"
-            }
-        }
-    }
+                statusText = msg
+            },
+            onStatus = { statusText = it },
+        )
 
-    internal fun overwritePreset(preset: TuningPreset) {
-        // P2 交界：预设域收敛进 MainViewModel，这里只做 UI 状态。
-        val current = currentTuningParams()
-        if (!mainViewModel.overwritePreset(presetStore, preset, current)) {
-            statusText = "更新预设失败"
-            return
-        }
-        activePresetId = preset.id
-        activePresetBaseParams = current
-        presetListVersion += 1
-        statusText = "已覆盖更新预设「${preset.name}」"
-    }
-
-    internal fun resetToPreset(preset: TuningPreset) {
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        val before = currentTuningParams()
-        // P2 交界：预设合并收敛进 MainViewModel。
-        val merged = mainViewModel.mergedPresetParams(preset, before)
-        applyTuningParams(merged, rebuildCandidates = true)
-        presetStore.activePresetId = preset.id
-        activePresetId = preset.id
-        activePresetBaseParams = preset.params
-        statusText = "已重置回预设「${preset.name}」初始参数"
-    }
-
-    internal fun applyPreset(preset: TuningPreset) {
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
-            statusText = "当前有任务在运行，请等待"
-            return
-        }
-        val before = currentTuningParams()
-        // P2 交界：预设合并收敛进 MainViewModel。
-        val merged = mainViewModel.mergedPresetParams(preset, before)
-        applyTuningParams(merged, rebuildCandidates = true)
-        presetStore.activePresetId = preset.id
-        activePresetId = preset.id
-        activePresetBaseParams = preset.params
-        statusText = "已应用预设「${preset.name}」，${before.diffSummary(merged)}"
-    }
-
-    internal fun deletePreset(id: String) {
-        BatchPreviewStore.deleteSnapshot(filesDir, id)
-        if (activeBatchPreviewPreset?.id == id || batchPreviewResult?.preset?.id == id) {
-            activeBatchPreviewPreset = null
-            batchPreviewResult = null
-            if (currentPage == AppPage.BatchPreview) {
-                currentPage = AppPage.Home
-            }
-        }
-        // P2 交界：store 删除收敛进 MainViewModel；BatchPreview/页面/UI 状态留 Activity。
-        mainViewModel.deletePreset(presetStore, id)
-        if (activePresetId == id) {
-            activePresetId = null
-            activePresetBaseParams = null
-        }
-        presetListVersion += 1
-        statusText = "已删除预设"
-    }
-
-    internal fun renamePreset(id: String, rawName: String) {
-        // P2 交界：预设域收敛进 MainViewModel，这里只做 UI 状态。
-        when (val outcome = mainViewModel.renamePreset(presetStore, id, rawName)) {
-            RenamePresetOutcome.BlankName -> {
-                statusText = "预设名称不能为空"
-                return
-            }
-            RenamePresetOutcome.Failed -> {
-                statusText = "重命名失败：名称与现有预设重复"
-                return
-            }
-            is RenamePresetOutcome.Renamed -> {
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun overwritePreset(preset: TuningPreset) =
+        overwritePreset(
+            preset = preset,
+            store = presetStore,
+            current = currentTuningParams(),
+            viewModel = mainViewModel,
+            onOverwritten = { p, cur, msg ->
+                activePresetId = p.id
+                activePresetBaseParams = cur
                 presetListVersion += 1
-                statusText = "已重命名为「${outcome.name}」"
-            }
-        }
-    }
+                statusText = msg
+            },
+            onStatus = { statusText = it },
+        )
 
-    internal fun exportPresetsToClipboard() {
-        val json = presetStore.exportJson()
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        if (clipboard == null) {
-            statusText = "剪贴板不可用"
-            return
-        }
-        clipboard.setPrimaryClip(ClipData.newPlainText("ArtPlus预设", json))
-        statusText = "已复制 ${presetStore.all().size} 条预设 JSON 到剪贴板"
-    }
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun resetToPreset(preset: TuningPreset) =
+        resetToPreset(
+            preset = preset,
+            isBusy = isBusy,
+            isGeneratingGptCandidate = isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            before = currentTuningParams(),
+            viewModel = mainViewModel,
+            onReset = { p, merged, msg ->
+                applyTuningParams(merged, rebuildCandidates = true)
+                presetStore.activePresetId = p.id
+                activePresetId = p.id
+                activePresetBaseParams = p.params
+                statusText = msg
+            },
+            onStatus = { statusText = it },
+        )
 
-    internal fun exportSinglePresetToClipboard(preset: TuningPreset) {
-        val json = presetStore.exportSingleJson(preset)
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-        if (clipboard == null) {
-            statusText = "剪贴板不可用"
-            return
-        }
-        clipboard.setPrimaryClip(ClipData.newPlainText("ArtPlus预设-${preset.name}", json))
-        statusText = "已复制预设「${preset.name}」JSON 到剪贴板"
-    }
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun applyPreset(preset: TuningPreset) =
+        applyPreset(
+            preset = preset,
+            isBusy = isBusy,
+            isGeneratingGptCandidate = isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            before = currentTuningParams(),
+            viewModel = mainViewModel,
+            onApplied = { p, merged, msg ->
+                applyTuningParams(merged, rebuildCandidates = true)
+                presetStore.activePresetId = p.id
+                activePresetId = p.id
+                activePresetBaseParams = p.params
+                statusText = msg
+            },
+            onStatus = { statusText = it },
+        )
 
-    internal fun importPresetsFromText(text: String) {
-        val result = presetStore.importJson(text)
-        presetImportDialogVisible = false
-        presetImportText = ""
-        presetListVersion += 1
-        statusText = if (result.errors.isEmpty()) {
-            "已导入 ${result.imported} 条预设"
-        } else {
-            "已导入 ${result.imported} 条，失败 ${result.errors.size} 条：${result.errors.firstOrNull().orEmpty()}"
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun deletePreset(id: String) =
+        deletePreset(
+            id = id,
+            filesDir = filesDir,
+            store = presetStore,
+            viewModel = mainViewModel,
+            activeBatchPreviewPresetId = activeBatchPreviewPreset?.id,
+            batchPreviewResultPresetId = batchPreviewResult?.preset?.id,
+            currentPage = currentPage,
+            activePresetId = activePresetId,
+            onBatchPreviewReset = {
+                activeBatchPreviewPreset = null
+                batchPreviewResult = null
+            },
+            onNavigateHome = { currentPage = AppPage.Home },
+            onActiveCleared = {
+                activePresetId = null
+                activePresetBaseParams = null
+            },
+            onBumpVersion = { presetListVersion += 1 },
+            onStatus = { statusText = it },
+        )
+
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun renamePreset(id: String, rawName: String) =
+        renamePreset(
+            id = id,
+            rawName = rawName,
+            store = presetStore,
+            viewModel = mainViewModel,
+            onRenamed = { _, msg ->
+                presetListVersion += 1
+                statusText = msg
+            },
+            onStatus = { statusText = it },
+        )
+
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun exportPresetsToClipboard() =
+        exportPresetsToClipboard(
+            store = presetStore,
+            clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
+            onStatus = { statusText = it },
+        )
+
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun exportSinglePresetToClipboard(preset: TuningPreset) =
+        exportSinglePresetToClipboard(
+            preset = preset,
+            store = presetStore,
+            clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
+            onStatus = { statusText = it },
+        )
+
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun importPresetsFromText(text: String) =
+        importPresetsFromText(
+            text = text,
+            store = presetStore,
+            onApplied = { msg ->
+                presetImportDialogVisible = false
+                presetImportText = ""
+                presetListVersion += 1
+                statusText = msg
+            },
+        )
 
     /** JSON 编辑器：解析文本为 TuningParams 并应用（缺失键保持当前值）。 */
-    internal fun saveJsonParamsFromText(text: String) {
-        val json = runCatching { JSONObject(text) }.getOrElse { error ->
-            statusText = "JSON 解析失败：${error.message ?: error.javaClass.simpleName}"
-            return
-        }
-        val params = TuningParams.fromJson(json, currentTuningParams())
-        if (params == null) {
-            statusText = "JSON 参数解析失败"
-            return
-        }
-        applyTuningParams(params, rebuildCandidates = true)
-        statusText = "已应用 JSON 参数"
-    }
+    // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
+    internal fun saveJsonParamsFromText(text: String) =
+        saveJsonParamsFromText(
+            text = text,
+            current = currentTuningParams(),
+            onApplyParams = { applyTuningParams(it, rebuildCandidates = true) },
+            onStatus = { statusText = it },
+        )
 
     internal fun startBatchPreview(preset: TuningPreset) {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate || isGeneratingBatchPreview) {
@@ -3218,356 +3226,41 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    // 重构期间保留：委托到 ui/pages/presets/PresetCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun PresetStatusCard() {
-        val presets = remember(presetListVersion) { presetStore.all() }
-        val activePreset = presets.firstOrNull { it.id == activePresetId }
-        val currentParams = currentTuningParams()
-        val isPresetModified = activePreset != null && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: activePreset.params))
+    internal fun PresetStatusCard() =
+        PresetStatusCard(
+            presets = remember(presetListVersion) { presetStore.all() },
+            activePresetId = activePresetId,
+            activePresetBaseParams = activePresetBaseParams,
+            currentParams = currentTuningParams(),
+            isBusy = isBusy,
+            onOverwrite = { overwritePreset(it) },
+            onRequestSavePreset = {
+                presetSaveName = it
+                presetSaveDialogVisible = true
+            },
+            onResetToPreset = { resetToPreset(it) },
+            onResetToDefaults = { resetToDefaults() },
+        )
 
-        SectionCard {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (activePreset != null) {
-                                    if (isPresetModified) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.6f) else MiuixTheme.colorScheme.primaryVariant
-                                } else {
-                                    MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
-                                }
-                            ),
-                    )
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Text(
-                                text = when {
-                                    activePreset != null -> "当前生效：${activePreset.name}"
-                                    else -> "当前生效：自定义调参"
-                                },
-                                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
-                                color = MiuixTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            if (activePreset != null && isPresetModified) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                                ) {
-                                    Text(
-                                        text = "已修改",
-                                        style = MiuixTheme.textStyles.footnote2.copy(
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontSize = 11.sp,
-                                        ),
-                                        color = MiuixTheme.colorScheme.primaryVariant,
-                                    )
-                                }
-                            }
-                        }
-                        Text(
-                            text = when {
-                                activePreset != null && isPresetModified -> "与快照有参数差异 · ${currentParams.diffSummary(activePreset.params)}"
-                                activePreset != null -> "与快照保持一致 · 更新于 ${formatPresetDate(activePreset.updatedAt)}"
-                                else -> "未绑定预设快照 · 可保存为独立快照"
-                            },
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-
-                if (activePreset != null && isPresetModified) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            TextButton(
-                                text = "覆盖更新",
-                                onClick = { overwritePreset(activePreset) },
-                                enabled = !isBusy,
-                                modifier = Modifier.weight(1f),
-                            )
-                            TextButton(
-                                text = "另存为",
-                                onClick = {
-                                    presetSaveName = "${activePreset.name} (副本)"
-                                    presetSaveDialogVisible = true
-                                },
-                                enabled = !isBusy,
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        TextButton(
-                            text = "重置到快照",
-                            onClick = { resetToPreset(activePreset) },
-                            enabled = !isBusy,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                } else if (activePreset != null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        TextButton(
-                            text = "另存为",
-                            onClick = {
-                                presetSaveName = "${activePreset.name} (副本)"
-                                presetSaveDialogVisible = true
-                            },
-                            enabled = !isBusy,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(
-                            text = "恢复出厂",
-                            onClick = { resetToDefaults() },
-                            enabled = !isBusy,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        TextButton(
-                            text = "保存为预设",
-                            onClick = {
-                                presetSaveName = ""
-                                presetSaveDialogVisible = true
-                            },
-                            enabled = !isBusy,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(
-                            text = "恢复出厂",
-                            onClick = { resetToDefaults() },
-                            enabled = !isBusy,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                }
-            }
-        }
-    }
-
+    // 重构期间保留：委托到 ui/pages/presets/PresetCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun PresetLibraryCard() {
-        val presets = remember(presetListVersion) { presetStore.all() }
-        val activePreset = presets.firstOrNull { it.id == activePresetId }
-        val currentParams = currentTuningParams()
-
-        val filtered = remember(presets, presetSearchQuery) {
-            if (presetSearchQuery.isBlank()) presets
-            else presets.filter { it.name.contains(presetSearchQuery.trim(), ignoreCase = true) }
-        }
-
-        val displayList = remember(filtered, activePresetId, presetListExpanded, presetSearchQuery) {
-            if (presetSearchQuery.isNotBlank() || presetListExpanded || filtered.size <= 5) {
-                filtered
-            } else {
-                val result = mutableListOf<TuningPreset>()
-                val active = filtered.firstOrNull { it.id == activePresetId }
-                if (active != null) {
-                    result.add(active)
-                }
-                filtered.forEach { p ->
-                    if (p.id != activePresetId && result.size < 5) {
-                        result.add(p)
-                    }
-                }
-                result
-            }
-        }
-
-        SectionCard {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = "预设快照库 (${presets.size})",
-                        style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                    )
-                    if (presets.isNotEmpty()) {
-                        Text(
-                            text = "轻按条目套用",
-                            style = MiuixTheme.textStyles.footnote2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                }
-
-                if (presets.size >= 8) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Image(
-                            imageVector = Lucide.Search,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                        )
-                        BasicTextField(
-                            value = presetSearchQuery,
-                            onValueChange = { presetSearchQuery = it },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            textStyle = MiuixTheme.textStyles.body2.copy(
-                                color = MiuixTheme.colorScheme.onSurface,
-                            ),
-                            cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
-                            decorationBox = { innerTextField ->
-                                if (presetSearchQuery.isEmpty()) {
-                                    Text(
-                                        text = "搜索预设名称...",
-                                        style = MiuixTheme.textStyles.body2,
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
-                                    )
-                                }
-                                innerTextField()
-                            },
-                        )
-                        if (presetSearchQuery.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(CircleShape)
-                                    .clickable { presetSearchQuery = "" },
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Image(
-                                    imageVector = Lucide.X,
-                                    contentDescription = "清除",
-                                    modifier = Modifier.size(14.dp),
-                                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (presets.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Image(
-                                imageVector = Lucide.Layers,
-                                contentDescription = null,
-                                modifier = Modifier.size(36.dp),
-                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
-                            )
-                            Text(
-                                text = "暂无预设快照",
-                                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                                color = MiuixTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = "在「生成参数」微调好效果后，点击上方「保存为预设」即可创建",
-                                style = MiuixTheme.textStyles.footnote1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(horizontal = 24.dp),
-                            )
-                        }
-                    }
-                } else if (filtered.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "未找到包含「$presetSearchQuery」的预设",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
-                } else {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        displayList.forEach { preset ->
-                            val isActive = preset.id == activePresetId
-                            val isModified = isActive && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: preset.params))
-                            CompactPresetRow(
-                                busy = isBusy,
-                                preset = preset,
-                                isActive = isActive,
-                                isModified = isModified,
-                                onApply = { applyPreset(preset) },
-                                onPreview = { openBatchPreviewForPreset(preset) },
-                                onMore = { presetActionMenuTarget = preset },
-                            )
-                        }
-
-                        if (presets.size > 5 && presetSearchQuery.isBlank()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { presetListExpanded = !presetListExpanded }
-                                    .padding(vertical = 8.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = if (presetListExpanded) "收起 ▴" else "展开查看全部 (共 ${presets.size} 个) ▾",
-                                    style = MiuixTheme.textStyles.footnote1.copy(fontWeight = FontWeight.Medium),
-                                    color = MiuixTheme.colorScheme.primaryVariant,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    internal fun PresetLibraryCard() =
+        PresetLibraryCard(
+            presets = remember(presetListVersion) { presetStore.all() },
+            activePresetId = activePresetId,
+            activePresetBaseParams = activePresetBaseParams,
+            currentParams = currentTuningParams(),
+            searchQuery = presetSearchQuery,
+            onSearchChange = { presetSearchQuery = it },
+            listExpanded = presetListExpanded,
+            onToggleExpanded = { presetListExpanded = !presetListExpanded },
+            isBusy = isBusy,
+            onApply = { applyPreset(it) },
+            onPreview = { openBatchPreviewForPreset(it) },
+            onMore = { presetActionMenuTarget = it },
+        )
 
     @Composable
     internal fun WallpaperSettingsCard() {
@@ -3622,422 +3315,122 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    // 重构期间保留：委托到 ui/pages/presets/PresetDialogs.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun PresetActionMenuDialog(
         target: TuningPreset,
         onDismiss: () -> Unit,
-    ) {
-        MiuixBottomDialog(onDismissRequest = onDismiss) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "预设选项：${target.name}",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp),
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                        .padding(vertical = 8.dp),
-                ) {
-                    PresetMenuItem(
-                        enabled = !isBusy,
-                        title = "应用此预设",
-                        summary = "载入此快照的全部调参设置",
-                        onClick = {
-                            onDismiss()
-                            applyPreset(target)
-                        },
-                    )
-                    PresetMenuItem(
-                        enabled = !isBusy,
-                        title = "批量四风格预览",
-                        summary = "随机抓取应用，四种风格宫格预览",
-                        onClick = {
-                            onDismiss()
-                            openBatchPreviewForPreset(target)
-                        },
-                    )
-                    PresetMenuItem(
-                        enabled = !isBusy,
-                        title = "覆盖为此预设",
-                        summary = "将当前所有调参保存覆盖到「${target.name}」",
-                        onClick = {
-                            onDismiss()
-                            overwritePreset(target)
-                        },
-                    )
-                    PresetMenuItem(
-                        enabled = !isBusy,
-                        title = "重命名",
-                        summary = "修改该预设名称",
-                        onClick = {
-                            onDismiss()
-                            presetRenameTarget = target
-                        },
-                    )
-                    PresetMenuItem(
-                        enabled = !isBusy,
-                        title = "复制单条 JSON",
-                        summary = "导出该预设快照到剪贴板，方便分享",
-                        onClick = {
-                            onDismiss()
-                            exportSinglePresetToClipboard(target)
-                        },
-                    )
-                    PresetMenuItem(
-                        enabled = !isBusy,
-                        title = "删除预设",
-                        summary = "从预设库中彻底移除",
-                        onClick = {
-                            onDismiss()
-                            presetDeleteConfirmTarget = target
-                        },
-                    )
-                }
-
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(
-                        text = "取消",
-                        style = MiuixTheme.textStyles.button,
-                        color = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-    }
+    ) =
+        PresetActionMenuDialog(
+            target = target,
+            isBusy = isBusy,
+            onDismiss = onDismiss,
+            onApply = { applyPreset(it) },
+            onPreview = { openBatchPreviewForPreset(it) },
+            onOverwrite = { overwritePreset(it) },
+            onRename = { presetRenameTarget = it },
+            onExportSingle = { exportSinglePresetToClipboard(it) },
+            onDelete = { presetDeleteConfirmTarget = it },
+        )
 
 
+    // 重构期间保留：委托到 ui/pages/presets/PresetDialogs.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun PresetDeleteConfirmDialog(
         target: TuningPreset,
         onDismiss: () -> Unit,
-    ) {
-        MiuixBottomDialog(onDismissRequest = onDismiss) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "删除预设",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "确定要删除预设「${target.name}」吗？此操作不可撤销。",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "取消",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            onDismiss()
-                            deletePreset(target.id)
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "确认删除",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                        )
-                    }
-                }
-            }
-        }
-    }
+    ) =
+        PresetDeleteConfirmDialog(
+            target = target,
+            onDismiss = onDismiss,
+            onConfirmDelete = { deletePreset(it) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/presets/PresetDialogs.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun PresetPageDialogs() {
-        if (presetSaveDialogVisible) {
-            PresetNameDialog(
-                title = "保存当前为预设",
-                initialName = presetSaveName,
-                confirmLabel = "保存",
-                onConfirm = { name ->
-                    presetSaveDialogVisible = false
-                    saveCurrentAsPreset(name)
-                },
-                onDismiss = { presetSaveDialogVisible = false },
-            )
-        }
-        presetRenameTarget?.let { target ->
-            PresetNameDialog(
-                title = "重命名预设",
-                initialName = target.name,
-                confirmLabel = "重命名",
-                onConfirm = { name ->
-                    presetRenameTarget = null
-                    renamePreset(target.id, name)
-                },
-                onDismiss = { presetRenameTarget = null },
-            )
-        }
-        presetActionMenuTarget?.let { target ->
-            PresetActionMenuDialog(
-                target = target,
-                onDismiss = { presetActionMenuTarget = null },
-            )
-        }
-        presetDeleteConfirmTarget?.let { target ->
-            PresetDeleteConfirmDialog(
-                target = target,
-                onDismiss = { presetDeleteConfirmTarget = null },
-            )
-        }
-        if (presetImportDialogVisible) {
-            PresetImportDialog(
-                onConfirm = { text -> importPresetsFromText(text) },
-                onDismiss = { presetImportDialogVisible = false },
-            )
-        }
-        presetBatchPreviewConfirmTarget?.let { target ->
-            PresetBatchPreviewConfirmDialog(
-                preset = target,
-                onConfirm = {
-                    presetBatchPreviewConfirmTarget = null
-                    startBatchPreview(target)
-                },
-                onDismiss = { presetBatchPreviewConfirmTarget = null },
-            )
-        }
-        PresetBatchPreviewProgressDialog()
-        if (showBatchPreviewRefreshConfirm) {
-            val targetPreset = activeBatchPreviewPreset ?: batchPreviewResult?.preset
-            if (targetPreset != null) {
-                BatchPreviewRefreshConfirmDialog(
-                    preset = targetPreset,
-                    onConfirm = {
-                        showBatchPreviewRefreshConfirm = false
-                        startBatchPreview(targetPreset)
-                    },
-                    onDismiss = { showBatchPreviewRefreshConfirm = false },
-                )
-            }
-        }
-    }
+    internal fun PresetPageDialogs() =
+        PresetPageDialogs(
+            saveDialogVisible = presetSaveDialogVisible,
+            saveInitialName = presetSaveName,
+            onSaveConfirm = { name ->
+                presetSaveDialogVisible = false
+                saveCurrentAsPreset(name)
+            },
+            onSaveDismiss = { presetSaveDialogVisible = false },
+            renameTarget = presetRenameTarget,
+            onRenameConfirm = { id, name ->
+                presetRenameTarget = null
+                renamePreset(id, name)
+            },
+            onRenameDismiss = { presetRenameTarget = null },
+            actionMenuTarget = presetActionMenuTarget,
+            actionMenuBusy = isBusy,
+            onActionMenuDismiss = { presetActionMenuTarget = null },
+            onActionApply = { applyPreset(it) },
+            onActionPreview = { openBatchPreviewForPreset(it) },
+            onActionOverwrite = { overwritePreset(it) },
+            onActionRename = { presetRenameTarget = it },
+            onActionExportSingle = { exportSinglePresetToClipboard(it) },
+            onActionDelete = { presetDeleteConfirmTarget = it },
+            deleteConfirmTarget = presetDeleteConfirmTarget,
+            onDeleteDismiss = { presetDeleteConfirmTarget = null },
+            onDeleteConfirm = { deletePreset(it) },
+            importDialogVisible = presetImportDialogVisible,
+            onImportConfirm = { text -> importPresetsFromText(text) },
+            onImportDismiss = { presetImportDialogVisible = false },
+            batchPreviewConfirmTarget = presetBatchPreviewConfirmTarget,
+            onBatchPreviewConfirm = {
+                presetBatchPreviewConfirmTarget = null
+                startBatchPreview(it)
+            },
+            onBatchPreviewConfirmDismiss = { presetBatchPreviewConfirmTarget = null },
+            batchPreviewProgress = batchPreviewProgress,
+            onCancelBatchPreview = { batchPreviewCancelled = true },
+            showRefreshConfirm = showBatchPreviewRefreshConfirm,
+            refreshConfirmPreset = activeBatchPreviewPreset ?: batchPreviewResult?.preset,
+            batchPreviewCount = batchPreviewCount,
+            onRefreshConfirm = {
+                showBatchPreviewRefreshConfirm = false
+                startBatchPreview(it)
+            },
+            onRefreshDismiss = { showBatchPreviewRefreshConfirm = false },
+        )
 
+    // 重构期间保留：委托到 ui/pages/presets/PresetDialogs.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun PresetBatchPreviewConfirmDialog(
         preset: TuningPreset,
         onConfirm: () -> Unit,
         onDismiss: () -> Unit,
-    ) {
-        MiuixBottomDialog(onDismissRequest = onDismiss) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "生成批量预览",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "将根据预设「${preset.name}」随机抽取 ${batchPreviewCount} 个应用（优先未生成图标），批量生成正常亮色、正常暗色、单色亮色与单色暗色共 ${batchPreviewCount * 4} 个图标供宫格预览。\n\n此过程仅在内存中生成预览，绝不写入分区或更改任何文件。确认开始？",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 8,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "取消",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = onConfirm,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "开始生成",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
-    }
+    ) =
+        PresetBatchPreviewConfirmDialog(
+            preset = preset,
+            batchPreviewCount = batchPreviewCount,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss,
+        )
 
+    // 重构期间保留：委托到 ui/pages/presets/PresetDialogs.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun PresetBatchPreviewProgressDialog() {
-        val progress = batchPreviewProgress ?: return
-        val fraction = if (progress.total <= 0) 0f else (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
-        MiuixBottomDialog(onDismissRequest = { batchPreviewCancelled = true }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "正在生成批量预览",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = "预设「${progress.presetName}」· 进度 ${progress.completed}/${progress.total}",
-                    style = MiuixTheme.textStyles.body2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = progress.currentLabel,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                LinearProgressIndicator(
-                    progress = fraction,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(999.dp)),
-                )
-                Button(
-                    onClick = { batchPreviewCancelled = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(
-                        text = "取消",
-                        style = MiuixTheme.textStyles.button,
-                        color = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-        }
-    }
+    internal fun PresetBatchPreviewProgressDialog() =
+        PresetBatchPreviewProgressDialog(
+            progress = batchPreviewProgress,
+            onCancel = { batchPreviewCancelled = true },
+        )
 
+    // 重构期间保留：委托到 ui/pages/presets/PresetDialogs.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun BatchPreviewRefreshConfirmDialog(
         preset: TuningPreset,
         onConfirm: () -> Unit,
         onDismiss: () -> Unit,
-    ) {
-        MiuixBottomDialog(onDismissRequest = onDismiss) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "重新生成批量预览",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "是否重新随机抽取 ${batchPreviewCount} 个应用，重新生成预设「${preset.name}」的四风格预览？\n\n此操作将重新渲染并覆盖现有的快照数据。",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 8,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "取消",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = onConfirm,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "确认重新生成",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
-    }
+    ) =
+        BatchPreviewRefreshConfirmDialog(
+            preset = preset,
+            batchPreviewCount = batchPreviewCount,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss,
+        )
 
 
 
