@@ -12,9 +12,8 @@ import kotlin.math.roundToInt
  * 自适应图标管线：Drawable→图层桥 + 前景优选 + 组件候选。
  *
  * 从 MainActivity 迁移而来（P1.2-b b3-slice2b）。
- * 显式收 `pipeline` + 调参（百分比/enum），不读 Activity 状态；
- * 仍被暂留代码调用者（5 处 buildLocalIconLayers / debug 的 chooseBetter×1）保留同名 wrapper 委托
- * （重构期间保留，P2 后删除），调用点零改动。仅内部调用的 buildAdaptiveComponentCandidates 无 wrapper。
+ * 显式收 `pipeline` + 调参（百分比/enum），不读 Activity 状态。
+ * 仅内部调用的 buildAdaptiveComponentCandidates 无 wrapper。
  */
 
 internal fun buildLocalIconLayers(

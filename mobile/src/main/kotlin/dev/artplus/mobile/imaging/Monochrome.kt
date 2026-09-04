@@ -9,8 +9,7 @@ import kotlin.math.pow
  *
  * 从 MainActivity 迁移而来（P1.2-c 拆分）：原 `private fun`，现 `internal`，
  * 签名仅 `polishMonochromeEdges` 增加显式 `edgePolishPercent` 参数
- * （原经 `monochromeEdgePolishStrength()` 直读 Activity 状态），其余签名未变；
- * Activity 内保留同名 wrapper 委托（重构期间保留，P2 后删除），调用点零改动。
+ * （原经 `monochromeEdgePolishStrength()` 直读 Activity 状态），其余签名未变。
  * `simpleMonochromeAlphaFromDefaultSubject` 与 `polishForegroundEdges` 不在
  * P1.2-c 范围内，暂留 MainActivity。
  */
@@ -18,8 +17,7 @@ import kotlin.math.pow
 /**
  * 前景边缘抛光：Phase 2 漏搬，Phase 3 slice0 fix-forward。
  * 原 `private fun` 经 `foregroundEdgePolishStrength()` 直读 Activity 状态
- * `edgePolishPercent`，新版本显式收参；Activity 内保留同名 wrapper 委托
- * （重构期间保留，P5 后删除），调用点零改动。
+ * `edgePolishPercent`，新版本显式收参。
  */
 internal fun polishForegroundEdges(source: Bitmap, edgePolishPercent: Int): Bitmap {
     val width = source.width

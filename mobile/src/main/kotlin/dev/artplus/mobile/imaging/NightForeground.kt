@@ -8,8 +8,7 @@ import android.graphics.Color as AndroidColor
  *
  * 从 MainActivity 迁移而来（P1.2-c 拆分）：原 `private fun`，现 `internal`，
  * 签名仅 `normalDarkForeground` 增加显式 `nightSubjectLightBackgroundEnabled` 参数
- * （原直读 Activity 状态），其余签名未变；Activity 内保留同名 wrapper 委托
- * （重构期间保留，P2 后删除），调用点零改动。
+ * （原直读 Activity 状态），其余签名未变。
  * 随带 5 个纯 helper（recolorLocalNightEdgePixels / hasNearbyColoredOrTransparentContrast /
  * appWhiteFromBackground / darkSubjectNightTarget / blendNightWhiteChannel）。
  */

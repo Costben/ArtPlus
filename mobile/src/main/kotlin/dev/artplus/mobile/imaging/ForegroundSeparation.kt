@@ -7,8 +7,7 @@ import android.graphics.Color as AndroidColor
  * 前景分离：纯色背景估计/减背景/去底板/残留清理。
  *
  * 从 MainActivity 迁移而来（P1.2-b，自底向上第一批）。
- * 显式收 `pipeline` + 百分比参数，不读 Activity 状态；
- * Activity 内保留同名 wrapper 委托（重构期间保留，P2 后删除），调用点零改动。
+ * 显式收 `pipeline` + 百分比参数，不读 Activity 状态。
  */
 
 internal fun estimatePlainIconBackground(source: Bitmap): Int {

@@ -2053,7 +2053,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     internal fun EmptyAppListCard() {
-        val hasHiddenSystemApps = !showSystemApps && apps.any { isSystemApp(it.applicationInfo) && it.packageName != packageName }
+        val hasHiddenSystemApps = !showSystemApps && apps.any { AppVisibility.isSystemAppFlags(it.applicationInfo.flags) && it.packageName != packageName }
         val hintText = when {
             queryText.isNotBlank() && !showSystemApps && hasHiddenSystemApps ->
                 "没有匹配“${queryText.trim()}”的应用。尝试清空搜索词或打开“显示系统应用”开关查看系统应用。"
@@ -5825,27 +5825,6 @@ class MainActivity : ComponentActivity() {
             packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
         }
 
-    internal fun isSystemApp(applicationInfo: ApplicationInfo): Boolean = AppVisibility.isSystemApp(applicationInfo)
-
-    internal fun isSystemAppFlags(flags: Int): Boolean = AppVisibility.isSystemAppFlags(flags)
-
-    internal fun shouldShowInAppPicker(entry: AppEntry): Boolean = AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, showSystemApps, packageName)
-
-    internal fun shouldShowInAppPickerForTest(
-        flags: Int,
-        pkg: String,
-        selfPackageName: String,
-        showSystemApps: Boolean,
-    ): Boolean = AppVisibility.shouldShow(flags, pkg, selfPackageName, showSystemApps)
-
-    internal fun shouldShowInAppPickerForTestWithLaunchable(
-        flags: Int,
-        pkg: String,
-        selfPackageName: String,
-        showSystemApps: Boolean,
-        launchable: Boolean,
-    ): Boolean = AppVisibility.shouldShowInPicker(flags, pkg, selfPackageName, showSystemApps, launchable)
-
     internal fun isDebugGenerateIntent(intent: Intent?): Boolean =
         intent?.getStringExtra(EXTRA_DEBUG_GENERATE_PACKAGE)?.isNotBlank() == true &&
             isDebugTokenValid(intent.getStringExtra(EXTRA_DEBUG_GENERATE_TOKEN))
@@ -6794,10 +6773,6 @@ class MainActivity : ComponentActivity() {
         // P2 交界：历史基线进 MainViewModel（冷启动时快照显式同步一次）。
         mainViewModel.resetHistory(currentTuningParams())
     }
-
-    internal fun canUndoTuning(): Boolean = mainViewModel.canUndo()
-
-    internal fun canRedoTuning(): Boolean = mainViewModel.canRedo()
 
     internal fun undoTuning() {
         if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
@@ -11261,9 +11236,6 @@ class MainActivity : ComponentActivity() {
         private const val MIN_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MIN_BATCH_PREVIEW_COUNT
         private const val MAX_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MAX_BATCH_PREVIEW_COUNT
         private const val PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE = 480
-        private val SETTINGS_ROW_INSIDE_MARGIN = PaddingValues(vertical = 6.dp)
-
-        private const val GITHUB_RELEASES_URL = "https://github.com/Costben/ArtPlus/releases"
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
         ) {

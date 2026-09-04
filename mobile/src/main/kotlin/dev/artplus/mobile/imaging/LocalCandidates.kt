@@ -7,9 +7,8 @@ import android.graphics.Color as AndroidColor
  * 本时候选编排：原始/清理/拼合背景/二层候选的构建与自动选择。
  *
  * 从 MainActivity 迁移而来（P1.2-b b3-slice3，最后一批）。
- * 显式收 `pipeline` + 调参，不读 Activity 状态；
- * 仍被暂留管线调用者（5 处 buildLocalCandidates）保留同名 wrapper 委托
- * （重构期间保留，P2 后删除），调用点零改动。仅内部调用的另两构建函数无 wrapper。
+ * 显式收 `pipeline` + 调参，不读 Activity 状态。
+ * 仅内部调用的另两构建函数无 wrapper。
  */
 
 internal fun buildLocalCandidates(

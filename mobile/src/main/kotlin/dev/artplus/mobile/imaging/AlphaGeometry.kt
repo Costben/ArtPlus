@@ -337,8 +337,7 @@ internal fun isInCornerMaskZone(x: Int, y: Int, width: Int, height: Int): Boolea
  * 主体尺寸归一化：把可见包围盒缩放到约 [foregroundSubjectPercent]% 的正方形画布。
  *
  * 从 MainActivity 迁移而来（P1.2-c）：原 `private fun` 直读 Activity 状态
- * `foregroundSubjectPercent`，新版本显式收参，不读 Activity 状态；
- * Activity 内保留同名 wrapper 委托（重构期间保留，P2 后删除），调用点零改动。
+ * `foregroundSubjectPercent`，新版本显式收参，不读 Activity 状态。
  */
 internal fun normalizeForegroundSubjectSize(source: Bitmap, foregroundSubjectPercent: Int): Bitmap {
     val bounds = meaningfulAlphaBounds(source) ?: return source

@@ -7,15 +7,6 @@ import android.content.pm.ApplicationInfo
  * 保持可测试性：核心判定基于 flags 整数，避免直接依赖 Android Context。
  */
 object AppVisibility {
-    /**
-     * 按 ApplicationInfo 判定是否为系统应用。
-     * 判定依据：FLAG_SYSTEM 或 FLAG_UPDATED_SYSTEM_APP
-     * ArtPlus 自身不应被此判定隐藏，调用方需额外判断 packageName == selfPackage。
-     */
-    fun isSystemApp(applicationInfo: ApplicationInfo): Boolean {
-        return isSystemAppFlags(applicationInfo.flags)
-    }
-
     fun isSystemAppFlags(flags: Int): Boolean {
         return (flags and ApplicationInfo.FLAG_SYSTEM) != 0 ||
             (flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
@@ -37,14 +28,6 @@ object AppVisibility {
         if (showSystemApps) return true
         if (packageName == selfPackageName) return true
         return !isSystemAppFlags(flags)
-    }
-
-    fun shouldShow(
-        info: ApplicationInfo,
-        showSystemApps: Boolean,
-        selfPackageName: String,
-    ): Boolean {
-        return shouldShow(info.flags, info.packageName ?: "", selfPackageName, showSystemApps)
     }
 
     /**

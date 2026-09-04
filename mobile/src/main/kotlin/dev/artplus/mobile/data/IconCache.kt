@@ -17,7 +17,6 @@ import android.graphics.Color as AndroidColor
  *   `preloadAppIcons` 收 cache + pm + entries + size + count
  *   （原直读 appIconCache/PRELOAD_ICON_COUNT；线程归属不变，仍由调用方线程执行）。
  * - `sampleBitmapShortEdge`/`drawDrawableCover` 纯移动（壁纸系调用方暂留 Activity，P5 再说）。
- * Activity 内保留 arity 变化的同名 wrapper 委托（重构期间保留，P5 后删除），调用点零改动。
  */
 
 internal fun getCachedAppIcon(cache: LruCache<String, Bitmap>, key: String): Bitmap? =

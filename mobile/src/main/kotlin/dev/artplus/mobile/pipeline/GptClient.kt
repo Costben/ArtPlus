@@ -29,7 +29,6 @@ import android.graphics.Color as AndroidColor
  *   `extractImageBytes`/`findImageBytes`/`decodeImageReference` 透传 apiKey + isDebugBuild；
  *   `loadCustomImageBitmap` 收 ContentResolver；
  *   `activeGptForegroundPrompt` 收 customPrompt + preset + subjectPercent。
- * Activity 内保留 arity 变化的同名 wrapper 委托（重构期间保留，P5 后删除），调用点零改动。
  */
 
 internal enum class GptImageMode(val value: String, val label: String) {

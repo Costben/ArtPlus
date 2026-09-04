@@ -7,8 +7,7 @@ import android.graphics.Color as AndroidColor
  * 长阴影清理：偏移阴影检测 + 连通域筛选 + 边缘修复。
  *
  * 从 MainActivity 迁移而来（P1.2-b，自底向上第一批）。
- * 显式收 `pipeline` + `shadowRemovalPercent`，不读 Activity 状态；
- * Activity 内保留同名 wrapper 委托（重构期间保留，P2 后删除），调用点零改动。
+ * 显式收 `pipeline` + `shadowRemovalPercent`，不读 Activity 状态。
  */
 
 internal fun removeOffsetShadow(
