@@ -593,12 +593,12 @@ internal fun NumberParameterControl(
                     enabled = controlEnabled,
                     onClick = { expanded = !expanded },
                 )
-                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 9.dp)
+                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 13.dp)
                 .semantics {
                     role = Role.Button
                     stateDescription = if (expanded) "已展开拖动条" else "已收起拖动条"
                 },
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (showIcon) {
@@ -606,7 +606,7 @@ internal fun NumberParameterControl(
             }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
                 Text(
                     text = title,

@@ -1130,40 +1130,15 @@ class MainActivity : ComponentActivity() {
                     onSave = { updatePreviewIconSizeDp(it) },
                     icon = SettingsIconKind.Grid,
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isBusy) { updatePreviewStripEnabled(!previewStripEnabled) }
-                        .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 9.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SettingsLineIcon(kind = SettingsIconKind.Palette)
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(3.dp),
-                    ) {
-                        Text(
-                            text = "顶部 1×4 预览条",
-                            style = MiuixTheme.textStyles.body1,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = "在主页、生成参数与预设页置顶显示",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    Switch(
-                        checked = previewStripEnabled,
-                        onCheckedChange = { updatePreviewStripEnabled(it) },
-                        enabled = !isBusy,
-                    )
-                }
+                LibrarySettingRow(
+                    title = "顶部 1×4 预览条",
+                    summary = "在主页、生成参数与预设页置顶显示",
+                    icon = SettingsIconKind.Palette,
+                    showSwitch = true,
+                    checked = previewStripEnabled,
+                    enabled = !isBusy,
+                    onCheckedChange = { updatePreviewStripEnabled(it) },
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -4733,19 +4708,6 @@ class MainActivity : ComponentActivity() {
                 enabled = !isBusy,
                 onCheckedChange = { updatePreviewStripEnabled(it) },
             )
-            NumberParameterControl(
-                busy = isBusy,
-                title = "批量预览数量",
-                summary = "预设四风格宫格预览时随机抓取的应用数量（默认 20，优先未生成图标应用）",
-                value = batchPreviewCount,
-                draftText = draftBatchPreviewCountText,
-                min = MIN_BATCH_PREVIEW_COUNT,
-                max = MAX_BATCH_PREVIEW_COUNT,
-                step = 1,
-                onDraftChange = { draftBatchPreviewCountText = it },
-                onSave = { updateBatchPreviewCount(it) },
-                icon = SettingsIconKind.Grid,
-            )
         }
     }
 
@@ -4810,14 +4772,11 @@ class MainActivity : ComponentActivity() {
                 icon = settingsIconForTitle("应用范围"),
             )
             Spacer(modifier = Modifier.height(4.dp))
-            LibrarySettingRow(
+            SettingsInfoRow(
                 title = "已生成",
                 summary = "来自本地缓存；手动刷新后才重新读取 data 路径",
                 value = "$generatedCount",
                 icon = settingsIconForTitle("已生成"),
-                showArrowRight = true,
-                enabled = !isBusy,
-                onClick = { loadApps(refreshGenerated = true) },
             )
         }
     }
