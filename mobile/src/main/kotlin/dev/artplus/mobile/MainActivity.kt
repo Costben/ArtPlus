@@ -4600,18 +4600,7 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    internal fun formatTreeUriDisplay(uri: Uri?): String? {
-        if (uri == null) return null
-        // 优先用 treeDocumentId（如 primary:Download/ArtPlusOutput），比 raw Uri 更可读
-        val fromId = runCatching { DocumentsContract.getTreeDocumentId(uri) }.getOrNull()
-        if (!fromId.isNullOrBlank()) {
-            // 形如 primary:Download/xxx -> 取冒号后路径，未含冒号则直接解码
-            val raw = if (":" in fromId) fromId.substringAfter(":") else fromId
-            val decoded = runCatching { URLDecoder.decode(raw, "UTF-8") }.getOrNull() ?: raw
-            if (decoded.isNotBlank()) return decoded
-        }
-        return uri.lastPathSegment?.let { runCatching { URLDecoder.decode(it, "UTF-8") }.getOrNull() ?: it }
-    }
+    // Slice 1.5 已搬入 system/ExportManager.kt：formatTreeUriDisplay（纯函数，同包直接用）。
 
     @Composable
     internal fun OutputCard() {
@@ -4775,10 +4764,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    internal fun exportCurrentToExternal() {
-        // 保留兼容：设置页旧入口，委托到全量备份
-        backupAllToExternal()
-    }
+    // 重构期间保留：委托到 system/ExportManager.kt 显式参数版本，调用点零改动。
+    internal fun exportCurrentToExternal() =
+        exportCurrentToExternal(onBackupAll = { backupAllToExternal() })
 
     @Composable
     internal fun PreviewStripSettingsCard() {
@@ -8982,24 +8970,36 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // 重构期间保留：委托到 system/ExportManager.kt 显式参数版本，调用点零改动。
     internal fun cancelBackup() {
-        backupJob?.cancel()
-        backupJob = null
-        backupDotJob?.cancel()
-        backupDotJob = null
-        backupSheetVisible = false
-        backupInBackground = false
-        backupProgress = null
-        isBusy = false
-        toastStatus("已停止备份")
+        val state = BackupCancelState(
+            backupJob = backupJob,
+            backupDotJob = backupDotJob,
+            sheetVisible = backupSheetVisible,
+            inBackground = backupInBackground,
+            progress = backupProgress,
+            isBusy = isBusy,
+        )
+        cancelBackup(state, ::toastStatus)
+        backupJob = state.backupJob
+        backupDotJob = state.backupDotJob
+        backupSheetVisible = state.sheetVisible
+        backupInBackground = state.inBackground
+        backupProgress = state.progress
+        isBusy = state.isBusy
     }
 
+    // 重构期间保留：委托到 system/ExportManager.kt 显式参数版本，调用点零改动。
     internal fun cancelSingleExport() {
-        singleExportJob?.cancel()
-        singleExportJob = null
-        singleExportSheetVisible = false
-        exportProgress = null
-        toastStatus("已停止导出")
+        val state = SingleExportCancelState(
+            singleExportJob = singleExportJob,
+            sheetVisible = singleExportSheetVisible,
+            progress = exportProgress,
+        )
+        cancelSingleExport(state, ::toastStatus)
+        singleExportJob = state.singleExportJob
+        singleExportSheetVisible = state.sheetVisible
+        exportProgress = state.progress
     }
 
     internal fun startBackupDotAnimation() {
