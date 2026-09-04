@@ -1093,3 +1093,8 @@ const val MAX_PREVIEW_ICON_SIZE_DP = 96
 const val DEFAULT_PREVIEW_CORNER_RADIUS_DP = 20
 const val MIN_PREVIEW_CORNER_RADIUS_DP = 0
 const val MAX_PREVIEW_CORNER_RADIUS_DP = 36
+
+// 设置页批量预览数量（原 MainActivity companion 私有别名，Slice 2.3 提升；BatchPreviewSampler 仍是取值源）。
+const val DEFAULT_BATCH_PREVIEW_COUNT = BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT
+const val MIN_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MIN_BATCH_PREVIEW_COUNT
+const val MAX_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MAX_BATCH_PREVIEW_COUNT

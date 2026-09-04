@@ -1263,25 +1263,14 @@ class MainActivity : ComponentActivity() {
             onRefresh = { loadApps() },
         )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsTuningCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun LocalSeparationModeControl() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        val modes = LocalSeparationMode.entries.filterNot { it == LocalSeparationMode.Plate }
-        val selectedMode = if (LocalSeparationMode.fromValue(tuningState.localSeparationMode) == LocalSeparationMode.Plate) {
-            LocalSeparationMode.Full
-        } else {
-            LocalSeparationMode.fromValue(tuningState.localSeparationMode)
-        }
-        SegmentedControl(
-            enabled = !isBusy,
-            labels = modes.map { it.label },
-            selectedIndex = modes.indexOf(selectedMode).coerceAtLeast(0),
-            scrollable = true,
-            onSelected = { index ->
-                updateLocalSeparationMode(modes[index])
-            }
+    internal fun LocalSeparationModeControl() =
+        LocalSeparationModeControl(
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            onSelect = { updateLocalSeparationMode(it) },
         )
-    }
 
     /** 第二层级「生成设置」：顶部「滑块 / JSON」切换 + 保存成预设 + 滑块分类导航。 */
     // 重构期间保留：委托到 ui/pages/home/HomeStatusCards.kt 显式参数版本，调用点零改动。
@@ -1306,357 +1295,142 @@ class MainActivity : ComponentActivity() {
         )
 
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsGlassCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun LiquidGlassToggleCard() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        SectionCard(rowsFullBleed = true) {
-            LibrarySettingRow(
-                title = "液态玻璃风格",
-                summary = "开启后按当前液态玻璃参数重绘背景和前景光影",
-                icon = SettingsIconKind.Glass,
-                showSwitch = true,
-                checked = tuningState.liquidGlassEnabled,
-                enabled = !isBusy,
-                onCheckedChange = { updateLiquidGlassEnabled(it) },
-            )
-        }
-    }
+    internal fun LiquidGlassToggleCard() =
+        LiquidGlassToggleCard(
+            enabled = mainViewModel.params.collectAsState().value.liquidGlassEnabled,
+            isBusy = isBusy,
+            onCheckedChange = { updateLiquidGlassEnabled(it) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsGlassCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun LiquidGlassSurfaceCard() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        SectionCard(rowsFullBleed = true) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "玻璃圆角",
-                    summary = "控制玻璃遮罩圆角，背景与主体按同一轮廓裁剪",
-                    value = tuningState.liquidGlassRadius,
-                    draftText = draftLiquidGlassRadiusText,
-                    min = MIN_LIQUID_GLASS_RADIUS,
-                    max = MAX_LIQUID_GLASS_RADIUS,
-                    onDraftChange = { draftLiquidGlassRadiusText = it },
-                    onSave = { updateLiquidGlassRadius(it) },
-                    icon = SettingsIconKind.Radius,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "外框高度",
-                    summary = "控制玻璃外缘高光的厚度",
-                    value = tuningState.liquidGlassOuterWidth,
-                    draftText = draftLiquidGlassOuterWidthText,
-                    min = MIN_LIQUID_GLASS_OUTER_WIDTH,
-                    max = MAX_LIQUID_GLASS_OUTER_WIDTH,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassOuterWidthText = it },
-                    onSave = { updateLiquidGlassOuterWidth(it) },
-                    icon = SettingsIconKind.Glass,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "顶部强度",
-                    summary = "控制顶边贴边高光的亮度",
-                    value = tuningState.liquidGlassTopAlpha,
-                    draftText = draftLiquidGlassTopAlphaText,
-                    min = MIN_LIQUID_GLASS_ALPHA,
-                    max = MAX_LIQUID_GLASS_ALPHA,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassTopAlphaText = it },
-                    onSave = { updateLiquidGlassTopAlpha(it) },
-                    icon = SettingsIconKind.Spark,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "底边强度",
-                    summary = "控制底边贴边高光的亮度",
-                    value = tuningState.liquidGlassBottomAlpha,
-                    draftText = draftLiquidGlassBottomAlphaText,
-                    min = MIN_LIQUID_GLASS_ALPHA,
-                    max = MAX_LIQUID_GLASS_ALPHA,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassBottomAlphaText = it },
-                    onSave = { updateLiquidGlassBottomAlpha(it) },
-                    icon = SettingsIconKind.Spark,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "背景灰雾",
-                    summary = "给图标背景叠加均匀暗雾，降低整体亮度",
-                    value = tuningState.liquidGlassBackgroundMistAlpha,
-                    draftText = draftLiquidGlassBackgroundMistAlphaText,
-                    min = MIN_LIQUID_GLASS_MIST_ALPHA,
-                    max = MAX_LIQUID_GLASS_MIST_ALPHA,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassBackgroundMistAlphaText = it },
-                    onSave = { updateLiquidGlassBackgroundMistAlpha(it) },
-                    icon = SettingsIconKind.Shadow,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "底部灰雾",
-                    summary = "给底部叠加暗雾渐变，压住底边亮度",
-                    value = tuningState.liquidGlassBottomDarkAlpha,
-                    draftText = draftLiquidGlassBottomDarkAlphaText,
-                    min = MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-                    max = MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassBottomDarkAlphaText = it },
-                    onSave = { updateLiquidGlassBottomDarkAlpha(it) },
-                    icon = SettingsIconKind.Shadow,
-                )
-            }
-        }
-    }
+    internal fun LiquidGlassSurfaceCard() =
+        LiquidGlassSurfaceCard(
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            draftRadiusText = draftLiquidGlassRadiusText,
+            onDraftRadiusChange = { draftLiquidGlassRadiusText = it },
+            onSaveRadius = { updateLiquidGlassRadius(it) },
+            draftOuterWidthText = draftLiquidGlassOuterWidthText,
+            onDraftOuterWidthChange = { draftLiquidGlassOuterWidthText = it },
+            onSaveOuterWidth = { updateLiquidGlassOuterWidth(it) },
+            draftTopAlphaText = draftLiquidGlassTopAlphaText,
+            onDraftTopAlphaChange = { draftLiquidGlassTopAlphaText = it },
+            onSaveTopAlpha = { updateLiquidGlassTopAlpha(it) },
+            draftBottomAlphaText = draftLiquidGlassBottomAlphaText,
+            onDraftBottomAlphaChange = { draftLiquidGlassBottomAlphaText = it },
+            onSaveBottomAlpha = { updateLiquidGlassBottomAlpha(it) },
+            draftBackgroundMistAlphaText = draftLiquidGlassBackgroundMistAlphaText,
+            onDraftBackgroundMistAlphaChange = { draftLiquidGlassBackgroundMistAlphaText = it },
+            onSaveBackgroundMistAlpha = { updateLiquidGlassBackgroundMistAlpha(it) },
+            draftBottomDarkAlphaText = draftLiquidGlassBottomDarkAlphaText,
+            onDraftBottomDarkAlphaChange = { draftLiquidGlassBottomDarkAlphaText = it },
+            onSaveBottomDarkAlpha = { updateLiquidGlassBottomDarkAlpha(it) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsGlassCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun LiquidGlassSubjectCard() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        SectionCard(rowsFullBleed = true) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "主体比例",
-                    summary = "调整主体在玻璃层中的缩放比例",
-                    value = tuningState.liquidGlassSubjectScalePercent,
-                    draftText = draftLiquidGlassSubjectScaleText,
-                    min = MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-                    max = MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassSubjectScaleText = it },
-                    onSave = { updateLiquidGlassSubjectScalePercent(it) },
-                    icon = SettingsIconKind.Scale,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "主体外框宽度",
-                    summary = "沿主体外侧透明边界添加高光描边",
-                    value = tuningState.liquidGlassSubjectOutlineWidth,
-                    draftText = draftLiquidGlassSubjectOutlineWidthText,
-                    min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                    max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassSubjectOutlineWidthText = it },
-                    onSave = { updateLiquidGlassSubjectOutlineWidth(it) },
-                    icon = SettingsIconKind.Spark,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "主体内框宽度",
-                    summary = "沿主体内侧透明边界添加高光描边",
-                    value = tuningState.liquidGlassSubjectInnerOutlineWidth,
-                    draftText = draftLiquidGlassSubjectInnerOutlineWidthText,
-                    min = MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                    max = MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                    onSave = { updateLiquidGlassSubjectInnerOutlineWidth(it) },
-                    icon = SettingsIconKind.Spark,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "主体阴影",
-                    summary = "控制主体投影透明度，增强层次",
-                    value = tuningState.liquidGlassSubjectShadowAlpha,
-                    draftText = draftLiquidGlassSubjectShadowAlphaText,
-                    min = MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-                    max = MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassSubjectShadowAlphaText = it },
-                    onSave = { updateLiquidGlassSubjectShadowAlpha(it) },
-                    icon = SettingsIconKind.Shadow,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "主体透明度",
-                    summary = "归一化主体后再控制整体不透明度",
-                    value = tuningState.liquidGlassSubjectOpacityPercent,
-                    draftText = draftLiquidGlassSubjectOpacityText,
-                    min = MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
-                    max = MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
-                    step = 1,
-                    onDraftChange = { draftLiquidGlassSubjectOpacityText = it },
-                    onSave = { updateLiquidGlassSubjectOpacityPercent(it) },
-                    icon = SettingsIconKind.Glass,
-                )
-            }
-        }
-    }
+    internal fun LiquidGlassSubjectCard() =
+        LiquidGlassSubjectCard(
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            draftSubjectScaleText = draftLiquidGlassSubjectScaleText,
+            onDraftSubjectScaleChange = { draftLiquidGlassSubjectScaleText = it },
+            onSaveSubjectScale = { updateLiquidGlassSubjectScalePercent(it) },
+            draftSubjectOutlineWidthText = draftLiquidGlassSubjectOutlineWidthText,
+            onDraftSubjectOutlineWidthChange = { draftLiquidGlassSubjectOutlineWidthText = it },
+            onSaveSubjectOutlineWidth = { updateLiquidGlassSubjectOutlineWidth(it) },
+            draftSubjectInnerOutlineWidthText = draftLiquidGlassSubjectInnerOutlineWidthText,
+            onDraftSubjectInnerOutlineWidthChange = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+            onSaveSubjectInnerOutlineWidth = { updateLiquidGlassSubjectInnerOutlineWidth(it) },
+            draftSubjectShadowAlphaText = draftLiquidGlassSubjectShadowAlphaText,
+            onDraftSubjectShadowAlphaChange = { draftLiquidGlassSubjectShadowAlphaText = it },
+            onSaveSubjectShadowAlpha = { updateLiquidGlassSubjectShadowAlpha(it) },
+            draftSubjectOpacityText = draftLiquidGlassSubjectOpacityText,
+            onDraftSubjectOpacityChange = { draftLiquidGlassSubjectOpacityText = it },
+            onSaveSubjectOpacity = { updateLiquidGlassSubjectOpacityPercent(it) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsTuningCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun LocalRuleTuningCard() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        SectionCard(rowsFullBleed = true) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "背景相似度",
-                    summary = "越高越容易把相近颜色当背景",
-                    value = tuningState.backgroundSeparationPercent,
-                    draftText = draftBackgroundSeparationText,
-                    min = MIN_BACKGROUND_SEPARATION_PERCENT,
-                    max = MAX_BACKGROUND_SEPARATION_PERCENT,
-                    onDraftChange = { draftBackgroundSeparationText = it },
-                    onSave = { updateBackgroundSeparationPercent(it) },
-                    icon = SettingsIconKind.Cutout,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "底板清理",
-                    summary = "越高越容易移除纯色底板",
-                    value = tuningState.plateRemovalPercent,
-                    draftText = draftPlateRemovalText,
-                    min = MIN_PLATE_REMOVAL_PERCENT,
-                    max = MAX_PLATE_REMOVAL_PERCENT,
-                    onDraftChange = { draftPlateRemovalText = it },
-                    onSave = { updatePlateRemovalPercent(it) },
-                    icon = SettingsIconKind.Plate,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "旧阴影清理",
-                    summary = "清掉原图里的长阴影，不是新增阴影",
-                    value = tuningState.shadowRemovalPercent,
-                    draftText = draftShadowRemovalText,
-                    min = MIN_SHADOW_REMOVAL_PERCENT,
-                    max = MAX_SHADOW_REMOVAL_PERCENT,
-                    onDraftChange = { draftShadowRemovalText = it },
-                    onSave = { updateShadowRemovalPercent(it) },
-                    icon = SettingsIconKind.Eraser,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "边缘修补",
-                    summary = "修补抠图毛刺和半透明边",
-                    value = tuningState.edgePolishPercent,
-                    draftText = draftEdgePolishText,
-                    min = MIN_EDGE_POLISH_PERCENT,
-                    max = MAX_EDGE_POLISH_PERCENT,
-                    onDraftChange = { draftEdgePolishText = it },
-                    onSave = { updateEdgePolishPercent(it) },
-                    icon = SettingsIconKind.Spark,
-                )
-            }
-        }
-    }
+    internal fun LocalRuleTuningCard() =
+        LocalRuleTuningCard(
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            draftBackgroundSeparationText = draftBackgroundSeparationText,
+            onDraftBackgroundSeparationChange = { draftBackgroundSeparationText = it },
+            onSaveBackgroundSeparation = { updateBackgroundSeparationPercent(it) },
+            draftPlateRemovalText = draftPlateRemovalText,
+            onDraftPlateRemovalChange = { draftPlateRemovalText = it },
+            onSavePlateRemoval = { updatePlateRemovalPercent(it) },
+            draftShadowRemovalText = draftShadowRemovalText,
+            onDraftShadowRemovalChange = { draftShadowRemovalText = it },
+            onSaveShadowRemoval = { updateShadowRemovalPercent(it) },
+            draftEdgePolishText = draftEdgePolishText,
+            onDraftEdgePolishChange = { draftEdgePolishText = it },
+            onSaveEdgePolish = { updateEdgePolishPercent(it) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsTuningCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun LocalWorkflowPipelineCard() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        SectionCard(rowsFullBleed = true) {
-            LocalWorkflowToggleRow("背景估计与相减", "普通图标和 Adaptive 图标的背景分离", tuningState.localBackgroundSeparationEnabled, "background")
-            LocalWorkflowToggleRow("Adaptive 自动选层", "在合成前景与直接前景之间自动判断", tuningState.localAdaptiveSelectionEnabled, "adaptive")
-            LocalWorkflowToggleRow("角落蒙版清理", "清理 Adaptive 四角残留", tuningState.localCornerMaskCleanupEnabled, "corner")
-            LocalWorkflowToggleRow("透明边缘补色", "修复本地抠图透明边的颜色残留", tuningState.localAlphaEdgeColorRepairEnabled, "alpha_edge_repair")
-            LocalWorkflowToggleRow("普通背景估计", "关闭后跳过普通背景相减与拼合", tuningState.localPlainBackgroundEstimationEnabled, "plain_background")
-            LocalWorkflowToggleRow("原始前景清理", "应用原始前景的底板清理规则", tuningState.localOriginalCleanupEnabled, "original")
-            LocalWorkflowToggleRow("底板清理", "检测并移除连接到边缘的底板", tuningState.localPlateCleanupEnabled, "plate")
-            LocalWorkflowToggleRow("底板修边", "修复底板移除后的边缘颜色", tuningState.localPlateEdgeRepairEnabled, "plate_edge")
-            LocalWorkflowToggleRow("彩色残留清理", "清除底板颜色在主体边缘的残留", tuningState.localPlateResidueCleanupEnabled, "plate_residue")
-            LocalWorkflowToggleRow("长阴影清理", "移除原图中偏移的长阴影", tuningState.localShadowCleanupEnabled, "shadow")
-            LocalWorkflowToggleRow("阴影边缘修复", "保留阴影交界处的抗锯齿边缘", tuningState.localShadowEdgeRepairEnabled, "shadow_edge")
-            LocalWorkflowToggleRow("前景收边", "执行局部侵蚀和边缘羽化", tuningState.localEdgeTrimEnabled, "edge_trim")
-            LocalWorkflowToggleRow("拼合背景候选", "生成主体与重建背景的组合候选", tuningState.localComposedBackgroundEnabled, "composed")
-            LocalWorkflowToggleRow("二层候选", "运行底板/主体分层候选算法", tuningState.localTwoLayerCandidateEnabled, "two_layer")
-            LocalWorkflowToggleRow("组件候选", "生成底座作为主体或背景的候选", tuningState.localComponentCandidatesEnabled, "component")
-            LocalWorkflowToggleRow("字标保全候选", "保留更完整文字的安全候选", tuningState.localTextSafeCandidateEnabled, "text_safe")
-            LocalWorkflowToggleRow("自动候选选择", "关闭后固定使用完整清理结果", tuningState.localAutoSelectionEnabled, "auto")
-            LocalWorkflowToggleRow("本地最终边缘润色", "渲染本地候选时执行最后的边缘处理", tuningState.localEdgePolishEnabled, "edge_polish")
-        }
-    }
+    internal fun LocalWorkflowPipelineCard() =
+        LocalWorkflowPipelineCard(
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            onToggle = { key, enabled -> updateLocalWorkflowToggle(key, enabled) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsTuningCards.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun LocalWorkflowToggleRow(
         title: String,
         summary: String,
         checked: Boolean,
         key: String,
-    ) {
-        LibrarySettingRow(
-            title = title,
-            summary = summary,
-            icon = SettingsIconKind.Cutout,
-            showSwitch = true,
-            checked = checked,
-            enabled = !isBusy,
-            onCheckedChange = { updateLocalWorkflowToggle(key, it) },
+    ) = LocalWorkflowToggleRow(
+        title = title,
+        summary = summary,
+        checked = checked,
+        key = key,
+        isBusy = isBusy,
+        onCheckedChange = { k, v -> updateLocalWorkflowToggle(k, v) },
+    )
+
+    // 重构期间保留：委托到 ui/pages/settings/SettingsTuningCards.kt 显式参数版本，调用点零改动。
+    @Composable
+    internal fun RmbgTuningCard() =
+        RmbgTuningCard(
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            draftAlphaStrengthText = draftRmbgAlphaStrengthText,
+            onDraftAlphaStrengthChange = { draftRmbgAlphaStrengthText = it },
+            onSaveAlphaStrength = { updateRmbgAlphaStrengthPercent(it) },
+            draftEdgeFeatherText = draftRmbgEdgeFeatherText,
+            onDraftEdgeFeatherChange = { draftRmbgEdgeFeatherText = it },
+            onSaveEdgeFeather = { updateRmbgEdgeFeatherPercent(it) },
+            draftEdgeAdjustText = draftRmbgEdgeAdjustText,
+            onDraftEdgeAdjustChange = { draftRmbgEdgeAdjustText = it },
+            onSaveEdgeAdjust = { updateRmbgEdgeAdjustPercent(it) },
+            draftWeakAlphaKeepText = draftRmbgWeakAlphaKeepText,
+            onDraftWeakAlphaKeepChange = { draftRmbgWeakAlphaKeepText = it },
+            onSaveWeakAlphaKeep = { updateRmbgWeakAlphaKeepPercent(it) },
         )
-    }
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsJsonCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun RmbgTuningCard() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        SectionCard(rowsFullBleed = true) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "Alpha 力度",
-                    summary = "100 不变，越高越实",
-                    value = tuningState.rmbgAlphaStrengthPercent,
-                    draftText = draftRmbgAlphaStrengthText,
-                    min = MIN_RMBG_ALPHA_STRENGTH_PERCENT,
-                    max = MAX_RMBG_ALPHA_STRENGTH_PERCENT,
-                    onDraftChange = { draftRmbgAlphaStrengthText = it },
-                    onSave = { updateRmbgAlphaStrengthPercent(it) },
-                    icon = SettingsIconKind.Cutout,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "边缘柔化",
-                    summary = "越高边缘越软",
-                    value = tuningState.rmbgEdgeFeatherPercent,
-                    draftText = draftRmbgEdgeFeatherText,
-                    min = MIN_RMBG_EDGE_FEATHER_PERCENT,
-                    max = MAX_RMBG_EDGE_FEATHER_PERCENT,
-                    onDraftChange = { draftRmbgEdgeFeatherText = it },
-                    onSave = { updateRmbgEdgeFeatherPercent(it) },
-                    icon = SettingsIconKind.Cutout,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "边缘扩缩",
-                    summary = "低收缩，高扩张",
-                    value = tuningState.rmbgEdgeAdjustPercent,
-                    draftText = draftRmbgEdgeAdjustText,
-                    min = MIN_RMBG_EDGE_ADJUST_PERCENT,
-                    max = MAX_RMBG_EDGE_ADJUST_PERCENT,
-                    onDraftChange = { draftRmbgEdgeAdjustText = it },
-                    onSave = { updateRmbgEdgeAdjustPercent(it) },
-                    icon = SettingsIconKind.Scale,
-                )
-                NumberParameterControl(
-                    busy = isBusy,
-                    title = "弱透明保留",
-                    summary = "越高越保留半透明细节",
-                    value = tuningState.rmbgWeakAlphaKeepPercent,
-                    draftText = draftRmbgWeakAlphaKeepText,
-                    min = MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-                    max = MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-                    onDraftChange = { draftRmbgWeakAlphaKeepText = it },
-                    onSave = { updateRmbgWeakAlphaKeepPercent(it) },
-                    icon = SettingsIconKind.Cutout,
-                )
-            }
-        }
-    }
-
-    @Composable
-    internal fun JsonSettingsEditorCard() {
-        SectionCard {
-            JsonSettingsEditor()
-        }
-    }
+    internal fun JsonSettingsEditorCard() =
+        JsonSettingsEditorCard(
+            currentParams = currentTuningParams(),
+            draftText = draftJsonParamsText,
+            onDraftChange = { draftJsonParamsText = it },
+            onSave = { saveJsonParamsFromText(it) },
+            onRestore = {
+                draftJsonParamsText = currentTuningParams().toJson().toString(4)
+                statusText = "已恢复为当前参数 JSON"
+            },
+        )
 
     // ---------- 预设：保存 / 应用 / 批量 / 导入导出 ----------
 
@@ -2312,57 +2086,29 @@ class MainActivity : ComponentActivity() {
             onMore = { presetActionMenuTarget = it },
         )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsAppCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun WallpaperSettingsCard() {
-        val hasCustom = customWallpaperPath != null
-        SectionCard(rowsFullBleed = true) {
-            LibrarySettingRow(
-                title = "上传自定义壁纸",
-                summary = if (hasCustom) {
-                    "已上传${customWallpaperInfo.takeIf { it.isNotBlank() }?.let { "（$it）" }.orEmpty()}，「桌面」背景优先使用 · 自动居中裁剪 16:9（不缩放不变形）"
-                } else {
-                    "「桌面」背景当前用系统壁纸/内置壁纸 · 上传后自动居中裁剪 16:9（不缩放不变形）"
-                },
-                icon = SettingsIconKind.FileUpload,
-                showValue = false,
-                showArrowRight = true,
-                enabled = !isBusy,
-                onClick = {
-                    chooseWallpaperLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
-                },
-            )
-            if (hasCustom) {
-                LibrarySettingRow(
-                    title = "清除自定义壁纸",
-                    summary = "恢复为系统壁纸/内置壁纸",
-                    icon = SettingsIconKind.Eraser,
-                    showValue = false,
-                    showArrowRight = true,
-                    enabled = !isBusy,
-                    onClick = { clearCustomWallpaper() },
-                )
-            }
-        }
-    }
+    internal fun WallpaperSettingsCard() =
+        WallpaperSettingsCard(
+            hasCustom = customWallpaperPath != null,
+            customInfo = customWallpaperInfo,
+            isBusy = isBusy,
+            onPickWallpaper = {
+                chooseWallpaperLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
+            },
+            onClearWallpaper = { clearCustomWallpaper() },
+        )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsAppCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun BatchPreviewSettingsCard() {
-        SectionCard(rowsFullBleed = true) {
-            NumberParameterControl(
-                busy = isBusy,
-                title = "批量预览数量",
-                summary = "预设四风格宫格预览时随机抓取的应用数量（默认 20，优先未生成图标应用）",
-                value = batchPreviewCount,
-                draftText = draftBatchPreviewCountText,
-                min = MIN_BATCH_PREVIEW_COUNT,
-                max = MAX_BATCH_PREVIEW_COUNT,
-                step = 1,
-                onDraftChange = { draftBatchPreviewCountText = it },
-                onSave = { updateBatchPreviewCount(it) },
-                icon = SettingsIconKind.Grid,
-            )
-        }
-    }
+    internal fun BatchPreviewSettingsCard() =
+        BatchPreviewSettingsCard(
+            value = batchPreviewCount,
+            draftText = draftBatchPreviewCountText,
+            isBusy = isBusy,
+            onDraftChange = { draftBatchPreviewCountText = it },
+            onSave = { updateBatchPreviewCount(it) },
+        )
 
 
     // 重构期间保留：委托到 ui/pages/presets/PresetDialogs.kt 显式参数版本，调用点零改动。
@@ -2488,73 +2234,19 @@ class MainActivity : ComponentActivity() {
      * JSON 参数编辑器：全部调参参数以类型化 JSON 呈现。
      * 左侧滑块修改后此处自动刷新；也可以直接编辑文本，点「保存并应用」生效。
      */
+    // 重构期间保留：委托到 ui/pages/settings/SettingsJsonCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun JsonSettingsEditor() {
-        val currentParams = currentTuningParams()
-        LaunchedEffect(currentParams) {
-            draftJsonParamsText = currentParams.toJson().toString(4)
-        }
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "全部调参参数（含本地工作流开关、分离/清理/RMBG/液态玻璃/自适应/各模式选型）。可视化改动会同步到这里，也可直接编辑 JSON 后保存。",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-            BasicTextField(
-                value = draftJsonParamsText,
-                onValueChange = { draftJsonParamsText = it },
-                singleLine = false,
-                textStyle = MiuixTheme.textStyles.body1.copy(
-                    color = MiuixTheme.colorScheme.onSurface,
-                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
-                ),
-                cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(340.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                    .padding(12.dp),
-                decorationBox = { innerTextField ->
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        innerTextField()
-                    }
-                },
-            )
-            Text(
-                text = "缺失的键保持当前值；非法 JSON 会提示错误且不生效。",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                TextButton(
-                    text = "恢复当前",
-                    onClick = {
-                        draftJsonParamsText = currentTuningParams().toJson().toString(4)
-                        statusText = "已恢复为当前参数 JSON"
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(
-                    text = "保存并应用",
-                    onClick = { saveJsonParamsFromText(draftJsonParamsText) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
+    internal fun JsonSettingsEditor() =
+        JsonSettingsEditor(
+            currentParams = currentTuningParams(),
+            draftText = draftJsonParamsText,
+            onDraftChange = { draftJsonParamsText = it },
+            onSave = { saveJsonParamsFromText(it) },
+            onRestore = {
+                draftJsonParamsText = currentTuningParams().toJson().toString(4)
+                statusText = "已恢复为当前参数 JSON"
+            },
+        )
 
 
     @Composable
@@ -2696,610 +2388,156 @@ class MainActivity : ComponentActivity() {
 
 
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsAppCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun GptSettingsCard() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        SectionCard(rowsFullBleed = true) {
-            LibraryChoiceRow(
-                title = "调用方式",
-                summary = "选择 AI 生图的调用方式",
-                value = GptImageMode.fromValue(tuningState.gptImageMode).label,
-                icon = SettingsIconKind.Spark,
-                enabled = !isBusy,
-                entry = remember(GptImageMode.fromValue(tuningState.gptImageMode)) {
-                    DropdownEntry(
-                        items = GptImageMode.entries.map { mode ->
-                            DropdownItem(
-                                text = mode.label,
-                                selected = mode == GptImageMode.fromValue(tuningState.gptImageMode),
-                                onClick = {
-                                    mainViewModel.updateLive { p -> p.copy(gptImageMode = (mode).value) }
-                                    gptSettingsSaveStatus = ""
-                                },
-                            )
-                        },
-                    )
-                },
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            LibraryChoiceRow(
-                title = "AI 提示词",
-                summary = GptPromptPreset.fromValue(tuningState.gptPromptPreset).summary,
-                value = GptPromptPreset.fromValue(tuningState.gptPromptPreset).label,
-                icon = SettingsIconKind.Prompt,
-                enabled = !isBusy,
-                entry = remember(GptPromptPreset.fromValue(tuningState.gptPromptPreset)) {
-                    DropdownEntry(
-                        items = GptPromptPreset.entries.map { preset ->
-                            DropdownItem(
-                                text = preset.label,
-                                summary = preset.summary,
-                                selected = preset == GptPromptPreset.fromValue(tuningState.gptPromptPreset),
-                                onClick = {
-                                    mainViewModel.updateLive { p -> p.copy(gptPromptPreset = (preset).value) }
-                                    gptSettingsSaveStatus = ""
-                                },
-                            )
-                        },
-                    )
-                },
-            )
-            AnimatedVisibility(
-                visible = GptPromptPreset.fromValue(tuningState.gptPromptPreset) == GptPromptPreset.Custom,
-                enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                    expandVertically(animationSpec = tween(durationMillis = 180)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                    shrinkVertically(animationSpec = tween(durationMillis = 160)),
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    SettingsTextInputRow(
-                        title = "自定义前景提示词",
-                        value = tuningState.gptCustomPrompt,
-                        label = "自定义前景提示词",
-                        inputHint = "请填写自定义前景提示词",
-                        icon = SettingsIconKind.Prompt,
-                        enabled = !isBusy,
-                        onValueChange = {
-                            mainViewModel.updateLive { p -> p.copy(gptCustomPrompt = it) }
-                            gptSettingsSaveStatus = ""
-                        },
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            SettingsTextInputRow(
-                title = "模型 ID",
-                value = gptModelId,
-                label = "模型 ID",
-                inputHint = "请填写模型 ID",
-                icon = SettingsIconKind.Layers,
-                enabled = !isBusy,
-                onValueChange = {
-                    gptModelId = it
-                    gptSettingsSaveStatus = ""
-                },
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            SettingsTextInputRow(
-                title = "Base URL",
-                value = gptBaseUrl,
-                label = "Base URL",
-                inputHint = "请填写 Base URL",
-                icon = SettingsIconKind.Link,
-                enabled = !isBusy,
-                onValueChange = {
-                    gptBaseUrl = it
-                    gptSettingsSaveStatus = ""
-                },
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            SettingsTextInputRow(
-                title = "API key",
-                value = gptApiKey,
-                label = "API key",
-                inputHint = "请填写 API key",
-                icon = SettingsIconKind.Key,
-                obscure = true,
-                enabled = !isBusy,
-                onValueChange = {
-                    gptApiKey = it
-                    gptSettingsSaveStatus = ""
-                },
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            SettingsInfoRow(
-                title = "累计调用",
-                summary = "已累计调用 AI 云端接口的次数",
-                value = "$gptRunCount 次",
-                icon = settingsIconForTitle("累计调用"),
-            )
-        }
-    }
+    internal fun GptSettingsCard() =
+        GptSettingsCard(
+            tuningState = mainViewModel.params.collectAsState().value,
+            isBusy = isBusy,
+            gptModelId = gptModelId,
+            gptBaseUrl = gptBaseUrl,
+            gptApiKey = gptApiKey,
+            gptRunCount = gptRunCount,
+            onGptImageModeChange = { mode ->
+                mainViewModel.updateLive { p -> p.copy(gptImageMode = (mode).value) }
+                gptSettingsSaveStatus = ""
+            },
+            onGptPromptPresetChange = { preset ->
+                mainViewModel.updateLive { p -> p.copy(gptPromptPreset = (preset).value) }
+                gptSettingsSaveStatus = ""
+            },
+            onGptCustomPromptChange = {
+                mainViewModel.updateLive { p -> p.copy(gptCustomPrompt = it) }
+                gptSettingsSaveStatus = ""
+            },
+            onGptModelIdChange = {
+                gptModelId = it
+                gptSettingsSaveStatus = ""
+            },
+            onGptBaseUrlChange = {
+                gptBaseUrl = it
+                gptSettingsSaveStatus = ""
+            },
+            onGptApiKeyChange = {
+                gptApiKey = it
+                gptSettingsSaveStatus = ""
+            },
+        )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsAppCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun RmbgComponentCard() {
-        val component = remember(rmbgComponentStatus) { findRmbgComponent() }
-
-        SectionCard(rowsFullBleed = true) {
-            SettingsInfoRow(
-                title = "RMBG 状态",
-                summary = component?.let { "ABI ${it.abi}" } ?: "未安装",
-                value = if (component == null) "未安装" else "已安装",
-                icon = settingsIconForTitle("RMBG 状态"),
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            SettingsInfoRow(
-                title = "累计调用",
-                summary = "已累计运行 RMBG 模型抠图的次数",
-                value = "$rmbgRunCount 次",
-                icon = settingsIconForTitle("累计调用"),
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            LibraryChoiceRow(
-                title = "模型版本",
-                summary = currentRmbgModelPreset().summary,
-                value = currentRmbgModelPreset().label,
-                icon = SettingsIconKind.Layers,
-                enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-                entry = remember(currentRmbgModelPreset(), RMBG_MODEL_PRESETS) {
-                    val preset = currentRmbgModelPreset()
-                    DropdownEntry(
-                        items = RMBG_MODEL_PRESETS.map { candidate ->
-                            DropdownItem(
-                                text = candidate.label,
-                                summary = candidate.summary,
-                                selected = candidate == preset,
-                                onClick = { updateRmbgModelPreset(candidate) },
-                            )
-                        },
-                    )
-                },
-            )
-            if (lastRmbgCandidateError != null) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = lastRmbgCandidateError.orEmpty(),
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.error,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis,
+    internal fun RmbgComponentCard() =
+        RmbgComponentCard(
+            component = remember(rmbgComponentStatus) { findRmbgComponent() },
+            rmbgRunCount = rmbgRunCount,
+            currentPreset = currentRmbgModelPreset(),
+            allPresets = RMBG_MODEL_PRESETS,
+            lastError = lastRmbgCandidateError,
+            componentUrl = rmbgComponentUrl,
+            isBusy = isBusy,
+            isGenerating = isGeneratingRmbgCandidate,
+            isInstalling = isInstallingRmbgComponent,
+            installStage = rmbgInstallStage,
+            installProgress = rmbgInstallProgress,
+            dialogVisible = rmbgDialogVisible,
+            onPresetSelected = { updateRmbgModelPreset(it) },
+            onComponentUrlChange = {
+                rmbgComponentUrl = it
+                rmbgComponentSaveStatus = ""
+            },
+            onDialogVisibleChange = { rmbgDialogVisible = it },
+            onPickZip = {
+                chooseRmbgComponentLauncher.launch(
+                    arrayOf("application/zip", "application/octet-stream", "*/*"),
                 )
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            LibrarySettingRow(
-                title = "模型或组件 ZIP 地址",
-                summary = if (rmbgComponentUrl.isBlank()) "粘贴 ZIP 地址或从本地选择 · 未设置" else rmbgComponentUrl,
-                icon = SettingsIconKind.Link,
-                showValue = false,
-                showArrowRight = true,
-                enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-                onClick = { rmbgDialogVisible = true },
-            )
-            if (isInstallingRmbgComponent || rmbgInstallStage.isNotBlank()) {
-                Spacer(modifier = Modifier.height(10.dp))
-                RmbgInstallProgressBar(
-                    text = rmbgInstallStage.ifBlank { if (isInstallingRmbgComponent) "安装中" else "" },
-                    progress = rmbgInstallProgress,
-                    active = isInstallingRmbgComponent,
-                )
-            }
-        }
-        if (rmbgDialogVisible) {
-            MiuixBottomDialog(onDismissRequest = { rmbgDialogVisible = false }) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(MiuixTheme.colorScheme.background)
-                        .padding(horizontal = 24.dp, vertical = 22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = "模型或组件 ZIP 地址",
-                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "粘贴 ZIP 地址，或从本地选择模型文件",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    TextField(
-                        value = rmbgComponentUrl,
-                        onValueChange = {
-                            rmbgComponentUrl = it
-                            rmbgComponentSaveStatus = ""
-                        },
-                        label = "请填写 ZIP 地址",
-                        singleLine = true,
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Button(
-                            onClick = {
-                                rmbgDialogVisible = false
-                                chooseRmbgComponentLauncher.launch(
-                                    arrayOf("application/zip", "application/octet-stream", "*/*"),
-                                )
-                            },
-                            enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(),
-                        ) {
-                            Text(
-                                text = "选择 ZIP",
-                                style = MiuixTheme.textStyles.button,
-                                color = MiuixTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                            )
-                        }
-                        Button(
-                            onClick = {
-                                rmbgDialogVisible = false
-                                installRmbgComponentFromUrl()
-                            },
-                            enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                        ) {
-                            Text(
-                                text = if (isInstallingRmbgComponent) "安装中" else "一键安装",
-                                style = MiuixTheme.textStyles.button,
-                                color = Color.White,
-                                maxLines = 1,
-                            )
-                        }
-                    }
-                    if (component != null) {
-                        Button(
-                            onClick = {
-                                rmbgDialogVisible = false
-                                clearInstalledRmbgComponent()
-                            },
-                            enabled = !isBusy && !isGeneratingRmbgCandidate && !isInstallingRmbgComponent,
-                            colors = ButtonDefaults.buttonColors(
-                                color = MiuixTheme.colorScheme.surfaceContainerHigh,
-                                contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(
-                                text = "清除已安装 RMBG",
-                                style = MiuixTheme.textStyles.button,
-                                maxLines = 1,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+            },
+            onInstallFromUrl = { installRmbgComponentFromUrl() },
+            onClearInstalled = { clearInstalledRmbgComponent() },
+        )
 
 
     // Slice 1.5 已搬入 system/ExportManager.kt：formatTreeUriDisplay（纯函数，同包直接用）。
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsAppCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun OutputCard() {
-        SectionCard(rowsFullBleed = true) {
-            SettingsInfoRow(
-                title = "Root 目标",
-                summary = "/data/oplus/uxicons/{package}",
-                value = "data",
-                icon = settingsIconForTitle("Root 目标"),
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            LibrarySettingRow(
-                title = "自动确认写入",
-                summary = if (autoConfirmRootWrite) "点击写入时直接写入 Root 目标" else "点击写入时会弹出二次确认提示",
-                icon = SettingsIconKind.Shield,
-                showSwitch = true,
-                checked = autoConfirmRootWrite,
-                enabled = !isBusy,
-                onCheckedChange = {
-                    autoConfirmRootWrite = it
-                    saveUiState()
-                    statusText = if (autoConfirmRootWrite) "已开启自动确认写入" else "已关闭自动确认写入"
-                },
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            LibrarySettingRow(
-                title = "自动确认刷新",
-                summary = if (autoConfirmRefresh) "点击刷新按钮时直接执行刷新" else "点击刷新按钮时会弹出二次确认提示",
-                icon = SettingsIconKind.Refresh,
-                showSwitch = true,
-                checked = autoConfirmRefresh,
-                enabled = !isBusy,
-                onCheckedChange = {
-                    autoConfirmRefresh = it
-                    saveUiState()
-                    statusText = if (autoConfirmRefresh) "已开启自动确认刷新" else "已关闭自动确认刷新"
-                },
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            val outputTreeDisplay = remember(outputTreeUri) { formatTreeUriDisplay(outputTreeUri) }
-            val isBackupActive = backupJob?.isActive == true && backupProgress != null
-            val isBackupInBg = backupInBackground && isBackupActive
-            // 后台时“备份中”省略号动效：. -> .. -> ...
-            val backupDots = remember(backupBackgroundDots) { ".".repeat(backupBackgroundDots.coerceIn(1, 3)) }
-            LaunchedEffect(isBackupInBg) {
-                if (isBackupInBg) startBackupDotAnimation() else stopBackupDotAnimation()
-            }
-            LibrarySettingRow(
-                title = "备份到外部目录",
-                summary = when {
-                    isBackupInBg -> "备份中$backupDots"
-                    isBackupActive -> "正在备份..."
-                    outputTreeUri == null -> "未选择 · 备份已写入系统的全部图标"
-                    outputTreeDisplay != null -> "已选择：$outputTreeDisplay"
-                    else -> "已选择：${outputTreeUri.toString().take(40)}"
-                },
-                icon = settingsIconForTitle("备份到外部目录"),
-                showValue = false,
-                showArrowRight = true,
-                enabled = !isBusy || isBackupInBg,
-                onClick = {
-                    if (isBackupInBg || (isBackupActive && backupSheetVisible.not())) {
-                        backupInBackground = false
-                        backupSheetVisible = true
-                        stopBackupDotAnimation()
-                    } else if (isBackupActive) {
-                        backupSheetVisible = true
-                    } else {
-                        exportDialogVisible = true
-                    }
-                },
-            )
-        }
-        if (exportDialogVisible) {
-            val dialogTreeDisplay = remember(outputTreeUri) { formatTreeUriDisplay(outputTreeUri) }
-            var draftExportPath by remember(outputTreeUri) {
-                mutableStateOf(dialogTreeDisplay ?: outputTreeUri?.toString() ?: "")
-            }
-            // 保持与 treeUri 同步：当外部选择目录后，刷新输入框
-            LaunchedEffect(dialogTreeDisplay, outputTreeUri) {
-                val current = dialogTreeDisplay ?: outputTreeUri?.toString() ?: ""
-                if (current != draftExportPath && (draftExportPath.isBlank() || outputTreeUri != null)) {
-                    // 仅在空输入或已选状态下自动同步，避免覆盖用户正在输入的内容
-                    if (draftExportPath.isBlank() || dialogTreeDisplay != null) {
-                        draftExportPath = current
-                    }
+    internal fun OutputCard() =
+        OutputCard(
+            autoConfirmRootWrite = autoConfirmRootWrite,
+            autoConfirmRefresh = autoConfirmRefresh,
+            isBusy = isBusy,
+            outputTreeUri = outputTreeUri,
+            treeDisplay = remember(outputTreeUri) { formatTreeUriDisplay(outputTreeUri) },
+            backupActive = backupJob?.isActive == true && backupProgress != null,
+            backupInBackground = backupInBackground,
+            backupDots = backupBackgroundDots,
+            exportDialogVisible = exportDialogVisible,
+            onAutoConfirmRootWriteChange = {
+                autoConfirmRootWrite = it
+                saveUiState()
+                statusText = if (autoConfirmRootWrite) "已开启自动确认写入" else "已关闭自动确认写入"
+            },
+            onAutoConfirmRefreshChange = {
+                autoConfirmRefresh = it
+                saveUiState()
+                statusText = if (autoConfirmRefresh) "已开启自动确认刷新" else "已关闭自动确认刷新"
+            },
+            onBackupRowClick = {
+                val active = backupJob?.isActive == true && backupProgress != null
+                val inBg = backupInBackground && active
+                if (inBg || (active && backupSheetVisible.not())) {
+                    backupInBackground = false
+                    backupSheetVisible = true
+                    stopBackupDotAnimation()
+                } else if (active) {
+                    backupSheetVisible = true
+                } else {
+                    exportDialogVisible = true
                 }
-            }
-            MiuixBottomDialog(onDismissRequest = { exportDialogVisible = false }) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(MiuixTheme.colorScheme.background)
-                        .padding(horizontal = 24.dp, vertical = 22.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = "备份到外部目录",
-                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = if (outputTreeUri == null) "将把 /data/oplus/uxicons 内的全部图标（含官方与已写入）备份到你选择的目录" else "将把已写入系统的全部图标备份到你选择的目录",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    TextField(
-                        value = draftExportPath,
-                        onValueChange = { draftExportPath = it },
-                        label = "备份路径",
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = false,
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Button(
-                            onClick = {
-                                exportDialogVisible = false
-                                chooseTreeLauncher.launch(null)
-                            },
-                            enabled = !isBusy,
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(),
-                        ) {
-                            Text(
-                                text = "选择目录",
-                                style = MiuixTheme.textStyles.button,
-                                color = MiuixTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                            )
-                        }
-                        Button(
-                            onClick = {
-                                exportDialogVisible = false
-                                backupAllToExternal()
-                            },
-                            enabled = !isBusy,
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                        ) {
-                            Text(
-                                text = "备份当前所有图标",
-                                style = MiuixTheme.textStyles.button,
-                                color = Color.White,
-                                maxLines = 1,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+            },
+            onBackupBackgroundActiveChanged = { inBg ->
+                if (inBg) startBackupDotAnimation() else stopBackupDotAnimation()
+            },
+            onExportDialogDismiss = { exportDialogVisible = false },
+            onChooseTree = { chooseTreeLauncher.launch(null) },
+            onBackupAll = { backupAllToExternal() },
+        )
 
     // 重构期间保留：委托到 system/ExportManager.kt 显式参数版本，调用点零改动。
     internal fun exportCurrentToExternal() =
         exportCurrentToExternal(onBackupAll = { backupAllToExternal() })
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsAppCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun PreviewStripSettingsCard() {
-        SectionCard(rowsFullBleed = true) {
-            LibrarySettingRow(
-                title = "顶部 1×4 预览条",
-                summary = "在主页、生成参数与预设页置顶显示，参数或 JSON 保存后自动更新",
-                icon = SettingsIconKind.Palette,
-                showSwitch = true,
-                checked = previewStripEnabled,
-                enabled = !isBusy,
-                onCheckedChange = { updatePreviewStripEnabled(it) },
-            )
-        }
-    }
+    internal fun PreviewStripSettingsCard() =
+        PreviewStripSettingsCard(
+            enabled = previewStripEnabled,
+            isBusy = isBusy,
+            onCheckedChange = { updatePreviewStripEnabled(it) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/settings/SettingsGlassCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun LiquidGlassToggleRow() {
-        val tuningState = mainViewModel.params.collectAsState().value
-        val interactionSource = remember { MutableInteractionSource() }
-        val pressed by interactionSource.collectIsPressedAsState()
-        val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
-        val bridge = LocalSectionCardPressBridge.current
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .trackSectionPress(bridge, pressed)
-                .cardRowBleed(bleedPx)
-                .background(cardRowPressedColor(pressed))
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    enabled = !isBusy,
-                    onClick = { updateLiquidGlassEnabled(!mainViewModel.params.value.liquidGlassEnabled) },
-                )
-                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SettingsLineIcon(kind = SettingsIconKind.Glass)
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                Text(
-                    text = "液态玻璃风格",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "开启后按当前液态玻璃参数重绘背景和前景光影",
-                    modifier = Modifier.basicMarquee(),
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-            }
-            LiquidGlassSwitch(checked = tuningState.liquidGlassEnabled, enabled = !isBusy)
-        }
-    }
+    internal fun LiquidGlassToggleRow() =
+        LiquidGlassToggleRow(
+            enabled = mainViewModel.params.collectAsState().value.liquidGlassEnabled,
+            isBusy = isBusy,
+            onToggle = { updateLiquidGlassEnabled(!mainViewModel.params.value.liquidGlassEnabled) },
+        )
 
 
 
+    // Slice 2.3 已搬入 ui/pages/settings/SettingsAppCards.kt：InputSettingsCard（纯 UI，直接搬迁，不留 wrapper）。
+    // 重构期间保留：委托到 ui/pages/settings/SettingsAppCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun InputSettingsCard(launcherCount: Int, totalCount: Int, generatedCount: Int) {
-        SectionCard(rowsFullBleed = true) {
-            SettingsInfoRow(
-                title = "应用范围",
-                summary = "启动器 $launcherCount 个 / 全部 $totalCount 个",
-                value = "启动器",
-                icon = settingsIconForTitle("应用范围"),
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            SettingsInfoRow(
-                title = "已生成",
-                summary = "来自本地缓存；手动刷新后才重新读取 data 路径",
-                value = "$generatedCount",
-                icon = settingsIconForTitle("已生成"),
-            )
-        }
-    }
-
-    @Composable
-    internal fun ShowSystemAppsToggleRow() {
-        val interactionSource = remember { MutableInteractionSource() }
-        val pressed by interactionSource.collectIsPressedAsState()
-        val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
-        val bridge = LocalSectionCardPressBridge.current
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .trackSectionPress(bridge, pressed)
-                .cardRowBleed(bleedPx)
-                .background(cardRowPressedColor(pressed))
-                .semantics {
-                    contentDescription = "显示系统应用开关"
-                    stateDescription = if (showSystemApps) "已开启" else "已关闭"
-                    role = Role.Switch
-                }
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    enabled = !isBusy,
-                    onClick = {
-                        showSystemApps = !showSystemApps
-                        saveUiState()
-                    },
-                )
-                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                .padding(vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SettingsLineIcon(kind = SettingsIconKind.Shield)
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
-            ) {
-                Text(
-                    text = "显示系统应用",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = if (showSystemApps) "已包含系统应用，可搜索和批量选择" else "仅显示用户应用；系统应用已隐藏",
-                    modifier = Modifier.basicMarquee(),
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-            }
-            Box(
-                modifier = Modifier.semantics {
-                    contentDescription = "显示系统应用"
-                }
-            ) {
-                LiquidGlassSwitch(checked = showSystemApps, enabled = !isBusy)
-            }
-        }
-    }
+    internal fun ShowSystemAppsToggleRow() =
+        ShowSystemAppsToggleRow(
+            checked = showSystemApps,
+            isBusy = isBusy,
+            onToggle = {
+                showSystemApps = !showSystemApps
+                saveUiState()
+            },
+        )
 
     @Composable
     internal fun AppPickerStatusCard(
@@ -7800,9 +7038,7 @@ class MainActivity : ComponentActivity() {
         // MIN_PREVIEW_ICON_SIZE_DP / MAX_PREVIEW_ICON_SIZE_DP /
         // DEFAULT_PREVIEW_CORNER_RADIUS_DP / MIN_PREVIEW_CORNER_RADIUS_DP /
         // MAX_PREVIEW_CORNER_RADIUS_DP，同包直接引用。
-        private const val DEFAULT_BATCH_PREVIEW_COUNT = BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT
-        private const val MIN_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MIN_BATCH_PREVIEW_COUNT
-        private const val MAX_BATCH_PREVIEW_COUNT = BatchPreviewSampler.MAX_BATCH_PREVIEW_COUNT
+        // Slice 2.3 已提升到 TuningParams.kt：DEFAULT/MIN/MAX_BATCH_PREVIEW_COUNT，同包直接引用。
         private const val PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE = 480
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
