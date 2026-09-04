@@ -331,7 +331,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     val scope = rememberCoroutineScope()
     val isDark = isSystemInDarkTheme()
     val containerColor = if (isDark) Color(0xFF121212).copy(alpha = 0.4f) else Color(0xFFFAFAFA).copy(alpha = 0.4f)
-    val isBlurEnabled = liquidGlassBottomBarEnabled && liquidGlassBottomBarBlurEnabled
+    val isBlurEnabled = mainViewModel.glassBar.value.liquidGlassBottomBarEnabled && mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled
     var beyondViewportCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
         delay(200)
@@ -359,19 +359,19 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         TitleBarIconButton(
                             icon = Lucide.RefreshCw,
                             contentDescription = "刷新",
-                            enabled = !isBusy && !isRefreshingArtPlusIcons,
+                            enabled = !mainViewModel.shell.value.isBusy && !mainViewModel.previewSession.value.isRefreshingArtPlusIcons,
                             dimWhenDisabled = false,
                             onClick = {
-                                if (autoConfirmRefresh) {
+                                if (mainViewModel.confirm.value.autoConfirmRefresh) {
                                     refreshArtPlusIcons()
                                 } else {
-                                    refreshConfirmRememberAuto = false
-                                    refreshConfirmVisible = true
+                                    mainViewModel.updateConfirm { it -> it.copy(refreshConfirmRememberAuto = (false)) }
+                                    mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (true)) }
                                 }
                             },
                         )
                     },
-                    showPreviewStrip = previewStripEnabled,
+                    showPreviewStrip = mainViewModel.previewSession.value.previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
                     LazyColumn(
                         modifier = Modifier
@@ -383,7 +383,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        if (!packageListPermissionGranted || !usageAccessGranted) {
+                        if (!mainViewModel.picker.value.packageListPermissionGranted || !mainViewModel.picker.value.usageAccessGranted) {
                             item(key = "permission") {
                                 PermissionCard()
                             }
@@ -399,7 +399,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         item(key = "generation_action") {
                             GenerationActionCard(selectedApp)
                         }
-                        if (previewDirPath != null && previewPackageName != null) {
+                        if (mainViewModel.previewSession.value.previewDirPath != null && mainViewModel.previewSession.value.previewPackageName != null) {
                             item(key = "generated_preview") {
                                 GeneratedPreviewCard()
                             }
@@ -415,7 +415,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
 
                 1 -> PagerShellPage(
                     title = "生成参数",
-                    showPreviewStrip = previewStripEnabled,
+                    showPreviewStrip = mainViewModel.previewSession.value.previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
                     LazyColumn(
                         modifier = Modifier
@@ -430,8 +430,8 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         item(key = "gen_nav") {
                             GenerationNavCard()
                         }
-                        when (advancedSettingsTab) {
-                            AdvancedSettingsTab.Sliders -> when (advancedSettingsCategory) {
+                        when (mainViewModel.shell.value.advancedSettingsTab) {
+                            AdvancedSettingsTab.Sliders -> when (mainViewModel.shell.value.advancedSettingsCategory) {
                                 AdvancedSettingsCategory.LiquidGlass -> {
                                     item(key = "glass_toggle") { LiquidGlassToggleCard() }
                                     item(key = "glass_surface") { LiquidGlassSurfaceCard() }
@@ -457,15 +457,15 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                 2 -> PagerShellPage(
                     title = "预设",
                     actions = {
-                        val presetCount = remember(presetListVersion) { presetStore.all().size }
+                        val presetCount = remember(mainViewModel.presetUi.value.presetListVersion) { presetStore.all().size }
                         TitleBarIconButton(
                             icon = Lucide.Download,
                             contentDescription = "导入预设",
-                            enabled = !isBusy,
+                            enabled = !mainViewModel.shell.value.isBusy,
                             dimWhenDisabled = false,
                             onClick = {
-                                presetImportText = ""
-                                presetImportDialogVisible = true
+                                mainViewModel.updatePresetUi { it -> it.copy(presetImportText = ("")) }
+                                mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (true)) }
                             },
                             paddingStart = 0.dp,
                             paddingEnd = 8.dp,
@@ -473,14 +473,14 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         TitleBarIconButton(
                             icon = Lucide.Upload,
                             contentDescription = "导出全部预设",
-                            enabled = !isBusy && presetCount > 0,
+                            enabled = !mainViewModel.shell.value.isBusy && presetCount > 0,
                             dimWhenDisabled = true,
                             onClick = { exportPresetsToClipboard() },
                             paddingStart = 0.dp,
                             paddingEnd = 16.dp,
                         )
                     },
-                    showPreviewStrip = previewStripEnabled,
+                    showPreviewStrip = mainViewModel.previewSession.value.previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
                     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                         val topPadding = innerPadding.calculateTopPadding()
@@ -517,7 +517,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         TitleBarIconButton(
                             icon = Lucide.Save,
                             contentDescription = null,
-                            enabled = !isBusy,
+                            enabled = !mainViewModel.shell.value.isBusy,
                             dimWhenDisabled = false,
                             onClick = { saveSettingsPage() },
                             paddingStart = 0.dp,
@@ -537,7 +537,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
         }
 
         // 液态玻璃底栏（KernelSU FloatingBottomBar 1:1：vibrancy+blur4dp+lens24dp 三层玻璃+拖拽阻尼+高光镜面）
-        if (liquidGlassBottomBarEnabled) {
+        if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) {
             FloatingBottomBar(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -562,7 +562,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                     ) {
                         val selected = pagerState.targetPage == index
                         val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
-                        val tint = if (isBusy) baseTint.copy(alpha = 0.45f) else baseTint
+                        val tint = if (mainViewModel.shell.value.isBusy) baseTint.copy(alpha = 0.45f) else baseTint
                         Image(
                             imageVector = icon,
                             contentDescription = label,
@@ -618,7 +618,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                                 verticalArrangement = Arrangement.spacedBy(2.dp),
                             ) {
                                 val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
-                                val tint = if (isBusy) baseTint.copy(alpha = 0.45f) else baseTint
+                                val tint = if (mainViewModel.shell.value.isBusy) baseTint.copy(alpha = 0.45f) else baseTint
                                 Image(
                                     imageVector = icon,
                                     contentDescription = label,
@@ -646,8 +646,8 @@ internal fun MainActivity.HomePreviewStrip(
     onHeightMeasured: (androidx.compose.ui.unit.Dp) -> Unit = {},
 ) {
     val density = LocalDensity.current
-    val assets = sharedPreviewAssets
-    val loading = isPreviewAssetsRefreshing || isPreviewOutputRefreshing || isGptPreviewLoading
+    val assets = mainViewModel.previewSession.value.sharedPreviewAssets
+    val loading = mainViewModel.previewSession.value.isPreviewAssetsRefreshing || mainViewModel.previewSession.value.isPreviewOutputRefreshing || mainViewModel.previewSession.value.isGptPreviewLoading
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -667,9 +667,9 @@ internal fun MainActivity.HomePreviewStrip(
                     assets = assets,
                     mode = mode,
                     loading = loading,
-                    desktopBackground = previewDesktopBackground,
-                    iconSizeDp = previewIconSizeDp,
-                    cornerRadiusDp = previewCornerRadiusDp,
+                    desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                    iconSizeDp = mainViewModel.previewSession.value.previewIconSizeDp,
+                    cornerRadiusDp = mainViewModel.previewSession.value.previewCornerRadiusDp,
                     modifier = Modifier.weight(1f),
                 )
             }

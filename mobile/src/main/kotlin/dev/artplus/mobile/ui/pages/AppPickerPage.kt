@@ -344,9 +344,9 @@ internal fun MainActivity.AppPickerPage(
                     TitleBarIconButton(
                         icon = Lucide.ChevronLeft,
                         contentDescription = "返回",
-                        enabled = !isBusy,
+                        enabled = !mainViewModel.shell.value.isBusy,
                         dimWhenDisabled = false,
-                        onClick = { currentPage = AppPage.Home },
+                        onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
                     )
                 },
             )
@@ -385,12 +385,12 @@ internal fun MainActivity.AppPickerPage(
                 ) { entry ->
                     AppRow(
                         entry = entry,
-                        selected = entry.packageName == selectedPackageName,
-                        multiSelected = entry.packageName in multiSelectedPackageNames,
-                        generated = entry.packageName in generatedPackageNames,
+                        selected = entry.packageName == mainViewModel.picker.value.selectedPackageName,
+                        multiSelected = entry.packageName in mainViewModel.picker.value.multiSelectedPackageNames,
+                        generated = entry.packageName in mainViewModel.picker.value.generatedPackageNames,
                         onClick = {
                             selectAppAndRestoreGeneratedPreview(entry)
-                            currentPage = AppPage.Home
+                            mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) }
                         },
                         onToggleMultiSelect = { toggleMultiSelectedPackage(entry.packageName) },
                     )

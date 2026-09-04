@@ -350,9 +350,9 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     TitleBarIconButton(
                         icon = Lucide.ChevronLeft,
                         contentDescription = "返回",
-                        enabled = !isBusy,
+                        enabled = !mainViewModel.shell.value.isBusy,
                         dimWhenDisabled = false,
-                        onClick = { currentPage = AppPage.Home },
+                        onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
                     )
                 },
             )
@@ -410,7 +410,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         summary = GITHUB_REPO_URL,
                         icon = SettingsIconKind.Link,
                         showArrowRight = true,
-                        enabled = !isBusy,
+                        enabled = !mainViewModel.shell.value.isBusy,
                         onClick = { openExternalLink(GITHUB_REPO_URL) },
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -419,16 +419,16 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         summary = "MIT License",
                         icon = SettingsIconKind.Shield,
                         showArrowRight = true,
-                        enabled = !isBusy,
-                        onClick = { mitLicenseDialogVisible = true },
+                        enabled = !mainViewModel.shell.value.isBusy,
+                        onClick = { mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (true)) } },
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     LibrarySettingRow(
                         title = "检查更新",
-                        summary = if (isCheckingUpdate) "检查中..." else "当前 $versionName",
+                        summary = if (mainViewModel.updateUi.value.isCheckingUpdate) "检查中..." else "当前 $versionName",
                         icon = SettingsIconKind.Grid,
-                        showArrowRight = !isCheckingUpdate,
-                        enabled = !isBusy && !isCheckingUpdate,
+                        showArrowRight = !mainViewModel.updateUi.value.isCheckingUpdate,
+                        enabled = !mainViewModel.shell.value.isBusy && !mainViewModel.updateUi.value.isCheckingUpdate,
                         onClick = { checkForUpdate() },
                     )
                 }
@@ -445,8 +445,8 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
         }
     }
 
-    if (mitLicenseDialogVisible) {
-        MiuixBottomDialog(onDismissRequest = { mitLicenseDialogVisible = false }) {
+    if (mainViewModel.updateUi.value.mitLicenseDialogVisible) {
+        MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (false)) } }) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -488,7 +488,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Button(
-                        onClick = { mitLicenseDialogVisible = false },
+                        onClick = { mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (false)) } },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(),
                     ) {
@@ -501,7 +501,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     }
                     Button(
                         onClick = {
-                            mitLicenseDialogVisible = false
+                            mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (false)) }
                             openExternalLink(GITHUB_LICENSE_URL)
                         },
                         modifier = Modifier.weight(1f),
@@ -519,8 +519,8 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
         }
     }
 
-    updateAvailableInfo?.let { info ->
-        MiuixBottomDialog(onDismissRequest = { updateAvailableInfo = null }) {
+    mainViewModel.updateUi.value.updateAvailableInfo?.let { info ->
+        MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (null)) } }) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -547,7 +547,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Button(
-                        onClick = { updateAvailableInfo = null },
+                        onClick = { mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (null)) } },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(),
                     ) {
@@ -561,7 +561,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     Button(
                         onClick = {
                             val url = info.htmlUrl
-                            updateAvailableInfo = null
+                            mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (null)) }
                             openExternalLink(url)
                         },
                         modifier = Modifier.weight(1f),
@@ -579,8 +579,8 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
         }
     }
 
-    if (updateUpToDateDialogVisible) {
-        MiuixBottomDialog(onDismissRequest = { updateUpToDateDialogVisible = false }) {
+    if (mainViewModel.updateUi.value.updateUpToDateDialogVisible) {
+        MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(updateUpToDateDialogVisible = (false)) } }) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -603,7 +603,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     textAlign = TextAlign.Center,
                 )
                 Button(
-                    onClick = { updateUpToDateDialogVisible = false },
+                    onClick = { mainViewModel.updateUpdateUi { it -> it.copy(updateUpToDateDialogVisible = (false)) } },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {

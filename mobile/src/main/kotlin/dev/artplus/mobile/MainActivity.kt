@@ -339,23 +339,10 @@ class MainActivity : ComponentActivity() {
     }.asCoroutineDispatcher()
     internal val previewWorkerScope = CoroutineScope(SupervisorJob() + previewWorkerDispatcher)
     internal val apps = mutableStateListOf<AppEntry>()
-    internal var queryText: String get() = mainViewModel.picker.value.queryText; set(v) { mainViewModel.updatePicker { it.copy(queryText = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var selectedPackageName: String? get() = mainViewModel.picker.value.selectedPackageName; set(v) { mainViewModel.updatePicker { it.copy(selectedPackageName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var statusText: String get() = mainViewModel.shell.value.statusText; set(v) { mainViewModel.updateShell { it.copy(statusText = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var packageListPermissionGranted: Boolean get() = mainViewModel.picker.value.packageListPermissionGranted; set(v) { mainViewModel.updatePicker { it.copy(packageListPermissionGranted = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var usageAccessGranted: Boolean get() = mainViewModel.picker.value.usageAccessGranted; set(v) { mainViewModel.updatePicker { it.copy(usageAccessGranted = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var outputTreeUri: Uri? get() = mainViewModel.shell.value.outputTreeUri; set(v) { mainViewModel.updateShell { it.copy(outputTreeUri = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isBusy: Boolean get() = mainViewModel.shell.value.isBusy; set(v) { mainViewModel.updateShell { it.copy(isBusy = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var didRequestAppLoad = false
-    internal var gptModelId: String get() = mainViewModel.gptRmbgSettings.value.gptModelId; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(gptModelId = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var gptBaseUrl: String get() = mainViewModel.gptRmbgSettings.value.gptBaseUrl; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(gptBaseUrl = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var gptApiKey: String get() = mainViewModel.gptRmbgSettings.value.gptApiKey; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(gptApiKey = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var gptSettingsSaveStatus: String get() = mainViewModel.gptRmbgSettings.value.gptSettingsSaveStatus; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(gptSettingsSaveStatus = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftForegroundSubjectPercentText by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT.toString())
     internal var draftForegroundShadowLevelText by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL.toString())
     internal var draftMonochromeThemeScaleText by mutableStateOf((DEFAULT_MONOCHROME_THEME_SCALE * 100).roundToInt().toString())
-    internal var advancedSettingsCategory: AdvancedSettingsCategory get() = mainViewModel.shell.value.advancedSettingsCategory; set(v) { mainViewModel.updateShell { it.copy(advancedSettingsCategory = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var advancedSettingsTab: AdvancedSettingsTab get() = mainViewModel.shell.value.advancedSettingsTab; set(v) { mainViewModel.updateShell { it.copy(advancedSettingsTab = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBackgroundSeparationText by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT.toString())
     internal var draftPlateRemovalText by mutableStateOf(DEFAULT_PLATE_REMOVAL_PERCENT.toString())
     internal var draftShadowRemovalText by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT.toString())
@@ -364,8 +351,6 @@ class MainActivity : ComponentActivity() {
     internal var draftRmbgEdgeFeatherText by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT.toString())
     internal var draftRmbgEdgeAdjustText by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT.toString())
     internal var draftRmbgWeakAlphaKeepText by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT.toString())
-    internal var liquidGlassBottomBarEnabled: Boolean get() = mainViewModel.glassBar.value.liquidGlassBottomBarEnabled; set(v) { mainViewModel.updateGlassBar { it.copy(liquidGlassBottomBarEnabled = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var liquidGlassBottomBarBlurEnabled: Boolean get() = mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled; set(v) { mainViewModel.updateGlassBar { it.copy(liquidGlassBottomBarBlurEnabled = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftLiquidGlassRadiusText by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS.toString())
     internal var draftLiquidGlassOuterWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH.toString())
     internal var draftLiquidGlassTopAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA.toString())
@@ -377,117 +362,26 @@ class MainActivity : ComponentActivity() {
     internal var draftLiquidGlassSubjectInnerOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH.toString())
     internal var draftLiquidGlassSubjectShadowAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA.toString())
     internal var draftLiquidGlassSubjectOpacityText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT.toString())
-    internal var lastParamsSnapshot: TuningParams? get() = mainViewModel.previewSession.value.lastParamsSnapshot; set(v) { mainViewModel.updatePreviewSession { it.copy(lastParamsSnapshot = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     // P2 交界：历史单源已收敛进 MainViewModel（state/），Activity 不再持有 tuningHistory 栈；
     // 186 live vars 与 currentTuningParams() 不动（P5 重写），同步一律走快照显式调用。
     internal val mainViewModel: MainViewModel by lazy { ViewModelProvider(this)[MainViewModel::class.java] }
-    internal var activePresetId: String? get() = mainViewModel.presetUi.value.activePresetId; set(v) { mainViewModel.updatePresetUi { it.copy(activePresetId = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var activePresetBaseParams: TuningParams? get() = mainViewModel.presetUi.value.activePresetBaseParams; set(v) { mainViewModel.updatePresetUi { it.copy(activePresetBaseParams = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetListVersion: Int get() = mainViewModel.presetUi.value.presetListVersion; set(v) { mainViewModel.updatePresetUi { it.copy(presetListVersion = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var batchOutputMode: BatchOutputMode get() = mainViewModel.presetUi.value.batchOutputMode; set(v) { mainViewModel.updatePresetUi { it.copy(batchOutputMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var gptRunCount: Int get() = mainViewModel.presetUi.value.gptRunCount; set(v) { mainViewModel.updatePresetUi { it.copy(gptRunCount = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgRunCount: Int get() = mainViewModel.presetUi.value.rmbgRunCount; set(v) { mainViewModel.updatePresetUi { it.copy(rmbgRunCount = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetSaveDialogVisible: Boolean get() = mainViewModel.presetUi.value.presetSaveDialogVisible; set(v) { mainViewModel.updatePresetUi { it.copy(presetSaveDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetSaveName: String get() = mainViewModel.presetUi.value.presetSaveName; set(v) { mainViewModel.updatePresetUi { it.copy(presetSaveName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetImportDialogVisible: Boolean get() = mainViewModel.presetUi.value.presetImportDialogVisible; set(v) { mainViewModel.updatePresetUi { it.copy(presetImportDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetImportText: String get() = mainViewModel.presetUi.value.presetImportText; set(v) { mainViewModel.updatePresetUi { it.copy(presetImportText = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetRenameTarget: TuningPreset? get() = mainViewModel.presetUi.value.presetRenameTarget; set(v) { mainViewModel.updatePresetUi { it.copy(presetRenameTarget = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetActionMenuTarget: TuningPreset? get() = mainViewModel.presetUi.value.presetActionMenuTarget; set(v) { mainViewModel.updatePresetUi { it.copy(presetActionMenuTarget = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetDeleteConfirmTarget: TuningPreset? get() = mainViewModel.presetUi.value.presetDeleteConfirmTarget; set(v) { mainViewModel.updatePresetUi { it.copy(presetDeleteConfirmTarget = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetSearchQuery: String get() = mainViewModel.presetUi.value.presetSearchQuery; set(v) { mainViewModel.updatePresetUi { it.copy(presetSearchQuery = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetListExpanded: Boolean get() = mainViewModel.presetUi.value.presetListExpanded; set(v) { mainViewModel.updatePresetUi { it.copy(presetListExpanded = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var presetBatchPreviewConfirmTarget: TuningPreset? get() = mainViewModel.presetUi.value.presetBatchPreviewConfirmTarget; set(v) { mainViewModel.updatePresetUi { it.copy(presetBatchPreviewConfirmTarget = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var activeBatchPreviewPreset: TuningPreset? get() = mainViewModel.presetUi.value.activeBatchPreviewPreset; set(v) { mainViewModel.updatePresetUi { it.copy(activeBatchPreviewPreset = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var showBatchPreviewRefreshConfirm: Boolean get() = mainViewModel.presetUi.value.showBatchPreviewRefreshConfirm; set(v) { mainViewModel.updatePresetUi { it.copy(showBatchPreviewRefreshConfirm = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var batchPreviewProgress: BatchPreviewProgress? get() = mainViewModel.presetUi.value.batchPreviewProgress; set(v) { mainViewModel.updatePresetUi { it.copy(batchPreviewProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var batchPreviewResult: BatchPreviewResult? get() = mainViewModel.presetUi.value.batchPreviewResult; set(v) { mainViewModel.updatePresetUi { it.copy(batchPreviewResult = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var batchPreviewCancelled: Boolean get() = mainViewModel.presetUi.value.batchPreviewCancelled; set(v) { mainViewModel.updatePresetUi { it.copy(batchPreviewCancelled = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isGeneratingBatchPreview: Boolean get() = mainViewModel.presetUi.value.isGeneratingBatchPreview; set(v) { mainViewModel.updatePresetUi { it.copy(isGeneratingBatchPreview = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var batchPreviewCount: Int get() = mainViewModel.batchPreviewConfig.value.batchPreviewCount; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewCount = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBatchPreviewCountText by mutableStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT.toString())
-    internal var batchPreviewColumns: Int get() = mainViewModel.batchPreviewConfig.value.batchPreviewColumns; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewColumns = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBatchPreviewColumnsText by mutableStateOf("4")
-    internal var batchPreviewIconSizeDp: Int get() = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewIconSizeDp = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBatchPreviewIconSizeDpText by mutableStateOf("54")
-    internal var batchPreviewCornerRadiusDp: Int get() = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewCornerRadiusDp = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBatchPreviewCornerRadiusDpText by mutableStateOf("20")
-    internal var batchPreviewDesktopBackground: PreviewDesktopBackground get() = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewDesktopBackground = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var customWallpaperPath: String? get() = mainViewModel.batchPreviewConfig.value.customWallpaperPath; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(customWallpaperPath = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var customWallpaperInfo: String get() = mainViewModel.batchPreviewConfig.value.customWallpaperInfo; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(customWallpaperInfo = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var pendingServiceConfirm: ServiceConfirmRequest? get() = mainViewModel.confirm.value.pendingServiceConfirm; set(v) { mainViewModel.updateConfirm { it.copy(pendingServiceConfirm = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var autoConfirmRootWrite: Boolean get() = mainViewModel.confirm.value.autoConfirmRootWrite; set(v) { mainViewModel.updateConfirm { it.copy(autoConfirmRootWrite = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var pendingRootWriteConfirm: RootWriteConfirmRequest? get() = mainViewModel.confirm.value.pendingRootWriteConfirm; set(v) { mainViewModel.updateConfirm { it.copy(pendingRootWriteConfirm = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rootWriteConfirmRememberSkip: Boolean get() = mainViewModel.confirm.value.rootWriteConfirmRememberSkip; set(v) { mainViewModel.updateConfirm { it.copy(rootWriteConfirmRememberSkip = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftJsonParamsText by mutableStateOf("")
-    internal var refreshConfirmVisible: Boolean get() = mainViewModel.confirm.value.refreshConfirmVisible; set(v) { mainViewModel.updateConfirm { it.copy(refreshConfirmVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var autoConfirmRefresh: Boolean get() = mainViewModel.confirm.value.autoConfirmRefresh; set(v) { mainViewModel.updateConfirm { it.copy(autoConfirmRefresh = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var refreshConfirmRememberAuto: Boolean get() = mainViewModel.confirm.value.refreshConfirmRememberAuto; set(v) { mainViewModel.updateConfirm { it.copy(refreshConfirmRememberAuto = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal val presetStore by lazy { PresetStore(getSharedPreferences(PREFS_NAME, MODE_PRIVATE)) }
-    internal var currentPage: AppPage get() = mainViewModel.shell.value.currentPage; set(v) { mainViewModel.updateShell { it.copy(currentPage = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var showSystemApps: Boolean get() = mainViewModel.picker.value.showSystemApps; set(v) { mainViewModel.updatePicker { it.copy(showSystemApps = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var generatedFilter: GeneratedFilter get() = mainViewModel.picker.value.generatedFilter; set(v) { mainViewModel.updatePicker { it.copy(generatedFilter = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var generatedPackageNames: Set<String> get() = mainViewModel.picker.value.generatedPackageNames; set(v) { mainViewModel.updatePicker { it.copy(generatedPackageNames = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var multiSelectedPackageNames: Set<String> get() = mainViewModel.picker.value.multiSelectedPackageNames; set(v) { mainViewModel.updatePicker { it.copy(multiSelectedPackageNames = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var batchApplyProgress: BatchApplyProgress? get() = mainViewModel.transfer.value.batchApplyProgress; set(v) { mainViewModel.updateTransfer { it.copy(batchApplyProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var exportProgress: ExportProgress? get() = mainViewModel.transfer.value.exportProgress; set(v) { mainViewModel.updateTransfer { it.copy(exportProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     // 底部备份/导出弹窗与后台态
-    internal var backupProgress: ExportProgress? get() = mainViewModel.transfer.value.backupProgress; set(v) { mainViewModel.updateTransfer { it.copy(backupProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var backupSheetVisible: Boolean get() = mainViewModel.transfer.value.backupSheetVisible; set(v) { mainViewModel.updateTransfer { it.copy(backupSheetVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var singleExportSheetVisible: Boolean get() = mainViewModel.transfer.value.singleExportSheetVisible; set(v) { mainViewModel.updateTransfer { it.copy(singleExportSheetVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var backupInBackground: Boolean get() = mainViewModel.transfer.value.backupInBackground; set(v) { mainViewModel.updateTransfer { it.copy(backupInBackground = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var backupBackgroundDots: Int get() = mainViewModel.transfer.value.backupBackgroundDots; set(v) { mainViewModel.updateTransfer { it.copy(backupBackgroundDots = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var backupJob: Job? = null
     internal var singleExportJob: Job? = null
     internal var backupDotJob: Job? = null
-    internal var isScanningGeneratedPackages: Boolean get() = mainViewModel.picker.value.isScanningGeneratedPackages; set(v) { mainViewModel.updatePicker { it.copy(isScanningGeneratedPackages = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var generatedScanFailed: Boolean get() = mainViewModel.picker.value.generatedScanFailed; set(v) { mainViewModel.updatePicker { it.copy(generatedScanFailed = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var previewPackageName: String? get() = mainViewModel.previewSession.value.previewPackageName; set(v) { mainViewModel.updatePreviewSession { it.copy(previewPackageName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var previewDirPath: String? get() = mainViewModel.previewSession.value.previewDirPath; set(v) { mainViewModel.updatePreviewSession { it.copy(previewDirPath = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var previewVersion: Int get() = mainViewModel.previewSession.value.previewVersion; set(v) { mainViewModel.updatePreviewSession { it.copy(previewVersion = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var previewStripEnabled: Boolean get() = mainViewModel.previewSession.value.previewStripEnabled; set(v) { mainViewModel.updatePreviewSession { it.copy(previewStripEnabled = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var sharedPreviewAssets: PreviewAssets? get() = mainViewModel.previewSession.value.sharedPreviewAssets; set(v) { mainViewModel.updatePreviewSession { it.copy(sharedPreviewAssets = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var activeGenerationSession: GenerationSession? get() = mainViewModel.previewSession.value.activeGenerationSession; set(v) { mainViewModel.updatePreviewSession { it.copy(activeGenerationSession = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var previewDesktopBackground: PreviewDesktopBackground get() = mainViewModel.previewSession.value.previewDesktopBackground; set(v) { mainViewModel.updatePreviewSession { it.copy(previewDesktopBackground = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var previewCornerRadiusDp: Int get() = mainViewModel.previewSession.value.previewCornerRadiusDp; set(v) { mainViewModel.updatePreviewSession { it.copy(previewCornerRadiusDp = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftPreviewCornerRadiusDpText by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP.toString())
-    internal var previewIconSizeDp: Int get() = mainViewModel.previewSession.value.previewIconSizeDp; set(v) { mainViewModel.updatePreviewSession { it.copy(previewIconSizeDp = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftPreviewIconSizeDpText by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP.toString())
-    internal var previewChoiceMode: PreviewMode? get() = mainViewModel.previewSession.value.previewChoiceMode; set(v) { mainViewModel.updatePreviewSession { it.copy(previewChoiceMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isGptPreviewLoading: Boolean get() = mainViewModel.previewSession.value.isGptPreviewLoading; set(v) { mainViewModel.updatePreviewSession { it.copy(isGptPreviewLoading = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isGeneratingGptCandidate: Boolean get() = mainViewModel.previewSession.value.isGeneratingGptCandidate; set(v) { mainViewModel.updatePreviewSession { it.copy(isGeneratingGptCandidate = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isGeneratingRmbgCandidate: Boolean get() = mainViewModel.previewSession.value.isGeneratingRmbgCandidate; set(v) { mainViewModel.updatePreviewSession { it.copy(isGeneratingRmbgCandidate = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isRefreshingArtPlusIcons: Boolean get() = mainViewModel.previewSession.value.isRefreshingArtPlusIcons; set(v) { mainViewModel.updatePreviewSession { it.copy(isRefreshingArtPlusIcons = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isPreviewAssetsRefreshing: Boolean get() = mainViewModel.previewSession.value.isPreviewAssetsRefreshing; set(v) { mainViewModel.updatePreviewSession { it.copy(isPreviewAssetsRefreshing = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isPreviewOutputRefreshing: Boolean get() = mainViewModel.previewSession.value.isPreviewOutputRefreshing; set(v) { mainViewModel.updatePreviewSession { it.copy(isPreviewOutputRefreshing = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var lastRmbgCandidateError: String? get() = mainViewModel.previewSession.value.lastRmbgCandidateError; set(v) { mainViewModel.updatePreviewSession { it.copy(lastRmbgCandidateError = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgCandidatePackageName: String? get() = mainViewModel.previewSession.value.rmbgCandidatePackageName; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidatePackageName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgCandidateMode: PreviewMode? get() = mainViewModel.previewSession.value.rmbgCandidateMode; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidateMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgCandidateStatusText: String get() = mainViewModel.previewSession.value.rmbgCandidateStatusText; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidateStatusText = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgCandidateFailurePackageName: String? get() = mainViewModel.previewSession.value.rmbgCandidateFailurePackageName; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidateFailurePackageName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgCandidateFailureMode: PreviewMode? get() = mainViewModel.previewSession.value.rmbgCandidateFailureMode; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidateFailureMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var skipNextHomeReturnAnimation: Boolean get() = mainViewModel.previewSession.value.skipNextHomeReturnAnimation; set(v) { mainViewModel.updatePreviewSession { it.copy(skipNextHomeReturnAnimation = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var pendingCustomImageMode: PreviewMode? get() = mainViewModel.previewSession.value.pendingCustomImageMode; set(v) { mainViewModel.updatePreviewSession { it.copy(pendingCustomImageMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var pendingCustomImageKind: CustomImageKind? get() = mainViewModel.previewSession.value.pendingCustomImageKind; set(v) { mainViewModel.updatePreviewSession { it.copy(pendingCustomImageKind = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isInstallingRmbgComponent: Boolean get() = mainViewModel.previewSession.value.isInstallingRmbgComponent; set(v) { mainViewModel.updatePreviewSession { it.copy(isInstallingRmbgComponent = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgInstallStage: String get() = mainViewModel.previewSession.value.rmbgInstallStage; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgInstallStage = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgInstallProgress: Float? get() = mainViewModel.previewSession.value.rmbgInstallProgress; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgInstallProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgDialogVisible: Boolean get() = mainViewModel.previewSession.value.rmbgDialogVisible; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var exportDialogVisible: Boolean get() = mainViewModel.previewSession.value.exportDialogVisible; set(v) { mainViewModel.updatePreviewSession { it.copy(exportDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var resetDefaultsDialogVisible: Boolean get() = mainViewModel.previewSession.value.resetDefaultsDialogVisible; set(v) { mainViewModel.updatePreviewSession { it.copy(resetDefaultsDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var onboardingVisible: Boolean get() = mainViewModel.shell.value.onboardingVisible; set(v) { mainViewModel.updateShell { it.copy(onboardingVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgComponentUrl: String get() = mainViewModel.gptRmbgSettings.value.rmbgComponentUrl; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(rmbgComponentUrl = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var rmbgComponentSaveStatus: String get() = mainViewModel.gptRmbgSettings.value.rmbgComponentSaveStatus; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(rmbgComponentSaveStatus = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var lastRmbgInferenceReport: RmbgInferenceReport? get() = mainViewModel.previewSession.value.lastRmbgInferenceReport; set(v) { mainViewModel.updatePreviewSession { it.copy(lastRmbgInferenceReport = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var previewOutputJob: Job? = null
     internal var previewOutputRevision = 0
     internal var generatedPreviewRestoreRevision = 0
     internal var debugHttpServer: DebugHttpServer? = null
     internal var rmbgRuntime: DynamicRmbgRuntime? = null
-    internal var rmbgComponentStatus: String get() = mainViewModel.gptRmbgSettings.value.rmbgComponentStatus; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(rmbgComponentStatus = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var isCheckingUpdate: Boolean get() = mainViewModel.updateUi.value.isCheckingUpdate; set(v) { mainViewModel.updateUpdateUi { it.copy(isCheckingUpdate = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var updateAvailableInfo: UpdateInfo? get() = mainViewModel.updateUi.value.updateAvailableInfo; set(v) { mainViewModel.updateUpdateUi { it.copy(updateAvailableInfo = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var updateUpToDateDialogVisible: Boolean get() = mainViewModel.updateUi.value.updateUpToDateDialogVisible; set(v) { mainViewModel.updateUpdateUi { it.copy(updateUpToDateDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
-    internal var mitLicenseDialogVisible: Boolean get() = mainViewModel.updateUi.value.mitLicenseDialogVisible; set(v) { mainViewModel.updateUpdateUi { it.copy(mitLicenseDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
 
@@ -507,7 +401,7 @@ class MainActivity : ComponentActivity() {
                 toastStatus("未选择输出目录")
                 return@registerForActivityResult
             }
-            outputTreeUri = uri
+            mainViewModel.updateShell { it -> it.copy(outputTreeUri = (uri)) }
             runCatching {
                 contentResolver.takePersistableUriPermission(
                     uri,
@@ -515,14 +409,14 @@ class MainActivity : ComponentActivity() {
                 )
             }
             // 自动在根目录创建 .nomedia，避免出现在相册
-            runCatching { ensureNomediaAtTreeRoot(contentResolver, outputTreeUri) }
+            runCatching { ensureNomediaAtTreeRoot(contentResolver, mainViewModel.shell.value.outputTreeUri) }
             toastStatus("已选择输出目录")
             saveUiState()
             // 若来自首次引导，自动执行全量备份
-            if (onboardingVisible) {
+            if (mainViewModel.shell.value.onboardingVisible) {
                 getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
                     .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
-                onboardingVisible = false
+                mainViewModel.updateShell { it -> it.copy(onboardingVisible = (false)) }
                 backupAllToExternal(isFromOnboarding = true)
             }
         }
@@ -530,24 +424,41 @@ class MainActivity : ComponentActivity() {
     internal val chooseRmbgComponentLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) {
-                statusText = "未选择 RMBG 组件"
+                mainViewModel.updateShell { it -> it.copy(statusText = ("未选择 RMBG 组件")) }
                 return@registerForActivityResult
             }
-            installRmbgComponent(uri)
+            installRmbgComponent(
+                uri = uri,
+                filesDir = filesDir,
+                isBusy = mainViewModel.shell.value.isBusy,
+                isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
+                isInstallingRmbgComponent = mainViewModel.previewSession.value.isInstallingRmbgComponent,
+                openInput = { contentResolver.openInputStream(it) },
+                getRuntime = { rmbgRuntime },
+                setRuntime = { rmbgRuntime = it },
+                setInstalling = { mainViewModel.updatePreviewSession { v -> v.copy(isInstallingRmbgComponent = (it)) } },
+                setStage = { mainViewModel.updatePreviewSession { v -> v.copy(rmbgInstallStage = (it)) } },
+                setProgress = { mainViewModel.updatePreviewSession { v -> v.copy(rmbgInstallProgress = (it)) } },
+                setStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                setComponentStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentStatus = (it)) } },
+                setLastError = { mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (it)) } },
+                runOnUi = { runOnUiThread(it) },
+            )
+
         }
 
     internal val chooseCustomImageLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            val mode = pendingCustomImageMode
-            val kind = pendingCustomImageKind
-            pendingCustomImageMode = null
-            pendingCustomImageKind = null
+            val mode = mainViewModel.previewSession.value.pendingCustomImageMode
+            val kind = mainViewModel.previewSession.value.pendingCustomImageKind
+            mainViewModel.updatePreviewSession { it -> it.copy(pendingCustomImageMode = (null)) }
+            mainViewModel.updatePreviewSession { it -> it.copy(pendingCustomImageKind = (null)) }
             if (uri == null) {
-                statusText = "未选择自定义图片"
+                mainViewModel.updateShell { it -> it.copy(statusText = ("未选择自定义图片")) }
                 return@registerForActivityResult
             }
             if (mode == null || kind == null) {
-                statusText = "自定义槽位已失效"
+                mainViewModel.updateShell { it -> it.copy(statusText = ("自定义槽位已失效")) }
                 return@registerForActivityResult
             }
             importCustomPreviewImage(mode, kind, uri)
@@ -556,7 +467,7 @@ class MainActivity : ComponentActivity() {
     internal val chooseWallpaperLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) {
-                statusText = "未选择壁纸"
+                mainViewModel.updateShell { it -> it.copy(statusText = ("未选择壁纸")) }
                 return@registerForActivityResult
             }
             importCustomWallpaper(uri)
@@ -572,9 +483,9 @@ class MainActivity : ComponentActivity() {
             onInitTuningHistory = ::initTuningHistory,
             onLoadRmbgSettings = ::loadRmbgSettings,
             onLoadGeneratedCache = {
-                generatedPackageNames = loadGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE))
-                generatedScanFailed = false
-                isScanningGeneratedPackages = false
+                mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (loadGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE)))) }
+                mainViewModel.updatePicker { it -> it.copy(generatedScanFailed = (false)) }
+                mainViewModel.updatePicker { it -> it.copy(isScanningGeneratedPackages = (false)) }
             },
             onLoadUiState = ::loadUiState,
             onLoadPresetState = ::loadPresetState,
@@ -645,16 +556,16 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         // Slice 3.3：权限刷新与条件重载下沉至 state/AppLoadOps.kt，顺序与条件不变。
-        val previousPackageListPermission = packageListPermissionGranted
-        val previousUsageAccess = usageAccessGranted
+        val previousPackageListPermission = mainViewModel.picker.value.packageListPermissionGranted
+        val previousUsageAccess = mainViewModel.picker.value.usageAccessGranted
         mainViewModel.onResumeRefresh(
             didRequestAppLoad = didRequestAppLoad,
             appsEmpty = apps.isEmpty(),
             previousQueryGranted = previousPackageListPermission,
             previousUsageGranted = previousUsageAccess,
             onRefreshPermissions = ::refreshPermissionState,
-            currentQueryGranted = { packageListPermissionGranted },
-            currentUsageGranted = { usageAccessGranted },
+            currentQueryGranted = { mainViewModel.picker.value.packageListPermissionGranted },
+            currentUsageGranted = { mainViewModel.picker.value.usageAccessGranted },
             onLoadApps = { loadApps() },
         )
     }
@@ -686,7 +597,7 @@ class MainActivity : ComponentActivity() {
                 // 允许通过外部点击关闭视为跳过
                 getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
                     .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
-                onboardingVisible = false
+                mainViewModel.updateShell { it -> it.copy(onboardingVisible = (false)) }
                 toastStatus("已跳过，可在设置-导出引导中重新进入")
             },
             onChooseDir = {
@@ -706,12 +617,12 @@ class MainActivity : ComponentActivity() {
         RefreshConfirmDialog(
             visible = confirmState.refreshConfirmVisible,
             rememberAuto = confirmState.refreshConfirmRememberAuto,
-            onDismiss = { refreshConfirmVisible = false },
-            onToggleRemember = { refreshConfirmRememberAuto = !refreshConfirmRememberAuto },
+            onDismiss = { mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (false)) } },
+            onToggleRemember = { mainViewModel.updateConfirm { it -> it.copy(refreshConfirmRememberAuto = (!mainViewModel.confirm.value.refreshConfirmRememberAuto)) } },
             onConfirm = { shouldAuto ->
-                refreshConfirmVisible = false
+                mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (false)) }
                 if (shouldAuto) {
-                    autoConfirmRefresh = true
+                    mainViewModel.updateConfirm { it -> it.copy(autoConfirmRefresh = (true)) }
                     saveUiState()
                 }
                 refreshArtPlusIcons()
@@ -748,47 +659,47 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun GeneratedPreviewCard() =
         GeneratedPreviewCard(
-            dirPath = previewDirPath,
-            packageName = previewPackageName,
-            session = activeGenerationSession?.takeIf {
-                it.packageName == previewPackageName && it.outDir.absolutePath == previewDirPath
+            dirPath = mainViewModel.previewSession.value.previewDirPath,
+            packageName = mainViewModel.previewSession.value.previewPackageName,
+            session = mainViewModel.previewSession.value.activeGenerationSession?.takeIf {
+                it.packageName == mainViewModel.previewSession.value.previewPackageName && it.outDir.absolutePath == mainViewModel.previewSession.value.previewDirPath
             },
-            displayAssets = sharedPreviewAssets,
-            previewLoading = isGptPreviewLoading || isPreviewAssetsRefreshing || isPreviewOutputRefreshing,
-            desktopBackground = previewDesktopBackground,
-            iconSizeDp = previewIconSizeDp,
-            cornerRadiusDp = previewCornerRadiusDp,
+            displayAssets = mainViewModel.previewSession.value.sharedPreviewAssets,
+            previewLoading = mainViewModel.previewSession.value.isGptPreviewLoading || mainViewModel.previewSession.value.isPreviewAssetsRefreshing || mainViewModel.previewSession.value.isPreviewOutputRefreshing,
+            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+            iconSizeDp = mainViewModel.previewSession.value.previewIconSizeDp,
+            cornerRadiusDp = mainViewModel.previewSession.value.previewCornerRadiusDp,
             wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-            wallpaperKey = customWallpaperPath,
+            wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
             loadWallpaper = {
                 withContext(Dispatchers.IO) {
                     loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
                 }
             },
             materialColorProvider = ::systemMaterialColor,
-            previewChoiceMode = previewChoiceMode,
+            previewChoiceMode = mainViewModel.previewSession.value.previewChoiceMode,
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
-            isGeneratingGptCandidate = isGeneratingGptCandidate,
-            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
             draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
             isDark = isSystemInDarkTheme(),
             nightSubjectLightBackgroundEnabled = mainViewModel.params.collectAsState().value.nightSubjectLightBackgroundEnabled,
-            rmbgCandidatePackageName = rmbgCandidatePackageName,
-            rmbgCandidateMode = rmbgCandidateMode,
-            rmbgCandidateFailurePackageName = rmbgCandidateFailurePackageName,
-            rmbgCandidateFailureMode = rmbgCandidateFailureMode,
-            lastRmbgCandidateError = lastRmbgCandidateError,
-            rmbgCandidateStatusText = rmbgCandidateStatusText,
-            gptBaseUrl = gptBaseUrl,
-            gptApiKey = gptApiKey,
+            rmbgCandidatePackageName = mainViewModel.previewSession.value.rmbgCandidatePackageName,
+            rmbgCandidateMode = mainViewModel.previewSession.value.rmbgCandidateMode,
+            rmbgCandidateFailurePackageName = mainViewModel.previewSession.value.rmbgCandidateFailurePackageName,
+            rmbgCandidateFailureMode = mainViewModel.previewSession.value.rmbgCandidateFailureMode,
+            lastRmbgCandidateError = mainViewModel.previewSession.value.lastRmbgCandidateError,
+            rmbgCandidateStatusText = mainViewModel.previewSession.value.rmbgCandidateStatusText,
+            gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
+            gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
             hasRmbgComponent = findRmbgComponent() != null,
             loadCandidateAssets = { candidate, mode ->
                 withContext(previewWorkerDispatcher) {
                     previewAssetsForCandidate(candidate, mode).preparedForDraw()
                 }
             },
-            onChoiceClick = { previewChoiceMode = it },
+            onChoiceClick = { mainViewModel.updatePreviewSession { v -> v.copy(previewChoiceMode = (it)) } },
             onNightFill = { updateNightSubjectLightBackgroundEnabled(it) },
             onDraftForegroundSubjectPercent = { draftForegroundSubjectPercentText = it },
             onSaveForegroundSubjectPercent = { updateForegroundSubjectPercent(it) },
@@ -797,7 +708,7 @@ class MainActivity : ComponentActivity() {
             onChooseCustom = { mode, kind -> chooseCustomImageForMode(mode, kind) },
             onApplyPreviewChoice = { mode, choice -> applyPreviewChoice(mode, choice) },
             onApplyPreviewChoiceToAll = { applyPreviewChoiceToAll(it) },
-            onDismissChoice = { previewChoiceMode = null },
+            onDismissChoice = { mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) } },
             onDismissChoiceFinished = { },
         )
 
@@ -821,7 +732,7 @@ class MainActivity : ComponentActivity() {
             iconSizeDp = iconSizeDp,
             cornerRadiusDp = cornerRadiusDp,
             wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-            wallpaperKey = customWallpaperPath,
+            wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
             loadWallpaper = {
                 withContext(Dispatchers.IO) {
                     loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
@@ -836,12 +747,12 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun LayerDebugCard() =
         LayerDebugCard(
-            dirPath = previewDirPath,
-            packageName = previewPackageName,
-            session = activeGenerationSession?.takeIf {
-                it.packageName == previewPackageName && it.outDir.absolutePath == previewDirPath
+            dirPath = mainViewModel.previewSession.value.previewDirPath,
+            packageName = mainViewModel.previewSession.value.previewPackageName,
+            session = mainViewModel.previewSession.value.activeGenerationSession?.takeIf {
+                it.packageName == mainViewModel.previewSession.value.previewPackageName && it.outDir.absolutePath == mainViewModel.previewSession.value.previewDirPath
             },
-            assets = sharedPreviewAssets,
+            assets = mainViewModel.previewSession.value.sharedPreviewAssets,
             tuningState = mainViewModel.params.collectAsState().value,
         )
 
@@ -851,16 +762,16 @@ class MainActivity : ComponentActivity() {
     internal fun PreviewControlCard() =
         PreviewControlCard(
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
-            previewCornerRadiusDp = previewCornerRadiusDp,
+            isBusy = mainViewModel.shell.value.isBusy,
+            previewCornerRadiusDp = mainViewModel.previewSession.value.previewCornerRadiusDp,
             draftPreviewCornerRadiusDpText = draftPreviewCornerRadiusDpText,
-            previewIconSizeDp = previewIconSizeDp,
+            previewIconSizeDp = mainViewModel.previewSession.value.previewIconSizeDp,
             draftPreviewIconSizeDpText = draftPreviewIconSizeDpText,
             draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
-            previewStripEnabled = previewStripEnabled,
-            previewDesktopBackground = previewDesktopBackground,
+            previewStripEnabled = mainViewModel.previewSession.value.previewStripEnabled,
+            previewDesktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
             wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-            wallpaperKey = customWallpaperPath,
+            wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
             loadWallpaper = {
                 withContext(Dispatchers.IO) {
                     loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
@@ -887,9 +798,9 @@ class MainActivity : ComponentActivity() {
         PreviewBackgroundOption(
             option = option,
             selected = selected,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-            wallpaperKey = customWallpaperPath,
+            wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
             loadWallpaper = {
                 withContext(Dispatchers.IO) {
                     loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
@@ -912,7 +823,7 @@ class MainActivity : ComponentActivity() {
             option = option,
             modifier = modifier,
             wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-            wallpaperKey = customWallpaperPath,
+            wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
             loadWallpaper = {
                 withContext(Dispatchers.IO) {
                     loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
@@ -926,7 +837,7 @@ class MainActivity : ComponentActivity() {
         assets: PreviewAssets?,
         mode: PreviewMode,
         modifier: Modifier = Modifier.size(72.dp),
-        cornerRadiusDp: Int = previewCornerRadiusDp,
+        cornerRadiusDp: Int = mainViewModel.previewSession.value.previewCornerRadiusDp,
     ) =
         GeneratedIconPreview(
             assets = assets,
@@ -942,7 +853,7 @@ class MainActivity : ComponentActivity() {
         modifier: Modifier = Modifier.size(72.dp),
         mode: PreviewMode? = null,
         compact: Boolean = false,
-        cornerRadiusDp: Int = previewCornerRadiusDp,
+        cornerRadiusDp: Int = mainViewModel.previewSession.value.previewCornerRadiusDp,
     ) =
         MissingIconPreview(
             modifier = modifier,
@@ -961,7 +872,7 @@ class MainActivity : ComponentActivity() {
     ) =
         PreviewNightFillBackgroundRow(
             checked = checked,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onCheckedChange = onCheckedChange,
         )
 
@@ -979,22 +890,22 @@ class MainActivity : ComponentActivity() {
             mode = mode,
             session = session,
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
-            isGeneratingGptCandidate = isGeneratingGptCandidate,
-            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
             draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
             isDark = isSystemInDarkTheme(),
             nightSubjectLightBackgroundEnabled = mainViewModel.params.collectAsState().value.nightSubjectLightBackgroundEnabled,
-            rmbgCandidatePackageName = rmbgCandidatePackageName,
-            rmbgCandidateMode = rmbgCandidateMode,
-            rmbgCandidateFailurePackageName = rmbgCandidateFailurePackageName,
-            rmbgCandidateFailureMode = rmbgCandidateFailureMode,
-            lastRmbgCandidateError = lastRmbgCandidateError,
-            rmbgCandidateStatusText = rmbgCandidateStatusText,
-            gptBaseUrl = gptBaseUrl,
-            gptApiKey = gptApiKey,
+            rmbgCandidatePackageName = mainViewModel.previewSession.value.rmbgCandidatePackageName,
+            rmbgCandidateMode = mainViewModel.previewSession.value.rmbgCandidateMode,
+            rmbgCandidateFailurePackageName = mainViewModel.previewSession.value.rmbgCandidateFailurePackageName,
+            rmbgCandidateFailureMode = mainViewModel.previewSession.value.rmbgCandidateFailureMode,
+            lastRmbgCandidateError = mainViewModel.previewSession.value.lastRmbgCandidateError,
+            rmbgCandidateStatusText = mainViewModel.previewSession.value.rmbgCandidateStatusText,
+            gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
+            gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
             hasRmbgComponent = findRmbgComponent() != null,
-            cornerRadiusDp = previewCornerRadiusDp,
+            cornerRadiusDp = mainViewModel.previewSession.value.previewCornerRadiusDp,
             materialColorProvider = ::systemMaterialColor,
             loadCandidateAssets = { candidate, m ->
                 withContext(previewWorkerDispatcher) {
@@ -1024,9 +935,9 @@ class MainActivity : ComponentActivity() {
         MoreRulesGroupRow(
             selectedRule = selectedRule,
             expanded = expanded,
-            isBusy = isBusy,
-            isGeneratingGptCandidate = isGeneratingGptCandidate,
-            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
             onToggle = onToggle,
         )
 
@@ -1038,19 +949,19 @@ class MainActivity : ComponentActivity() {
             choice = choice,
             session = session,
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
-            isGeneratingGptCandidate = isGeneratingGptCandidate,
-            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
-            rmbgCandidatePackageName = rmbgCandidatePackageName,
-            rmbgCandidateMode = rmbgCandidateMode,
-            rmbgCandidateFailurePackageName = rmbgCandidateFailurePackageName,
-            rmbgCandidateFailureMode = rmbgCandidateFailureMode,
-            lastRmbgCandidateError = lastRmbgCandidateError,
-            rmbgCandidateStatusText = rmbgCandidateStatusText,
-            gptBaseUrl = gptBaseUrl,
-            gptApiKey = gptApiKey,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
+            rmbgCandidatePackageName = mainViewModel.previewSession.value.rmbgCandidatePackageName,
+            rmbgCandidateMode = mainViewModel.previewSession.value.rmbgCandidateMode,
+            rmbgCandidateFailurePackageName = mainViewModel.previewSession.value.rmbgCandidateFailurePackageName,
+            rmbgCandidateFailureMode = mainViewModel.previewSession.value.rmbgCandidateFailureMode,
+            lastRmbgCandidateError = mainViewModel.previewSession.value.lastRmbgCandidateError,
+            rmbgCandidateStatusText = mainViewModel.previewSession.value.rmbgCandidateStatusText,
+            gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
+            gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
             hasRmbgComponent = findRmbgComponent() != null,
-            cornerRadiusDp = previewCornerRadiusDp,
+            cornerRadiusDp = mainViewModel.previewSession.value.previewCornerRadiusDp,
             materialColorProvider = ::systemMaterialColor,
             loadCandidateAssets = { candidate, m ->
                 withContext(previewWorkerDispatcher) {
@@ -1072,7 +983,7 @@ class MainActivity : ComponentActivity() {
             candidate = candidate,
             mode = mode,
             tuningState = mainViewModel.params.collectAsState().value,
-            cornerRadiusDp = previewCornerRadiusDp,
+            cornerRadiusDp = mainViewModel.previewSession.value.previewCornerRadiusDp,
             materialColorProvider = ::systemMaterialColor,
             loadAssets = { c, m ->
                 withContext(previewWorkerDispatcher) {
@@ -1107,7 +1018,7 @@ class MainActivity : ComponentActivity() {
             isBusy = shellState.isBusy,
             hasApps = apps.isNotEmpty(),
             statusText = shellState.statusText,
-            onOpenPicker = { currentPage = AppPage.AppPicker },
+            onOpenPicker = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.AppPicker)) } },
             appIcon = { entry -> AppIcon(entry, 48.dp) },
         )
     }
@@ -1124,7 +1035,7 @@ class MainActivity : ComponentActivity() {
             hasHiddenSystemApps = apps.any { AppVisibility.isSystemAppFlags(it.applicationInfo.flags) && it.packageName != packageName },
             isBusy = shellState.isBusy,
             onShowSystemApps = {
-                showSystemApps = true
+                mainViewModel.updatePicker { it -> it.copy(showSystemApps = (true)) }
                 saveUiState()
             },
             onRefresh = { loadApps() },
@@ -1136,7 +1047,7 @@ class MainActivity : ComponentActivity() {
     internal fun LocalSeparationModeControl() =
         LocalSeparationModeControl(
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onSelect = { updateLocalSeparationMode(it) },
         )
 
@@ -1151,15 +1062,15 @@ class MainActivity : ComponentActivity() {
             advancedSettingsTab = shellState.advancedSettingsTab,
             advancedSettingsCategory = shellState.advancedSettingsCategory,
             onTabSelected = {
-                advancedSettingsTab = it
+                mainViewModel.updateShell { v -> v.copy(advancedSettingsTab = (it)) }
                 saveUiState()
             },
             onRequestSavePreset = {
-                presetSaveName = ""
-                presetSaveDialogVisible = true
+                mainViewModel.updatePresetUi { it -> it.copy(presetSaveName = ("")) }
+                mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (true)) }
             },
             onCategorySelected = {
-                advancedSettingsCategory = it
+                mainViewModel.updateShell { v -> v.copy(advancedSettingsCategory = (it)) }
                 saveUiState()
             },
         )
@@ -1171,7 +1082,7 @@ class MainActivity : ComponentActivity() {
     internal fun LiquidGlassToggleCard() =
         LiquidGlassToggleCard(
             enabled = mainViewModel.params.collectAsState().value.liquidGlassEnabled,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onCheckedChange = { updateLiquidGlassEnabled(it) },
         )
 
@@ -1180,7 +1091,7 @@ class MainActivity : ComponentActivity() {
     internal fun LiquidGlassSurfaceCard() =
         LiquidGlassSurfaceCard(
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             draftRadiusText = draftLiquidGlassRadiusText,
             onDraftRadiusChange = { draftLiquidGlassRadiusText = it },
             onSaveRadius = { updateLiquidGlassRadius(it) },
@@ -1206,7 +1117,7 @@ class MainActivity : ComponentActivity() {
     internal fun LiquidGlassSubjectCard() =
         LiquidGlassSubjectCard(
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             draftSubjectScaleText = draftLiquidGlassSubjectScaleText,
             onDraftSubjectScaleChange = { draftLiquidGlassSubjectScaleText = it },
             onSaveSubjectScale = { updateLiquidGlassSubjectScalePercent(it) },
@@ -1229,7 +1140,7 @@ class MainActivity : ComponentActivity() {
     internal fun LocalRuleTuningCard() =
         LocalRuleTuningCard(
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             draftBackgroundSeparationText = draftBackgroundSeparationText,
             onDraftBackgroundSeparationChange = { draftBackgroundSeparationText = it },
             onSaveBackgroundSeparation = { updateBackgroundSeparationPercent(it) },
@@ -1249,7 +1160,7 @@ class MainActivity : ComponentActivity() {
     internal fun LocalWorkflowPipelineCard() =
         LocalWorkflowPipelineCard(
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onToggle = { key, enabled -> updateLocalWorkflowToggle(key, enabled) },
         )
 
@@ -1265,7 +1176,7 @@ class MainActivity : ComponentActivity() {
         summary = summary,
         checked = checked,
         key = key,
-        isBusy = isBusy,
+        isBusy = mainViewModel.shell.value.isBusy,
         onCheckedChange = { k, v -> updateLocalWorkflowToggle(k, v) },
     )
 
@@ -1274,7 +1185,7 @@ class MainActivity : ComponentActivity() {
     internal fun RmbgTuningCard() =
         RmbgTuningCard(
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             draftAlphaStrengthText = draftRmbgAlphaStrengthText,
             onDraftAlphaStrengthChange = { draftRmbgAlphaStrengthText = it },
             onSaveAlphaStrength = { updateRmbgAlphaStrengthPercent(it) },
@@ -1299,7 +1210,7 @@ class MainActivity : ComponentActivity() {
             onSave = { saveJsonParamsFromText(it) },
             onRestore = {
                 draftJsonParamsText = currentTuningParams().toJson().toString(4)
-                statusText = "已恢复为当前参数 JSON"
+                mainViewModel.updateShell { it -> it.copy(statusText = ("已恢复为当前参数 JSON")) }
             },
         )
 
@@ -1309,10 +1220,10 @@ class MainActivity : ComponentActivity() {
     internal fun refreshPresets() =
         refreshPresets(
             store = presetStore,
-            onBumpVersion = { presetListVersion += 1 },
+            onBumpVersion = { mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) } },
             onRefreshed = { id, base ->
-                activePresetId = id
-                activePresetBaseParams = base
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (id)) }
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (base)) }
             },
         )
 
@@ -1326,25 +1237,25 @@ class MainActivity : ComponentActivity() {
             rmbgRunCountKey = PREF_RMBG_RUN_COUNT,
             onRefreshPresets = { refreshPresets() },
             onLoaded = { mode, gpt, rmbg ->
-                batchOutputMode = mode
-                gptRunCount = gpt
-                rmbgRunCount = rmbg
+                mainViewModel.updatePresetUi { it -> it.copy(batchOutputMode = (mode)) }
+                mainViewModel.updatePresetUi { it -> it.copy(gptRunCount = (gpt)) }
+                mainViewModel.updatePresetUi { it -> it.copy(rmbgRunCount = (rmbg)) }
             },
         )
 
     internal fun incrementGptRunCount() {
-        gptRunCount += 1
+        mainViewModel.updatePresetUi { it -> it.copy(gptRunCount = it.gptRunCount + (1)) }
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
-            .putInt(PREF_GPT_RUN_COUNT, gptRunCount)
+            .putInt(PREF_GPT_RUN_COUNT, mainViewModel.presetUi.value.gptRunCount)
             .apply()
     }
 
     internal fun incrementRmbgRunCount() {
-        rmbgRunCount += 1
+        mainViewModel.updatePresetUi { it -> it.copy(rmbgRunCount = it.rmbgRunCount + (1)) }
         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
-            .putInt(PREF_RMBG_RUN_COUNT, rmbgRunCount)
+            .putInt(PREF_RMBG_RUN_COUNT, mainViewModel.presetUi.value.rmbgRunCount)
             .apply()
     }
 
@@ -1358,17 +1269,17 @@ class MainActivity : ComponentActivity() {
         confirmLabel: String,
         onConfirm: () -> Unit,
     ) {
-        pendingServiceConfirm = ServiceConfirmRequest(
+        mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
             title = title,
             message = message,
             confirmLabel = confirmLabel,
             onConfirm = onConfirm,
-        )
+        ))) }
     }
 
     internal fun dismissServiceConfirm(confirmed: Boolean) {
-        val request = pendingServiceConfirm ?: return
-        pendingServiceConfirm = null
+        val request = mainViewModel.confirm.value.pendingServiceConfirm ?: return
+        mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (null)) }
         if (confirmed) {
             request.onConfirm()
         }
@@ -1382,13 +1293,13 @@ class MainActivity : ComponentActivity() {
             current = currentTuningParams(),
             viewModel = mainViewModel,
             onSaved = { preset, msg ->
-                activePresetId = preset.id
-                activePresetBaseParams = preset.params
-                presetListVersion += 1
-                presetSaveDialogVisible = false
-                statusText = msg
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (preset.id)) }
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (preset.params)) }
+                mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
+                mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
             },
-            onStatus = { statusText = it },
+            onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
@@ -1399,50 +1310,50 @@ class MainActivity : ComponentActivity() {
             current = currentTuningParams(),
             viewModel = mainViewModel,
             onOverwritten = { p, cur, msg ->
-                activePresetId = p.id
-                activePresetBaseParams = cur
-                presetListVersion += 1
-                statusText = msg
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (cur)) }
+                mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
             },
-            onStatus = { statusText = it },
+            onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
     internal fun resetToPreset(preset: TuningPreset) =
         resetToPreset(
             preset = preset,
-            isBusy = isBusy,
-            isGeneratingGptCandidate = isGeneratingGptCandidate,
-            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
             before = currentTuningParams(),
             viewModel = mainViewModel,
             onReset = { p, merged, msg ->
                 applyTuningParams(merged, rebuildCandidates = true)
                 presetStore.activePresetId = p.id
-                activePresetId = p.id
-                activePresetBaseParams = p.params
-                statusText = msg
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (p.params)) }
+                mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
             },
-            onStatus = { statusText = it },
+            onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
     internal fun applyPreset(preset: TuningPreset) =
         applyPreset(
             preset = preset,
-            isBusy = isBusy,
-            isGeneratingGptCandidate = isGeneratingGptCandidate,
-            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
             before = currentTuningParams(),
             viewModel = mainViewModel,
             onApplied = { p, merged, msg ->
                 applyTuningParams(merged, rebuildCandidates = true)
                 presetStore.activePresetId = p.id
-                activePresetId = p.id
-                activePresetBaseParams = p.params
-                statusText = msg
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (p.params)) }
+                mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
             },
-            onStatus = { statusText = it },
+            onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
@@ -1452,21 +1363,21 @@ class MainActivity : ComponentActivity() {
             filesDir = filesDir,
             store = presetStore,
             viewModel = mainViewModel,
-            activeBatchPreviewPresetId = activeBatchPreviewPreset?.id,
-            batchPreviewResultPresetId = batchPreviewResult?.preset?.id,
-            currentPage = currentPage,
-            activePresetId = activePresetId,
+            activeBatchPreviewPresetId = mainViewModel.presetUi.value.activeBatchPreviewPreset?.id,
+            batchPreviewResultPresetId = mainViewModel.presetUi.value.batchPreviewResult?.preset?.id,
+            currentPage = mainViewModel.shell.value.currentPage,
+            activePresetId = mainViewModel.presetUi.value.activePresetId,
             onBatchPreviewReset = {
-                activeBatchPreviewPreset = null
-                batchPreviewResult = null
+                mainViewModel.updatePresetUi { it -> it.copy(activeBatchPreviewPreset = (null)) }
+                mainViewModel.updatePresetUi { it -> it.copy(batchPreviewResult = (null)) }
             },
-            onNavigateHome = { currentPage = AppPage.Home },
+            onNavigateHome = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
             onActiveCleared = {
-                activePresetId = null
-                activePresetBaseParams = null
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (null)) }
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (null)) }
             },
-            onBumpVersion = { presetListVersion += 1 },
-            onStatus = { statusText = it },
+            onBumpVersion = { mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) } },
+            onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
@@ -1477,10 +1388,10 @@ class MainActivity : ComponentActivity() {
             store = presetStore,
             viewModel = mainViewModel,
             onRenamed = { _, msg ->
-                presetListVersion += 1
-                statusText = msg
+                mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
             },
-            onStatus = { statusText = it },
+            onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
@@ -1488,7 +1399,7 @@ class MainActivity : ComponentActivity() {
         exportPresetsToClipboard(
             store = presetStore,
             clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
-            onStatus = { statusText = it },
+            onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
@@ -1497,7 +1408,7 @@ class MainActivity : ComponentActivity() {
             preset = preset,
             store = presetStore,
             clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
-            onStatus = { statusText = it },
+            onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetOperations.kt 显式参数版本，调用点零改动。
@@ -1506,10 +1417,10 @@ class MainActivity : ComponentActivity() {
             text = text,
             store = presetStore,
             onApplied = { msg ->
-                presetImportDialogVisible = false
-                presetImportText = ""
-                presetListVersion += 1
-                statusText = msg
+                mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) }
+                mainViewModel.updatePresetUi { it -> it.copy(presetImportText = ("")) }
+                mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
             },
         )
 
@@ -1520,7 +1431,7 @@ class MainActivity : ComponentActivity() {
             text = text,
             current = currentTuningParams(),
             onApplyParams = { applyTuningParams(it, rebuildCandidates = true) },
-            onStatus = { statusText = it },
+            onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
@@ -1529,8 +1440,8 @@ class MainActivity : ComponentActivity() {
             preset = preset,
             apps = apps.toList(),
             selfPackageName = packageName,
-            batchPreviewCount = batchPreviewCount,
-            generatedPackageNames = generatedPackageNames,
+            batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+            generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
             originalParams = currentTuningParams(),
             cacheDir = cacheDir,
             loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
@@ -1581,7 +1492,7 @@ class MainActivity : ComponentActivity() {
             batchPackageNames = batchPackageNames,
             beforeParams = currentTuningParams(),
             store = presetStore,
-            selectedAtStart = selectedPackageName,
+            selectedAtStart = mainViewModel.picker.value.selectedPackageName,
             apps = apps.toList(),
             onApplyPresetParams = { merged -> applyTuningParams(merged, rebuildCandidates = false) },
             generatePackage = { app -> generateArtPlusPackage(app, useGpt = false) },
@@ -1607,7 +1518,7 @@ class MainActivity : ComponentActivity() {
     internal fun executeApplyCurrentBatch(batchPackageNames: List<String>) =
         mainViewModel.executeApplyCurrentBatch(
             batchPackageNames = batchPackageNames,
-            selectedAtStart = selectedPackageName,
+            selectedAtStart = mainViewModel.picker.value.selectedPackageName,
             apps = apps.toList(),
             generatePackage = { app -> generateArtPlusPackage(app, useGpt = false) },
             persistGenerated = { combined ->
@@ -1621,15 +1532,15 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun PresetStatusCard() =
         PresetStatusCard(
-            presets = remember(presetListVersion) { presetStore.all() },
-            activePresetId = activePresetId,
-            activePresetBaseParams = activePresetBaseParams,
+            presets = remember(mainViewModel.presetUi.value.presetListVersion) { presetStore.all() },
+            activePresetId = mainViewModel.presetUi.value.activePresetId,
+            activePresetBaseParams = mainViewModel.presetUi.value.activePresetBaseParams,
             currentParams = currentTuningParams(),
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onOverwrite = { overwritePreset(it) },
             onRequestSavePreset = {
-                presetSaveName = it
-                presetSaveDialogVisible = true
+                mainViewModel.updatePresetUi { v -> v.copy(presetSaveName = (it)) }
+                mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (true)) }
             },
             onResetToPreset = { resetToPreset(it) },
             onResetToDefaults = { resetToDefaults() },
@@ -1639,27 +1550,27 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun PresetLibraryCard() =
         PresetLibraryCard(
-            presets = remember(presetListVersion) { presetStore.all() },
-            activePresetId = activePresetId,
-            activePresetBaseParams = activePresetBaseParams,
+            presets = remember(mainViewModel.presetUi.value.presetListVersion) { presetStore.all() },
+            activePresetId = mainViewModel.presetUi.value.activePresetId,
+            activePresetBaseParams = mainViewModel.presetUi.value.activePresetBaseParams,
             currentParams = currentTuningParams(),
-            searchQuery = presetSearchQuery,
-            onSearchChange = { presetSearchQuery = it },
-            listExpanded = presetListExpanded,
-            onToggleExpanded = { presetListExpanded = !presetListExpanded },
-            isBusy = isBusy,
+            searchQuery = mainViewModel.presetUi.value.presetSearchQuery,
+            onSearchChange = { mainViewModel.updatePresetUi { v -> v.copy(presetSearchQuery = (it)) } },
+            listExpanded = mainViewModel.presetUi.value.presetListExpanded,
+            onToggleExpanded = { mainViewModel.updatePresetUi { it -> it.copy(presetListExpanded = (!mainViewModel.presetUi.value.presetListExpanded)) } },
+            isBusy = mainViewModel.shell.value.isBusy,
             onApply = { applyPreset(it) },
             onPreview = { openBatchPreviewForPreset(it) },
-            onMore = { presetActionMenuTarget = it },
+            onMore = { mainViewModel.updatePresetUi { v -> v.copy(presetActionMenuTarget = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/settings/SettingsAppCards.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun WallpaperSettingsCard() =
         WallpaperSettingsCard(
-            hasCustom = customWallpaperPath != null,
-            customInfo = customWallpaperInfo,
-            isBusy = isBusy,
+            hasCustom = mainViewModel.batchPreviewConfig.value.customWallpaperPath != null,
+            customInfo = mainViewModel.batchPreviewConfig.value.customWallpaperInfo,
+            isBusy = mainViewModel.shell.value.isBusy,
             onPickWallpaper = {
                 chooseWallpaperLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
             },
@@ -1670,9 +1581,9 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun BatchPreviewSettingsCard() =
         BatchPreviewSettingsCard(
-            value = batchPreviewCount,
+            value = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
             draftText = draftBatchPreviewCountText,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onDraftChange = { draftBatchPreviewCountText = it },
             onSave = { updateBatchPreviewCount(it) },
         )
@@ -1686,14 +1597,14 @@ class MainActivity : ComponentActivity() {
     ) =
         PresetActionMenuDialog(
             target = target,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onDismiss = onDismiss,
             onApply = { applyPreset(it) },
             onPreview = { openBatchPreviewForPreset(it) },
             onOverwrite = { overwritePreset(it) },
-            onRename = { presetRenameTarget = it },
+            onRename = { mainViewModel.updatePresetUi { v -> v.copy(presetRenameTarget = (it)) } },
             onExportSingle = { exportSinglePresetToClipboard(it) },
-            onDelete = { presetDeleteConfirmTarget = it },
+            onDelete = { mainViewModel.updatePresetUi { v -> v.copy(presetDeleteConfirmTarget = (it)) } },
         )
 
 
@@ -1713,50 +1624,50 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun PresetPageDialogs() =
         PresetPageDialogs(
-            saveDialogVisible = presetSaveDialogVisible,
-            saveInitialName = presetSaveName,
+            saveDialogVisible = mainViewModel.presetUi.value.presetSaveDialogVisible,
+            saveInitialName = mainViewModel.presetUi.value.presetSaveName,
             onSaveConfirm = { name ->
-                presetSaveDialogVisible = false
+                mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
                 saveCurrentAsPreset(name)
             },
-            onSaveDismiss = { presetSaveDialogVisible = false },
-            renameTarget = presetRenameTarget,
+            onSaveDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) } },
+            renameTarget = mainViewModel.presetUi.value.presetRenameTarget,
             onRenameConfirm = { id, name ->
-                presetRenameTarget = null
+                mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) }
                 renamePreset(id, name)
             },
-            onRenameDismiss = { presetRenameTarget = null },
-            actionMenuTarget = presetActionMenuTarget,
-            actionMenuBusy = isBusy,
-            onActionMenuDismiss = { presetActionMenuTarget = null },
+            onRenameDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) } },
+            actionMenuTarget = mainViewModel.presetUi.value.presetActionMenuTarget,
+            actionMenuBusy = mainViewModel.shell.value.isBusy,
+            onActionMenuDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetActionMenuTarget = (null)) } },
             onActionApply = { applyPreset(it) },
             onActionPreview = { openBatchPreviewForPreset(it) },
             onActionOverwrite = { overwritePreset(it) },
-            onActionRename = { presetRenameTarget = it },
+            onActionRename = { mainViewModel.updatePresetUi { v -> v.copy(presetRenameTarget = (it)) } },
             onActionExportSingle = { exportSinglePresetToClipboard(it) },
-            onActionDelete = { presetDeleteConfirmTarget = it },
-            deleteConfirmTarget = presetDeleteConfirmTarget,
-            onDeleteDismiss = { presetDeleteConfirmTarget = null },
+            onActionDelete = { mainViewModel.updatePresetUi { v -> v.copy(presetDeleteConfirmTarget = (it)) } },
+            deleteConfirmTarget = mainViewModel.presetUi.value.presetDeleteConfirmTarget,
+            onDeleteDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetDeleteConfirmTarget = (null)) } },
             onDeleteConfirm = { deletePreset(it) },
-            importDialogVisible = presetImportDialogVisible,
+            importDialogVisible = mainViewModel.presetUi.value.presetImportDialogVisible,
             onImportConfirm = { text -> importPresetsFromText(text) },
-            onImportDismiss = { presetImportDialogVisible = false },
-            batchPreviewConfirmTarget = presetBatchPreviewConfirmTarget,
+            onImportDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) } },
+            batchPreviewConfirmTarget = mainViewModel.presetUi.value.presetBatchPreviewConfirmTarget,
             onBatchPreviewConfirm = {
-                presetBatchPreviewConfirmTarget = null
+                mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) }
                 startBatchPreview(it)
             },
-            onBatchPreviewConfirmDismiss = { presetBatchPreviewConfirmTarget = null },
-            batchPreviewProgress = batchPreviewProgress,
-            onCancelBatchPreview = { batchPreviewCancelled = true },
-            showRefreshConfirm = showBatchPreviewRefreshConfirm,
-            refreshConfirmPreset = activeBatchPreviewPreset ?: batchPreviewResult?.preset,
-            batchPreviewCount = batchPreviewCount,
+            onBatchPreviewConfirmDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) } },
+            batchPreviewProgress = mainViewModel.presetUi.value.batchPreviewProgress,
+            onCancelBatchPreview = { mainViewModel.updatePresetUi { it -> it.copy(batchPreviewCancelled = (true)) } },
+            showRefreshConfirm = mainViewModel.presetUi.value.showBatchPreviewRefreshConfirm,
+            refreshConfirmPreset = mainViewModel.presetUi.value.activeBatchPreviewPreset ?: mainViewModel.presetUi.value.batchPreviewResult?.preset,
+            batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
             onRefreshConfirm = {
-                showBatchPreviewRefreshConfirm = false
+                mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) }
                 startBatchPreview(it)
             },
-            onRefreshDismiss = { showBatchPreviewRefreshConfirm = false },
+            onRefreshDismiss = { mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetDialogs.kt 显式参数版本，调用点零改动。
@@ -1768,7 +1679,7 @@ class MainActivity : ComponentActivity() {
     ) =
         PresetBatchPreviewConfirmDialog(
             preset = preset,
-            batchPreviewCount = batchPreviewCount,
+            batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
             onConfirm = onConfirm,
             onDismiss = onDismiss,
         )
@@ -1777,8 +1688,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun PresetBatchPreviewProgressDialog() =
         PresetBatchPreviewProgressDialog(
-            progress = batchPreviewProgress,
-            onCancel = { batchPreviewCancelled = true },
+            progress = mainViewModel.presetUi.value.batchPreviewProgress,
+            onCancel = { mainViewModel.updatePresetUi { it -> it.copy(batchPreviewCancelled = (true)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/presets/PresetDialogs.kt 显式参数版本，调用点零改动。
@@ -1790,7 +1701,7 @@ class MainActivity : ComponentActivity() {
     ) =
         BatchPreviewRefreshConfirmDialog(
             preset = preset,
-            batchPreviewCount = batchPreviewCount,
+            batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
             onConfirm = onConfirm,
             onDismiss = onDismiss,
         )
@@ -1811,7 +1722,7 @@ class MainActivity : ComponentActivity() {
             onSave = { saveJsonParamsFromText(it) },
             onRestore = {
                 draftJsonParamsText = currentTuningParams().toJson().toString(4)
-                statusText = "已恢复为当前参数 JSON"
+                mainViewModel.updateShell { it -> it.copy(statusText = ("已恢复为当前参数 JSON")) }
             },
         )
 
@@ -1820,15 +1731,15 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun RootWriteConfirmDialog() =
         RootWriteConfirmDialog(
-            request = pendingRootWriteConfirm,
-            rememberSkip = rootWriteConfirmRememberSkip,
-            onDismiss = { pendingRootWriteConfirm = null },
-            onToggleSkip = { rootWriteConfirmRememberSkip = !rootWriteConfirmRememberSkip },
+            request = mainViewModel.confirm.value.pendingRootWriteConfirm,
+            rememberSkip = mainViewModel.confirm.value.rootWriteConfirmRememberSkip,
+            onDismiss = { mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) } },
+            onToggleSkip = { mainViewModel.updateConfirm { it -> it.copy(rootWriteConfirmRememberSkip = (!mainViewModel.confirm.value.rootWriteConfirmRememberSkip)) } },
             onConfirm = { request, shouldSkip ->
                 val onConfirm = request.onConfirm
-                pendingRootWriteConfirm = null
+                mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) }
                 if (shouldSkip) {
-                    autoConfirmRootWrite = true
+                    mainViewModel.updateConfirm { it -> it.copy(autoConfirmRootWrite = (true)) }
                     saveUiState()
                 }
                 onConfirm()
@@ -1845,7 +1756,7 @@ class MainActivity : ComponentActivity() {
     internal fun GenerationActionCard(selectedApp: AppEntry?) =
         GenerationActionCard(
             selectedApp = selectedApp,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onLocalGenerate = { generateSelected(installWithRoot = false, useGpt = false) },
             onLocalExport = { exportSelectedToExternal() },
             onWriteAll = { writeSelectedWithRoot(rootWriteMode = RootWriteMode.All) },
@@ -1865,34 +1776,34 @@ class MainActivity : ComponentActivity() {
     internal fun GptSettingsCard() =
         GptSettingsCard(
             tuningState = mainViewModel.params.collectAsState().value,
-            isBusy = isBusy,
-            gptModelId = gptModelId,
-            gptBaseUrl = gptBaseUrl,
-            gptApiKey = gptApiKey,
-            gptRunCount = gptRunCount,
+            isBusy = mainViewModel.shell.value.isBusy,
+            gptModelId = mainViewModel.gptRmbgSettings.value.gptModelId,
+            gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
+            gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
+            gptRunCount = mainViewModel.presetUi.value.gptRunCount,
             onGptImageModeChange = { mode ->
                 mainViewModel.updateLive { p -> p.copy(gptImageMode = (mode).value) }
-                gptSettingsSaveStatus = ""
+                mainViewModel.updateGptRmbgSettings { it -> it.copy(gptSettingsSaveStatus = ("")) }
             },
             onGptPromptPresetChange = { preset ->
                 mainViewModel.updateLive { p -> p.copy(gptPromptPreset = (preset).value) }
-                gptSettingsSaveStatus = ""
+                mainViewModel.updateGptRmbgSettings { it -> it.copy(gptSettingsSaveStatus = ("")) }
             },
             onGptCustomPromptChange = {
                 mainViewModel.updateLive { p -> p.copy(gptCustomPrompt = it) }
-                gptSettingsSaveStatus = ""
+                mainViewModel.updateGptRmbgSettings { it -> it.copy(gptSettingsSaveStatus = ("")) }
             },
             onGptModelIdChange = {
-                gptModelId = it
-                gptSettingsSaveStatus = ""
+                mainViewModel.updateGptRmbgSettings { v -> v.copy(gptModelId = (it)) }
+                mainViewModel.updateGptRmbgSettings { it -> it.copy(gptSettingsSaveStatus = ("")) }
             },
             onGptBaseUrlChange = {
-                gptBaseUrl = it
-                gptSettingsSaveStatus = ""
+                mainViewModel.updateGptRmbgSettings { v -> v.copy(gptBaseUrl = (it)) }
+                mainViewModel.updateGptRmbgSettings { it -> it.copy(gptSettingsSaveStatus = ("")) }
             },
             onGptApiKeyChange = {
-                gptApiKey = it
-                gptSettingsSaveStatus = ""
+                mainViewModel.updateGptRmbgSettings { v -> v.copy(gptApiKey = (it)) }
+                mainViewModel.updateGptRmbgSettings { it -> it.copy(gptSettingsSaveStatus = ("")) }
             },
         )
 
@@ -1900,24 +1811,24 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun RmbgComponentCard() =
         RmbgComponentCard(
-            component = remember(rmbgComponentStatus) { findRmbgComponent() },
-            rmbgRunCount = rmbgRunCount,
+            component = remember(mainViewModel.gptRmbgSettings.value.rmbgComponentStatus) { findRmbgComponent() },
+            rmbgRunCount = mainViewModel.presetUi.value.rmbgRunCount,
             currentPreset = currentRmbgModelPreset(),
             allPresets = RMBG_MODEL_PRESETS,
-            lastError = lastRmbgCandidateError,
-            componentUrl = rmbgComponentUrl,
-            isBusy = isBusy,
-            isGenerating = isGeneratingRmbgCandidate,
-            isInstalling = isInstallingRmbgComponent,
-            installStage = rmbgInstallStage,
-            installProgress = rmbgInstallProgress,
-            dialogVisible = rmbgDialogVisible,
+            lastError = mainViewModel.previewSession.value.lastRmbgCandidateError,
+            componentUrl = mainViewModel.gptRmbgSettings.value.rmbgComponentUrl,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGenerating = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
+            isInstalling = mainViewModel.previewSession.value.isInstallingRmbgComponent,
+            installStage = mainViewModel.previewSession.value.rmbgInstallStage,
+            installProgress = mainViewModel.previewSession.value.rmbgInstallProgress,
+            dialogVisible = mainViewModel.previewSession.value.rmbgDialogVisible,
             onPresetSelected = { updateRmbgModelPreset(it) },
             onComponentUrlChange = {
-                rmbgComponentUrl = it
-                rmbgComponentSaveStatus = ""
+                mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentUrl = (it)) }
+                mainViewModel.updateGptRmbgSettings { it -> it.copy(rmbgComponentSaveStatus = ("")) }
             },
-            onDialogVisibleChange = { rmbgDialogVisible = it },
+            onDialogVisibleChange = { mainViewModel.updatePreviewSession { v -> v.copy(rmbgDialogVisible = (it)) } },
             onPickZip = {
                 chooseRmbgComponentLauncher.launch(
                     arrayOf("application/zip", "application/octet-stream", "*/*"),
@@ -1934,42 +1845,42 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun OutputCard() =
         OutputCard(
-            autoConfirmRootWrite = autoConfirmRootWrite,
-            autoConfirmRefresh = autoConfirmRefresh,
-            isBusy = isBusy,
-            outputTreeUri = outputTreeUri,
-            treeDisplay = remember(outputTreeUri) { formatTreeUriDisplay(outputTreeUri) },
-            backupActive = backupJob?.isActive == true && backupProgress != null,
-            backupInBackground = backupInBackground,
-            backupDots = backupBackgroundDots,
-            exportDialogVisible = exportDialogVisible,
+            autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
+            autoConfirmRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+            isBusy = mainViewModel.shell.value.isBusy,
+            outputTreeUri = mainViewModel.shell.value.outputTreeUri,
+            treeDisplay = remember(mainViewModel.shell.value.outputTreeUri) { formatTreeUriDisplay(mainViewModel.shell.value.outputTreeUri) },
+            backupActive = backupJob?.isActive == true && mainViewModel.transfer.value.backupProgress != null,
+            backupInBackground = mainViewModel.transfer.value.backupInBackground,
+            backupDots = mainViewModel.transfer.value.backupBackgroundDots,
+            exportDialogVisible = mainViewModel.previewSession.value.exportDialogVisible,
             onAutoConfirmRootWriteChange = {
-                autoConfirmRootWrite = it
+                mainViewModel.updateConfirm { v -> v.copy(autoConfirmRootWrite = (it)) }
                 saveUiState()
-                statusText = if (autoConfirmRootWrite) "已开启自动确认写入" else "已关闭自动确认写入"
+                mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.confirm.value.autoConfirmRootWrite) "已开启自动确认写入" else "已关闭自动确认写入")) }
             },
             onAutoConfirmRefreshChange = {
-                autoConfirmRefresh = it
+                mainViewModel.updateConfirm { v -> v.copy(autoConfirmRefresh = (it)) }
                 saveUiState()
-                statusText = if (autoConfirmRefresh) "已开启自动确认刷新" else "已关闭自动确认刷新"
+                mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.confirm.value.autoConfirmRefresh) "已开启自动确认刷新" else "已关闭自动确认刷新")) }
             },
             onBackupRowClick = {
-                val active = backupJob?.isActive == true && backupProgress != null
-                val inBg = backupInBackground && active
-                if (inBg || (active && backupSheetVisible.not())) {
-                    backupInBackground = false
-                    backupSheetVisible = true
+                val active = backupJob?.isActive == true && mainViewModel.transfer.value.backupProgress != null
+                val inBg = mainViewModel.transfer.value.backupInBackground && active
+                if (inBg || (active && mainViewModel.transfer.value.backupSheetVisible.not())) {
+                    mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (false)) }
+                    mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (true)) }
                     stopBackupDotAnimation()
                 } else if (active) {
-                    backupSheetVisible = true
+                    mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (true)) }
                 } else {
-                    exportDialogVisible = true
+                    mainViewModel.updatePreviewSession { it -> it.copy(exportDialogVisible = (true)) }
                 }
             },
             onBackupBackgroundActiveChanged = { inBg ->
                 if (inBg) startBackupDotAnimation() else stopBackupDotAnimation()
             },
-            onExportDialogDismiss = { exportDialogVisible = false },
+            onExportDialogDismiss = { mainViewModel.updatePreviewSession { it -> it.copy(exportDialogVisible = (false)) } },
             onChooseTree = { chooseTreeLauncher.launch(null) },
             onBackupAll = { backupAllToExternal() },
         )
@@ -1982,8 +1893,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun PreviewStripSettingsCard() =
         PreviewStripSettingsCard(
-            enabled = previewStripEnabled,
-            isBusy = isBusy,
+            enabled = mainViewModel.previewSession.value.previewStripEnabled,
+            isBusy = mainViewModel.shell.value.isBusy,
             onCheckedChange = { updatePreviewStripEnabled(it) },
         )
 
@@ -1992,7 +1903,7 @@ class MainActivity : ComponentActivity() {
     internal fun LiquidGlassToggleRow() =
         LiquidGlassToggleRow(
             enabled = mainViewModel.params.collectAsState().value.liquidGlassEnabled,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onToggle = { updateLiquidGlassEnabled(!mainViewModel.params.value.liquidGlassEnabled) },
         )
 
@@ -2003,10 +1914,10 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun ShowSystemAppsToggleRow() =
         ShowSystemAppsToggleRow(
-            checked = showSystemApps,
-            isBusy = isBusy,
+            checked = mainViewModel.picker.value.showSystemApps,
+            isBusy = mainViewModel.shell.value.isBusy,
             onToggle = {
-                showSystemApps = !showSystemApps
+                mainViewModel.updatePicker { it -> it.copy(showSystemApps = (!mainViewModel.picker.value.showSystemApps)) }
                 saveUiState()
             },
         )
@@ -2024,10 +1935,10 @@ class MainActivity : ComponentActivity() {
             totalCount = totalCount,
             generatedCount = generatedCount,
             ungeneratedCount = ungeneratedCount,
-            multiCount = multiSelectedPackageNames.size,
-            isScanning = isScanningGeneratedPackages,
-            scanFailed = generatedScanFailed,
-            isBusy = isBusy,
+            multiCount = mainViewModel.picker.value.multiSelectedPackageNames.size,
+            isScanning = mainViewModel.picker.value.isScanningGeneratedPackages,
+            scanFailed = mainViewModel.picker.value.generatedScanFailed,
+            isBusy = mainViewModel.shell.value.isBusy,
             hasApps = apps.isNotEmpty(),
             onRefreshGenerated = { refreshGeneratedPackages() },
             onReloadApps = { loadApps() },
@@ -2037,16 +1948,16 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun AppPickerFilterCard() =
         AppPickerFilterCard(
-            showSystemApps = showSystemApps,
-            generatedFilter = generatedFilter,
-            isBusy = isBusy,
+            showSystemApps = mainViewModel.picker.value.showSystemApps,
+            generatedFilter = mainViewModel.picker.value.generatedFilter,
+            isBusy = mainViewModel.shell.value.isBusy,
             onToggleSystemApps = {
-                showSystemApps = !showSystemApps
+                mainViewModel.updatePicker { it -> it.copy(showSystemApps = (!mainViewModel.picker.value.showSystemApps)) }
                 saveUiState()
             },
             onFilterSelected = {
-                generatedFilter = it
-                queryText = ""
+                mainViewModel.updatePicker { v -> v.copy(generatedFilter = (it)) }
+                mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
                 saveUiState()
             },
         )
@@ -2055,14 +1966,14 @@ class MainActivity : ComponentActivity() {
     @Composable
     internal fun AppPickerSearchCard(filteredApps: List<AppEntry>) =
         AppPickerSearchCard(
-            queryText = queryText,
-            isBusy = isBusy,
+            queryText = mainViewModel.picker.value.queryText,
+            isBusy = mainViewModel.shell.value.isBusy,
             onQueryChange = {
-                queryText = it
+                mainViewModel.updatePicker { v -> v.copy(queryText = (it)) }
                 saveUiState()
             },
             onClearQuery = {
-                queryText = ""
+                mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
                 saveUiState()
             },
             multiSelectContent = { AppMultiSelectActions(filteredApps) },
@@ -2082,31 +1993,31 @@ class MainActivity : ComponentActivity() {
             totalCount = totalCount,
             generatedCount = generatedCount,
             ungeneratedCount = ungeneratedCount,
-            multiCount = multiSelectedPackageNames.size,
-            isScanning = isScanningGeneratedPackages,
-            scanFailed = generatedScanFailed,
-            isBusy = isBusy,
+            multiCount = mainViewModel.picker.value.multiSelectedPackageNames.size,
+            isScanning = mainViewModel.picker.value.isScanningGeneratedPackages,
+            scanFailed = mainViewModel.picker.value.generatedScanFailed,
+            isBusy = mainViewModel.shell.value.isBusy,
             hasApps = apps.isNotEmpty(),
-            showSystemApps = showSystemApps,
-            generatedFilter = generatedFilter,
-            queryText = queryText,
+            showSystemApps = mainViewModel.picker.value.showSystemApps,
+            generatedFilter = mainViewModel.picker.value.generatedFilter,
+            queryText = mainViewModel.picker.value.queryText,
             onRefreshGenerated = { refreshGeneratedPackages() },
             onReloadApps = { loadApps() },
             onToggleSystemApps = {
-                showSystemApps = !showSystemApps
+                mainViewModel.updatePicker { it -> it.copy(showSystemApps = (!mainViewModel.picker.value.showSystemApps)) }
                 saveUiState()
             },
             onFilterSelected = {
-                generatedFilter = it
-                queryText = ""
+                mainViewModel.updatePicker { v -> v.copy(generatedFilter = (it)) }
+                mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
                 saveUiState()
             },
             onQueryChange = {
-                queryText = it
+                mainViewModel.updatePicker { v -> v.copy(queryText = (it)) }
                 saveUiState()
             },
             onClearQuery = {
-                queryText = ""
+                mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
                 saveUiState()
             },
             multiSelectContent = { AppMultiSelectActions(filteredApps) },
@@ -2117,19 +2028,19 @@ class MainActivity : ComponentActivity() {
     internal fun AppMultiSelectActions(filteredApps: List<AppEntry>) {
         val filteredPackageNames = remember(filteredApps) { filteredApps.map { it.packageName }.toSet() }
         AppMultiSelectActions(
-            selectedCount = multiSelectedPackageNames.size,
+            selectedCount = mainViewModel.picker.value.multiSelectedPackageNames.size,
             hasFiltered = filteredPackageNames.isNotEmpty(),
-            allFilteredSelected = pickerAllFilteredSelected(filteredPackageNames, multiSelectedPackageNames),
-            isBusy = isBusy,
+            allFilteredSelected = pickerAllFilteredSelected(filteredPackageNames, mainViewModel.picker.value.multiSelectedPackageNames),
+            isBusy = mainViewModel.shell.value.isBusy,
             onToggleFiltered = {
-                val allSelected = pickerAllFilteredSelected(filteredPackageNames, multiSelectedPackageNames)
-                multiSelectedPackageNames = if (allSelected) {
-                    multiSelectedPackageNames - filteredPackageNames
+                val allSelected = pickerAllFilteredSelected(filteredPackageNames, mainViewModel.picker.value.multiSelectedPackageNames)
+                mainViewModel.updatePicker { it -> it.copy(multiSelectedPackageNames = (if (allSelected) {
+                    mainViewModel.picker.value.multiSelectedPackageNames - filteredPackageNames
                 } else {
-                    multiSelectedPackageNames + filteredPackageNames
-                }
+                    mainViewModel.picker.value.multiSelectedPackageNames + filteredPackageNames
+                })) }
             },
-            onClear = { multiSelectedPackageNames = emptySet() },
+            onClear = { mainViewModel.updatePicker { it -> it.copy(multiSelectedPackageNames = (emptySet())) } },
             onAddGlass = { addLiquidGlassToMultiSelectedGenerated() },
             onApplyPreset = { applyCurrentPresetBatch() },
         )
@@ -2150,7 +2061,7 @@ class MainActivity : ComponentActivity() {
             selected = selected,
             multiSelected = multiSelected,
             generated = generated,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             onClick = onClick,
             onToggleMultiSelect = onToggleMultiSelect,
             icon = {
@@ -2238,8 +2149,8 @@ class MainActivity : ComponentActivity() {
     internal fun importCustomWallpaper(uri: Uri) =
         pickerImportCustomWallpaper(
             uri = uri,
-            isBusy = isBusy,
-            onStatusText = { statusText = it },
+            isBusy = mainViewModel.shell.value.isBusy,
+            onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onLaunch = { name, block -> startUiFriendlyThread(name, block) },
             openInputBytes = { u -> contentResolver.openInputStream(u)?.use { it.readBytes() } },
             filesDir = filesDir,
@@ -2248,9 +2159,9 @@ class MainActivity : ComponentActivity() {
                 runOnUiThread {
                     cachedCustomWallpaper = null
                     cachedCustomWallpaperPath = null
-                    customWallpaperPath = path
-                    customWallpaperInfo = info
-                    statusText = "已导入自定义壁纸（$info），「桌面」背景优先使用此图"
+                    mainViewModel.updateBatchPreviewConfig { it -> it.copy(customWallpaperPath = (path)) }
+                    mainViewModel.updateBatchPreviewConfig { it -> it.copy(customWallpaperInfo = (info)) }
+                    mainViewModel.updateShell { it -> it.copy(statusText = ("已导入自定义壁纸（$info），「桌面」背景优先使用此图")) }
                     saveUiState()
                 }
             },
@@ -2261,16 +2172,16 @@ class MainActivity : ComponentActivity() {
     internal fun clearCustomWallpaper() =
         pickerClearCustomWallpaper(
             filesDir = filesDir,
-            customPath = customWallpaperPath,
+            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
             fileName = CUSTOM_WALLPAPER_FILE,
-            onCleared = { statusText = it },
+            onCleared = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onSave = ::saveUiState,
             clearCache = {
                 cachedCustomWallpaper = null
                 cachedCustomWallpaperPath = null
             },
-            setPath = { customWallpaperPath = it },
-            setInfo = { customWallpaperInfo = it },
+            setPath = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(customWallpaperPath = (it)) } },
+            setInfo = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(customWallpaperInfo = (it)) } },
         )
 
     // 纯函数 centerCropToSixteenNine 已直接搬迁至 ui/pages/picker/PickerIo.kt，同包直接引用，不留 wrapper。
@@ -2278,7 +2189,7 @@ class MainActivity : ComponentActivity() {
     // 重构期间保留：委托到 ui/pages/picker/PickerIo.kt 显式参数版本，调用点零改动。
     internal fun loadCustomWallpaperBitmap(): Bitmap? =
         pickerLoadCustomWallpaperBitmap(
-            path = customWallpaperPath,
+            path = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
             cachedPath = cachedCustomWallpaperPath,
             getCached = { cachedCustomWallpaper },
             setCached = { path, bitmap ->
@@ -2325,15 +2236,15 @@ class MainActivity : ComponentActivity() {
         pickerLoadUiState(
             prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
             persistedReadWriteUri = contentResolver.persistedUriPermissions.firstOrNull { it.isReadPermission && it.isWritePermission }?.uri,
-            setSelectedPackage = { selectedPackageName = it },
-            setGeneratedFilter = { generatedFilter = it },
-            setShowSystemApps = { showSystemApps = it },
-            setQueryText = { queryText = it },
-            setAdvancedCategory = { advancedSettingsCategory = it },
-            setAdvancedTab = { advancedSettingsTab = it },
-            setPreviewPackage = { previewPackageName = it },
-            setPreviewDir = { previewDirPath = it },
-            setPreviewStrip = { previewStripEnabled = it },
+            setSelectedPackage = { mainViewModel.updatePicker { v -> v.copy(selectedPackageName = (it)) } },
+            setGeneratedFilter = { mainViewModel.updatePicker { v -> v.copy(generatedFilter = (it)) } },
+            setShowSystemApps = { mainViewModel.updatePicker { v -> v.copy(showSystemApps = (it)) } },
+            setQueryText = { mainViewModel.updatePicker { v -> v.copy(queryText = (it)) } },
+            setAdvancedCategory = { mainViewModel.updateShell { v -> v.copy(advancedSettingsCategory = (it)) } },
+            setAdvancedTab = { mainViewModel.updateShell { v -> v.copy(advancedSettingsTab = (it)) } },
+            setPreviewPackage = { mainViewModel.updatePreviewSession { v -> v.copy(previewPackageName = (it)) } },
+            setPreviewDir = { mainViewModel.updatePreviewSession { v -> v.copy(previewDirPath = (it)) } },
+            setPreviewStrip = { mainViewModel.updatePreviewSession { v -> v.copy(previewStripEnabled = (it)) } },
             updateLiveSelections = { selections ->
                 mainViewModel.updateLive { p ->
                     p.copy(
@@ -2344,26 +2255,26 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             },
-            setDesktopBackground = { previewDesktopBackground = it },
-            setIconSize = { previewIconSizeDp = it },
+            setDesktopBackground = { mainViewModel.updatePreviewSession { v -> v.copy(previewDesktopBackground = (it)) } },
+            setIconSize = { mainViewModel.updatePreviewSession { v -> v.copy(previewIconSizeDp = (it)) } },
             setDraftIconSizeText = { draftPreviewIconSizeDpText = it },
-            setCornerRadius = { previewCornerRadiusDp = it },
+            setCornerRadius = { mainViewModel.updatePreviewSession { v -> v.copy(previewCornerRadiusDp = (it)) } },
             setDraftCornerRadiusText = { draftPreviewCornerRadiusDpText = it },
-            setBatchCount = { batchPreviewCount = it },
+            setBatchCount = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewCount = (it)) } },
             setDraftBatchCountText = { draftBatchPreviewCountText = it },
-            setBatchColumns = { batchPreviewColumns = it },
+            setBatchColumns = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewColumns = (it)) } },
             setDraftBatchColumnsText = { draftBatchPreviewColumnsText = it },
-            setBatchIconSize = { batchPreviewIconSizeDp = it },
+            setBatchIconSize = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewIconSizeDp = (it)) } },
             setDraftBatchIconSizeText = { draftBatchPreviewIconSizeDpText = it },
-            setBatchCorner = { batchPreviewCornerRadiusDp = it },
+            setBatchCorner = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewCornerRadiusDp = (it)) } },
             setDraftBatchCornerText = { draftBatchPreviewCornerRadiusDpText = it },
-            setBatchDesktopBg = { batchPreviewDesktopBackground = it },
-            setCustomPath = { customWallpaperPath = it },
-            setCustomInfo = { customWallpaperInfo = it },
-            setAutoRoot = { autoConfirmRootWrite = it },
-            setAutoRefresh = { autoConfirmRefresh = it },
-            setOutputUri = { outputTreeUri = it },
-            setOnboardingVisible = { onboardingVisible = it },
+            setBatchDesktopBg = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewDesktopBackground = (it)) } },
+            setCustomPath = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(customWallpaperPath = (it)) } },
+            setCustomInfo = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(customWallpaperInfo = (it)) } },
+            setAutoRoot = { mainViewModel.updateConfirm { v -> v.copy(autoConfirmRootWrite = (it)) } },
+            setAutoRefresh = { mainViewModel.updateConfirm { v -> v.copy(autoConfirmRefresh = (it)) } },
+            setOutputUri = { mainViewModel.updateShell { v -> v.copy(outputTreeUri = (it)) } },
+            setOnboardingVisible = { mainViewModel.updateShell { v -> v.copy(onboardingVisible = (it)) } },
             parseUri = { runCatching { Uri.parse(it) }.getOrNull() },
             isFile = ::pickerIsCustomWallpaperFile,
             decodeBounds = ::pickerDecodeWallpaperBounds,
@@ -2373,31 +2284,31 @@ class MainActivity : ComponentActivity() {
     internal fun saveUiState() =
         pickerSaveUiState(
             prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
-            selectedPackage = selectedPackageName,
-            generatedFilter = generatedFilter,
-            showSystemApps = showSystemApps,
-            queryText = queryText,
-            advancedCategory = advancedSettingsCategory,
-            advancedTab = advancedSettingsTab,
-            previewPackage = previewPackageName,
-            previewDir = previewDirPath,
-            previewStrip = previewStripEnabled,
+            selectedPackage = mainViewModel.picker.value.selectedPackageName,
+            generatedFilter = mainViewModel.picker.value.generatedFilter,
+            showSystemApps = mainViewModel.picker.value.showSystemApps,
+            queryText = mainViewModel.picker.value.queryText,
+            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+            previewPackage = mainViewModel.previewSession.value.previewPackageName,
+            previewDir = mainViewModel.previewSession.value.previewDirPath,
+            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
             previewNormalLight = mainViewModel.params.value.previewNormalLight,
             previewNormalDark = mainViewModel.params.value.previewNormalDark,
             previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
             previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-            desktopBackground = previewDesktopBackground,
-            iconSize = previewIconSizeDp,
-            cornerRadius = previewCornerRadiusDp,
-            batchCount = batchPreviewCount,
-            batchColumns = batchPreviewColumns,
-            batchIconSize = batchPreviewIconSizeDp,
-            batchCorner = batchPreviewCornerRadiusDp,
-            batchDesktopBg = batchPreviewDesktopBackground,
-            customPath = customWallpaperPath,
-            autoRoot = autoConfirmRootWrite,
-            autoRefresh = autoConfirmRefresh,
-            outputUri = outputTreeUri,
+            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+            outputUri = mainViewModel.shell.value.outputTreeUri,
         )
 
     // 重构期间保留：委托到 state/AppLoadOps.kt MainViewModel 显式参数版本，调用点零改动。
@@ -2413,8 +2324,8 @@ class MainActivity : ComponentActivity() {
             checkQueryPermission = { pickerCheckQueryPermission(packageManager, packageName) },
             hasUsage = ::hasUsageAccess,
             onResult = { queryGranted, usageGranted ->
-                packageListPermissionGranted = queryGranted
-                usageAccessGranted = usageGranted
+                mainViewModel.updatePicker { it -> it.copy(packageListPermissionGranted = (queryGranted)) }
+                mainViewModel.updatePicker { it -> it.copy(usageAccessGranted = (usageGranted)) }
             },
         )
 
@@ -2428,7 +2339,7 @@ class MainActivity : ComponentActivity() {
     // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
     internal fun requestSpecialPermissionsOnce() =
         pickerRequestSpecialPermissionsOnce(
-            usageGranted = usageAccessGranted,
+            usageGranted = mainViewModel.picker.value.usageAccessGranted,
             prompted = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 .getBoolean(PREF_USAGE_PERMISSION_PROMPTED, false),
             markPrompted = {
@@ -2445,14 +2356,14 @@ class MainActivity : ComponentActivity() {
         pickerOpenAppPermissionSettings(
             start = ::startActivity,
             packageName = packageName,
-            onError = { statusText = it },
+            onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     internal fun openUsageAccessSettings() =
         pickerOpenUsageAccessSettings(
             start = ::startActivity,
-            onError = { statusText = it },
+            onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
@@ -2460,7 +2371,7 @@ class MainActivity : ComponentActivity() {
         pickerOpenExternalLink(
             start = ::startActivity,
             url = url,
-            onError = { statusText = it },
+            onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
@@ -2475,22 +2386,22 @@ class MainActivity : ComponentActivity() {
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     internal fun checkForUpdate() =
         pickerCheckForUpdate(
-            isChecking = isCheckingUpdate,
-            onCheckingChange = { isCheckingUpdate = it },
-            onStatusText = { statusText = it },
+            isChecking = mainViewModel.updateUi.value.isCheckingUpdate,
+            onCheckingChange = { mainViewModel.updateUpdateUi { v -> v.copy(isCheckingUpdate = (it)) } },
+            onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             scope = mainScope,
             resolveUrl = { pickerResolveUpdateUrl(it, "检查更新", isDebugBuild()) },
             fetchLatest = ::pickerFetchUpdateBody,
             currentVersion = currentVersionName(),
             onUpdateAvailable = { info, text ->
-                updateAvailableInfo = info
-                statusText = text
+                mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (info)) }
+                mainViewModel.updateShell { it -> it.copy(statusText = (text)) }
             },
             onUpToDate = {
-                updateUpToDateDialogVisible = true
-                statusText = it
+                mainViewModel.updateUpdateUi { it -> it.copy(updateUpToDateDialogVisible = (true)) }
+                mainViewModel.updateShell { v -> v.copy(statusText = (it)) }
             },
-            onFailed = { statusText = it },
+            onFailed = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
@@ -2531,17 +2442,17 @@ class MainActivity : ComponentActivity() {
             debugMode = debugMode,
             rootWriteMode = rootWriteMode,
             runOnMainSync = ::runOnMainSync,
-            isBusyGet = { isBusy },
-            setBusy = { isBusy = it },
-            setStatusText = { statusText = it },
+            isBusyGet = { mainViewModel.shell.value.isBusy },
+            setBusy = { mainViewModel.updateShell { v -> v.copy(isBusy = (it)) } },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onStatus = ::status,
             getAppInfo = ::getApplicationInfoCompat,
             packageManager = packageManager,
             prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
-            getGeneratedNames = { generatedPackageNames },
-            setGeneratedNames = { generatedPackageNames = it },
+            getGeneratedNames = { mainViewModel.picker.value.generatedPackageNames },
+            setGeneratedNames = { mainViewModel.updatePicker { v -> v.copy(generatedPackageNames = (it)) } },
             generatePackage = ::generateArtPlusPackage,
-            setActiveSession = { activeGenerationSession = it },
+            setActiveSession = { mainViewModel.updatePreviewSession { v -> v.copy(activeGenerationSession = (it)) } },
             updateSelections = { selections ->
                 mainViewModel.updateLive { p ->
                     p.copy(
@@ -2552,10 +2463,10 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             },
-            setPreviewChoiceMode = { previewChoiceMode = it },
-            setPreviewPackage = { previewPackageName = it },
-            setPreviewDir = { previewDirPath = it },
-            bumpPreviewVersion = { previewVersion += 1 },
+            setPreviewChoiceMode = { mainViewModel.updatePreviewSession { v -> v.copy(previewChoiceMode = (it)) } },
+            setPreviewPackage = { mainViewModel.updatePreviewSession { v -> v.copy(previewPackageName = (it)) } },
+            setPreviewDir = { mainViewModel.updatePreviewSession { v -> v.copy(previewDirPath = (it)) } },
+            bumpPreviewVersion = { mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) } },
             onSaveUiState = ::saveUiState,
         )
 
@@ -2570,8 +2481,8 @@ class MainActivity : ComponentActivity() {
             filesDir = filesDir,
             tuning = currentTuningParams(),
             runOnMainSync = ::runOnMainSync,
-            setLastReport = { lastRmbgInferenceReport = it },
-            setLastError = { lastRmbgCandidateError = it },
+            setLastReport = { mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgInferenceReport = (it)) } },
+            setLastError = { mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (it)) } },
             buildRmbgDebug = ::buildRmbgDebugCandidate,
             describeFailure = ::describeRmbgFailure,
             renderForeground = ::renderCandidateForeground,
@@ -2583,9 +2494,9 @@ class MainActivity : ComponentActivity() {
         paramsLoadGptSettings(
             prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
             updateLive = mainViewModel::updateLive,
-            setGptModelId = { gptModelId = it },
-            setGptBaseUrl = { gptBaseUrl = it },
-            setGptApiKey = { gptApiKey = it },
+            setGptModelId = { mainViewModel.updateGptRmbgSettings { v -> v.copy(gptModelId = (it)) } },
+            setGptBaseUrl = { mainViewModel.updateGptRmbgSettings { v -> v.copy(gptBaseUrl = (it)) } },
+            setGptApiKey = { mainViewModel.updateGptRmbgSettings { v -> v.copy(gptApiKey = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
@@ -2593,9 +2504,9 @@ class MainActivity : ComponentActivity() {
         paramsSaveGptSettings(
             prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
             getParams = { mainViewModel.params.value },
-            getGptApiKey = { gptApiKey },
-            getGptModelId = { gptModelId },
-            getGptBaseUrl = { gptBaseUrl },
+            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
@@ -2607,9 +2518,9 @@ class MainActivity : ComponentActivity() {
             saveImageTuning = { saveImageTuningSettings() },
             saveLiquidGlass = { saveLiquidGlassSettings() },
             saveUi = { saveUiState() },
-            setGptSaveStatus = { gptSettingsSaveStatus = it },
-            setRmbgSaveStatus = { rmbgComponentSaveStatus = it },
-            setStatusText = { statusText = it },
+            setGptSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(gptSettingsSaveStatus = (it)) } },
+            setRmbgSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentSaveStatus = (it)) } },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsCrypto.kt 显式参数版本，调用点零改动。
@@ -2632,14 +2543,14 @@ class MainActivity : ComponentActivity() {
     internal fun loadRmbgSettings(): Unit =
         paramsLoadRmbgSettings(
             prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
-            setComponentUrl = { rmbgComponentUrl = it },
+            setComponentUrl = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentUrl = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
     internal fun saveRmbgSettings(): Boolean =
         paramsSaveRmbgSettings(
             prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
-            getComponentUrl = { rmbgComponentUrl },
+            getComponentUrl = { mainViewModel.gptRmbgSettings.value.rmbgComponentUrl },
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsLocalSeparation.kt 显式参数版本，调用点零改动。
@@ -2662,7 +2573,7 @@ class MainActivity : ComponentActivity() {
             mode = mode,
             getParams = { mainViewModel.params.value },
             updateLive = mainViewModel::updateLive,
-            getSession = { activeGenerationSession },
+            getSession = { mainViewModel.previewSession.value.activeGenerationSession },
             defaultPreviewChoiceForMode = ::defaultPreviewChoiceForMode,
             onSave = { saveLocalSeparationSettings() },
             onRefresh = { rebuild, retarget -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild, retargetFrom = retarget) },
@@ -2676,7 +2587,7 @@ class MainActivity : ComponentActivity() {
             getParams = { mainViewModel.params.value },
             updateLive = mainViewModel::updateLive,
             onSaveImageTuning = { saveImageTuningSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -2825,23 +2736,23 @@ class MainActivity : ComponentActivity() {
 
     // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
     internal fun currentRmbgModelPreset(): RmbgModelPreset =
-        paramsCurrentRmbgModelPreset(componentUrl = rmbgComponentUrl)
+        paramsCurrentRmbgModelPreset(componentUrl = mainViewModel.gptRmbgSettings.value.rmbgComponentUrl)
 
     // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
     internal fun updateRmbgModelPreset(preset: RmbgModelPreset): Unit =
         paramsUpdateRmbgModelPreset(
             preset = preset,
-            setComponentUrl = { rmbgComponentUrl = it },
-            setSaveStatus = { rmbgComponentSaveStatus = it },
-            setStatusText = { statusText = it },
+            setComponentUrl = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentUrl = (it)) } },
+            setSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentSaveStatus = (it)) } },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsGptRmbg.kt 显式参数版本，调用点零改动。
     internal fun rmbgInferenceStatusSummary(): String =
         paramsRmbgInferenceStatusSummary(
-            isGenerating = isGeneratingRmbgCandidate,
-            candidateStatusText = rmbgCandidateStatusText,
-            report = lastRmbgInferenceReport,
+            isGenerating = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
+            candidateStatusText = mainViewModel.previewSession.value.rmbgCandidateStatusText,
+            report = mainViewModel.previewSession.value.lastRmbgInferenceReport,
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsImageTuning.kt 显式参数版本，调用点零改动。
@@ -2879,7 +2790,7 @@ class MainActivity : ComponentActivity() {
             captureUndo = captureUndo,
             refreshPreview = refreshPreview,
             getBefore = { currentTuningParams() },
-            onCaptureUndo = { lastParamsSnapshot = it },
+            onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
             onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
             setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
             setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
@@ -2909,8 +2820,8 @@ class MainActivity : ComponentActivity() {
             onSaveLiquidGlass = { saveLiquidGlassSettings() },
             onSaveGpt = { saveGptSettings() },
             onSaveUi = { saveUiState() },
-            isBusy = { isBusy },
-            getSession = { activeGenerationSession },
+            isBusy = { mainViewModel.shell.value.isBusy },
+            getSession = { mainViewModel.previewSession.value.activeGenerationSession },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -2918,9 +2829,9 @@ class MainActivity : ComponentActivity() {
     // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
     internal fun restoreLastParams(): Unit =
         paramsRestoreLastParams(
-            getSnapshot = { lastParamsSnapshot },
-            clearSnapshot = { lastParamsSnapshot = null },
-            setStatusText = { statusText = it },
+            getSnapshot = { mainViewModel.previewSession.value.lastParamsSnapshot },
+            clearSnapshot = { mainViewModel.updatePreviewSession { it -> it.copy(lastParamsSnapshot = (null)) } },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onApply = { applyTuningParams(it, captureUndo = false) },
         )
 
@@ -2933,17 +2844,17 @@ class MainActivity : ComponentActivity() {
     internal fun resetToDefaults(confirmed: Boolean = false): Unit =
         paramsResetToDefaults(
             confirmed = confirmed,
-            isBusy = { isBusy },
-            isGeneratingGpt = { isGeneratingGptCandidate },
-            isGeneratingRmbg = { isGeneratingRmbgCandidate },
-            setStatusText = { statusText = it },
+            isBusy = { mainViewModel.shell.value.isBusy },
+            isGeneratingGpt = { mainViewModel.previewSession.value.isGeneratingGptCandidate },
+            isGeneratingRmbg = { mainViewModel.previewSession.value.isGeneratingRmbgCandidate },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRequestConfirm = { title, message, confirmLabel, onConfirm ->
                 requestServiceConfirm(title = title, message = message, confirmLabel = confirmLabel, onConfirm = onConfirm)
             },
             onApplyDefaults = { applyTuningParams(it, rebuildCandidates = true) },
             onClearPreset = {
                 presetStore.activePresetId = null
-                activePresetId = null
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (null)) }
             },
         )
 
@@ -2957,30 +2868,30 @@ class MainActivity : ComponentActivity() {
     // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
     internal fun undoTuning(): Unit =
         paramsUndoTuning(
-            isBusy = { isBusy },
-            isGeneratingGpt = { isGeneratingGptCandidate },
-            isGeneratingRmbg = { isGeneratingRmbgCandidate },
-            setStatusText = { statusText = it },
+            isBusy = { mainViewModel.shell.value.isBusy },
+            isGeneratingGpt = { mainViewModel.previewSession.value.isGeneratingGptCandidate },
+            isGeneratingRmbg = { mainViewModel.previewSession.value.isGeneratingRmbgCandidate },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onUndo = { mainViewModel.undo() },
             onApply = { applyTuningParams(it, captureUndo = false) },
             onClearPreset = {
                 presetStore.activePresetId = null
-                activePresetId = null
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (null)) }
             },
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsHistory.kt 显式参数版本，调用点零改动。
     internal fun redoTuning(): Unit =
         paramsRedoTuning(
-            isBusy = { isBusy },
-            isGeneratingGpt = { isGeneratingGptCandidate },
-            isGeneratingRmbg = { isGeneratingRmbgCandidate },
-            setStatusText = { statusText = it },
+            isBusy = { mainViewModel.shell.value.isBusy },
+            isGeneratingGpt = { mainViewModel.previewSession.value.isGeneratingGptCandidate },
+            isGeneratingRmbg = { mainViewModel.previewSession.value.isGeneratingRmbgCandidate },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRedo = { mainViewModel.redo() },
             onApply = { applyTuningParams(it, captureUndo = false) },
             onClearPreset = {
                 presetStore.activePresetId = null
-                activePresetId = null
+                mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (null)) }
             },
         )
 
@@ -3002,7 +2913,7 @@ class MainActivity : ComponentActivity() {
             getParams = { mainViewModel.params.value },
             updateLive = mainViewModel::updateLive,
             onSave = { saveImageTuningSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3010,7 +2921,7 @@ class MainActivity : ComponentActivity() {
     internal fun updatePreviewCornerRadiusDp(value: Int): Unit =
         paramsUpdatePreviewCornerRadiusDp(
             value = value,
-            setValue = { previewCornerRadiusDp = it },
+            setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewCornerRadiusDp = (it)) } },
             setDraftText = { draftPreviewCornerRadiusDpText = it },
             onSave = { saveUiState() },
         )
@@ -3019,7 +2930,7 @@ class MainActivity : ComponentActivity() {
     internal fun updatePreviewIconSizeDp(value: Int): Unit =
         paramsUpdatePreviewIconSizeDp(
             value = value,
-            setValue = { previewIconSizeDp = it },
+            setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewIconSizeDp = (it)) } },
             setDraftText = { draftPreviewIconSizeDpText = it },
             onSave = { saveUiState() },
         )
@@ -3028,7 +2939,7 @@ class MainActivity : ComponentActivity() {
     internal fun updateBatchPreviewCount(value: Int): Unit =
         paramsUpdateBatchPreviewCount(
             value = value,
-            setValue = { batchPreviewCount = it },
+            setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewCount = (it)) } },
             setDraftText = { draftBatchPreviewCountText = it },
             onSave = { saveUiState() },
         )
@@ -3037,9 +2948,9 @@ class MainActivity : ComponentActivity() {
     internal fun updateBatchPreviewColumns(value: Int): Unit =
         paramsUpdateBatchPreviewColumns(
             value = value,
-            setColumns = { batchPreviewColumns = it },
+            setColumns = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewColumns = (it)) } },
             setDraftColumnsText = { draftBatchPreviewColumnsText = it },
-            setIconSize = { batchPreviewIconSizeDp = it },
+            setIconSize = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewIconSizeDp = (it)) } },
             setDraftIconSizeText = { draftBatchPreviewIconSizeDpText = it },
             onSave = { saveUiState() },
         )
@@ -3048,7 +2959,7 @@ class MainActivity : ComponentActivity() {
     internal fun updateBatchPreviewIconSizeDp(value: Int): Unit =
         paramsUpdateBatchPreviewIconSizeDp(
             value = value,
-            setValue = { batchPreviewIconSizeDp = it },
+            setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewIconSizeDp = (it)) } },
             setDraftText = { draftBatchPreviewIconSizeDpText = it },
             onSave = { saveUiState() },
         )
@@ -3057,7 +2968,7 @@ class MainActivity : ComponentActivity() {
     internal fun updateBatchPreviewCornerRadiusDp(value: Int): Unit =
         paramsUpdateBatchPreviewCornerRadiusDp(
             value = value,
-            setValue = { batchPreviewCornerRadiusDp = it },
+            setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewCornerRadiusDp = (it)) } },
             setDraftText = { draftBatchPreviewCornerRadiusDpText = it },
             onSave = { saveUiState() },
         )
@@ -3066,8 +2977,8 @@ class MainActivity : ComponentActivity() {
     internal fun updateBatchPreviewDesktopBackground(option: PreviewDesktopBackground): Unit =
         paramsUpdateBatchPreviewDesktopBackground(
             option = option,
-            getValue = { batchPreviewDesktopBackground },
-            setValue = { batchPreviewDesktopBackground = it },
+            getValue = { mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground },
+            setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewDesktopBackground = (it)) } },
             onSave = { saveUiState() },
         )
 
@@ -3075,8 +2986,8 @@ class MainActivity : ComponentActivity() {
     internal fun updatePreviewDesktopBackground(option: PreviewDesktopBackground): Unit =
         paramsUpdatePreviewDesktopBackground(
             option = option,
-            getValue = { previewDesktopBackground },
-            setValue = { previewDesktopBackground = it },
+            getValue = { mainViewModel.previewSession.value.previewDesktopBackground },
+            setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewDesktopBackground = (it)) } },
             onSave = { saveUiState() },
         )
 
@@ -3084,10 +2995,10 @@ class MainActivity : ComponentActivity() {
     internal fun updatePreviewStripEnabled(enabled: Boolean): Unit =
         paramsUpdatePreviewStripEnabled(
             enabled = enabled,
-            getValue = { previewStripEnabled },
-            setValue = { previewStripEnabled = it },
+            getValue = { mainViewModel.previewSession.value.previewStripEnabled },
+            setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewStripEnabled = (it)) } },
             onSave = { saveUiState() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
@@ -3107,10 +3018,10 @@ class MainActivity : ComponentActivity() {
             setDraftSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
             setDraftSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
             setDraftSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
-            setBottomBarEnabled = { liquidGlassBottomBarEnabled = it },
-            setBottomBarBlurEnabled = { liquidGlassBottomBarBlurEnabled = it },
-            getBottomBarEnabled = { liquidGlassBottomBarEnabled },
-            getBottomBarBlurEnabled = { liquidGlassBottomBarBlurEnabled },
+            setBottomBarEnabled = { mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarEnabled = (it)) } },
+            setBottomBarBlurEnabled = { mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarBlurEnabled = (it)) } },
+            getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
+            getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
             onSave = { saveLiquidGlassSettings() },
         )
 
@@ -3119,16 +3030,16 @@ class MainActivity : ComponentActivity() {
         paramsSaveLiquidGlassSettings(
             prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
             getParams = { mainViewModel.params.value },
-            getBottomBarEnabled = { liquidGlassBottomBarEnabled },
-            getBottomBarBlurEnabled = { liquidGlassBottomBarBlurEnabled },
+            getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
+            getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
     internal fun SharedPreferences.Editor.putLiquidGlassSettings(): SharedPreferences.Editor =
         paramsPutLiquidGlassSettings(
             params = mainViewModel.params.value,
-            bottomBarEnabled = liquidGlassBottomBarEnabled,
-            bottomBarBlurEnabled = liquidGlassBottomBarBlurEnabled,
+            bottomBarEnabled = mainViewModel.glassBar.value.liquidGlassBottomBarEnabled,
+            bottomBarBlurEnabled = mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled,
         )
 
     // 重构期间保留：委托到 ui/pages/params/ParamsLiquidGlass.kt 显式参数版本，调用点零改动。
@@ -3138,7 +3049,7 @@ class MainActivity : ComponentActivity() {
             getParams = { mainViewModel.params.value },
             updateLive = mainViewModel::updateLive,
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3149,7 +3060,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassRadiusText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3160,7 +3071,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassOuterWidthText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3171,7 +3082,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassTopAlphaText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3182,7 +3093,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassBottomAlphaText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3193,7 +3104,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassBackgroundMistAlphaText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3204,7 +3115,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassBottomDarkAlphaText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3215,7 +3126,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassSubjectScaleText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3226,7 +3137,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassSubjectOutlineWidthText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3237,7 +3148,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3248,7 +3159,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassSubjectShadowAlphaText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3259,7 +3170,7 @@ class MainActivity : ComponentActivity() {
             updateLive = mainViewModel::updateLive,
             setDraftText = { draftLiquidGlassSubjectOpacityText = it },
             onSave = { saveLiquidGlassSettings() },
-            setStatusText = { statusText = it },
+            setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRefresh = { rebuild -> refreshActivePreviewOutputs(rebuildLocalCandidates = rebuild) },
         )
 
@@ -3271,23 +3182,23 @@ class MainActivity : ComponentActivity() {
         confirmed: Boolean = false,
     ): Unit =
         homeGenerateSelected(
-            entry = apps.firstOrNull { it.packageName == selectedPackageName },
+            entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
             installWithRoot = installWithRoot,
             useGpt = useGpt,
             rootWriteMode = rootWriteMode,
             confirmed = confirmed,
-            gptApiKey = gptApiKey,
-            gptBaseUrl = gptBaseUrl,
-            isBusy = isBusy,
-            gptRunCount = gptRunCount,
-            onStatusText = { statusText = it },
+            gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
+            gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
+            isBusy = mainViewModel.shell.value.isBusy,
+            gptRunCount = mainViewModel.presetUi.value.gptRunCount,
+            onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onRequestConfirm = { title, message, confirmLabel, onConfirm ->
                 requestServiceConfirm(title = title, message = message, confirmLabel = confirmLabel, onConfirm = onConfirm)
             },
             onBeginBusy = { gpt ->
-                isBusy = true
+                mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
                 if (gpt) {
-                    isGptPreviewLoading = true
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGptPreviewLoading = (true)) }
                     incrementGptRunCount()
                 }
             },
@@ -3295,24 +3206,24 @@ class MainActivity : ComponentActivity() {
             onGenerate = { e, g -> generateArtPlusPackage(e, g) },
             onPostGenerate = { result, e ->
                 runOnUiThread {
-                    activeGenerationSession = result.session
+                    mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (result.session)) }
                     mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
-                    previewChoiceMode = null
-                    previewPackageName = e.packageName
-                    previewDirPath = result.outDir.absolutePath
-                    previewVersion += 1
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewPackageName = (e.packageName)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (result.outDir.absolutePath)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                     saveUiState()
                 }
             },
             onInstall = { outDir, pkg, mode -> installWithRoot(outDir, pkg, mode) },
-            onMarkGenerated = { pkg -> generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, pkg) },
+            onMarkGenerated = { pkg -> mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames, pkg))) } },
             onToast = { toastStatus(it) },
             onStatus = { status(it) },
             onFinish = { gpt ->
                 runOnUiThread {
-                    isBusy = false
+                    mainViewModel.updateShell { it -> it.copy(isBusy = (false)) }
                     if (gpt) {
-                        isGptPreviewLoading = false
+                        mainViewModel.updatePreviewSession { it -> it.copy(isGptPreviewLoading = (false)) }
                     }
                 }
             },
@@ -3322,43 +3233,43 @@ class MainActivity : ComponentActivity() {
     // 重构期间保留：委托到 ui/pages/home/HomeGenerationOps.kt 显式参数版本（含内嵌 executeWrite），调用点零改动。
     internal fun writeSelectedWithRoot(rootWriteMode: RootWriteMode): Unit =
         homeWriteSelectedWithRoot(
-            entry = apps.firstOrNull { it.packageName == selectedPackageName },
+            entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
             rootWriteMode = rootWriteMode,
-            isBusy = isBusy,
-            activeSession = activeGenerationSession,
+            isBusy = mainViewModel.shell.value.isBusy,
+            activeSession = mainViewModel.previewSession.value.activeGenerationSession,
             selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
-            autoConfirmRootWrite = autoConfirmRootWrite,
-            targetPath = apps.firstOrNull { it.packageName == selectedPackageName }?.let { "$ROOT_UXICONS_DIR/${it.packageName}" },
-            onStatusText = { statusText = it },
+            autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
+            targetPath = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName }?.let { "$ROOT_UXICONS_DIR/${it.packageName}" },
+            onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onGenerateFallback = { generateSelected(installWithRoot = true, useGpt = false, rootWriteMode = rootWriteMode) },
             onBeginBusy = { msg ->
-                isBusy = true
-                statusText = msg
+                mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
+                mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
             },
             onLaunch = { name, block -> startUiFriendlyThread(name, block) },
             onWrite = { session, selections -> writePackageOutputs(session, selections) },
             onInstall = { outDir, pkg, mode -> installWithRoot(outDir, pkg, mode) },
             onPostWrite = { session, selections, e ->
                 runOnUiThread {
-                    generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, e.packageName)
-                    activeGenerationSession = session
+                    mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames, e.packageName))) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
                     mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                    previewPackageName = e.packageName
-                    previewDirPath = session.outDir.absolutePath
-                    previewVersion += 1
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewPackageName = (e.packageName)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (session.outDir.absolutePath)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                     saveUiState()
                 }
             },
             onToast = { toastStatus(it) },
-            onFinish = { runOnUiThread { isBusy = false } },
+            onFinish = { runOnUiThread { mainViewModel.updateShell { it -> it.copy(isBusy = (false)) } } },
             onRequestConfirm = { pkg, targetPath, mode, onConfirm ->
-                rootWriteConfirmRememberSkip = false
-                pendingRootWriteConfirm = RootWriteConfirmRequest(
+                mainViewModel.updateConfirm { it -> it.copy(rootWriteConfirmRememberSkip = (false)) }
+                mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (RootWriteConfirmRequest(
                     packageName = pkg,
                     targetPath = targetPath,
                     rootWriteMode = mode,
                     onConfirm = { onConfirm() },
-                )
+                ))) }
             },
         )
 
@@ -3366,38 +3277,38 @@ class MainActivity : ComponentActivity() {
     internal fun selectAppAndRestoreGeneratedPreview(entry: AppEntry) {
         val revision = ++generatedPreviewRestoreRevision
         val localDir = artPlusPackageDir(entry.packageName)
-        val known = entry.packageName in generatedPackageNames || hasGeneratedPackageBaseAssets(localDir)
+        val known = entry.packageName in mainViewModel.picker.value.generatedPackageNames || hasGeneratedPackageBaseAssets(localDir)
         homeSelectAppAndRestore(
             entry = entry,
             revision = revision,
-            isBusy = isBusy,
+            isBusy = mainViewModel.shell.value.isBusy,
             knownGenerated = known,
-            getSelected = { selectedPackageName },
+            getSelected = { mainViewModel.picker.value.selectedPackageName },
             getRevision = { generatedPreviewRestoreRevision },
             onResetSelection = { pkg ->
-                selectedPackageName = pkg
-                activeGenerationSession = null
-                previewChoiceMode = null
-                previewPackageName = null
-                previewDirPath = null
+                mainViewModel.updatePicker { it -> it.copy(selectedPackageName = (pkg)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (null)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(previewPackageName = (null)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (null)) }
                 mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
-                previewVersion += 1
+                mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
             },
-            onStatusText = { statusText = it },
+            onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onSaveUi = { saveUiState() },
             onClearRmbg = { clearRmbgCandidateUiState() },
             onLaunch = { name, block -> startUiFriendlyThread(name, block) },
             onLoadDir = { existingGeneratedPackageDir(entry.packageName) },
             onUi = { block -> runOnUiThread(block) },
-            onMarkGenerated = { pkg -> generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, pkg) },
+            onMarkGenerated = { pkg -> mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames, pkg))) } },
             onBuildSession = { pkg, dir -> buildGeneratedPackageSession(pkg, dir) },
             onCommitSession = { session, dir, e ->
-                activeGenerationSession = session
+                mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
                 mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
-                previewChoiceMode = null
-                previewPackageName = e.packageName
-                previewDirPath = dir.absolutePath
-                previewVersion += 1
+                mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(previewPackageName = (e.packageName)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (dir.absolutePath)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
             },
         )
     }
@@ -3418,7 +3329,7 @@ class MainActivity : ComponentActivity() {
 
     // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
     internal fun toggleMultiSelectedPackage(packageName: String) =
-        mainViewModel.toggleMultiSelectedPackage(packageName = packageName, current = multiSelectedPackageNames)
+        mainViewModel.toggleMultiSelectedPackage(packageName = packageName, current = mainViewModel.picker.value.multiSelectedPackageNames)
 
     // 重构期间保留：委托到 state/PresetBatchOps.kt MainViewModel 显式参数版本，调用点零改动。
     internal fun addLiquidGlassToMultiSelectedGenerated() =
@@ -3433,7 +3344,7 @@ class MainActivity : ComponentActivity() {
     internal fun executeAddLiquidGlassToMultiSelectedGenerated(packageNames: List<String>) =
         mainViewModel.executeAddLiquidGlassToMultiSelectedGenerated(
             packageNames = packageNames,
-            selectedAtStart = selectedPackageName,
+            selectedAtStart = mainViewModel.picker.value.selectedPackageName,
             resolvePackageDir = ::existingGeneratedPackageDir,
             applyGlass = ::applyLiquidGlassToGeneratedPackage,
             installGlass = ::installLiquidGlassFilesWithRoot,
@@ -3448,8 +3359,8 @@ class MainActivity : ComponentActivity() {
     internal fun existingGeneratedPackageDir(packageName: String): File =
         existingGeneratedPackageDir(
             packageName = packageName,
-            previewDirPath = previewDirPath,
-            previewPackageName = previewPackageName,
+            previewDirPath = mainViewModel.previewSession.value.previewDirPath,
+            previewPackageName = mainViewModel.previewSession.value.previewPackageName,
             externalArtPlusDir = getExternalFilesDir("ArtPlus"),
             filesDir = filesDir,
             appUid = applicationInfo.uid,
@@ -3560,9 +3471,9 @@ class MainActivity : ComponentActivity() {
             externalArtPlusDir = getExternalFilesDir("ArtPlus"),
             filesDir = filesDir,
             icon = icon,
-            gptModelId = gptModelId,
-            gptBaseUrl = gptBaseUrl,
-            gptApiKey = gptApiKey,
+            gptModelId = mainViewModel.gptRmbgSettings.value.gptModelId,
+            gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
+            gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
             isDebug = isDebugBuild(),
             onStatus = ::status,
             defaultChoiceForMode = ::defaultPreviewChoiceForMode,
@@ -3616,66 +3527,45 @@ class MainActivity : ComponentActivity() {
     internal fun clearInstalledRmbgComponent() {
         clearInstalledRmbgComponent(
             filesDir = filesDir,
-            isBusy = isBusy,
-            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
-            isInstallingRmbgComponent = isInstallingRmbgComponent,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
+            isInstallingRmbgComponent = mainViewModel.previewSession.value.isInstallingRmbgComponent,
             closeRuntime = {
                 runCatching { rmbgRuntime?.close() }
                 rmbgRuntime = null
             },
             onClearUiState = { clearRmbgCandidateUiState() },
             onResult = { deleted ->
-                lastRmbgInferenceReport = null
-                rmbgComponentStatus = "${System.currentTimeMillis()}"
-                rmbgInstallStage = ""
-                rmbgInstallProgress = null
-                rmbgComponentSaveStatus = ""
-                statusText = if (deleted) "已清除 RMBG" else "没有已安装 RMBG"
+                mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgInferenceReport = (null)) }
+                mainViewModel.updateGptRmbgSettings { it -> it.copy(rmbgComponentStatus = ("${System.currentTimeMillis()}")) }
+                mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallStage = ("")) }
+                mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallProgress = (null)) }
+                mainViewModel.updateGptRmbgSettings { it -> it.copy(rmbgComponentSaveStatus = ("")) }
+                mainViewModel.updateShell { it -> it.copy(statusText = (if (deleted) "已清除 RMBG" else "没有已安装 RMBG")) }
             },
-        )
-    }
-
-    // 重构期间保留：委托到 pipeline/RmbgManager.kt 显式参数版本，调用点零改动。
-    internal fun installRmbgComponent(uri: Uri) {
-        installRmbgComponent(
-            uri = uri,
-            filesDir = filesDir,
-            isBusy = isBusy,
-            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
-            isInstallingRmbgComponent = isInstallingRmbgComponent,
-            openInput = { contentResolver.openInputStream(it) },
-            getRuntime = { rmbgRuntime },
-            setRuntime = { rmbgRuntime = it },
-            setInstalling = { isInstallingRmbgComponent = it },
-            setStage = { rmbgInstallStage = it },
-            setProgress = { rmbgInstallProgress = it },
-            setStatus = { statusText = it },
-            setComponentStatus = { rmbgComponentStatus = it },
-            setLastError = { lastRmbgCandidateError = it },
-            runOnUi = { runOnUiThread(it) },
         )
     }
 
     // 重构期间保留：委托到 pipeline/RmbgManager.kt 显式参数版本，调用点零改动。
     internal fun installRmbgComponentFromUrl() {
         installRmbgComponentFromUrl(
-            urlText = rmbgComponentUrl,
+            urlText = mainViewModel.gptRmbgSettings.value.rmbgComponentUrl,
             filesDir = filesDir,
             cacheDir = cacheDir,
-            isBusy = isBusy,
-            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
-            isInstallingRmbgComponent = isInstallingRmbgComponent,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
+            isInstallingRmbgComponent = mainViewModel.previewSession.value.isInstallingRmbgComponent,
             isDebugBuild = isDebugBuild(),
             onSaveSettings = { saveRmbgSettings() },
             getRuntime = { rmbgRuntime },
             setRuntime = { rmbgRuntime = it },
-            setInstalling = { isInstallingRmbgComponent = it },
-            setStage = { rmbgInstallStage = it },
-            setProgress = { rmbgInstallProgress = it },
-            setStatus = { statusText = it },
-            setComponentStatus = { rmbgComponentStatus = it },
-            setComponentSaveStatus = { rmbgComponentSaveStatus = it },
-            setLastError = { lastRmbgCandidateError = it },
+            setInstalling = { mainViewModel.updatePreviewSession { v -> v.copy(isInstallingRmbgComponent = (it)) } },
+            setStage = { mainViewModel.updatePreviewSession { v -> v.copy(rmbgInstallStage = (it)) } },
+            setProgress = { mainViewModel.updatePreviewSession { v -> v.copy(rmbgInstallProgress = (it)) } },
+            setStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+            setComponentStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentStatus = (it)) } },
+            setComponentSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentSaveStatus = (it)) } },
+            setLastError = { mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (it)) } },
             runOnUi = { runOnUiThread(it) },
         )
     }
@@ -3691,15 +3581,15 @@ class MainActivity : ComponentActivity() {
             setRuntime = { rmbgRuntime = it },
             onDownloadProgress = { stage, progress, status ->
                 runOnUiThread {
-                    statusText = status
-                    rmbgInstallStage = stage
-                    rmbgInstallProgress = progress
+                    mainViewModel.updateShell { it -> it.copy(statusText = (status)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallStage = (stage)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallProgress = (progress)) }
                 }
             },
             onInstallStage = {
                 runOnUiThread {
-                    rmbgInstallStage = "安装模型"
-                    rmbgInstallProgress = null
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallStage = ("安装模型")) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallProgress = (null)) }
                 }
             },
         )
@@ -3723,9 +3613,9 @@ class MainActivity : ComponentActivity() {
             isDebugBuild = isDebugBuild(),
         ) { stage, progress, status ->
             runOnUiThread {
-                statusText = status
-                rmbgInstallStage = stage
-                rmbgInstallProgress = progress
+                mainViewModel.updateShell { it -> it.copy(statusText = (status)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallStage = (stage)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallProgress = (progress)) }
             }
         }
     }
@@ -4089,11 +3979,11 @@ class MainActivity : ComponentActivity() {
         homeApplyPreviewChoice(
             mode = mode,
             choice = choice,
-            session = activeGenerationSession,
+            session = mainViewModel.previewSession.value.activeGenerationSession,
             selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
             onChooseCustom = { chooseCustomImageForMode(mode, choice.customKind!!) },
             onGenerateGpt = { generateGptCandidateForMode(mode) },
-            onStatusText = { statusText = it },
+            onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onCommitSelections = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
             onSaveUi = { saveUiState() },
             onWrite = { session, selections -> writeActivePreviewOutputs(session, selections, closeDialog = false) },
@@ -4103,15 +3993,15 @@ class MainActivity : ComponentActivity() {
     internal fun applyPreviewChoiceToAll(choice: PreviewChoice): Unit =
         homeApplyPreviewChoiceToAll(
             choice = choice,
-            session = activeGenerationSession,
-            batchPackageNames = multiSelectedPackageNames.toList().sorted(),
+            session = mainViewModel.previewSession.value.activeGenerationSession,
+            batchPackageNames = mainViewModel.picker.value.multiSelectedPackageNames.toList().sorted(),
             onApplyToSelected = { c, pkgs -> applyPreviewChoiceToSelectedPackages(c, pkgs) },
             onGenerateGptAll = { generateGptCandidateForAll() },
             onGenerateRmbgAll = { generateRmbgCandidateForAll() },
-            onStatusText = { statusText = it },
+            onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             candidateAvailable = { s, c -> candidateForChoice(s, c) != null },
             onCommitDefault = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
-            onClearChoiceMode = { previewChoiceMode = null },
+            onClearChoiceMode = { mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) } },
             onSaveUi = { saveUiState() },
             onWriteClose = { session, selections -> writeActivePreviewOutputs(session, selections, closeDialog = true) },
         )
@@ -4121,26 +4011,26 @@ class MainActivity : ComponentActivity() {
         homeApplyPreviewChoiceToSelectedPackages(
             choice = choice,
             packageNames = packageNames,
-            gptBaseUrl = gptBaseUrl,
-            gptApiKey = gptApiKey,
+            gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
+            gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
             hasRmbgComponent = findRmbgComponent() != null,
-            isBusy = isBusy,
-            isGeneratingGpt = isGeneratingGptCandidate,
-            isGeneratingRmbg = isGeneratingRmbgCandidate,
+            isBusy = mainViewModel.shell.value.isBusy,
+            isGeneratingGpt = mainViewModel.previewSession.value.isGeneratingGptCandidate,
+            isGeneratingRmbg = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
             tryAcquireRmbg = { rmbgGenerationGate.compareAndSet(false, true) },
-            onStatusText = { statusText = it },
+            onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             onBegin = { total ->
-                isBusy = true
-                previewChoiceMode = null
-                batchApplyProgress = BatchApplyProgress(
+                mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
+                mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
+                mainViewModel.updateTransfer { it -> it.copy(batchApplyProgress = (BatchApplyProgress(
                     title = "全部应用",
                     completed = 0,
                     total = total,
                     currentLabel = "准备处理 $total 个 APK",
                     failures = 0,
-                )
+                ))) }
             },
-            selectedAtStart = selectedPackageName,
+            selectedAtStart = mainViewModel.picker.value.selectedPackageName,
             apps = apps,
             onProgress = { completed, total, label, failures -> updateBatchApplyProgress(completed, total, label, failures) },
             onGeneratePackage = { app, c -> generatePackageForPreviewChoice(app, c) },
@@ -4148,36 +4038,36 @@ class MainActivity : ComponentActivity() {
             onFinishBatch = { successes, failures, selectedResult, atStart ->
                 runOnUiThread {
                     if (successes.isNotEmpty()) {
-                        generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames + successes)
-                        multiSelectedPackageNames = multiSelectedPackageNames - successes.toSet()
+                        mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames + successes))) }
+                        mainViewModel.updatePicker { it -> it.copy(multiSelectedPackageNames = (mainViewModel.picker.value.multiSelectedPackageNames - successes.toSet())) }
                     }
-                    if (selectedResult != null && selectedPackageName == atStart) {
-                        activeGenerationSession = selectedResult.session
+                    if (selectedResult != null && mainViewModel.picker.value.selectedPackageName == atStart) {
+                        mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (selectedResult.session)) }
                         mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selectedResult.selections).normalLight.name, previewNormalDark = (selectedResult.selections).normalDark.name, previewMonochromeLight = (selectedResult.selections).monochromeLight.name, previewMonochromeDark = (selectedResult.selections).monochromeDark.name) }
-                        previewChoiceMode = null
-                        previewPackageName = selectedResult.session.packageName
-                        previewDirPath = selectedResult.outDir.absolutePath
-                        previewVersion += 1
+                        mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
+                        mainViewModel.updatePreviewSession { it -> it.copy(previewPackageName = (selectedResult.session.packageName)) }
+                        mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (selectedResult.outDir.absolutePath)) }
+                        mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                         saveUiState()
                     }
-                    statusText = when {
+                    mainViewModel.updateShell { it -> it.copy(statusText = (when {
                         failures.isEmpty() -> "全部应用完成: ${successes.size}/${packageNames.size}"
                         successes.isEmpty() -> "全部应用失败: ${failures.firstOrNull().orEmpty()}"
                         else -> "全部应用完成 ${successes.size} 个，失败 ${failures.size} 个: ${failures.firstOrNull().orEmpty()}"
-                    }
+                    })) }
                 }
             },
             onReleaseRmbg = { rmbgGenerationGate.set(false) },
             onResetBusy = {
                 runOnUiThread {
-                    isBusy = false
-                    isGptPreviewLoading = false
-                    isGeneratingGptCandidate = false
-                    isGeneratingRmbgCandidate = false
-                    rmbgCandidatePackageName = null
-                    rmbgCandidateMode = null
-                    rmbgCandidateStatusText = ""
-                    batchApplyProgress = null
+                    mainViewModel.updateShell { it -> it.copy(isBusy = (false)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGptPreviewLoading = (false)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingGptCandidate = (false)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingRmbgCandidate = (false)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidatePackageName = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateMode = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateStatusText = ("")) }
+                    mainViewModel.updateTransfer { it -> it.copy(batchApplyProgress = (null)) }
                 }
             },
             onLaunch = { name, block -> startUiFriendlyThread(name, block) },
@@ -4211,23 +4101,23 @@ class MainActivity : ComponentActivity() {
         )
 
     internal fun clearRmbgCandidateUiState() {
-        if (isGeneratingRmbgCandidate) {
+        if (mainViewModel.previewSession.value.isGeneratingRmbgCandidate) {
             return
         }
-        lastRmbgCandidateError = null
-        rmbgCandidatePackageName = null
-        rmbgCandidateMode = null
-        rmbgCandidateStatusText = ""
-        rmbgCandidateFailurePackageName = null
-        rmbgCandidateFailureMode = null
+        mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = (null)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidatePackageName = (null)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateMode = (null)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateStatusText = ("")) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (null)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (null)) }
     }
 
     internal fun chooseCustomImageForMode(mode: PreviewMode, kind: CustomImageKind) {
-        if (isBusy || isGeneratingGptCandidate || isGeneratingRmbgCandidate) {
+        if (mainViewModel.shell.value.isBusy || mainViewModel.previewSession.value.isGeneratingGptCandidate || mainViewModel.previewSession.value.isGeneratingRmbgCandidate) {
             return
         }
-        pendingCustomImageMode = mode
-        pendingCustomImageKind = kind
+        mainViewModel.updatePreviewSession { it -> it.copy(pendingCustomImageMode = (mode)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(pendingCustomImageKind = (kind)) }
         chooseCustomImageLauncher.launch(
             arrayOf(
                 "image/png",
@@ -4237,12 +4127,12 @@ class MainActivity : ComponentActivity() {
     }
 
     internal fun importCustomPreviewImage(mode: PreviewMode, kind: CustomImageKind, uri: Uri) {
-        val session = activeGenerationSession
+        val session = mainViewModel.previewSession.value.activeGenerationSession
         if (session == null) {
-            statusText = "先生成一次预览后再导入自定义图片"
+            mainViewModel.updateShell { it -> it.copy(statusText = ("先生成一次预览后再导入自定义图片")) }
             return
         }
-        statusText = "导入${kind.label}: ${mode.label}"
+        mainViewModel.updateShell { it -> it.copy(statusText = ("导入${kind.label}: ${mode.label}")) }
         startUiFriendlyThread("ArtPlusCustomImageImport") {
             try {
                 val bitmap = loadCustomImageBitmap(contentResolver, uri)
@@ -4260,14 +4150,14 @@ class MainActivity : ComponentActivity() {
                 )
                 val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)
                 writePackageOutputs(updatedSession, selections)
-                if (false && outputTreeUri != null) {
-                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
+                if (false && mainViewModel.shell.value.outputTreeUri != null) {
+                    exportToTree(contentResolver, mainViewModel.shell.value.outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
-                    activeGenerationSession = updatedSession
+                    mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (updatedSession)) }
                     mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                    previewVersion += 1
-                    statusText = "已导入${kind.label}: ${mode.label}"
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
+                    mainViewModel.updateShell { it -> it.copy(statusText = ("已导入${kind.label}: ${mode.label}")) }
                     saveUiState()
                 }
             } catch (error: Exception) {
@@ -4277,33 +4167,33 @@ class MainActivity : ComponentActivity() {
     }
 
     internal fun generateGptCandidateForMode(mode: PreviewMode, confirmed: Boolean = false) {
-        val session = activeGenerationSession ?: return
-        if (gptBaseUrl.trim().isEmpty() || gptApiKey.trim().isEmpty()) {
-            statusText = "请填写AI提供商信息"
+        val session = mainViewModel.previewSession.value.activeGenerationSession ?: return
+        if (mainViewModel.gptRmbgSettings.value.gptBaseUrl.trim().isEmpty() || mainViewModel.gptRmbgSettings.value.gptApiKey.trim().isEmpty()) {
+            mainViewModel.updateShell { it -> it.copy(statusText = ("请填写AI提供商信息")) }
             return
         }
-        if (isGeneratingGptCandidate || isBusy) {
+        if (mainViewModel.previewSession.value.isGeneratingGptCandidate || mainViewModel.shell.value.isBusy) {
             return
         }
         if (!confirmed) {
             requestServiceConfirm(
                 title = "使用 AI 生成",
-                message = "将调用云端图像接口（已累计 $gptRunCount 次）。确认继续？",
+                message = "将调用云端图像接口（已累计 ${mainViewModel.presetUi.value.gptRunCount} 次）。确认继续？",
                 confirmLabel = "继续",
             ) {
                 generateGptCandidateForMode(mode, confirmed = true)
             }
             return
         }
-        isGeneratingGptCandidate = true
-        isGptPreviewLoading = true
+        mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingGptCandidate = (true)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(isGptPreviewLoading = (true)) }
         incrementGptRunCount()
-        statusText = "AI候选生成中: ${session.packageName}"
+        mainViewModel.updateShell { it -> it.copy(statusText = ("AI候选生成中: ${session.packageName}")) }
         val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).withChoice(mode, PreviewChoice.Gpt)
         startUiFriendlyThread("ArtPlusGptCandidate") {
             try {
                 // P4 交界：GPT 图层收敛进 pipeline/，显式传调参 + 凭证 + 状态回调。
-                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, mainViewModel.params.value.gptCustomPrompt, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset), mainViewModel.params.value.foregroundSubjectPercent, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode), gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
+                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, mainViewModel.params.value.gptCustomPrompt, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset), mainViewModel.params.value.foregroundSubjectPercent, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode), mainViewModel.gptRmbgSettings.value.gptModelId, mainViewModel.gptRmbgSettings.value.gptBaseUrl, mainViewModel.gptRmbgSettings.value.gptApiKey, isDebugBuild(), ::status)
                 val updatedSession = session.copy(
                     candidates = session.candidates + (
                         PreviewChoice.Gpt to IconCandidate(
@@ -4315,15 +4205,15 @@ class MainActivity : ComponentActivity() {
                         ),
                 )
                 writePackageOutputs(updatedSession, selections)
-                if (false && outputTreeUri != null) {
-                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
+                if (false && mainViewModel.shell.value.outputTreeUri != null) {
+                    exportToTree(contentResolver, mainViewModel.shell.value.outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
-                    activeGenerationSession = updatedSession
+                    mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (updatedSession)) }
                     mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                    previewVersion += 1
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                     val msg = "AI候选已生成并应用到 ${mode.label}"
-                    statusText = msg
+                    mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                     Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     saveUiState()
                 }
@@ -4331,41 +4221,41 @@ class MainActivity : ComponentActivity() {
                 toastStatus("AI候选失败: ${error.message ?: error.javaClass.simpleName}")
             } finally {
                 runOnUiThread {
-                    isGeneratingGptCandidate = false
-                    isGptPreviewLoading = false
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingGptCandidate = (false)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGptPreviewLoading = (false)) }
                 }
             }
         }
     }
 
     internal fun generateGptCandidateForAll(confirmed: Boolean = false) {
-        val session = activeGenerationSession ?: return
-        if (gptBaseUrl.trim().isEmpty() || gptApiKey.trim().isEmpty()) {
-            statusText = "请填写AI提供商信息"
+        val session = mainViewModel.previewSession.value.activeGenerationSession ?: return
+        if (mainViewModel.gptRmbgSettings.value.gptBaseUrl.trim().isEmpty() || mainViewModel.gptRmbgSettings.value.gptApiKey.trim().isEmpty()) {
+            mainViewModel.updateShell { it -> it.copy(statusText = ("请填写AI提供商信息")) }
             return
         }
-        if (isGeneratingGptCandidate || isBusy) {
+        if (mainViewModel.previewSession.value.isGeneratingGptCandidate || mainViewModel.shell.value.isBusy) {
             return
         }
         if (!confirmed) {
             requestServiceConfirm(
                 title = "使用 AI 生成全部",
-                message = "将调用云端图像接口（已累计 $gptRunCount 次）。确认继续？",
+                message = "将调用云端图像接口（已累计 ${mainViewModel.presetUi.value.gptRunCount} 次）。确认继续？",
                 confirmLabel = "继续",
             ) {
                 generateGptCandidateForAll(confirmed = true)
             }
             return
         }
-        isGeneratingGptCandidate = true
-        isGptPreviewLoading = true
+        mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingGptCandidate = (true)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(isGptPreviewLoading = (true)) }
         incrementGptRunCount()
-        statusText = "AI候选生成中: ${session.packageName}"
+        mainViewModel.updateShell { it -> it.copy(statusText = ("AI候选生成中: ${session.packageName}")) }
         val selections = PreviewSelections.default(PreviewChoice.Gpt)
         startUiFriendlyThread("ArtPlusGptCandidateAll") {
             try {
                 // P4 交界：GPT 图层收敛进 pipeline/，显式传调参 + 凭证 + 状态回调。
-                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, mainViewModel.params.value.gptCustomPrompt, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset), mainViewModel.params.value.foregroundSubjectPercent, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode), gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
+                val gptLayers = generateGptLayers(session.sourceIcon, session.baseRecfg, session.baseRecbg, mainViewModel.params.value.gptCustomPrompt, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset), mainViewModel.params.value.foregroundSubjectPercent, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode), mainViewModel.gptRmbgSettings.value.gptModelId, mainViewModel.gptRmbgSettings.value.gptBaseUrl, mainViewModel.gptRmbgSettings.value.gptApiKey, isDebugBuild(), ::status)
                 val updatedSession = session.copy(
                     candidates = session.candidates + (
                         PreviewChoice.Gpt to IconCandidate(
@@ -4377,16 +4267,16 @@ class MainActivity : ComponentActivity() {
                         ),
                 )
                 writePackageOutputs(updatedSession, selections)
-                if (false && outputTreeUri != null) {
-                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
+                if (false && mainViewModel.shell.value.outputTreeUri != null) {
+                    exportToTree(contentResolver, mainViewModel.shell.value.outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
-                    activeGenerationSession = updatedSession
+                    mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (updatedSession)) }
                     mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                    previewChoiceMode = null
-                    previewVersion += 1
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                     val msg = "AI候选已生成并应用到全部"
-                    statusText = msg
+                    mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                     Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     saveUiState()
                 }
@@ -4394,35 +4284,35 @@ class MainActivity : ComponentActivity() {
                 toastStatus("AI候选失败: ${error.message ?: error.javaClass.simpleName}")
             } finally {
                 runOnUiThread {
-                    isGeneratingGptCandidate = false
-                    isGptPreviewLoading = false
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingGptCandidate = (false)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGptPreviewLoading = (false)) }
                 }
             }
         }
     }
 
     internal fun generateRmbgCandidateForMode(mode: PreviewMode, confirmed: Boolean = false) {
-        val session = activeGenerationSession ?: return
+        val session = mainViewModel.previewSession.value.activeGenerationSession ?: return
         if (session.candidates[PreviewChoice.Rmbg] != null) {
             applyPreviewChoice(mode, PreviewChoice.Rmbg)
-            statusText = "已使用现有 RMBG 候选"
+            mainViewModel.updateShell { it -> it.copy(statusText = ("已使用现有 RMBG 候选")) }
             return
         }
         if (findRmbgComponent() == null) {
-            lastRmbgCandidateError = "未安装 RMBG 组件 ZIP"
-            rmbgCandidateFailurePackageName = session.packageName
-            rmbgCandidateFailureMode = mode
-            statusText = lastRmbgCandidateError ?: "未安装 RMBG 组件"
+            mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = ("未安装 RMBG 组件 ZIP")) }
+            mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (session.packageName)) }
+            mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (mode)) }
+            mainViewModel.updateShell { it -> it.copy(statusText = (mainViewModel.previewSession.value.lastRmbgCandidateError ?: "未安装 RMBG 组件")) }
             return
         }
-        if (isGeneratingRmbgCandidate || isGeneratingGptCandidate || isBusy) {
-            statusText = "RMBG正在运行或主任务忙，请等待"
+        if (mainViewModel.previewSession.value.isGeneratingRmbgCandidate || mainViewModel.previewSession.value.isGeneratingGptCandidate || mainViewModel.shell.value.isBusy) {
+            mainViewModel.updateShell { it -> it.copy(statusText = ("RMBG正在运行或主任务忙，请等待")) }
             return
         }
         if (!confirmed) {
             requestServiceConfirm(
                 title = "使用 RMBG 抠图",
-                message = "将运行本地 ONNX 模型抠图（已累计 $rmbgRunCount 次）。确认继续？",
+                message = "将运行本地 ONNX 模型抠图（已累计 ${mainViewModel.presetUi.value.rmbgRunCount} 次）。确认继续？",
                 confirmLabel = "继续",
             ) {
                 generateRmbgCandidateForMode(mode, confirmed = true)
@@ -4430,18 +4320,18 @@ class MainActivity : ComponentActivity() {
             return
         }
         if (!rmbgGenerationGate.compareAndSet(false, true)) {
-            statusText = "RMBG正在运行，请等待"
+            mainViewModel.updateShell { it -> it.copy(statusText = ("RMBG正在运行，请等待")) }
             return
         }
-        isGeneratingRmbgCandidate = true
+        mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingRmbgCandidate = (true)) }
         incrementRmbgRunCount()
-        lastRmbgCandidateError = null
-        rmbgCandidatePackageName = session.packageName
-        rmbgCandidateMode = mode
-        rmbgCandidateStatusText = "RMBG运行中(${RmbgInferenceBackend.Cpu.label})，请等待: ${mode.label}"
-        rmbgCandidateFailurePackageName = null
-        rmbgCandidateFailureMode = null
-        statusText = "RMBG候选生成中(${RmbgInferenceBackend.Cpu.label}): ${session.packageName}"
+        mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = (null)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidatePackageName = (session.packageName)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateMode = (mode)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateStatusText = ("RMBG运行中(${RmbgInferenceBackend.Cpu.label})，请等待: ${mode.label}")) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (null)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (null)) }
+        mainViewModel.updateShell { it -> it.copy(statusText = ("RMBG候选生成中(${RmbgInferenceBackend.Cpu.label}): ${session.packageName}")) }
         val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).withChoice(mode, PreviewChoice.Rmbg)
         startUiFriendlyThread("ArtPlusRmbgCandidate") {
             try {
@@ -4454,70 +4344,70 @@ class MainActivity : ComponentActivity() {
                     candidates = session.candidates + (PreviewChoice.Rmbg to candidate),
                 )
                 writePackageOutputs(updatedSession, selections)
-                if (false && outputTreeUri != null) {
-                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
+                if (false && mainViewModel.shell.value.outputTreeUri != null) {
+                    exportToTree(contentResolver, mainViewModel.shell.value.outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
-                    activeGenerationSession = updatedSession
+                    mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (updatedSession)) }
                     mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                    previewVersion += 1
-                    lastRmbgCandidateError = null
-                    lastRmbgInferenceReport = inferenceReport
-                    rmbgCandidateFailurePackageName = null
-                    rmbgCandidateFailureMode = null
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgInferenceReport = (inferenceReport)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (null)) }
                     val msg = if (result.validationWarning != null) {
                         "${result.validationWarning}，已应用到 ${mode.label}: ${formatRmbgInferenceReport(inferenceReport)}"
                     } else {
                         "RMBG候选已生成并应用到 ${mode.label}: ${formatRmbgInferenceReport(inferenceReport)}"
                     }
-                    statusText = msg
+                    mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                     Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     saveUiState()
                 }
             } catch (error: Throwable) {
                 val message = describeRmbgFailure(error)
                 runOnUiThread {
-                    lastRmbgCandidateError = message
-                    rmbgCandidateFailurePackageName = session.packageName
-                    rmbgCandidateFailureMode = mode
+                    mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = (message)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (session.packageName)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (mode)) }
                     val msg = "RMBG候选失败(${RmbgInferenceBackend.Cpu.label}): $message"
-                    statusText = msg
+                    mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                     Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } finally {
                 rmbgGenerationGate.set(false)
                 runOnUiThread {
-                    isGeneratingRmbgCandidate = false
-                    rmbgCandidatePackageName = null
-                    rmbgCandidateMode = null
-                    rmbgCandidateStatusText = ""
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingRmbgCandidate = (false)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidatePackageName = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateMode = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateStatusText = ("")) }
                 }
             }
         }
     }
 
     internal fun generateRmbgCandidateForAll(confirmed: Boolean = false) {
-        val session = activeGenerationSession ?: return
+        val session = mainViewModel.previewSession.value.activeGenerationSession ?: return
         if (session.candidates[PreviewChoice.Rmbg] != null) {
             applyPreviewChoiceToAll(PreviewChoice.Rmbg)
-            statusText = "已使用现有 RMBG 候选"
+            mainViewModel.updateShell { it -> it.copy(statusText = ("已使用现有 RMBG 候选")) }
             return
         }
         if (findRmbgComponent() == null) {
-            lastRmbgCandidateError = "未安装 RMBG 组件 ZIP"
-            rmbgCandidateFailurePackageName = session.packageName
-            rmbgCandidateFailureMode = null
-            statusText = lastRmbgCandidateError ?: "未安装 RMBG 组件"
+            mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = ("未安装 RMBG 组件 ZIP")) }
+            mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (session.packageName)) }
+            mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (null)) }
+            mainViewModel.updateShell { it -> it.copy(statusText = (mainViewModel.previewSession.value.lastRmbgCandidateError ?: "未安装 RMBG 组件")) }
             return
         }
-        if (isGeneratingRmbgCandidate || isGeneratingGptCandidate || isBusy) {
-            statusText = "RMBG正在运行或主任务忙，请等待"
+        if (mainViewModel.previewSession.value.isGeneratingRmbgCandidate || mainViewModel.previewSession.value.isGeneratingGptCandidate || mainViewModel.shell.value.isBusy) {
+            mainViewModel.updateShell { it -> it.copy(statusText = ("RMBG正在运行或主任务忙，请等待")) }
             return
         }
         if (!confirmed) {
             requestServiceConfirm(
                 title = "使用 RMBG 抠图全部",
-                message = "将运行本地 ONNX 模型抠图（已累计 $rmbgRunCount 次）。确认继续？",
+                message = "将运行本地 ONNX 模型抠图（已累计 ${mainViewModel.presetUi.value.rmbgRunCount} 次）。确认继续？",
                 confirmLabel = "继续",
             ) {
                 generateRmbgCandidateForAll(confirmed = true)
@@ -4525,18 +4415,18 @@ class MainActivity : ComponentActivity() {
             return
         }
         if (!rmbgGenerationGate.compareAndSet(false, true)) {
-            statusText = "RMBG正在运行，请等待"
+            mainViewModel.updateShell { it -> it.copy(statusText = ("RMBG正在运行，请等待")) }
             return
         }
-        isGeneratingRmbgCandidate = true
+        mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingRmbgCandidate = (true)) }
         incrementRmbgRunCount()
-        lastRmbgCandidateError = null
-        rmbgCandidatePackageName = session.packageName
-        rmbgCandidateMode = null
-        rmbgCandidateStatusText = "RMBG运行中(${RmbgInferenceBackend.Cpu.label})，请等待: 全部"
-        rmbgCandidateFailurePackageName = null
-        rmbgCandidateFailureMode = null
-        statusText = "RMBG候选生成中(${RmbgInferenceBackend.Cpu.label}): ${session.packageName}"
+        mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = (null)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidatePackageName = (session.packageName)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateMode = (null)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateStatusText = ("RMBG运行中(${RmbgInferenceBackend.Cpu.label})，请等待: 全部")) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (null)) }
+        mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (null)) }
+        mainViewModel.updateShell { it -> it.copy(statusText = ("RMBG候选生成中(${RmbgInferenceBackend.Cpu.label}): ${session.packageName}")) }
         val selections = PreviewSelections.default(PreviewChoice.Rmbg)
         startUiFriendlyThread("ArtPlusRmbgCandidateAll") {
             try {
@@ -4549,44 +4439,44 @@ class MainActivity : ComponentActivity() {
                     candidates = session.candidates + (PreviewChoice.Rmbg to candidate),
                 )
                 writePackageOutputs(updatedSession, selections)
-                if (false && outputTreeUri != null) {
-                    exportToTree(contentResolver, outputTreeUri, updatedSession.outDir)
+                if (false && mainViewModel.shell.value.outputTreeUri != null) {
+                    exportToTree(contentResolver, mainViewModel.shell.value.outputTreeUri, updatedSession.outDir)
                 }
                 runOnUiThread {
-                    activeGenerationSession = updatedSession
+                    mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (updatedSession)) }
                     mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                    previewChoiceMode = null
-                    previewVersion += 1
-                    lastRmbgCandidateError = null
-                    lastRmbgInferenceReport = inferenceReport
-                    rmbgCandidateFailurePackageName = null
-                    rmbgCandidateFailureMode = null
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgInferenceReport = (inferenceReport)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (null)) }
                     val msg = if (result.validationWarning != null) {
                         "${result.validationWarning}，已应用到全部: ${formatRmbgInferenceReport(inferenceReport)}"
                     } else {
                         "RMBG候选已生成并应用到全部: ${formatRmbgInferenceReport(inferenceReport)}"
                     }
-                    statusText = msg
+                    mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                     Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                     saveUiState()
                 }
             } catch (error: Throwable) {
                 val message = describeRmbgFailure(error)
                 runOnUiThread {
-                    lastRmbgCandidateError = message
-                    rmbgCandidateFailurePackageName = session.packageName
-                    rmbgCandidateFailureMode = null
+                    mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = (message)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (session.packageName)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (null)) }
                     val msg = "RMBG候选失败(${RmbgInferenceBackend.Cpu.label}): $message"
-                    statusText = msg
+                    mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                     Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
                 }
             } finally {
                 rmbgGenerationGate.set(false)
                 runOnUiThread {
-                    isGeneratingRmbgCandidate = false
-                    rmbgCandidatePackageName = null
-                    rmbgCandidateMode = null
-                    rmbgCandidateStatusText = ""
+                    mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingRmbgCandidate = (false)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidatePackageName = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateMode = (null)) }
+                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateStatusText = ("")) }
                 }
             }
         }
@@ -4639,17 +4529,17 @@ class MainActivity : ComponentActivity() {
         retargetFrom: PreviewChoice? = null,
     ): Unit =
         homeRefreshActivePreviewOutputs(
-            currentSession = activeGenerationSession,
+            currentSession = mainViewModel.previewSession.value.activeGenerationSession,
             rebuildLocalCandidates = rebuildLocalCandidates,
             retargetFrom = retargetFrom,
-            app = activeGenerationSession?.let { s -> apps.firstOrNull { it.packageName == s.packageName } },
+            app = mainViewModel.previewSession.value.activeGenerationSession?.let { s -> apps.firstOrNull { it.packageName == s.packageName } },
             currentSelections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
             scope = previewWorkerScope,
             getJob = { previewOutputJob },
             setJob = { previewOutputJob = it },
             incRevision = { ++previewOutputRevision },
             getRevision = { previewOutputRevision },
-            setRefreshing = { isPreviewOutputRefreshing = it },
+            setRefreshing = { mainViewModel.updatePreviewSession { v -> v.copy(isPreviewOutputRefreshing = (it)) } },
             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
             tuning = currentTuningParams(),
@@ -4658,9 +4548,9 @@ class MainActivity : ComponentActivity() {
             normalize = { session, selections -> normalizePreviewSelections(session, selections) },
             onWrite = { session, selections -> writePackageOutputs(session, selections) },
             onCommit = { session, selections ->
-                activeGenerationSession = session
+                mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
                 mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                previewVersion += 1
+                mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                 saveUiState()
             },
             onStatus = { status(it) },
@@ -4681,15 +4571,15 @@ class MainActivity : ComponentActivity() {
             setJob = { previewOutputJob = it },
             incRevision = { ++previewOutputRevision },
             getRevision = { previewOutputRevision },
-            setRefreshing = { isPreviewOutputRefreshing = it },
+            setRefreshing = { mainViewModel.updatePreviewSession { v -> v.copy(isPreviewOutputRefreshing = (it)) } },
             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
             onWrite = { s, sel -> writePackageOutputs(s, sel) },
             onCommit = { s, sel, close ->
-                activeGenerationSession = s
+                mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (s)) }
                 mainViewModel.updateLive { p -> p.copy(previewNormalLight = (sel).normalLight.name, previewNormalDark = (sel).normalDark.name, previewMonochromeLight = (sel).monochromeLight.name, previewMonochromeDark = (sel).monochromeDark.name) }
-                previewVersion += 1
+                mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                 if (close) {
-                    previewChoiceMode = null
+                    mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
                 }
                 saveUiState()
             },
@@ -4720,14 +4610,14 @@ class MainActivity : ComponentActivity() {
 
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     internal fun status(message: String) {
-        pickerPostStatus(message) { runOnUiThread { statusText = it } }
+        pickerPostStatus(message) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
     }
 
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     internal fun toastStatus(message: String) =
         pickerToastStatus(
             message = message,
-            postOnUi = { text -> runOnUiThread { statusText = text } },
+            postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
             showToast = { text ->
                 runOnUiThread {
                     Toast.makeText(this@MainActivity, text, Toast.LENGTH_SHORT).show()
@@ -4740,31 +4630,31 @@ class MainActivity : ComponentActivity() {
         val state = BackupCancelState(
             backupJob = backupJob,
             backupDotJob = backupDotJob,
-            sheetVisible = backupSheetVisible,
-            inBackground = backupInBackground,
-            progress = backupProgress,
-            isBusy = isBusy,
+            sheetVisible = mainViewModel.transfer.value.backupSheetVisible,
+            inBackground = mainViewModel.transfer.value.backupInBackground,
+            progress = mainViewModel.transfer.value.backupProgress,
+            isBusy = mainViewModel.shell.value.isBusy,
         )
         cancelBackup(state, ::toastStatus)
         backupJob = state.backupJob
         backupDotJob = state.backupDotJob
-        backupSheetVisible = state.sheetVisible
-        backupInBackground = state.inBackground
-        backupProgress = state.progress
-        isBusy = state.isBusy
+        mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (state.sheetVisible)) }
+        mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (state.inBackground)) }
+        mainViewModel.updateTransfer { it -> it.copy(backupProgress = (state.progress)) }
+        mainViewModel.updateShell { it -> it.copy(isBusy = (state.isBusy)) }
     }
 
     // 重构期间保留：委托到 system/ExportManager.kt 显式参数版本，调用点零改动。
     internal fun cancelSingleExport() {
         val state = SingleExportCancelState(
             singleExportJob = singleExportJob,
-            sheetVisible = singleExportSheetVisible,
-            progress = exportProgress,
+            sheetVisible = mainViewModel.transfer.value.singleExportSheetVisible,
+            progress = mainViewModel.transfer.value.exportProgress,
         )
         cancelSingleExport(state, ::toastStatus)
         singleExportJob = state.singleExportJob
-        singleExportSheetVisible = state.sheetVisible
-        exportProgress = state.progress
+        mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (state.sheetVisible)) }
+        mainViewModel.updateTransfer { it -> it.copy(exportProgress = (state.progress)) }
     }
 
     internal fun startBackupDotAnimation() {
@@ -4772,7 +4662,7 @@ class MainActivity : ComponentActivity() {
         backupDotJob = mainScope.launch {
             while (isActive) {
                 delay(500)
-                backupBackgroundDots = if (backupBackgroundDots >= 3) 1 else backupBackgroundDots + 1
+                mainViewModel.updateTransfer { it -> it.copy(backupBackgroundDots = (if (mainViewModel.transfer.value.backupBackgroundDots >= 3) 1 else mainViewModel.transfer.value.backupBackgroundDots + 1)) }
             }
         }
     }
@@ -4783,39 +4673,39 @@ class MainActivity : ComponentActivity() {
     }
 
     internal fun exportSelectedToExternal() {
-        if (outputTreeUri == null) {
+        if (mainViewModel.shell.value.outputTreeUri == null) {
             toastStatus("还没有设置目录")
-            exportDialogVisible = true
+            mainViewModel.updatePreviewSession { it -> it.copy(exportDialogVisible = (true)) }
             return
         }
-        val dir = activeGenerationSession?.outDir
-            ?: previewDirPath?.let { File(it) }?.takeIf { it.isDirectory && hasGeneratedPackageBaseAssets(it) }
-            ?: selectedPackageName?.let { artPlusPackageDir(it) }?.takeIf { hasGeneratedPackageBaseAssets(it) }
+        val dir = mainViewModel.previewSession.value.activeGenerationSession?.outDir
+            ?: mainViewModel.previewSession.value.previewDirPath?.let { File(it) }?.takeIf { it.isDirectory && hasGeneratedPackageBaseAssets(it) }
+            ?: mainViewModel.picker.value.selectedPackageName?.let { artPlusPackageDir(it) }?.takeIf { hasGeneratedPackageBaseAssets(it) }
         if (dir == null || !hasGeneratedPackageBaseAssets(dir)) {
             toastStatus("没有可导出的图标包")
             return
         }
-        if (isBusy) return
-        isBusy = true
-        exportProgress = ExportProgress(
+        if (mainViewModel.shell.value.isBusy) return
+        mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
+        mainViewModel.updateTransfer { it -> it.copy(exportProgress = (ExportProgress(
             title = "导出中",
             completed = 0,
             total = 1,
             currentLabel = "正在导出: ${dir.name}",
             isIndeterminate = true,
-        )
-        singleExportSheetVisible = true
+        ))) }
+        mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (true)) }
         singleExportJob?.cancel()
         singleExportJob = mainScope.launch(Dispatchers.IO) {
             try {
-                runCatching { ensureNomediaAtTreeRoot(contentResolver, outputTreeUri) }
+                runCatching { ensureNomediaAtTreeRoot(contentResolver, mainViewModel.shell.value.outputTreeUri) }
                 // 优先尝试文件系统直拷（su cp），速度为 SAF 的 10-20 倍，失败再回退 SAF
-                val fastOk = runCatching { exportToTreeFast(outputTreeUri, dir) }.getOrDefault(false)
+                val fastOk = runCatching { exportToTreeFast(mainViewModel.shell.value.outputTreeUri, dir) }.getOrDefault(false)
                 if (fastOk) {
                     withContext(Dispatchers.Main) { toastStatus("已导出到外部目录: ${dir.name}") }
                 } else {
                     withContext(Dispatchers.Main) {
-                        runCatching { exportToTree(contentResolver, outputTreeUri, dir) }
+                        runCatching { exportToTree(contentResolver, mainViewModel.shell.value.outputTreeUri, dir) }
                             .onSuccess { toastStatus("已导出到外部目录: ${dir.name}") }
                             .onFailure { error -> toastStatus("导出失败: ${error.message ?: error.javaClass.simpleName}") }
                     }
@@ -4827,72 +4717,72 @@ class MainActivity : ComponentActivity() {
                 withContext(Dispatchers.Main) { toastStatus("导出失败: ${e.message ?: e.javaClass.simpleName}") }
             } finally {
                 withContext(Dispatchers.Main) {
-                    exportProgress = null
-                    singleExportSheetVisible = false
+                    mainViewModel.updateTransfer { it -> it.copy(exportProgress = (null)) }
+                    mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (false)) }
                     singleExportJob = null
-                    isBusy = false
+                    mainViewModel.updateShell { it -> it.copy(isBusy = (false)) }
                 }
             }
         }
     }
 
     internal fun backupAllToExternal(isFromOnboarding: Boolean = false) {
-        if (outputTreeUri == null) {
+        if (mainViewModel.shell.value.outputTreeUri == null) {
             toastStatus("还没有设置目录")
-            exportDialogVisible = true
+            mainViewModel.updatePreviewSession { it -> it.copy(exportDialogVisible = (true)) }
             return
         }
-        if (isBusy) return
+        if (mainViewModel.shell.value.isBusy) return
         // 若已有备份任务，仅重显弹窗
         if (backupJob?.isActive == true) {
-            backupSheetVisible = true
-            backupInBackground = false
+            mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (true)) }
+            mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (false)) }
             stopBackupDotAnimation()
             return
         }
-        isBusy = true
-        backupInBackground = false
-        backupSheetVisible = true
-        backupBackgroundDots = 1
-        backupProgress = ExportProgress(
+        mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
+        mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (false)) }
+        mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (true)) }
+        mainViewModel.updateTransfer { it -> it.copy(backupBackgroundDots = (1)) }
+        mainViewModel.updateTransfer { it -> it.copy(backupProgress = (ExportProgress(
             title = "备份中",
             completed = 0,
             total = 1,
             currentLabel = "正在准备...",
             isIndeterminate = true,
-        )
+        ))) }
         toastStatus("正在备份...")
         backupJob?.cancel()
         backupDotJob?.cancel()
         backupJob = mainScope.launch(Dispatchers.IO) {
             try {
-                runCatching { ensureNomediaAtTreeRoot(contentResolver, outputTreeUri) }
+                runCatching { ensureNomediaAtTreeRoot(contentResolver, mainViewModel.shell.value.outputTreeUri) }
                 val pkgs = listRootIconPackages()
                 if (pkgs.isEmpty()) {
                     withContext(Dispatchers.Main) {
-                        backupProgress = null
-                        backupSheetVisible = false
+                        mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
+                        mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
                         toastStatus("没有可导出的图标包")
                     }
                     return@launch
                 }
-                val treeUri = outputTreeUri
+                val treeUri = mainViewModel.shell.value.outputTreeUri
                 if (treeUri == null) {
                     withContext(Dispatchers.Main) {
-                        backupProgress = null
-                        backupSheetVisible = false
+                        mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
+                        mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
                         toastStatus("还没有设置目录")
                     }
                     return@launch
                 }
                 withContext(Dispatchers.Main) {
-                    backupProgress = ExportProgress(
+                    mainViewModel.updateTransfer { it -> it.copy(backupProgress = (ExportProgress(
                         title = "备份中",
                         completed = 0,
                         total = pkgs.size,
                         currentLabel = "准备备份 ${pkgs.size} 个图标包",
                         isIndeterminate = false,
-                    )
+                    ))) }
                 }
                 var successCount = 0
                 var failCount = 0
@@ -4902,31 +4792,31 @@ class MainActivity : ComponentActivity() {
                     for ((index, pkgName) in pkgs.withIndex()) {
                         ensureActive()
                         withContext(Dispatchers.Main) {
-                            backupProgress = ExportProgress(
+                            mainViewModel.updateTransfer { it -> it.copy(backupProgress = (ExportProgress(
                                 title = "备份中",
                                 completed = index,
                                 total = pkgs.size,
                                 currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
                                 isIndeterminate = false,
-                            )
-                            statusText = "正在备份 ${index + 1}/${pkgs.size}: $pkgName"
+                            ))) }
+                            mainViewModel.updateShell { it -> it.copy(statusText = ("正在备份 ${index + 1}/${pkgs.size}: $pkgName")) }
                         }
                         val ok = runCatching { backupPackageFast(pkgName, destRootFast) }.getOrDefault(false)
                         if (ok) successCount++ else failCount++
                         withContext(Dispatchers.Main) {
-                            backupProgress = ExportProgress(
+                            mainViewModel.updateTransfer { it -> it.copy(backupProgress = (ExportProgress(
                                 title = "备份中",
                                 completed = index + 1,
                                 total = pkgs.size,
                                 currentLabel = if (ok) "已完成 ${index + 1}/${pkgs.size}: $pkgName" else "失败 $pkgName",
                                 isIndeterminate = false,
-                            )
+                            ))) }
                         }
                     }
                     withContext(Dispatchers.Main) {
-                        if (!backupInBackground) {
-                            backupProgress = null
-                            backupSheetVisible = false
+                        if (!mainViewModel.transfer.value.backupInBackground) {
+                            mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
+                            mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
                         }
                         if (failCount == 0) toastStatus("已备份 $successCount 个图标包")
                         else toastStatus("已备份 $successCount 个，失败 $failCount 个")
@@ -4937,14 +4827,14 @@ class MainActivity : ComponentActivity() {
                     for ((index, pkgName) in pkgs.withIndex()) {
                         ensureActive()
                         withContext(Dispatchers.Main) {
-                            backupProgress = ExportProgress(
+                            mainViewModel.updateTransfer { it -> it.copy(backupProgress = (ExportProgress(
                                 title = "备份中",
                                 completed = index,
                                 total = pkgs.size,
                                 currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
                                 isIndeterminate = false,
-                            )
-                            statusText = "正在备份 ${index + 1}/${pkgs.size}: $pkgName"
+                            ))) }
+                            mainViewModel.updateShell { it -> it.copy(statusText = ("正在备份 ${index + 1}/${pkgs.size}: $pkgName")) }
                         }
                         val stagingDir = File(stagingRoot, pkgName)
                         try {
@@ -4956,44 +4846,44 @@ class MainActivity : ComponentActivity() {
                             val files = stagingDir.listFiles { _, name -> name.endsWith(".png") }
                             if (files == null || files.isEmpty()) {
                                 withContext(Dispatchers.Main) {
-                                    backupProgress = ExportProgress(
+                                    mainViewModel.updateTransfer { it -> it.copy(backupProgress = (ExportProgress(
                                         title = "备份中",
                                         completed = index + 1,
                                         total = pkgs.size,
                                         currentLabel = "已跳过 ${pkgName}（无图标）",
                                         isIndeterminate = false,
-                                    )
+                                    ))) }
                                 }
                                 continue
                             }
                             withContext(Dispatchers.Main) {
                                 runCatching { exportToTree(contentResolver, treeUri, stagingDir) }.onSuccess { successCount++ }.onFailure { failCount++ }
-                                backupProgress = ExportProgress(
+                                mainViewModel.updateTransfer { it -> it.copy(backupProgress = (ExportProgress(
                                     title = "备份中",
                                     completed = index + 1,
                                     total = pkgs.size,
                                     currentLabel = "已完成 ${index + 1}/${pkgs.size}: $pkgName",
                                     isIndeterminate = false,
-                                )
+                                ))) }
                             }
                         } catch (_: Exception) {
                             failCount++
                             withContext(Dispatchers.Main) {
-                                backupProgress = ExportProgress(
+                                mainViewModel.updateTransfer { it -> it.copy(backupProgress = (ExportProgress(
                                     title = "备份中",
                                     completed = index + 1,
                                     total = pkgs.size,
                                     currentLabel = "失败 ${pkgName}",
                                     isIndeterminate = false,
-                                )
+                                ))) }
                             }
                         }
                     }
                     runCatching { stagingRoot.deleteRecursively() }
                     withContext(Dispatchers.Main) {
-                        if (!backupInBackground) {
-                            backupProgress = null
-                            backupSheetVisible = false
+                        if (!mainViewModel.transfer.value.backupInBackground) {
+                            mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
+                            mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
                         }
                         if (failCount == 0) toastStatus("已备份 $successCount 个图标包")
                         else toastStatus("已备份 $successCount 个，失败 $failCount 个")
@@ -5006,20 +4896,20 @@ class MainActivity : ComponentActivity() {
                 throw e
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    backupProgress = null
-                    backupSheetVisible = false
-                    backupInBackground = false
+                    mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
+                    mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
+                    mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (false)) }
                     toastStatus("备份失败: ${e.message ?: e.javaClass.simpleName}")
                 }
             } finally {
                 withContext(Dispatchers.Main) {
-                    isBusy = false
+                    mainViewModel.updateShell { it -> it.copy(isBusy = (false)) }
                     backupJob = null
                     stopBackupDotAnimation()
-                    if (!backupInBackground) {
-                        backupProgress = null
-                        backupSheetVisible = false
-                        backupInBackground = false
+                    if (!mainViewModel.transfer.value.backupInBackground) {
+                        mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
+                        mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
+                        mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (false)) }
                     }
                     // 若为后台，则保留 backupProgress 供设置页“备份中...”展示
                 }
@@ -5102,16 +4992,16 @@ class MainActivity : ComponentActivity() {
     internal fun currentDebugParamsJson(): JSONObject =
         JSONObject()
             .put("port", DEBUG_HTTP_PORT)
-            .put("busy", isBusy)
-            .put("status", statusText)
+            .put("busy", mainViewModel.shell.value.isBusy)
+            .put("status", mainViewModel.shell.value.statusText)
             .put("foreground_subject_percent", mainViewModel.params.value.foregroundSubjectPercent)
             .put("foreground_shadow_level", mainViewModel.params.value.foregroundShadowLevel)
             .put("monochrome_theme_scale", (mainViewModel.params.value.monochromeThemeScale * 100).roundToInt())
             .put("gpt_mode", GptImageMode.fromValue(mainViewModel.params.value.gptImageMode).value)
             .put("gpt_prompt_preset", GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset).value)
             .put("gpt_custom_prompt", mainViewModel.params.value.gptCustomPrompt)
-            .put("gpt_base_url", gptBaseUrl)
-            .put("gpt_api_key_set", gptApiKey.isNotBlank())
+            .put("gpt_base_url", mainViewModel.gptRmbgSettings.value.gptBaseUrl)
+            .put("gpt_api_key_set", mainViewModel.gptRmbgSettings.value.gptApiKey.isNotBlank())
             .put("background_separation_percent", mainViewModel.params.value.backgroundSeparationPercent)
             .put("plate_removal_percent", mainViewModel.params.value.plateRemovalPercent)
             .put("shadow_removal_percent", mainViewModel.params.value.shadowRemovalPercent)
@@ -5138,9 +5028,9 @@ class MainActivity : ComponentActivity() {
             .put("rmbg_component_abi", findRmbgComponent()?.abi ?: "")
             .put("rmbg_model_name", RMBG_MODEL_NAME)
             .put("rmbg_status", rmbgInferenceStatusSummary())
-            .put("rmbg_actual_backend", lastRmbgInferenceReport?.actualBackend?.value ?: "")
-            .put("rmbg_inference_elapsed_ms", lastRmbgInferenceReport?.elapsedMs ?: JSONObject.NULL)
-            .put("rmbg_last_error", lastRmbgCandidateError ?: "")
+            .put("rmbg_actual_backend", mainViewModel.previewSession.value.lastRmbgInferenceReport?.actualBackend?.value ?: "")
+            .put("rmbg_inference_elapsed_ms", mainViewModel.previewSession.value.lastRmbgInferenceReport?.elapsedMs ?: JSONObject.NULL)
+            .put("rmbg_last_error", mainViewModel.previewSession.value.lastRmbgCandidateError ?: "")
             .put("adaptive_foreground_mode", AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode).value)
             .put("adaptive_foreground_modes", JSONArray().also { array ->
                 AdaptiveForegroundMode.entries.forEach { mode ->
@@ -5290,10 +5180,10 @@ class MainActivity : ComponentActivity() {
     internal fun applyDebugParams(params: Map<String, String>): JSONObject {
         var snapshot: JSONObject? = null
         runOnMainSync {
-            check(!isBusy) { "当前任务正在运行，不能修改参数" }
+            check(!mainViewModel.shell.value.isBusy) { "当前任务正在运行，不能修改参数" }
             // AI 凭据不走 TuningParams（预设不导出密钥），单独处理。
-            params["gpt_base_url"]?.let { gptBaseUrl = it }
-            params["gpt_api_key"]?.let { gptApiKey = it }
+            params["gpt_base_url"]?.let { mainViewModel.updateGptRmbgSettings { v -> v.copy(gptBaseUrl = (it)) } }
+            params["gpt_api_key"]?.let { mainViewModel.updateGptRmbgSettings { v -> v.copy(gptApiKey = (it)) } }
             val gptCredentialChanged =
                 params.containsKey("gpt_base_url") || params.containsKey("gpt_api_key")
             applyTuningParams(

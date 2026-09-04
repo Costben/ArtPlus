@@ -334,10 +334,10 @@ internal fun MainActivity.ArtPlusScreen() {
         Color(0xFFF7F7F7)
     }
     val selectedApp by remember {
-        derivedStateOf { apps.firstOrNull { it.packageName == selectedPackageName } }
+        derivedStateOf { apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName } }
     }
     val generatedCount by remember {
-        derivedStateOf { apps.count { it.packageName in generatedPackageNames && AppVisibility.shouldShowInPicker(it.applicationInfo, it.launchable, showSystemApps, packageName) } }
+        derivedStateOf { apps.count { it.packageName in mainViewModel.picker.value.generatedPackageNames && AppVisibility.shouldShowInPicker(it.applicationInfo, it.launchable, mainViewModel.picker.value.showSystemApps, packageName) } }
     }
     val launcherCount by remember {
         derivedStateOf { apps.count { it.launchable } }
@@ -353,27 +353,27 @@ internal fun MainActivity.ArtPlusScreen() {
         completingBackProgress.value,
         cancellingBackProgress.value,
     )
-    val sharedPreviewSession = activeGenerationSession?.takeIf {
-        it.packageName == previewPackageName && it.outDir.absolutePath == previewDirPath
+    val sharedPreviewSession = mainViewModel.previewSession.value.activeGenerationSession?.takeIf {
+        it.packageName == mainViewModel.previewSession.value.previewPackageName && it.outDir.absolutePath == mainViewModel.previewSession.value.previewDirPath
     }
     val sharedPreviewTuning = currentTuningParams()
 
     LaunchedEffect(
-        previewPackageName,
-        previewDirPath,
+        mainViewModel.previewSession.value.previewPackageName,
+        mainViewModel.previewSession.value.previewDirPath,
         sharedPreviewSession,
         PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark),
-        previewVersion,
+        mainViewModel.previewSession.value.previewVersion,
         sharedPreviewTuning,
     ) {
-        val dirPath = previewDirPath
-        val packageName = previewPackageName
+        val dirPath = mainViewModel.previewSession.value.previewDirPath
+        val packageName = mainViewModel.previewSession.value.previewPackageName
         if (dirPath.isNullOrBlank() || packageName.isNullOrBlank()) {
-            sharedPreviewAssets = null
-            isPreviewAssetsRefreshing = false
+            mainViewModel.updatePreviewSession { it -> it.copy(sharedPreviewAssets = (null)) }
+            mainViewModel.updatePreviewSession { it -> it.copy(isPreviewAssetsRefreshing = (false)) }
             return@LaunchedEffect
         }
-        isPreviewAssetsRefreshing = true
+        mainViewModel.updatePreviewSession { it -> it.copy(isPreviewAssetsRefreshing = (true)) }
         try {
             delay(PREVIEW_LIVE_ASSET_DEBOUNCE_MS)
             val diskAssets = withContext(Dispatchers.IO) {
@@ -390,13 +390,13 @@ internal fun MainActivity.ArtPlusScreen() {
                     null
                 }
             }
-            sharedPreviewAssets = liveAssets ?: diskAssets
+            mainViewModel.updatePreviewSession { it -> it.copy(sharedPreviewAssets = (liveAssets ?: diskAssets)) }
         } catch (_: CancellationException) {
             throw CancellationException()
         } catch (_: Throwable) {
-            sharedPreviewAssets = null
+            mainViewModel.updatePreviewSession { it -> it.copy(sharedPreviewAssets = (null)) }
         } finally {
-            isPreviewAssetsRefreshing = false
+            mainViewModel.updatePreviewSession { it -> it.copy(isPreviewAssetsRefreshing = (false)) }
         }
     }
 
@@ -406,7 +406,7 @@ internal fun MainActivity.ArtPlusScreen() {
         }
         val start = progress.coerceIn(0f, 1f)
         isCompletingBackGesture = true
-        skipNextHomeReturnAnimation = true
+        mainViewModel.updatePreviewSession { it -> it.copy(skipNextHomeReturnAnimation = (true)) }
         screenScope.launch {
             completingBackProgress.snapTo(start)
             cancellingBackProgress.snapTo(0f)
@@ -414,18 +414,18 @@ internal fun MainActivity.ArtPlusScreen() {
                 targetValue = 1f,
                 animationSpec = tween(durationMillis = ((1f - start) * 220f).roundToInt().coerceIn(90, 220)),
             )
-            currentPage = AppPage.Home
+            mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) }
             delay(40)
             systemBackProgress = 0f
             completingBackProgress.snapTo(0f)
             cancellingBackProgress.snapTo(0f)
             isCompletingBackGesture = false
-            skipNextHomeReturnAnimation = false
+            mainViewModel.updatePreviewSession { it -> it.copy(skipNextHomeReturnAnimation = (false)) }
         }
     }
 
-    LaunchedEffect(currentPage, skipNextHomeReturnAnimation, isCompletingBackGesture) {
-        if (currentPage != AppPage.Home) {
+    LaunchedEffect(mainViewModel.shell.value.currentPage, mainViewModel.previewSession.value.skipNextHomeReturnAnimation, isCompletingBackGesture) {
+        if (mainViewModel.shell.value.currentPage != AppPage.Home) {
             if (!isCompletingBackGesture) {
                 systemBackProgress = 0f
                 completingBackProgress.snapTo(0f)
@@ -436,14 +436,14 @@ internal fun MainActivity.ArtPlusScreen() {
                     animationSpec = tween(durationMillis = 300),
                 )
             }
-            skipNextHomeReturnAnimation = false
-        } else if (skipNextHomeReturnAnimation || isCompletingBackGesture) {
+            mainViewModel.updatePreviewSession { it -> it.copy(skipNextHomeReturnAnimation = (false)) }
+        } else if (mainViewModel.previewSession.value.skipNextHomeReturnAnimation || isCompletingBackGesture) {
             delay(90)
             if (!isCompletingBackGesture) {
                 systemBackProgress = 0f
                 completingBackProgress.snapTo(0f)
                 cancellingBackProgress.snapTo(0f)
-                skipNextHomeReturnAnimation = false
+                mainViewModel.updatePreviewSession { it -> it.copy(skipNextHomeReturnAnimation = (false)) }
             }
         } else {
             systemBackProgress = 0f
@@ -453,7 +453,7 @@ internal fun MainActivity.ArtPlusScreen() {
         }
     }
 
-    PredictiveBackHandler(enabled = currentPage != AppPage.Home && !isCompletingBackGesture) { backEvents ->
+    PredictiveBackHandler(enabled = mainViewModel.shell.value.currentPage != AppPage.Home && !isCompletingBackGesture) { backEvents ->
         var latestProgress = systemBackProgress
         try {
             backEvents.collect { backEvent ->
@@ -465,7 +465,7 @@ internal fun MainActivity.ArtPlusScreen() {
         } catch (_: CancellationException) {
             val start = maxOf(latestProgress, systemBackProgress).coerceIn(0f, 1f)
             systemBackProgress = 0f
-            if (start > 0f && currentPage != AppPage.Home && !isCompletingBackGesture) {
+            if (start > 0f && mainViewModel.shell.value.currentPage != AppPage.Home && !isCompletingBackGesture) {
                 cancellingBackProgress.snapTo(start)
                 cancellingBackProgress.animateTo(
                     targetValue = 0f,
@@ -478,8 +478,8 @@ internal fun MainActivity.ArtPlusScreen() {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        val overlayPage = currentPage.takeIf { it != AppPage.Home }
-        val dimReveal = if (skipNextHomeReturnAnimation || isCompletingBackGesture || backProgress > 0f) {
+        val overlayPage = mainViewModel.shell.value.currentPage.takeIf { it != AppPage.Home }
+        val dimReveal = if (mainViewModel.previewSession.value.skipNextHomeReturnAnimation || isCompletingBackGesture || backProgress > 0f) {
             backProgress.coerceIn(0f, 1f)
         } else {
             0f
@@ -524,7 +524,7 @@ internal fun MainActivity.ArtPlusScreen() {
         }
 
         if (overlayPage != null) {
-            val isCompletingBack = skipNextHomeReturnAnimation || isCompletingBackGesture
+            val isCompletingBack = mainViewModel.previewSession.value.skipNextHomeReturnAnimation || isCompletingBackGesture
             val reveal = if (isCompletingBack || backProgress > 0f) {
                 backProgress.coerceIn(0f, 1f)
             } else {
@@ -548,18 +548,18 @@ internal fun MainActivity.ArtPlusScreen() {
                 when (overlayPage) {
                     AppPage.AppPicker -> {
                         val scopedApps by remember {
-                            derivedStateOf { apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, showSystemApps, packageName) } }
+                            derivedStateOf { apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, mainViewModel.picker.value.showSystemApps, packageName) } }
                         }
                         val ungeneratedCount by remember {
                             derivedStateOf { scopedApps.size - generatedCount }
                         }
                         val filteredApps by remember {
                             derivedStateOf {
-                                val query = queryText.trim().lowercase(Locale.ROOT)
-                                val stateScopedApps = when (generatedFilter) {
+                                val query = mainViewModel.picker.value.queryText.trim().lowercase(Locale.ROOT)
+                                val stateScopedApps = when (mainViewModel.picker.value.generatedFilter) {
                                     GeneratedFilter.All -> scopedApps
-                                    GeneratedFilter.Generated -> scopedApps.filter { it.packageName in generatedPackageNames }
-                                    GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in generatedPackageNames }
+                                    GeneratedFilter.Generated -> scopedApps.filter { it.packageName in mainViewModel.picker.value.generatedPackageNames }
+                                    GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in mainViewModel.picker.value.generatedPackageNames }
                                 }
                                 if (query.isEmpty()) {
                                     stateScopedApps
@@ -573,7 +573,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         }
                         val scopeCount by remember {
                             derivedStateOf {
-                                when (generatedFilter) {
+                                when (mainViewModel.picker.value.generatedFilter) {
                                     GeneratedFilter.All -> scopedApps.size
                                     GeneratedFilter.Generated -> generatedCount
                                     GeneratedFilter.Ungenerated -> ungeneratedCount
@@ -598,36 +598,36 @@ internal fun MainActivity.ArtPlusScreen() {
             }
         }
 
-        batchApplyProgress?.let { progress ->
+        mainViewModel.transfer.value.batchApplyProgress?.let { progress ->
             BatchApplyProgressDialog(progress)
         }
-        if (singleExportSheetVisible && exportProgress != null) {
-            val p = exportProgress!!
+        if (mainViewModel.transfer.value.singleExportSheetVisible && mainViewModel.transfer.value.exportProgress != null) {
+            val p = mainViewModel.transfer.value.exportProgress!!
             BackupProgressBottomSheet(
                 progress = p,
                 onStop = { cancelSingleExport() },
                 onBackground = {
                     // 单包导出后台：仅隐藏弹窗，任务继续（不显示设置页动效）
-                    singleExportSheetVisible = false
+                    mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (false)) }
                 },
             )
         }
-        if (backupSheetVisible && backupProgress != null) {
-            val p = backupProgress!!
+        if (mainViewModel.transfer.value.backupSheetVisible && mainViewModel.transfer.value.backupProgress != null) {
+            val p = mainViewModel.transfer.value.backupProgress!!
             BackupProgressBottomSheet(
                 progress = p,
                 onStop = { cancelBackup() },
                 onBackground = {
-                    backupSheetVisible = false
-                    backupInBackground = true
+                    mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
+                    mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (true)) }
                     startBackupDotAnimation()
                 },
             )
-        } else if (!backupSheetVisible && backupInBackground && backupProgress != null) {
+        } else if (!mainViewModel.transfer.value.backupSheetVisible && mainViewModel.transfer.value.backupInBackground && mainViewModel.transfer.value.backupProgress != null) {
             // 后台态不显示底部弹窗，但保留状态供设置页“备份中...”展示
         }
 
-        pendingServiceConfirm?.let { request ->
+        mainViewModel.confirm.value.pendingServiceConfirm?.let { request ->
             ServiceConfirmDialog(
                 request = request,
                 onConfirm = { dismissServiceConfirm(confirmed = true) },

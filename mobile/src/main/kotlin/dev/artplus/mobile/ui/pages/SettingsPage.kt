@@ -368,33 +368,33 @@ internal fun MainActivity.SettingsPage(
             SectionCard(rowsFullBleed = true) {
                 LibrarySettingRow(
                     title = "悬浮底栏",
-                    summary = if (liquidGlassBottomBarEnabled) "已开启" else "已关闭",
+                    summary = if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) "已开启" else "已关闭",
                     icon = SettingsIconKind.Glass,
                     showSwitch = true,
-                    checked = liquidGlassBottomBarEnabled,
-                    enabled = !isBusy,
+                    checked = mainViewModel.glassBar.value.liquidGlassBottomBarEnabled,
+                    enabled = !mainViewModel.shell.value.isBusy,
                     onCheckedChange = {
-                        liquidGlassBottomBarEnabled = it
+                        mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarEnabled = (it)) }
                         saveLiquidGlassSettings()
-                        statusText = if (liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭"
+                        mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭")) }
                     },
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 LibrarySettingRow(
                     title = "底栏模糊",
                     summary = when {
-                        !liquidGlassBottomBarEnabled -> "需先开启悬浮底栏"
-                        liquidGlassBottomBarBlurEnabled -> "已开启"
+                        !mainViewModel.glassBar.value.liquidGlassBottomBarEnabled -> "需先开启悬浮底栏"
+                        mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled -> "已开启"
                         else -> "已关闭"
                     },
                     icon = SettingsIconKind.Glass,
                     showSwitch = true,
-                    checked = liquidGlassBottomBarBlurEnabled,
-                    enabled = !isBusy && liquidGlassBottomBarEnabled,
+                    checked = mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled,
+                    enabled = !mainViewModel.shell.value.isBusy && mainViewModel.glassBar.value.liquidGlassBottomBarEnabled,
                     onCheckedChange = {
-                        liquidGlassBottomBarBlurEnabled = it
+                        mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarBlurEnabled = (it)) }
                         saveLiquidGlassSettings()
-                        statusText = if (liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭"
+                        mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭")) }
                     },
                 )
             }
@@ -407,11 +407,11 @@ internal fun MainActivity.SettingsPage(
                     icon = settingsIconForTitle("恢复默认配置"),
                     showValue = false,
                     showArrowRight = true,
-                    enabled = !isBusy,
-                    onClick = { resetDefaultsDialogVisible = true },
+                    enabled = !mainViewModel.shell.value.isBusy,
+                    onClick = { mainViewModel.updatePreviewSession { it -> it.copy(resetDefaultsDialogVisible = (true)) } },
                 )
-                if (resetDefaultsDialogVisible) {
-                    MiuixBottomDialog(onDismissRequest = { resetDefaultsDialogVisible = false }) {
+                if (mainViewModel.previewSession.value.resetDefaultsDialogVisible) {
+                    MiuixBottomDialog(onDismissRequest = { mainViewModel.updatePreviewSession { it -> it.copy(resetDefaultsDialogVisible = (false)) } }) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -442,7 +442,7 @@ internal fun MainActivity.SettingsPage(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
                                 Button(
-                                    onClick = { resetDefaultsDialogVisible = false },
+                                    onClick = { mainViewModel.updatePreviewSession { it -> it.copy(resetDefaultsDialogVisible = (false)) } },
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColors(),
                                 ) {
@@ -455,10 +455,10 @@ internal fun MainActivity.SettingsPage(
                                 }
                                 Button(
                                     onClick = {
-                                        resetDefaultsDialogVisible = false
+                                        mainViewModel.updatePreviewSession { it -> it.copy(resetDefaultsDialogVisible = (false)) }
                                         resetToDefaults()
                                     },
-                                    enabled = !isBusy,
+                                    enabled = !mainViewModel.shell.value.isBusy,
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColorsPrimary(),
                                 ) {
@@ -482,8 +482,8 @@ internal fun MainActivity.SettingsPage(
                     summary = "首次引导与全量备份入口",
                     icon = settingsIconForTitle("导出引导"),
                     showArrowRight = true,
-                    enabled = !isBusy,
-                    onClick = { onboardingVisible = true },
+                    enabled = !mainViewModel.shell.value.isBusy,
+                    onClick = { mainViewModel.updateShell { it -> it.copy(onboardingVisible = (true)) } },
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 LibrarySettingRow(
@@ -491,8 +491,8 @@ internal fun MainActivity.SettingsPage(
                     summary = "源码、开源协议与更新",
                     icon = SettingsIconKind.Link,
                     showArrowRight = true,
-                    enabled = !isBusy,
-                    onClick = { currentPage = AppPage.About },
+                    enabled = !mainViewModel.shell.value.isBusy,
+                    onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.About)) } },
                 )
             }
         }
