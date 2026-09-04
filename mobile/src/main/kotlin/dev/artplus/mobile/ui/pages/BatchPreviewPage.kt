@@ -132,6 +132,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.SideEffect
@@ -186,6 +187,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -415,12 +417,85 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         PreviewDesktopBackground.entries.forEach { bgOption ->
-                            PreviewBackgroundOption(
-                                option = bgOption,
-                                selected = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground == bgOption,
-                                modifier = Modifier.weight(1f),
-                                onClick = { updateBatchPreviewDesktopBackground(bgOption) },
-                            )
+                            run {
+val __act2 = LocalContext.current
+    PreviewBackgroundOption(
+                option = (bgOption),
+                selected = (mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground == bgOption),
+                isBusy = mainViewModel.shell.value.isBusy,
+                wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
+                wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                loadWallpaper = {
+                    withContext(Dispatchers.IO) {
+                        run {
+        pickerLoadCustomWallpaperBitmap(
+                    path = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                    cachedPath = cachedCustomWallpaperPath,
+                    getCached = { cachedCustomWallpaper },
+                    setCached = { path, bitmap ->
+                        cachedCustomWallpaper = bitmap
+                        cachedCustomWallpaperPath = path
+                    },
+                    shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+                )
+    } ?: run {
+        pickerLoadPreviewWallpaperBitmap(
+                    getCached = { cachedSystemWallpaper },
+                    setCached = { cachedSystemWallpaper = it },
+                    loadDrawable = { pickerSystemWallpaperDrawable(WallpaperManager.getInstance(__act2)) },
+                    shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+                )
+    } ?: run {
+        pickerLoadBundledPreviewWallpaperBitmap(
+                    getCached = { cachedBundledWallpaper },
+                    setCached = { cachedBundledWallpaper = it },
+                    resources = resources,
+                    resId = R.drawable.preview_wallpaper,
+                    shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+                )
+    }
+                    }
+                },
+                modifier = (Modifier.weight(1f)),
+                onClick = ({ run {
+        paramsUpdateBatchPreviewDesktopBackground(
+                    option = (bgOption),
+                    getValue = { mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground },
+                    setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewDesktopBackground = (it)) } },
+                    onSave = { run {
+            pickerSaveUiState(
+                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                        generatedFilter = mainViewModel.picker.value.generatedFilter,
+                        showSystemApps = mainViewModel.picker.value.showSystemApps,
+                        queryText = mainViewModel.picker.value.queryText,
+                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                        previewDir = mainViewModel.previewSession.value.previewDirPath,
+                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                        outputUri = mainViewModel.shell.value.outputTreeUri,
+                    )
+        } },
+                )
+    } }),
+            )
+}
                         }
                     }
 
@@ -434,7 +509,45 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                         max = 5,
                         step = 1,
                         onDraftChange = { draftBatchPreviewColumnsText = it },
-                        onSave = { updateBatchPreviewColumns(it) },
+                        onSave = { run {
+    paramsUpdateBatchPreviewColumns(
+                value = (it),
+                setColumns = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewColumns = (it)) } },
+                setDraftColumnsText = { draftBatchPreviewColumnsText = it },
+                setIconSize = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewIconSizeDp = (it)) } },
+                setDraftIconSizeText = { draftBatchPreviewIconSizeDpText = it },
+                onSave = { run {
+        pickerSaveUiState(
+                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                    selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                    generatedFilter = mainViewModel.picker.value.generatedFilter,
+                    showSystemApps = mainViewModel.picker.value.showSystemApps,
+                    queryText = mainViewModel.picker.value.queryText,
+                    advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                    advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                    previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                    previewDir = mainViewModel.previewSession.value.previewDirPath,
+                    previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                    previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                    previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                    previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                    previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                    desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                    iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                    cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                    batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                    batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                    batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                    batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                    batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                    customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                    autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                    autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                    outputUri = mainViewModel.shell.value.outputTreeUri,
+                )
+    } },
+            )
+} },
                         showIcon = false,
                         initiallyExpanded = false,
                     )
@@ -449,7 +562,43 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                         max = 84,
                         step = 2,
                         onDraftChange = { draftBatchPreviewIconSizeDpText = it },
-                        onSave = { updateBatchPreviewIconSizeDp(it) },
+                        onSave = { run {
+    paramsUpdateBatchPreviewIconSizeDp(
+                value = (it),
+                setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewIconSizeDp = (it)) } },
+                setDraftText = { draftBatchPreviewIconSizeDpText = it },
+                onSave = { run {
+        pickerSaveUiState(
+                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                    selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                    generatedFilter = mainViewModel.picker.value.generatedFilter,
+                    showSystemApps = mainViewModel.picker.value.showSystemApps,
+                    queryText = mainViewModel.picker.value.queryText,
+                    advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                    advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                    previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                    previewDir = mainViewModel.previewSession.value.previewDirPath,
+                    previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                    previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                    previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                    previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                    previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                    desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                    iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                    cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                    batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                    batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                    batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                    batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                    batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                    customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                    autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                    autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                    outputUri = mainViewModel.shell.value.outputTreeUri,
+                )
+    } },
+            )
+} },
                         showIcon = false,
                         initiallyExpanded = false,
                     )
@@ -464,7 +613,43 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                         max = 36,
                         step = 1,
                         onDraftChange = { draftBatchPreviewCornerRadiusDpText = it },
-                        onSave = { updateBatchPreviewCornerRadiusDp(it) },
+                        onSave = { run {
+    paramsUpdateBatchPreviewCornerRadiusDp(
+                value = (it),
+                setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewCornerRadiusDp = (it)) } },
+                setDraftText = { draftBatchPreviewCornerRadiusDpText = it },
+                onSave = { run {
+        pickerSaveUiState(
+                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                    selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                    generatedFilter = mainViewModel.picker.value.generatedFilter,
+                    showSystemApps = mainViewModel.picker.value.showSystemApps,
+                    queryText = mainViewModel.picker.value.queryText,
+                    advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                    advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                    previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                    previewDir = mainViewModel.previewSession.value.previewDirPath,
+                    previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                    previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                    previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                    previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                    previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                    desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                    iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                    cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                    batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                    batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                    batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                    batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                    batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                    customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                    autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                    autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                    outputUri = mainViewModel.shell.value.outputTreeUri,
+                )
+    } },
+            )
+} },
                         showIcon = false,
                         initiallyExpanded = false,
                     )
@@ -528,10 +713,46 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                             .height(previewFrameHeight)
                             .clip(RoundedCornerShape(20.dp)),
                     ) {
-                        PreviewDesktopBackgroundSurface(
-                            option = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            modifier = Modifier.fillMaxSize(),
-                        )
+                        run {
+val __act1 = LocalContext.current
+    PreviewDesktopBackgroundSurface(
+                option = (mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground),
+                modifier = (Modifier.fillMaxSize()),
+                wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
+                wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                loadWallpaper = {
+                    withContext(Dispatchers.IO) {
+                        run {
+        pickerLoadCustomWallpaperBitmap(
+                    path = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                    cachedPath = cachedCustomWallpaperPath,
+                    getCached = { cachedCustomWallpaper },
+                    setCached = { path, bitmap ->
+                        cachedCustomWallpaper = bitmap
+                        cachedCustomWallpaperPath = path
+                    },
+                    shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+                )
+    } ?: run {
+        pickerLoadPreviewWallpaperBitmap(
+                    getCached = { cachedSystemWallpaper },
+                    setCached = { cachedSystemWallpaper = it },
+                    loadDrawable = { pickerSystemWallpaperDrawable(WallpaperManager.getInstance(__act1)) },
+                    shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+                )
+    } ?: run {
+        pickerLoadBundledPreviewWallpaperBitmap(
+                    getCached = { cachedBundledWallpaper },
+                    setCached = { cachedBundledWallpaper = it },
+                    resources = resources,
+                    resId = R.drawable.preview_wallpaper,
+                    shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+                )
+    }
+                    }
+                },
+            )
+}
 
                         if (result == null || result.items.isEmpty()) {
                             Box(
@@ -569,19 +790,39 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                                             modifier = Modifier.fillMaxWidth(),
                                         ) {
                                             if (item.assets.missingMessage(currentMode) == null) {
-                                                GeneratedIconPreview(
-                                                    assets = item.assets,
-                                                    mode = currentMode,
-                                                    modifier = Modifier.size(mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp.dp),
-                                                    cornerRadiusDp = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                                                )
+                                                run {
+    GeneratedIconPreview(
+                assets = (item.assets),
+                mode = (currentMode),
+                modifier = (Modifier.size(mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp.dp)),
+                cornerRadiusDp = (mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp),
+                materialColorProvider = { __a0: String, __a1: Color -> run {
+        pickerSystemMaterialColor(
+                    resources = resources,
+                    getColor = ::getColor,
+                    resourceName = __a0,
+                    fallback = __a1,
+                )
+    } },
+            )
+}
                                             } else {
-                                                MissingIconPreview(
-                                                    modifier = Modifier.size(mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp.dp),
-                                                    mode = currentMode,
-                                                    compact = true,
-                                                    cornerRadiusDp = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                                                )
+                                                run {
+    MissingIconPreview(
+                modifier = (Modifier.size(mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp.dp)),
+                mode = (currentMode),
+                compact = (true),
+                cornerRadiusDp = (mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp),
+                materialColorProvider = { __a0: String, __a1: Color -> run {
+        pickerSystemMaterialColor(
+                    resources = resources,
+                    getColor = ::getColor,
+                    resourceName = __a0,
+                    fallback = __a1,
+                )
+    } },
+            )
+}
                                             }
                                             Text(
                                                 text = item.label,

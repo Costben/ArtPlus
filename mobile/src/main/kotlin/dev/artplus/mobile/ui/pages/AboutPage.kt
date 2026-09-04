@@ -131,6 +131,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
@@ -186,6 +187,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -327,7 +329,12 @@ import com.caverock.androidsvg.SVG
 @Composable
 internal fun MainActivity.AboutPage(pageBackground: Color) {
     val scrollBehavior = MiuixScrollBehavior()
-    val versionName = currentVersionName()
+    val versionName = pickerCurrentVersionName(
+        getVersionName = {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, 0).versionName
+        },
+    )
     val versionCode = try {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             packageManager.getPackageInfo(packageName, 0).longVersionCode.toString()
@@ -411,7 +418,13 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         icon = SettingsIconKind.Link,
                         showArrowRight = true,
                         enabled = !mainViewModel.shell.value.isBusy,
-                        onClick = { openExternalLink(GITHUB_REPO_URL) },
+                        onClick = {
+                            pickerOpenExternalLink(
+                                start = ::startActivity,
+                                url = GITHUB_REPO_URL,
+                                onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                            )
+                        },
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     LibrarySettingRow(
@@ -429,7 +442,26 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         icon = SettingsIconKind.Grid,
                         showArrowRight = !mainViewModel.updateUi.value.isCheckingUpdate,
                         enabled = !mainViewModel.shell.value.isBusy && !mainViewModel.updateUi.value.isCheckingUpdate,
-                        onClick = { checkForUpdate() },
+                        onClick = {
+                            pickerCheckForUpdate(
+                                isChecking = mainViewModel.updateUi.value.isCheckingUpdate,
+                                onCheckingChange = { mainViewModel.updateUpdateUi { v -> v.copy(isCheckingUpdate = (it)) } },
+                                onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                                scope = mainScope,
+                                resolveUrl = { pickerResolveUpdateUrl(it, "检查更新", (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) },
+                                fetchLatest = ::pickerFetchUpdateBody,
+                                currentVersion = versionName,
+                                onUpdateAvailable = { info, text ->
+                                    mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (info)) }
+                                    mainViewModel.updateShell { it -> it.copy(statusText = (text)) }
+                                },
+                                onUpToDate = {
+                                    mainViewModel.updateUpdateUi { it -> it.copy(updateUpToDateDialogVisible = (true)) }
+                                    mainViewModel.updateShell { v -> v.copy(statusText = (it)) }
+                                },
+                                onFailed = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                            )
+                        },
                     )
                 }
             }
@@ -502,7 +534,11 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     Button(
                         onClick = {
                             mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (false)) }
-                            openExternalLink(GITHUB_LICENSE_URL)
+                            pickerOpenExternalLink(
+                                start = ::startActivity,
+                                url = GITHUB_LICENSE_URL,
+                                onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                            )
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColorsPrimary(),
@@ -562,7 +598,11 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         onClick = {
                             val url = info.htmlUrl
                             mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (null)) }
-                            openExternalLink(url)
+                            pickerOpenExternalLink(
+                                start = ::startActivity,
+                                url = url,
+                                onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                            )
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColorsPrimary(),

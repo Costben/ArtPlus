@@ -187,6 +187,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -328,6 +329,8 @@ import com.caverock.androidsvg.SVG
 @Composable
 internal fun MainActivity.ArtPlusScreen() {
     val tuningState = mainViewModel.params.collectAsState().value
+    // Slice 3.4b：非组合回调（onStop 等）内的 Toast 共用此前捕获的 Context。
+    val __actCancel = LocalContext.current
     val pageBackground = if (isSystemInDarkTheme()) {
         Color.Black
     } else {
@@ -356,7 +359,9 @@ internal fun MainActivity.ArtPlusScreen() {
     val sharedPreviewSession = mainViewModel.previewSession.value.activeGenerationSession?.takeIf {
         it.packageName == mainViewModel.previewSession.value.previewPackageName && it.outDir.absolutePath == mainViewModel.previewSession.value.previewDirPath
     }
-    val sharedPreviewTuning = currentTuningParams()
+    val sharedPreviewTuning = run {
+    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+}
 
     LaunchedEffect(
         mainViewModel.previewSession.value.previewPackageName,
@@ -377,12 +382,70 @@ internal fun MainActivity.ArtPlusScreen() {
         try {
             delay(PREVIEW_LIVE_ASSET_DEBOUNCE_MS)
             val diskAssets = withContext(Dispatchers.IO) {
-                loadPreviewAssets(File(dirPath)).preparedForDraw()
+                run {
+    PreviewAssets(
+                recbg = run {
+        BitmapFactory.decodeFile(File(((File(dirPath))), ("recbg.png")).absolutePath)?.also { it.prepareToDraw() }
+    },
+                recfg = run {
+        BitmapFactory.decodeFile(File(((File(dirPath))), ("recfg.png")).absolutePath)?.also { it.prepareToDraw() }
+    },
+                recNight = run {
+        BitmapFactory.decodeFile(File(((File(dirPath))), ("rec_night.png")).absolutePath)?.also { it.prepareToDraw() }
+    },
+                monochromeLight = run {
+        BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome_light.png")).absolutePath)?.also { it.prepareToDraw() }
+    }
+                    ?: run {
+        BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome.png")).absolutePath)?.also { it.prepareToDraw() }
+    },
+                monochromeDark = run {
+        BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome_dark.png")).absolutePath)?.also { it.prepareToDraw() }
+    }
+                    ?: run {
+        BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome.png")).absolutePath)?.also { it.prepareToDraw() }
+    },
+            )
+}.preparedForDraw()
             }
             val liveAssets = sharedPreviewSession?.let { session ->
                 try {
                     withContext(previewWorkerDispatcher) {
-                        previewAssetsForSelections(session, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)).preparedForDraw()
+                        run {
+
+            val params = mainViewModel.params.value
+            return@run previewAssetsForSelections(
+                session = (session),
+                selections = (PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)),
+                edgePolishPercent = params.edgePolishPercent,
+                foregroundSubjectPercent = params.foregroundSubjectPercent,
+                rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                val params = mainViewModel.params.value
+                return@run rmbgTunedForegroundRaw(
+                    candidate = __a0,
+                    rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                    rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                    rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                    rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                )
+    } },
+                liquidGlassEnabled = params.liquidGlassEnabled,
+                liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+                liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+                liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+                liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+                liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+                liquidGlassRadius = params.liquidGlassRadius,
+                liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+                liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+                liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+                liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+                liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+                foregroundShadowLevel = params.foregroundShadowLevel,
+                nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+            )
+}.preparedForDraw()
                     }
                 } catch (_: CancellationException) {
                     throw CancellationException()
@@ -605,7 +668,28 @@ internal fun MainActivity.ArtPlusScreen() {
             val p = mainViewModel.transfer.value.exportProgress!!
             BackupProgressBottomSheet(
                 progress = p,
-                onStop = { cancelSingleExport() },
+                onStop = { run {
+
+            val state = SingleExportCancelState(
+                singleExportJob = singleExportJob,
+                sheetVisible = mainViewModel.transfer.value.singleExportSheetVisible,
+                progress = mainViewModel.transfer.value.exportProgress,
+            )
+            cancelSingleExport(state, { __a0: String -> run {
+        pickerToastStatus(
+                    message = __a0,
+                    postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                    showToast = { text ->
+                        runOnUiThread {
+                            Toast.makeText(__actCancel, text, Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                )
+    } })
+            singleExportJob = state.singleExportJob
+            mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (state.sheetVisible)) }
+            mainViewModel.updateTransfer { it -> it.copy(exportProgress = (state.progress)) }
+} },
                 onBackground = {
                     // 单包导出后台：仅隐藏弹窗，任务继续（不显示设置页动效）
                     mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (false)) }
@@ -616,11 +700,47 @@ internal fun MainActivity.ArtPlusScreen() {
             val p = mainViewModel.transfer.value.backupProgress!!
             BackupProgressBottomSheet(
                 progress = p,
-                onStop = { cancelBackup() },
+                onStop = { run {
+
+            val state = BackupCancelState(
+                backupJob = backupJob,
+                backupDotJob = backupDotJob,
+                sheetVisible = mainViewModel.transfer.value.backupSheetVisible,
+                inBackground = mainViewModel.transfer.value.backupInBackground,
+                progress = mainViewModel.transfer.value.backupProgress,
+                isBusy = mainViewModel.shell.value.isBusy,
+            )
+            cancelBackup(state, { __a0: String -> run {
+        pickerToastStatus(
+                    message = __a0,
+                    postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                    showToast = { text ->
+                        runOnUiThread {
+                            Toast.makeText(__actCancel, text, Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                )
+    } })
+            backupJob = state.backupJob
+            backupDotJob = state.backupDotJob
+            mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (state.sheetVisible)) }
+            mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (state.inBackground)) }
+            mainViewModel.updateTransfer { it -> it.copy(backupProgress = (state.progress)) }
+            mainViewModel.updateShell { it -> it.copy(isBusy = (state.isBusy)) }
+} },
                 onBackground = {
                     mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
                     mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (true)) }
-                    startBackupDotAnimation()
+                    run {
+
+            backupDotJob?.cancel()
+            backupDotJob = mainScope.launch {
+                while (isActive) {
+                    delay(500)
+                    mainViewModel.updateTransfer { it -> it.copy(backupBackgroundDots = (if (mainViewModel.transfer.value.backupBackgroundDots >= 3) 1 else mainViewModel.transfer.value.backupBackgroundDots + 1)) }
+                }
+            }
+}
                 },
             )
         } else if (!mainViewModel.transfer.value.backupSheetVisible && mainViewModel.transfer.value.backupInBackground && mainViewModel.transfer.value.backupProgress != null) {
@@ -630,14 +750,1475 @@ internal fun MainActivity.ArtPlusScreen() {
         mainViewModel.confirm.value.pendingServiceConfirm?.let { request ->
             ServiceConfirmDialog(
                 request = request,
-                onConfirm = { dismissServiceConfirm(confirmed = true) },
-                onDismiss = { dismissServiceConfirm(confirmed = false) },
+                onConfirm = { run {
+
+            val request = mainViewModel.confirm.value.pendingServiceConfirm ?: return@run
+            mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (null)) }
+            if ((true)) {
+                request.onConfirm()
+            }
+} },
+                onDismiss = { run {
+
+            val request = mainViewModel.confirm.value.pendingServiceConfirm ?: return@run
+            mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (null)) }
+            if ((false)) {
+                request.onConfirm()
+            }
+} },
             )
         }
-        RootWriteConfirmDialog()
-        RefreshConfirmDialog()
-        PresetPageDialogs()
-        OnboardingDialog()
+        run {
+    RootWriteConfirmDialog(
+                request = mainViewModel.confirm.value.pendingRootWriteConfirm,
+                rememberSkip = mainViewModel.confirm.value.rootWriteConfirmRememberSkip,
+                onDismiss = { mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) } },
+                onToggleSkip = { mainViewModel.updateConfirm { it -> it.copy(rootWriteConfirmRememberSkip = (!mainViewModel.confirm.value.rootWriteConfirmRememberSkip)) } },
+                onConfirm = { request, shouldSkip ->
+                    val onConfirm = request.onConfirm
+                    mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) }
+                    if (shouldSkip) {
+                        mainViewModel.updateConfirm { it -> it.copy(autoConfirmRootWrite = (true)) }
+                        run {
+        pickerSaveUiState(
+                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                    selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                    generatedFilter = mainViewModel.picker.value.generatedFilter,
+                    showSystemApps = mainViewModel.picker.value.showSystemApps,
+                    queryText = mainViewModel.picker.value.queryText,
+                    advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                    advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                    previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                    previewDir = mainViewModel.previewSession.value.previewDirPath,
+                    previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                    previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                    previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                    previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                    previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                    desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                    iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                    cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                    batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                    batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                    batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                    batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                    batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                    customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                    autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                    autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                    outputUri = mainViewModel.shell.value.outputTreeUri,
+                )
+    }
+                    }
+                    onConfirm()
+                },
+            )
+}
+        run {
+
+            val confirmState by mainViewModel.confirm.collectAsState()
+            // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
+            RefreshConfirmDialog(
+                visible = confirmState.refreshConfirmVisible,
+                rememberAuto = confirmState.refreshConfirmRememberAuto,
+                onDismiss = { mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (false)) } },
+                onToggleRemember = { mainViewModel.updateConfirm { it -> it.copy(refreshConfirmRememberAuto = (!mainViewModel.confirm.value.refreshConfirmRememberAuto)) } },
+                onConfirm = { shouldAuto ->
+                    mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (false)) }
+                    if (shouldAuto) {
+                        mainViewModel.updateConfirm { it -> it.copy(autoConfirmRefresh = (true)) }
+                        run {
+        pickerSaveUiState(
+                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                    selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                    generatedFilter = mainViewModel.picker.value.generatedFilter,
+                    showSystemApps = mainViewModel.picker.value.showSystemApps,
+                    queryText = mainViewModel.picker.value.queryText,
+                    advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                    advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                    previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                    previewDir = mainViewModel.previewSession.value.previewDirPath,
+                    previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                    previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                    previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                    previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                    previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                    desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                    iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                    cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                    batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                    batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                    batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                    batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                    batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                    customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                    autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                    autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                    outputUri = mainViewModel.shell.value.outputTreeUri,
+                )
+    }
+                    }
+                    run {
+        mainViewModel.refreshArtPlusIconsAsync(
+                    contentResolver = contentResolver,
+                    apkPath = applicationInfo.sourceDir,
+                )
+    }
+                },
+            )
+}
+        run {
+    PresetPageDialogs(
+                saveDialogVisible = mainViewModel.presetUi.value.presetSaveDialogVisible,
+                saveInitialName = mainViewModel.presetUi.value.presetSaveName,
+                onSaveConfirm = { name ->
+                    mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
+                    run {
+        saveCurrentAsPreset(
+                    rawName = (name),
+                    store = presetStore,
+                    current = run {
+            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        },
+                    viewModel = mainViewModel,
+                    onSaved = { preset, msg ->
+                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (preset.id)) }
+                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (preset.params)) }
+                        mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                        mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
+                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                    },
+                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                )
+    }
+                },
+                onSaveDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) } },
+                renameTarget = mainViewModel.presetUi.value.presetRenameTarget,
+                onRenameConfirm = { id, name ->
+                    mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) }
+                    run {
+        renamePreset(
+                    id = (id),
+                    rawName = (name),
+                    store = presetStore,
+                    viewModel = mainViewModel,
+                    onRenamed = { _, msg ->
+                        mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                    },
+                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                )
+    }
+                },
+                onRenameDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) } },
+                actionMenuTarget = mainViewModel.presetUi.value.presetActionMenuTarget,
+                actionMenuBusy = mainViewModel.shell.value.isBusy,
+                onActionMenuDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetActionMenuTarget = (null)) } },
+                onActionApply = { run {
+        applyPreset(
+                    preset = (it),
+                    isBusy = mainViewModel.shell.value.isBusy,
+                    isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
+                    isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
+                    before = run {
+            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        },
+                    viewModel = mainViewModel,
+                    onApplied = { p, merged, msg ->
+                        run {
+            paramsApplyTuningParams(
+                        params = (merged),
+                        rebuildCandidates = (true),
+                        persist = (true),
+                        captureUndo = (true),
+                        refreshPreview = (true),
+                        getBefore = { run {
+                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            } },
+                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                        setDraftEdgePolishText = { draftEdgePolishText = it },
+                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
+                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
+                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
+                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
+                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
+                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
+                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
+                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
+                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
+                        setDraftJsonParamsText = { draftJsonParamsText = it },
+                        onSaveLocalSeparation = { run {
+                paramsSaveLocalSeparationSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveImageTuning = { run {
+                paramsSaveImageTuningSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveLiquidGlass = { run {
+                paramsSaveLiquidGlassSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
+                            getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
+                        )
+            } },
+                        onSaveGpt = { run {
+                paramsSaveGptSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                        )
+            } },
+                        onSaveUi = { run {
+                pickerSaveUiState(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                            generatedFilter = mainViewModel.picker.value.generatedFilter,
+                            showSystemApps = mainViewModel.picker.value.showSystemApps,
+                            queryText = mainViewModel.picker.value.queryText,
+                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                            previewDir = mainViewModel.previewSession.value.previewDirPath,
+                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                            outputUri = mainViewModel.shell.value.outputTreeUri,
+                        )
+            } },
+                        isBusy = { mainViewModel.shell.value.isBusy },
+                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                        onRefresh = { rebuild -> run {
+                homeRefreshActivePreviewOutputs(
+                            currentSession = mainViewModel.previewSession.value.activeGenerationSession,
+                            rebuildLocalCandidates = (rebuild),
+                            retargetFrom = (null),
+                            app = mainViewModel.previewSession.value.activeGenerationSession?.let { s -> apps.firstOrNull { it.packageName == s.packageName } },
+                            currentSelections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
+                            scope = previewWorkerScope,
+                            getJob = { previewOutputJob },
+                            setJob = { previewOutputJob = it },
+                            incRevision = { ++previewOutputRevision },
+                            getRevision = { previewOutputRevision },
+                            setRefreshing = { mainViewModel.updatePreviewSession { v -> v.copy(isPreviewOutputRefreshing = (it)) } },
+                            rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
+                            outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
+                            tuning = run {
+                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                },
+                            onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
+                            defaultLocal = { auto -> run {
+                    run {
+                        when ((LocalSeparationMode.Auto)) {
+                                    LocalSeparationMode.Original -> PreviewChoice.Original
+                                    LocalSeparationMode.Plate -> PreviewChoice.Full
+                                    LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
+                                    LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+                                    LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
+                                    LocalSeparationMode.Auto -> ((auto))
+                                    LocalSeparationMode.Full -> PreviewChoice.Full
+                                }
+                    }
+                } },
+                            normalize = { session, selections -> normalizePreviewSelections(session, selections) },
+                            onWrite = { session, selections -> run {
+
+                            val params = mainViewModel.params.value
+                            writePackageOutputs(
+                                session = (session),
+                                selections = (selections),
+                                edgePolishPercent = params.edgePolishPercent,
+                                foregroundSubjectPercent = params.foregroundSubjectPercent,
+                                rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                                val params = mainViewModel.params.value
+                                return@run rmbgTunedForegroundRaw(
+                                    candidate = __a0,
+                                    rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                                    rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                                    rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                                    rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                                )
+                    } },
+                                liquidGlassEnabled = params.liquidGlassEnabled,
+                                liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+                                liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+                                liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+                                liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+                                liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+                                liquidGlassRadius = params.liquidGlassRadius,
+                                liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+                                liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+                                liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+                                liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+                                liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+                                foregroundShadowLevel = params.foregroundShadowLevel,
+                                monochromeThemeScale = params.monochromeThemeScale,
+                                nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+                            )
+                } },
+                            onCommit = { session, selections ->
+                                mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
+                                mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
+                                mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
+                                run {
+                    pickerSaveUiState(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                                generatedFilter = mainViewModel.picker.value.generatedFilter,
+                                showSystemApps = mainViewModel.picker.value.showSystemApps,
+                                queryText = mainViewModel.picker.value.queryText,
+                                advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                                advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                                previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                                previewDir = mainViewModel.previewSession.value.previewDirPath,
+                                previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                                previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                                previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                                previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                                previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                                iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                                cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                                batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                                batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                                batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                                batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                                batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                                customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                                autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                                autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                                outputUri = mainViewModel.shell.value.outputTreeUri,
+                            )
+                }
+                            },
+                            onStatus = { run {
+
+                            pickerPostStatus((it)) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                } },
+                        )
+            } },
+                    )
+        }
+                        presetStore.activePresetId = p.id
+                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
+                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (p.params)) }
+                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                    },
+                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                )
+    } },
+                onActionPreview = { run {
+        mainViewModel.openBatchPreviewForPreset(preset = (it), filesDir = filesDir)
+    } },
+                onActionOverwrite = { run {
+        overwritePreset(
+                    preset = (it),
+                    store = presetStore,
+                    current = run {
+            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        },
+                    viewModel = mainViewModel,
+                    onOverwritten = { p, cur, msg ->
+                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
+                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (cur)) }
+                        mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                    },
+                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                )
+    } },
+                onActionRename = { mainViewModel.updatePresetUi { v -> v.copy(presetRenameTarget = (it)) } },
+                onActionExportSingle = { run {
+        exportSinglePresetToClipboard(
+                    preset = (it),
+                    store = presetStore,
+                    clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
+                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                )
+    } },
+                onActionDelete = { mainViewModel.updatePresetUi { v -> v.copy(presetDeleteConfirmTarget = (it)) } },
+                deleteConfirmTarget = mainViewModel.presetUi.value.presetDeleteConfirmTarget,
+                onDeleteDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetDeleteConfirmTarget = (null)) } },
+                onDeleteConfirm = { run {
+        deletePreset(
+                    id = (it),
+                    filesDir = filesDir,
+                    store = presetStore,
+                    viewModel = mainViewModel,
+                    activeBatchPreviewPresetId = mainViewModel.presetUi.value.activeBatchPreviewPreset?.id,
+                    batchPreviewResultPresetId = mainViewModel.presetUi.value.batchPreviewResult?.preset?.id,
+                    currentPage = mainViewModel.shell.value.currentPage,
+                    activePresetId = mainViewModel.presetUi.value.activePresetId,
+                    onBatchPreviewReset = {
+                        mainViewModel.updatePresetUi { it -> it.copy(activeBatchPreviewPreset = (null)) }
+                        mainViewModel.updatePresetUi { it -> it.copy(batchPreviewResult = (null)) }
+                    },
+                    onNavigateHome = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
+                    onActiveCleared = {
+                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (null)) }
+                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (null)) }
+                    },
+                    onBumpVersion = { mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) } },
+                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                )
+    } },
+                importDialogVisible = mainViewModel.presetUi.value.presetImportDialogVisible,
+                onImportConfirm = { text -> run {
+        importPresetsFromText(
+                    text = (text),
+                    store = presetStore,
+                    onApplied = { msg ->
+                        mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) }
+                        mainViewModel.updatePresetUi { it -> it.copy(presetImportText = ("")) }
+                        mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                    },
+                )
+    } },
+                onImportDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) } },
+                batchPreviewConfirmTarget = mainViewModel.presetUi.value.presetBatchPreviewConfirmTarget,
+                onBatchPreviewConfirm = {
+                    mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) }
+                    run {
+        mainViewModel.startBatchPreview(
+                    preset = (it),
+                    apps = apps.toList(),
+                    selfPackageName = packageName,
+                    batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                    generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
+                    originalParams = run {
+            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        },
+                    cacheDir = cacheDir,
+                    loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
+                    defaultChoiceForMode = { mode, auto -> run {
+            when ((mode)) {
+                        LocalSeparationMode.Original -> PreviewChoice.Original
+                        LocalSeparationMode.Plate -> PreviewChoice.Full
+                        LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
+                        LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+                        LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
+                        LocalSeparationMode.Auto -> (auto)
+                        LocalSeparationMode.Full -> PreviewChoice.Full
+                    }
+        } },
+                    composeAssets = { session, selections -> run {
+
+                    val params = mainViewModel.params.value
+                    return@run previewAssetsForSelections(
+                        session = (session),
+                        selections = (selections),
+                        edgePolishPercent = params.edgePolishPercent,
+                        foregroundSubjectPercent = params.foregroundSubjectPercent,
+                        rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                        val params = mainViewModel.params.value
+                        return@run rmbgTunedForegroundRaw(
+                            candidate = __a0,
+                            rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                            rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                            rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                            rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                        )
+            } },
+                        liquidGlassEnabled = params.liquidGlassEnabled,
+                        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+                        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+                        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+                        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+                        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+                        liquidGlassRadius = params.liquidGlassRadius,
+                        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+                        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+                        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+                        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+                        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+                        foregroundShadowLevel = params.foregroundShadowLevel,
+                        nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+                    )
+        } },
+                    onApplyMerged = { merged ->
+                        run {
+            paramsApplyTuningParams(
+                        params = (merged),
+                        rebuildCandidates = (false),
+                        persist = (false),
+                        captureUndo = (false),
+                        refreshPreview = (false),
+                        getBefore = { run {
+                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            } },
+                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                        setDraftEdgePolishText = { draftEdgePolishText = it },
+                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
+                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
+                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
+                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
+                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
+                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
+                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
+                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
+                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
+                        setDraftJsonParamsText = { draftJsonParamsText = it },
+                        onSaveLocalSeparation = { run {
+                paramsSaveLocalSeparationSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveImageTuning = { run {
+                paramsSaveImageTuningSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveLiquidGlass = { run {
+                paramsSaveLiquidGlassSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
+                            getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
+                        )
+            } },
+                        onSaveGpt = { run {
+                paramsSaveGptSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                        )
+            } },
+                        onSaveUi = { run {
+                pickerSaveUiState(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                            generatedFilter = mainViewModel.picker.value.generatedFilter,
+                            showSystemApps = mainViewModel.picker.value.showSystemApps,
+                            queryText = mainViewModel.picker.value.queryText,
+                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                            previewDir = mainViewModel.previewSession.value.previewDirPath,
+                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                            outputUri = mainViewModel.shell.value.outputTreeUri,
+                        )
+            } },
+                        isBusy = { mainViewModel.shell.value.isBusy },
+                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                        onRefresh = { rebuild -> run {
+                homeRefreshActivePreviewOutputs(
+                            currentSession = mainViewModel.previewSession.value.activeGenerationSession,
+                            rebuildLocalCandidates = (rebuild),
+                            retargetFrom = (null),
+                            app = mainViewModel.previewSession.value.activeGenerationSession?.let { s -> apps.firstOrNull { it.packageName == s.packageName } },
+                            currentSelections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
+                            scope = previewWorkerScope,
+                            getJob = { previewOutputJob },
+                            setJob = { previewOutputJob = it },
+                            incRevision = { ++previewOutputRevision },
+                            getRevision = { previewOutputRevision },
+                            setRefreshing = { mainViewModel.updatePreviewSession { v -> v.copy(isPreviewOutputRefreshing = (it)) } },
+                            rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
+                            outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
+                            tuning = run {
+                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                },
+                            onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
+                            defaultLocal = { auto -> run {
+                    run {
+                        when ((LocalSeparationMode.Auto)) {
+                                    LocalSeparationMode.Original -> PreviewChoice.Original
+                                    LocalSeparationMode.Plate -> PreviewChoice.Full
+                                    LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
+                                    LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+                                    LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
+                                    LocalSeparationMode.Auto -> ((auto))
+                                    LocalSeparationMode.Full -> PreviewChoice.Full
+                                }
+                    }
+                } },
+                            normalize = { session, selections -> normalizePreviewSelections(session, selections) },
+                            onWrite = { session, selections -> run {
+
+                            val params = mainViewModel.params.value
+                            writePackageOutputs(
+                                session = (session),
+                                selections = (selections),
+                                edgePolishPercent = params.edgePolishPercent,
+                                foregroundSubjectPercent = params.foregroundSubjectPercent,
+                                rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                                val params = mainViewModel.params.value
+                                return@run rmbgTunedForegroundRaw(
+                                    candidate = __a0,
+                                    rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                                    rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                                    rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                                    rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                                )
+                    } },
+                                liquidGlassEnabled = params.liquidGlassEnabled,
+                                liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+                                liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+                                liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+                                liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+                                liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+                                liquidGlassRadius = params.liquidGlassRadius,
+                                liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+                                liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+                                liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+                                liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+                                liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+                                foregroundShadowLevel = params.foregroundShadowLevel,
+                                monochromeThemeScale = params.monochromeThemeScale,
+                                nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+                            )
+                } },
+                            onCommit = { session, selections ->
+                                mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
+                                mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
+                                mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
+                                run {
+                    pickerSaveUiState(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                                generatedFilter = mainViewModel.picker.value.generatedFilter,
+                                showSystemApps = mainViewModel.picker.value.showSystemApps,
+                                queryText = mainViewModel.picker.value.queryText,
+                                advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                                advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                                previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                                previewDir = mainViewModel.previewSession.value.previewDirPath,
+                                previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                                previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                                previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                                previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                                previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                                iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                                cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                                batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                                batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                                batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                                batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                                batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                                customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                                autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                                autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                                outputUri = mainViewModel.shell.value.outputTreeUri,
+                            )
+                }
+                            },
+                            onStatus = { run {
+
+                            pickerPostStatus((it)) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                } },
+                        )
+            } },
+                    )
+        }
+                    },
+                    onRestoreOriginal = { original ->
+                        run {
+            paramsApplyTuningParams(
+                        params = (original),
+                        rebuildCandidates = (true),
+                        persist = (false),
+                        captureUndo = (false),
+                        refreshPreview = (true),
+                        getBefore = { run {
+                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            } },
+                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                        setDraftEdgePolishText = { draftEdgePolishText = it },
+                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
+                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
+                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
+                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
+                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
+                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
+                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
+                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
+                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
+                        setDraftJsonParamsText = { draftJsonParamsText = it },
+                        onSaveLocalSeparation = { run {
+                paramsSaveLocalSeparationSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveImageTuning = { run {
+                paramsSaveImageTuningSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveLiquidGlass = { run {
+                paramsSaveLiquidGlassSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
+                            getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
+                        )
+            } },
+                        onSaveGpt = { run {
+                paramsSaveGptSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                        )
+            } },
+                        onSaveUi = { run {
+                pickerSaveUiState(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                            generatedFilter = mainViewModel.picker.value.generatedFilter,
+                            showSystemApps = mainViewModel.picker.value.showSystemApps,
+                            queryText = mainViewModel.picker.value.queryText,
+                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                            previewDir = mainViewModel.previewSession.value.previewDirPath,
+                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                            outputUri = mainViewModel.shell.value.outputTreeUri,
+                        )
+            } },
+                        isBusy = { mainViewModel.shell.value.isBusy },
+                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                        onRefresh = { rebuild -> run {
+                homeRefreshActivePreviewOutputs(
+                            currentSession = mainViewModel.previewSession.value.activeGenerationSession,
+                            rebuildLocalCandidates = (rebuild),
+                            retargetFrom = (null),
+                            app = mainViewModel.previewSession.value.activeGenerationSession?.let { s -> apps.firstOrNull { it.packageName == s.packageName } },
+                            currentSelections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
+                            scope = previewWorkerScope,
+                            getJob = { previewOutputJob },
+                            setJob = { previewOutputJob = it },
+                            incRevision = { ++previewOutputRevision },
+                            getRevision = { previewOutputRevision },
+                            setRefreshing = { mainViewModel.updatePreviewSession { v -> v.copy(isPreviewOutputRefreshing = (it)) } },
+                            rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
+                            outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
+                            tuning = run {
+                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                },
+                            onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
+                            defaultLocal = { auto -> run {
+                    run {
+                        when ((LocalSeparationMode.Auto)) {
+                                    LocalSeparationMode.Original -> PreviewChoice.Original
+                                    LocalSeparationMode.Plate -> PreviewChoice.Full
+                                    LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
+                                    LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+                                    LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
+                                    LocalSeparationMode.Auto -> ((auto))
+                                    LocalSeparationMode.Full -> PreviewChoice.Full
+                                }
+                    }
+                } },
+                            normalize = { session, selections -> normalizePreviewSelections(session, selections) },
+                            onWrite = { session, selections -> run {
+
+                            val params = mainViewModel.params.value
+                            writePackageOutputs(
+                                session = (session),
+                                selections = (selections),
+                                edgePolishPercent = params.edgePolishPercent,
+                                foregroundSubjectPercent = params.foregroundSubjectPercent,
+                                rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                                val params = mainViewModel.params.value
+                                return@run rmbgTunedForegroundRaw(
+                                    candidate = __a0,
+                                    rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                                    rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                                    rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                                    rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                                )
+                    } },
+                                liquidGlassEnabled = params.liquidGlassEnabled,
+                                liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+                                liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+                                liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+                                liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+                                liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+                                liquidGlassRadius = params.liquidGlassRadius,
+                                liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+                                liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+                                liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+                                liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+                                liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+                                foregroundShadowLevel = params.foregroundShadowLevel,
+                                monochromeThemeScale = params.monochromeThemeScale,
+                                nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+                            )
+                } },
+                            onCommit = { session, selections ->
+                                mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
+                                mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
+                                mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
+                                run {
+                    pickerSaveUiState(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                                generatedFilter = mainViewModel.picker.value.generatedFilter,
+                                showSystemApps = mainViewModel.picker.value.showSystemApps,
+                                queryText = mainViewModel.picker.value.queryText,
+                                advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                                advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                                previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                                previewDir = mainViewModel.previewSession.value.previewDirPath,
+                                previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                                previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                                previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                                previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                                previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                                iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                                cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                                batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                                batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                                batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                                batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                                batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                                customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                                autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                                autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                                outputUri = mainViewModel.shell.value.outputTreeUri,
+                            )
+                }
+                            },
+                            onStatus = { run {
+
+                            pickerPostStatus((it)) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                } },
+                        )
+            } },
+                    )
+        }
+                    },
+                    onSaveSnapshot = { p, dataList -> BatchPreviewStore.saveSnapshot(filesDir, p, dataList) },
+                )
+    }
+                },
+                onBatchPreviewConfirmDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) } },
+                batchPreviewProgress = mainViewModel.presetUi.value.batchPreviewProgress,
+                onCancelBatchPreview = { mainViewModel.updatePresetUi { it -> it.copy(batchPreviewCancelled = (true)) } },
+                showRefreshConfirm = mainViewModel.presetUi.value.showBatchPreviewRefreshConfirm,
+                refreshConfirmPreset = mainViewModel.presetUi.value.activeBatchPreviewPreset ?: mainViewModel.presetUi.value.batchPreviewResult?.preset,
+                batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                onRefreshConfirm = {
+                    mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) }
+                    run {
+        mainViewModel.startBatchPreview(
+                    preset = (it),
+                    apps = apps.toList(),
+                    selfPackageName = packageName,
+                    batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                    generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
+                    originalParams = run {
+            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        },
+                    cacheDir = cacheDir,
+                    loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
+                    defaultChoiceForMode = { mode, auto -> run {
+            when ((mode)) {
+                        LocalSeparationMode.Original -> PreviewChoice.Original
+                        LocalSeparationMode.Plate -> PreviewChoice.Full
+                        LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
+                        LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+                        LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
+                        LocalSeparationMode.Auto -> (auto)
+                        LocalSeparationMode.Full -> PreviewChoice.Full
+                    }
+        } },
+                    composeAssets = { session, selections -> run {
+
+                    val params = mainViewModel.params.value
+                    return@run previewAssetsForSelections(
+                        session = (session),
+                        selections = (selections),
+                        edgePolishPercent = params.edgePolishPercent,
+                        foregroundSubjectPercent = params.foregroundSubjectPercent,
+                        rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                        val params = mainViewModel.params.value
+                        return@run rmbgTunedForegroundRaw(
+                            candidate = __a0,
+                            rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                            rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                            rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                            rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                        )
+            } },
+                        liquidGlassEnabled = params.liquidGlassEnabled,
+                        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+                        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+                        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+                        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+                        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+                        liquidGlassRadius = params.liquidGlassRadius,
+                        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+                        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+                        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+                        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+                        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+                        foregroundShadowLevel = params.foregroundShadowLevel,
+                        nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+                    )
+        } },
+                    onApplyMerged = { merged ->
+                        run {
+            paramsApplyTuningParams(
+                        params = (merged),
+                        rebuildCandidates = (false),
+                        persist = (false),
+                        captureUndo = (false),
+                        refreshPreview = (false),
+                        getBefore = { run {
+                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            } },
+                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                        setDraftEdgePolishText = { draftEdgePolishText = it },
+                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
+                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
+                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
+                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
+                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
+                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
+                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
+                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
+                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
+                        setDraftJsonParamsText = { draftJsonParamsText = it },
+                        onSaveLocalSeparation = { run {
+                paramsSaveLocalSeparationSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveImageTuning = { run {
+                paramsSaveImageTuningSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveLiquidGlass = { run {
+                paramsSaveLiquidGlassSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
+                            getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
+                        )
+            } },
+                        onSaveGpt = { run {
+                paramsSaveGptSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                        )
+            } },
+                        onSaveUi = { run {
+                pickerSaveUiState(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                            generatedFilter = mainViewModel.picker.value.generatedFilter,
+                            showSystemApps = mainViewModel.picker.value.showSystemApps,
+                            queryText = mainViewModel.picker.value.queryText,
+                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                            previewDir = mainViewModel.previewSession.value.previewDirPath,
+                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                            outputUri = mainViewModel.shell.value.outputTreeUri,
+                        )
+            } },
+                        isBusy = { mainViewModel.shell.value.isBusy },
+                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                        onRefresh = { rebuild -> run {
+                homeRefreshActivePreviewOutputs(
+                            currentSession = mainViewModel.previewSession.value.activeGenerationSession,
+                            rebuildLocalCandidates = (rebuild),
+                            retargetFrom = (null),
+                            app = mainViewModel.previewSession.value.activeGenerationSession?.let { s -> apps.firstOrNull { it.packageName == s.packageName } },
+                            currentSelections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
+                            scope = previewWorkerScope,
+                            getJob = { previewOutputJob },
+                            setJob = { previewOutputJob = it },
+                            incRevision = { ++previewOutputRevision },
+                            getRevision = { previewOutputRevision },
+                            setRefreshing = { mainViewModel.updatePreviewSession { v -> v.copy(isPreviewOutputRefreshing = (it)) } },
+                            rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
+                            outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
+                            tuning = run {
+                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                },
+                            onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
+                            defaultLocal = { auto -> run {
+                    run {
+                        when ((LocalSeparationMode.Auto)) {
+                                    LocalSeparationMode.Original -> PreviewChoice.Original
+                                    LocalSeparationMode.Plate -> PreviewChoice.Full
+                                    LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
+                                    LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+                                    LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
+                                    LocalSeparationMode.Auto -> ((auto))
+                                    LocalSeparationMode.Full -> PreviewChoice.Full
+                                }
+                    }
+                } },
+                            normalize = { session, selections -> normalizePreviewSelections(session, selections) },
+                            onWrite = { session, selections -> run {
+
+                            val params = mainViewModel.params.value
+                            writePackageOutputs(
+                                session = (session),
+                                selections = (selections),
+                                edgePolishPercent = params.edgePolishPercent,
+                                foregroundSubjectPercent = params.foregroundSubjectPercent,
+                                rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                                val params = mainViewModel.params.value
+                                return@run rmbgTunedForegroundRaw(
+                                    candidate = __a0,
+                                    rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                                    rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                                    rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                                    rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                                )
+                    } },
+                                liquidGlassEnabled = params.liquidGlassEnabled,
+                                liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+                                liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+                                liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+                                liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+                                liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+                                liquidGlassRadius = params.liquidGlassRadius,
+                                liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+                                liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+                                liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+                                liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+                                liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+                                foregroundShadowLevel = params.foregroundShadowLevel,
+                                monochromeThemeScale = params.monochromeThemeScale,
+                                nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+                            )
+                } },
+                            onCommit = { session, selections ->
+                                mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
+                                mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
+                                mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
+                                run {
+                    pickerSaveUiState(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                                generatedFilter = mainViewModel.picker.value.generatedFilter,
+                                showSystemApps = mainViewModel.picker.value.showSystemApps,
+                                queryText = mainViewModel.picker.value.queryText,
+                                advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                                advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                                previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                                previewDir = mainViewModel.previewSession.value.previewDirPath,
+                                previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                                previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                                previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                                previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                                previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                                iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                                cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                                batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                                batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                                batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                                batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                                batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                                customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                                autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                                autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                                outputUri = mainViewModel.shell.value.outputTreeUri,
+                            )
+                }
+                            },
+                            onStatus = { run {
+
+                            pickerPostStatus((it)) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                } },
+                        )
+            } },
+                    )
+        }
+                    },
+                    onRestoreOriginal = { original ->
+                        run {
+            paramsApplyTuningParams(
+                        params = (original),
+                        rebuildCandidates = (true),
+                        persist = (false),
+                        captureUndo = (false),
+                        refreshPreview = (true),
+                        getBefore = { run {
+                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            } },
+                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                        setDraftEdgePolishText = { draftEdgePolishText = it },
+                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
+                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
+                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
+                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
+                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
+                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
+                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
+                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
+                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
+                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
+                        setDraftJsonParamsText = { draftJsonParamsText = it },
+                        onSaveLocalSeparation = { run {
+                paramsSaveLocalSeparationSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveImageTuning = { run {
+                paramsSaveImageTuningSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                        )
+            } },
+                        onSaveLiquidGlass = { run {
+                paramsSaveLiquidGlassSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
+                            getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
+                        )
+            } },
+                        onSaveGpt = { run {
+                paramsSaveGptSettings(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            getParams = { mainViewModel.params.value },
+                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                        )
+            } },
+                        onSaveUi = { run {
+                pickerSaveUiState(
+                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                            generatedFilter = mainViewModel.picker.value.generatedFilter,
+                            showSystemApps = mainViewModel.picker.value.showSystemApps,
+                            queryText = mainViewModel.picker.value.queryText,
+                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                            previewDir = mainViewModel.previewSession.value.previewDirPath,
+                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                            outputUri = mainViewModel.shell.value.outputTreeUri,
+                        )
+            } },
+                        isBusy = { mainViewModel.shell.value.isBusy },
+                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                        onRefresh = { rebuild -> run {
+                homeRefreshActivePreviewOutputs(
+                            currentSession = mainViewModel.previewSession.value.activeGenerationSession,
+                            rebuildLocalCandidates = (rebuild),
+                            retargetFrom = (null),
+                            app = mainViewModel.previewSession.value.activeGenerationSession?.let { s -> apps.firstOrNull { it.packageName == s.packageName } },
+                            currentSelections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
+                            scope = previewWorkerScope,
+                            getJob = { previewOutputJob },
+                            setJob = { previewOutputJob = it },
+                            incRevision = { ++previewOutputRevision },
+                            getRevision = { previewOutputRevision },
+                            setRefreshing = { mainViewModel.updatePreviewSession { v -> v.copy(isPreviewOutputRefreshing = (it)) } },
+                            rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
+                            outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
+                            tuning = run {
+                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                },
+                            onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
+                            defaultLocal = { auto -> run {
+                    run {
+                        when ((LocalSeparationMode.Auto)) {
+                                    LocalSeparationMode.Original -> PreviewChoice.Original
+                                    LocalSeparationMode.Plate -> PreviewChoice.Full
+                                    LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
+                                    LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+                                    LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
+                                    LocalSeparationMode.Auto -> ((auto))
+                                    LocalSeparationMode.Full -> PreviewChoice.Full
+                                }
+                    }
+                } },
+                            normalize = { session, selections -> normalizePreviewSelections(session, selections) },
+                            onWrite = { session, selections -> run {
+
+                            val params = mainViewModel.params.value
+                            writePackageOutputs(
+                                session = (session),
+                                selections = (selections),
+                                edgePolishPercent = params.edgePolishPercent,
+                                foregroundSubjectPercent = params.foregroundSubjectPercent,
+                                rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                                val params = mainViewModel.params.value
+                                return@run rmbgTunedForegroundRaw(
+                                    candidate = __a0,
+                                    rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                                    rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                                    rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                                    rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                                )
+                    } },
+                                liquidGlassEnabled = params.liquidGlassEnabled,
+                                liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+                                liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+                                liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+                                liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+                                liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+                                liquidGlassRadius = params.liquidGlassRadius,
+                                liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+                                liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+                                liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+                                liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+                                liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+                                foregroundShadowLevel = params.foregroundShadowLevel,
+                                monochromeThemeScale = params.monochromeThemeScale,
+                                nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+                            )
+                } },
+                            onCommit = { session, selections ->
+                                mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
+                                mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
+                                mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
+                                run {
+                    pickerSaveUiState(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                selectedPackage = mainViewModel.picker.value.selectedPackageName,
+                                generatedFilter = mainViewModel.picker.value.generatedFilter,
+                                showSystemApps = mainViewModel.picker.value.showSystemApps,
+                                queryText = mainViewModel.picker.value.queryText,
+                                advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
+                                advancedTab = mainViewModel.shell.value.advancedSettingsTab,
+                                previewPackage = mainViewModel.previewSession.value.previewPackageName,
+                                previewDir = mainViewModel.previewSession.value.previewDirPath,
+                                previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                                previewNormalLight = mainViewModel.params.value.previewNormalLight,
+                                previewNormalDark = mainViewModel.params.value.previewNormalDark,
+                                previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+                                previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+                                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                                iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
+                                cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                                batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                                batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                                batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                                batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                                batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
+                                customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                                autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
+                                autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
+                                outputUri = mainViewModel.shell.value.outputTreeUri,
+                            )
+                }
+                            },
+                            onStatus = { run {
+
+                            pickerPostStatus((it)) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                } },
+                        )
+            } },
+                    )
+        }
+                    },
+                    onSaveSnapshot = { p, dataList -> BatchPreviewStore.saveSnapshot(filesDir, p, dataList) },
+                )
+    }
+                },
+                onRefreshDismiss = { mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) } },
+            )
+}
+        run {
+val __act1 = LocalContext.current
+
+            val shellState by mainViewModel.shell.collectAsState()
+            // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
+            OnboardingDialog(
+                visible = shellState.onboardingVisible,
+                isBusy = shellState.isBusy,
+                onSkip = {
+                    // 允许通过外部点击关闭视为跳过
+                    getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                        .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
+                    mainViewModel.updateShell { it -> it.copy(onboardingVisible = (false)) }
+                    run {
+        pickerToastStatus(
+                    message = ("已跳过，可在设置-导出引导中重新进入"),
+                    postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                    showToast = { text ->
+                        runOnUiThread {
+                            Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                )
+    }
+                },
+                onChooseDir = {
+                    // 不在此关闭，等待 chooseTreeLauncher 回调中关闭
+                    chooseTreeLauncher.launch(null)
+                },
+            )
+}
     }
 }
 
