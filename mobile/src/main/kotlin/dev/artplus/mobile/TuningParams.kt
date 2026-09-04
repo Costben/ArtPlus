@@ -1173,3 +1173,36 @@ const val ANDROID_KEYSTORE = "AndroidKeyStore"
 const val KEYSTORE_GPT_KEY_ALIAS = "artplus_gpt_api_key"
 const val KEYSTORE_CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
 const val KEYSTORE_GCM_TAG_BITS = 128
+
+/**
+ * Slice 2.5：应用选择器常量（从 MainActivity companion object 提升，原为 private）。
+ * 只做物理提升：数值与类型未变。同包直接引用，Activity 内原有调用点零改动。
+ * Slice 2.4 deliberately 未动的 saveUiState 域 PREF 及 PREFS_NAME 按需在此提升。
+ */
+const val PREFS_NAME = "artplus_mobile"
+const val PREF_AUTO_CONFIRM_ROOT_WRITE = "auto_confirm_root_write"
+const val PREF_AUTO_CONFIRM_REFRESH = "auto_confirm_refresh"
+const val PREF_SKIP_ROOT_WRITE_CONFIRM = "skip_root_write_confirm"
+const val PREF_USAGE_PERMISSION_PROMPTED = "usage_permission_prompted"
+const val PREF_SELECTED_PACKAGE_NAME = "selected_package_name"
+const val PREF_GENERATED_FILTER = "generated_filter"
+const val PREF_QUERY_TEXT = "query_text"
+const val PREF_ADVANCED_SETTINGS_CATEGORY = "advanced_settings_category"
+const val PREF_ADVANCED_SETTINGS_TAB = "advanced_settings_tab"
+const val PREF_PREVIEW_PACKAGE_NAME = "preview_package_name"
+const val PREF_PREVIEW_DIR_PATH = "preview_dir_path"
+const val PREF_PREVIEW_STRIP_ENABLED = "preview_strip_enabled"
+const val PREF_BATCH_PREVIEW_COUNT = "batch_preview_count"
+const val PREF_BATCH_PREVIEW_COLUMNS = "batch_preview_columns"
+const val PREF_BATCH_PREVIEW_ICON_SIZE_DP = "batch_preview_icon_size_dp"
+const val PREF_BATCH_PREVIEW_CORNER_RADIUS_DP = "batch_preview_corner_radius_dp"
+const val PREF_BATCH_PREVIEW_DESKTOP_BG = "batch_preview_desktop_bg"
+const val PREF_CUSTOM_WALLPAPER_PATH = "custom_wallpaper_path"
+const val CUSTOM_WALLPAPER_FILE = "custom_wallpaper.png"
+const val PREF_PREVIEW_DESKTOP_BACKGROUND = "preview_desktop_background"
+const val PREF_PREVIEW_ICON_SIZE_DP = "preview_icon_size_dp"
+const val PREF_PREVIEW_CORNER_RADIUS_DP = "preview_corner_radius_dp"
+const val PREF_SHOW_SYSTEM_APPS = "show_system_apps"
+const val PREF_OUTPUT_TREE_URI = "output_tree_uri"
+const val PREF_HAS_COMPLETED_ONBOARDING = "has_completed_onboarding"
+const val PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE = 480

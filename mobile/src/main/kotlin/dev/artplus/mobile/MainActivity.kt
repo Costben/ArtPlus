@@ -662,179 +662,44 @@ class MainActivity : ComponentActivity() {
     }
 
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun OnboardingDialog() {
-        if (!onboardingVisible) return
-        MiuixBottomDialog(onDismissRequest = {
-            // 允许通过外部点击关闭视为跳过
-            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
-                .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
-            onboardingVisible = false
-            toastStatus("已跳过，可在设置-导出引导中重新进入")
-        }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "设置备份目录",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "首次使用建议先选择一个外部目录，用于备份已写入系统的全部图标（含官方图标）。选择后将自动执行一次全量备份，并在该目录创建 .nomedia 避免出现在相册。",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 5,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = {
-                            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
-                                .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
-                            onboardingVisible = false
-                            toastStatus("已跳过，可在设置-导出引导中重新进入")
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "跳过",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            // 不在此关闭，等待 chooseTreeLauncher 回调中关闭
-                            chooseTreeLauncher.launch(null)
-                        },
-                        enabled = !isBusy,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "选择目录",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
-    }
+    internal fun OnboardingDialog() =
+        OnboardingDialog(
+            visible = onboardingVisible,
+            isBusy = isBusy,
+            onSkip = {
+                // 允许通过外部点击关闭视为跳过
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
+                    .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
+                onboardingVisible = false
+                toastStatus("已跳过，可在设置-导出引导中重新进入")
+            },
+            onChooseDir = {
+                // 不在此关闭，等待 chooseTreeLauncher 回调中关闭
+                chooseTreeLauncher.launch(null)
+            },
+        )
 
 
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun RefreshConfirmDialog() {
-        if (!refreshConfirmVisible) return
-        MiuixBottomDialog(onDismissRequest = { refreshConfirmVisible = false }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "确认刷新",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "将重新扫描已生成图标并刷新显示，确认继续？",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(999.dp))
-                        .clickable { refreshConfirmRememberAuto = !refreshConfirmRememberAuto }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Checkbox(
-                        state = ToggleableState(refreshConfirmRememberAuto),
-                        onClick = { refreshConfirmRememberAuto = !refreshConfirmRememberAuto },
-                        colors = CheckboxDefaults.checkboxColors(
-                            checkedBackgroundColor = MiuixTheme.colorScheme.primaryVariant,
-                            checkedForegroundColor = MiuixTheme.colorScheme.onPrimaryVariant,
-                            uncheckedBackgroundColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
-                            uncheckedForegroundColor = Color.Transparent,
-                        ),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "以后都自动确认",
-                        style = MiuixTheme.textStyles.footnote2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
+    internal fun RefreshConfirmDialog() =
+        RefreshConfirmDialog(
+            visible = refreshConfirmVisible,
+            rememberAuto = refreshConfirmRememberAuto,
+            onDismiss = { refreshConfirmVisible = false },
+            onToggleRemember = { refreshConfirmRememberAuto = !refreshConfirmRememberAuto },
+            onConfirm = { shouldAuto ->
+                refreshConfirmVisible = false
+                if (shouldAuto) {
+                    autoConfirmRefresh = true
+                    saveUiState()
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = { refreshConfirmVisible = false },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "取消",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            val shouldAuto = refreshConfirmRememberAuto
-                            refreshConfirmVisible = false
-                            if (shouldAuto) {
-                                autoConfirmRefresh = true
-                                saveUiState()
-                            }
-                            refreshArtPlusIcons()
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "刷新",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
-    }
+                refreshArtPlusIcons()
+            },
+        )
 
 
 
@@ -843,40 +708,16 @@ class MainActivity : ComponentActivity() {
 
 
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun PermissionCard() {
-        SectionCard {
-            SettingLine(
-                title = "应用列表",
-                summary = if (packageListPermissionGranted) "已声明并可读取已安装应用" else "需要允许读取应用列表",
-                value = if (packageListPermissionGranted) "已允许" else "待授权",
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            SettingLine(
-                title = "使用情况访问",
-                summary = if (usageAccessGranted) "已允许任务/使用情况访问" else "Android 只能在系统设置中授权",
-                value = if (usageAccessGranted) "已允许" else "待授权",
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                TextButton(
-                    text = "应用权限",
-                    onClick = { openAppPermissionSettings() },
-                    enabled = !isBusy,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(
-                    text = "使用情况访问",
-                    onClick = { openUsageAccessSettings() },
-                    enabled = !isBusy,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
+    internal fun PermissionCard() =
+        PermissionCard(
+            packageListGranted = packageListPermissionGranted,
+            usageGranted = usageAccessGranted,
+            isBusy = isBusy,
+            onOpenAppSettings = { openAppPermissionSettings() },
+            onOpenUsageSettings = { openUsageAccessSettings() },
+        )
 
 
 
@@ -1217,16 +1058,14 @@ class MainActivity : ComponentActivity() {
                 }
             },
         )
-    internal fun systemMaterialColor(resourceName: String, fallback: Color): Color {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            return fallback
-        }
-        val colorId = resources.getIdentifier(resourceName, "color", "android")
-        if (colorId == 0) {
-            return fallback
-        }
-        return runCatching { Color(getColor(colorId)) }.getOrDefault(fallback)
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
+    internal fun systemMaterialColor(resourceName: String, fallback: Color): Color =
+        pickerSystemMaterialColor(
+            resources = resources,
+            getColor = ::getColor,
+            resourceName = resourceName,
+            fallback = fallback,
+        )
 
     // 重构期间保留：委托到 ui/pages/home/HomeStatusCards.kt 显式参数版本，调用点零改动。
     @Composable
@@ -2249,119 +2088,24 @@ class MainActivity : ComponentActivity() {
         )
 
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun RootWriteConfirmDialog() {
-        val request = pendingRootWriteConfirm ?: return
-        MiuixBottomDialog(onDismissRequest = { pendingRootWriteConfirm = null }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "确认写入",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        text = "将直接把当前生成的内容写入到指定路径：",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        text = request.targetPath,
-                        style = MiuixTheme.textStyles.footnote1.copy(fontWeight = FontWeight.SemiBold),
-                        color = MiuixTheme.colorScheme.primaryVariant,
-                        textAlign = TextAlign.Center,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = "是否确认写入${request.rootWriteMode.label}？",
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                    )
+    internal fun RootWriteConfirmDialog() =
+        RootWriteConfirmDialog(
+            request = pendingRootWriteConfirm,
+            rememberSkip = rootWriteConfirmRememberSkip,
+            onDismiss = { pendingRootWriteConfirm = null },
+            onToggleSkip = { rootWriteConfirmRememberSkip = !rootWriteConfirmRememberSkip },
+            onConfirm = { request, shouldSkip ->
+                val onConfirm = request.onConfirm
+                pendingRootWriteConfirm = null
+                if (shouldSkip) {
+                    autoConfirmRootWrite = true
+                    saveUiState()
                 }
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(999.dp))
-                        .clickable { rootWriteConfirmRememberSkip = !rootWriteConfirmRememberSkip }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Checkbox(
-                        state = ToggleableState(rootWriteConfirmRememberSkip),
-                        onClick = { rootWriteConfirmRememberSkip = !rootWriteConfirmRememberSkip },
-                        colors = CheckboxDefaults.checkboxColors(
-                            checkedBackgroundColor = MiuixTheme.colorScheme.primaryVariant,
-                            checkedForegroundColor = MiuixTheme.colorScheme.onPrimaryVariant,
-                            uncheckedBackgroundColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
-                            uncheckedForegroundColor = Color.Transparent,
-                        ),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "以后都自动确认",
-                        style = MiuixTheme.textStyles.footnote2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = { pendingRootWriteConfirm = null },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "取消",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            val onConfirm = request.onConfirm
-                            val shouldSkip = rootWriteConfirmRememberSkip
-                            pendingRootWriteConfirm = null
-                            if (shouldSkip) {
-                                autoConfirmRootWrite = true
-                                saveUiState()
-                            }
-                            onConfirm()
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "确认写入",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
-    }
+                onConfirm()
+            },
+        )
 
 
 
@@ -2539,218 +2283,64 @@ class MainActivity : ComponentActivity() {
             },
         )
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCards.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun AppPickerStatusCard(
         filteredCount: Int,
         totalCount: Int,
         generatedCount: Int,
         ungeneratedCount: Int,
-    ) {
-        val multiCount = multiSelectedPackageNames.size
-        val statusText = buildString {
-            append("$filteredCount/$totalCount")
-            append(" · 已生成 $generatedCount")
-            append(" · 未生成 $ungeneratedCount")
-            if (isScanningGeneratedPackages) {
-                append(" · 扫描中")
-            } else if (generatedScanFailed) {
-                append(" · 无法读取 data 路径")
-            }
-            if (multiCount > 0) {
-                append(" · 多选 $multiCount")
-            }
-        }
-        SectionCard {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (multiCount > 0) MiuixTheme.colorScheme.primaryVariant
-                                else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
-                            ),
-                    )
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            Text(
-                                text = "应用列表 $filteredCount/$totalCount",
-                                style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
-                                color = MiuixTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            if (multiCount > 0) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                                ) {
-                                    Text(
-                                        text = "多选 $multiCount",
-                                        style = MiuixTheme.textStyles.footnote2.copy(
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontSize = 11.sp,
-                                        ),
-                                        color = MiuixTheme.colorScheme.primaryVariant,
-                                    )
-                                }
-                            }
-                        }
-                        Text(
-                            text = statusText,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    TextButton(
-                        text = "刷新生成",
-                        onClick = { refreshGeneratedPackages() },
-                        enabled = !isBusy && apps.isNotEmpty(),
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        text = "更新列表",
-                        onClick = { loadApps() },
-                        enabled = !isBusy,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-    }
+    ) =
+        AppPickerStatusCard(
+            filteredCount = filteredCount,
+            totalCount = totalCount,
+            generatedCount = generatedCount,
+            ungeneratedCount = ungeneratedCount,
+            multiCount = multiSelectedPackageNames.size,
+            isScanning = isScanningGeneratedPackages,
+            scanFailed = generatedScanFailed,
+            isBusy = isBusy,
+            hasApps = apps.isNotEmpty(),
+            onRefreshGenerated = { refreshGeneratedPackages() },
+            onReloadApps = { loadApps() },
+        )
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun AppPickerFilterCard() {
-        SectionCard(rowsFullBleed = true) {
-            LibrarySettingRow(
-                title = "显示系统应用",
-                summary = if (showSystemApps) "已包含系统应用，可搜索和批量选择" else "仅显示用户应用；系统应用已隐藏",
-                icon = SettingsIconKind.Shield,
-                showSwitch = true,
-                checked = showSystemApps,
-                enabled = !isBusy,
-                onCheckedChange = {
-                    showSystemApps = !showSystemApps
-                    saveUiState()
-                },
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 12.dp),
-            ) {
-                val filters = GeneratedFilter.entries
-                SegmentedControl(
-                    enabled = !isBusy,
-                    labels = filters.map { it.label },
-                    selectedIndex = filters.indexOf(generatedFilter),
-                    onSelected = { index ->
-                        generatedFilter = filters[index]
-                        queryText = ""
-                        saveUiState()
-                    },
-                )
-            }
-        }
-    }
+    internal fun AppPickerFilterCard() =
+        AppPickerFilterCard(
+            showSystemApps = showSystemApps,
+            generatedFilter = generatedFilter,
+            isBusy = isBusy,
+            onToggleSystemApps = {
+                showSystemApps = !showSystemApps
+                saveUiState()
+            },
+            onFilterSelected = {
+                generatedFilter = it
+                queryText = ""
+                saveUiState()
+            },
+        )
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun AppPickerSearchCard(filteredApps: List<AppEntry>) {
-        SectionCard {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // 标准搜索条：复刻 PresetLibraryCard 的搜索实现，高度与按钮对齐 48dp
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                        .padding(horizontal = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Image(
-                        imageVector = Lucide.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                    )
-                    BasicTextField(
-                        value = queryText,
-                        onValueChange = {
-                            queryText = it
-                            saveUiState()
-                        },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        textStyle = MiuixTheme.textStyles.body2.copy(
-                            color = MiuixTheme.colorScheme.onSurface,
-                        ),
-                        cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
-                        decorationBox = { innerTextField ->
-                            if (queryText.isEmpty()) {
-                                Text(
-                                    text = "搜索应用或包名...",
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
-                                )
-                            }
-                            innerTextField()
-                        },
-                    )
-                    if (queryText.isNotEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    queryText = ""
-                                    saveUiState()
-                                },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Image(
-                                imageVector = Lucide.X,
-                                contentDescription = "清除",
-                                modifier = Modifier.size(14.dp),
-                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                            )
-                        }
-                    }
-                }
-                AppMultiSelectActions(filteredApps)
-            }
-        }
-    }
+    internal fun AppPickerSearchCard(filteredApps: List<AppEntry>) =
+        AppPickerSearchCard(
+            queryText = queryText,
+            isBusy = isBusy,
+            onQueryChange = {
+                queryText = it
+                saveUiState()
+            },
+            onClearQuery = {
+                queryText = ""
+                saveUiState()
+            },
+            multiSelectContent = { AppMultiSelectActions(filteredApps) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCards.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun AppPickerControlsCard(
         filteredCount: Int,
@@ -2758,74 +2348,66 @@ class MainActivity : ComponentActivity() {
         generatedCount: Int,
         ungeneratedCount: Int,
         filteredApps: List<AppEntry>,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            AppPickerStatusCard(
-                filteredCount = filteredCount,
-                totalCount = totalCount,
-                generatedCount = generatedCount,
-                ungeneratedCount = ungeneratedCount,
-            )
-            AppPickerFilterCard()
-            AppPickerSearchCard(filteredApps = filteredApps)
-        }
-    }
+    ) =
+        AppPickerControlsCard(
+            filteredCount = filteredCount,
+            totalCount = totalCount,
+            generatedCount = generatedCount,
+            ungeneratedCount = ungeneratedCount,
+            multiCount = multiSelectedPackageNames.size,
+            isScanning = isScanningGeneratedPackages,
+            scanFailed = generatedScanFailed,
+            isBusy = isBusy,
+            hasApps = apps.isNotEmpty(),
+            showSystemApps = showSystemApps,
+            generatedFilter = generatedFilter,
+            queryText = queryText,
+            onRefreshGenerated = { refreshGeneratedPackages() },
+            onReloadApps = { loadApps() },
+            onToggleSystemApps = {
+                showSystemApps = !showSystemApps
+                saveUiState()
+            },
+            onFilterSelected = {
+                generatedFilter = it
+                queryText = ""
+                saveUiState()
+            },
+            onQueryChange = {
+                queryText = it
+                saveUiState()
+            },
+            onClearQuery = {
+                queryText = ""
+                saveUiState()
+            },
+            multiSelectContent = { AppMultiSelectActions(filteredApps) },
+        )
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCards.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun AppMultiSelectActions(filteredApps: List<AppEntry>) {
         val filteredPackageNames = remember(filteredApps) { filteredApps.map { it.packageName }.toSet() }
-        val selectedCount = multiSelectedPackageNames.size
-        val hasFiltered = filteredPackageNames.isNotEmpty()
-        val allFilteredSelected = hasFiltered && filteredPackageNames.all { it in multiSelectedPackageNames }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            CompactActionButton(
-                text = if (allFilteredSelected) "取消当前" else "选择当前",
-                onClick = {
-                    multiSelectedPackageNames = if (allFilteredSelected) {
-                        multiSelectedPackageNames - filteredPackageNames
-                    } else {
-                        multiSelectedPackageNames + filteredPackageNames
-                    }
-                },
-                enabled = !isBusy && hasFiltered,
-                modifier = Modifier.weight(1f),
-                height = 48.dp,
-            )
-            CompactActionButton(
-                text = "清空",
-                onClick = { multiSelectedPackageNames = emptySet() },
-                enabled = !isBusy && selectedCount > 0,
-                modifier = Modifier.weight(1f),
-                height = 48.dp,
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            CompactActionButton(
-                text = "添加光影 $selectedCount",
-                onClick = { addLiquidGlassToMultiSelectedGenerated() },
-                enabled = !isBusy && selectedCount > 0,
-                modifier = Modifier.weight(1f),
-                height = 48.dp,
-            )
-            CompactActionButton(
-                text = "套用当前预设",
-                onClick = { applyCurrentPresetBatch() },
-                enabled = !isBusy && selectedCount > 0,
-                modifier = Modifier.weight(1f),
-                height = 48.dp,
-            )
-        }
+        AppMultiSelectActions(
+            selectedCount = multiSelectedPackageNames.size,
+            hasFiltered = filteredPackageNames.isNotEmpty(),
+            allFilteredSelected = pickerAllFilteredSelected(filteredPackageNames, multiSelectedPackageNames),
+            isBusy = isBusy,
+            onToggleFiltered = {
+                val allSelected = pickerAllFilteredSelected(filteredPackageNames, multiSelectedPackageNames)
+                multiSelectedPackageNames = if (allSelected) {
+                    multiSelectedPackageNames - filteredPackageNames
+                } else {
+                    multiSelectedPackageNames + filteredPackageNames
+                }
+            },
+            onClear = { multiSelectedPackageNames = emptySet() },
+            onAddGlass = { addLiquidGlassToMultiSelectedGenerated() },
+            onApplyPreset = { applyCurrentPresetBatch() },
+        )
     }
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCards.kt 显式参数版本，调用点零改动。
     @Composable
     internal fun AppRow(
         entry: AppEntry,
@@ -2834,115 +2416,22 @@ class MainActivity : ComponentActivity() {
         generated: Boolean,
         onClick: () -> Unit,
         onToggleMultiSelect: () -> Unit,
-    ) {
-        val selectedTagBg = MiuixTheme.colorScheme.primaryVariant
-        val selectedTagFg = MiuixTheme.colorScheme.onPrimaryVariant
-        val multiSelectedTagBg = MiuixTheme.colorScheme.primaryContainer
-        val multiSelectedTagFg = MiuixTheme.colorScheme.onPrimaryContainer
-        val generatedTagBg = MiuixTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
-        val generatedTagFg = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
-        val allTagBg = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
-        val allTagFg = MiuixTheme.colorScheme.onSecondaryContainer
-        val tags = remember(
-            selected,
-            multiSelected,
-            generated,
-            entry.launchable,
-            selectedTagBg,
-            selectedTagFg,
-            multiSelectedTagBg,
-            multiSelectedTagFg,
-            generatedTagBg,
-            generatedTagFg,
-            allTagBg,
-            allTagFg,
-        ) {
-            buildList {
-                if (selected) add(AppListTag("已选", selectedTagBg, selectedTagFg))
-                if (multiSelected) add(AppListTag("多选", multiSelectedTagBg, multiSelectedTagFg))
-                if (generated) add(AppListTag("已生成", generatedTagBg, generatedTagFg))
-                if (!entry.launchable) add(AppListTag("全部", allTagBg, allTagFg))
-            }
-        }
-
-        val containerBg = when {
-            selected -> MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
-            multiSelected -> MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-            else -> MiuixTheme.colorScheme.surfaceContainerHigh
-        }
-        // Card 本身无 colors 参数（miuix 0.9.1），用外层背景 + clip 模拟 CompactPresetRow 的选中态
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(containerBg)
-                .clickable(onClick = onClick),
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                insideMargin = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
-                showIndication = false,
-            ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                // 复选框：多选清单语义，去掉旧的"选择/已选"文字按钮与箭头
-                Checkbox(
-                    state = ToggleableState(multiSelected),
-                    onClick = onToggleMultiSelect,
-                    enabled = !isBusy,
-                    colors = CheckboxDefaults.checkboxColors(
-                        checkedBackgroundColor = MiuixTheme.colorScheme.primaryVariant,
-                        checkedForegroundColor = MiuixTheme.colorScheme.onPrimaryVariant,
-                        uncheckedBackgroundColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
-                        uncheckedForegroundColor = Color.Transparent,
-                    ),
-                )
+    ) =
+        AppRow(
+            entry = entry,
+            selected = selected,
+            multiSelected = multiSelected,
+            generated = generated,
+            isBusy = isBusy,
+            onClick = onClick,
+            onToggleMultiSelect = onToggleMultiSelect,
+            icon = {
                 AppIcon(
                     entry = entry,
                     size = 48.dp,
                 )
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(1.dp),
-                ) {
-                    Text(
-                        text = entry.label,
-                        modifier = Modifier.basicMarquee(),
-                        style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight(550)),
-                        color = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
-                    Text(
-                        text = entry.packageName,
-                        modifier = Modifier.basicMarquee(),
-                        style = MiuixTheme.textStyles.footnote1.copy(
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight(550),
-                        ),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        softWrap = false,
-                    )
-                }
-                if (tags.isNotEmpty()) {
-                    Column(
-                        modifier = Modifier.padding(start = 8.dp),
-                        horizontalAlignment = Alignment.End,
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        tags.forEach { tag ->
-                            AppStatusTag(tag = tag)
-                        }
-                    }
-                }
-            }
-            }
-        }
-    }
+            },
+        )
 
 
 
@@ -2959,60 +2448,27 @@ class MainActivity : ComponentActivity() {
 
 
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun AppIcon(entry: AppEntry, size: Dp) {
-        var bitmap by remember(entry.iconKey) {
-            mutableStateOf(getCachedAppIcon(appIconCache, entry.iconKey))
-        }
-        val imageBitmap = remember(bitmap) { bitmap?.asImageBitmap() }
-
-        LaunchedEffect(entry.iconKey) {
-            if (bitmap == null) {
-                bitmap = loadCachedAppIcon(entry)
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .size(size),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (imageBitmap == null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(4.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MiuixTheme.colorScheme.secondaryContainer),
-                )
-            } else {
-                Image(
-                    bitmap = imageBitmap,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
-                )
-            }
-        }
-    }
+    internal fun AppIcon(entry: AppEntry, size: Dp) =
+        AppIcon(
+            entry = entry,
+            size = size,
+            getCached = { key -> getCachedAppIcon(appIconCache, key) },
+            loadIcon = { loadCachedAppIcon(entry) },
+        )
 
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerIo.kt 显式参数版本，调用点零改动。
     internal suspend fun loadCachedAppIcon(entry: AppEntry): Bitmap? =
-        withContext(Dispatchers.IO) {
-            val cached = synchronized(appIconCache) {
-                appIconCache.get(entry.iconKey)
-            }
-            if (cached != null) {
-                return@withContext cached
-            }
-
-            val bitmap = runCatching { loadAppIconBitmap(entry, packageManager, ICON_CACHE_SIZE) }.getOrNull() ?: return@withContext null
-
-            synchronized(appIconCache) {
-                appIconCache.put(entry.iconKey, bitmap)
-            }
-            bitmap
-        }
+        pickerLoadCachedAppIcon(
+            entry = entry,
+            getCached = { key -> synchronized(appIconCache) { appIconCache.get(key) } },
+            putCached = { key, value -> synchronized(appIconCache) { appIconCache.put(key, value) } },
+            loadBitmap = { e ->
+                runCatching { loadAppIconBitmap(e, packageManager, ICON_CACHE_SIZE) }.getOrNull()
+            },
+        )
 
 
     @Volatile
@@ -3029,510 +2485,344 @@ class MainActivity : ComponentActivity() {
      * 静态壁纸经 ImageWallpaper 暴露为 BitmapDrawable，直接取位图，无需任何权限；
      * 失败返回 null，调用方走内置图兜底。
      */
-    internal fun loadPreviewWallpaperBitmap(): Bitmap? {
-        val cached = cachedSystemWallpaper
-        if (cached != null && !cached.isRecycled) {
-            return cached
-        }
-        val loaded = runCatching {
-            val drawable = WallpaperManager.getInstance(this).drawable ?: return null
-            val sampled = if (drawable is BitmapDrawable) {
-                drawable.bitmap?.let { sampleBitmapShortEdge(it, PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE) }
-            } else {
-                val intrinsicW = drawable.intrinsicWidth.takeIf { it > 0 }
-                val intrinsicH = drawable.intrinsicHeight.takeIf { it > 0 }
-                if (intrinsicW != null && intrinsicH != null) {
-                    val scale = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE.toFloat() /
-                        minOf(intrinsicW, intrinsicH).toFloat()
-                    drawDrawableCover(
-                        drawable = drawable,
-                        width = (intrinsicW * scale).roundToInt().coerceAtLeast(1),
-                        height = (intrinsicH * scale).roundToInt().coerceAtLeast(1),
-                    )
-                } else {
-                    // 无内在尺寸（如纯色壁纸）：按常见竖屏比例渲染
-                    drawDrawableCover(drawable, PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE, 854)
-                }
-            }
-            sampled?.also { it.prepareToDraw() }
-        }.getOrNull()
-        if (loaded != null) {
-            cachedSystemWallpaper = loaded
-        }
-        return loaded
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerIo.kt 显式参数版本，调用点零改动。
+    internal fun loadPreviewWallpaperBitmap(): Bitmap? =
+        pickerLoadPreviewWallpaperBitmap(
+            getCached = { cachedSystemWallpaper },
+            setCached = { cachedSystemWallpaper = it },
+            loadDrawable = { pickerSystemWallpaperDrawable(WallpaperManager.getInstance(this)) },
+            shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+        )
 
-    internal fun loadBundledPreviewWallpaperBitmap(): Bitmap? {
-        val cached = cachedBundledWallpaper
-        if (cached != null && !cached.isRecycled) {
-            return cached
-        }
-        val loaded = runCatching {
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeResource(resources, R.drawable.preview_wallpaper, bounds)
-            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
-                return null
-            }
-            val shortEdge = minOf(bounds.outWidth, bounds.outHeight)
-            var sampleSize = 1
-            while (shortEdge / (sampleSize * 2) >= PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE) {
-                sampleSize *= 2
-            }
-            val opts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
-            BitmapFactory.decodeResource(resources, R.drawable.preview_wallpaper, opts)
-                ?.also { it.prepareToDraw() }
-        }.getOrNull()
-        if (loaded != null) {
-            cachedBundledWallpaper = loaded
-        }
-        return loaded
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerIo.kt 显式参数版本，调用点零改动。
+    internal fun loadBundledPreviewWallpaperBitmap(): Bitmap? =
+        pickerLoadBundledPreviewWallpaperBitmap(
+            getCached = { cachedBundledWallpaper },
+            setCached = { cachedBundledWallpaper = it },
+            resources = resources,
+            resId = R.drawable.preview_wallpaper,
+            shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+        )
 
     /**
      * 导入用户上传的壁纸：只居中裁剪为 16:9，不做任何缩放压缩，避免变形；
      * 以 PNG 无损存档到私有目录，「桌面」背景优先使用。
      */
-    internal fun importCustomWallpaper(uri: Uri) {
-        if (isBusy) {
-            return
-        }
-        statusText = "正在导入壁纸…"
-        startUiFriendlyThread("ArtPlusWallpaperImport") {
-            try {
-                val bytes = contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                    ?: error("无法打开图片")
-                val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                    ?: error("图片无法解码；请选择 JPG/PNG/WEBP")
-                val cropped = centerCropToSixteenNine(decoded)
-                if (cropped !== decoded && !decoded.isRecycled) {
-                    decoded.recycle()
-                }
-                val outFile = File(filesDir, CUSTOM_WALLPAPER_FILE)
-                FileOutputStream(outFile).use { fos ->
-                    if (!cropped.compress(Bitmap.CompressFormat.PNG, 100, fos)) {
-                        error("壁纸保存失败")
-                    }
-                }
-                val info = "${cropped.width} × ${cropped.height}"
+    // 重构期间保留：委托到 ui/pages/picker/PickerIo.kt 显式参数版本，调用点零改动。
+    internal fun importCustomWallpaper(uri: Uri) =
+        pickerImportCustomWallpaper(
+            uri = uri,
+            isBusy = isBusy,
+            onStatusText = { statusText = it },
+            onLaunch = { name, block -> startUiFriendlyThread(name, block) },
+            openInputBytes = { u -> contentResolver.openInputStream(u)?.use { it.readBytes() } },
+            filesDir = filesDir,
+            fileName = CUSTOM_WALLPAPER_FILE,
+            onSuccess = { path, info ->
                 runOnUiThread {
                     cachedCustomWallpaper = null
                     cachedCustomWallpaperPath = null
-                    customWallpaperPath = outFile.absolutePath
+                    customWallpaperPath = path
                     customWallpaperInfo = info
                     statusText = "已导入自定义壁纸（$info），「桌面」背景优先使用此图"
                     saveUiState()
                 }
-            } catch (error: Exception) {
-                status("壁纸导入失败: ${error.message ?: error.javaClass.simpleName}")
-            }
-        }
-    }
+            },
+            onError = ::status,
+        )
 
-    internal fun clearCustomWallpaper() {
-        runCatching {
-            customWallpaperPath?.let { File(it).delete() }
-            File(filesDir, CUSTOM_WALLPAPER_FILE).delete()
-        }
-        cachedCustomWallpaper = null
-        cachedCustomWallpaperPath = null
-        customWallpaperPath = null
-        customWallpaperInfo = ""
-        statusText = "已清除自定义壁纸，「桌面」背景恢复系统壁纸/内置壁纸"
-        saveUiState()
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerIo.kt 显式参数版本，调用点零改动。
+    internal fun clearCustomWallpaper() =
+        pickerClearCustomWallpaper(
+            filesDir = filesDir,
+            customPath = customWallpaperPath,
+            fileName = CUSTOM_WALLPAPER_FILE,
+            onCleared = { statusText = it },
+            onSave = ::saveUiState,
+            clearCache = {
+                cachedCustomWallpaper = null
+                cachedCustomWallpaperPath = null
+            },
+            setPath = { customWallpaperPath = it },
+            setInfo = { customWallpaperInfo = it },
+        )
 
-    /** 居中裁剪为 16:9（竖屏），只裁剪不缩放；已符合比例则原图返回。 */
-    internal fun centerCropToSixteenNine(source: Bitmap): Bitmap {
-        val w = source.width
-        val h = source.height
-        if (w <= 0 || h <= 0) {
-            return source
-        }
-        val targetRatio = 9f / 16f
-        val currentRatio = w.toFloat() / h.toFloat()
-        if (abs(currentRatio - targetRatio) / targetRatio < 0.005f) {
-            return source
-        }
-        return if (currentRatio > targetRatio) {
-            val cropW = (h * targetRatio).roundToInt().coerceIn(1, w)
-            Bitmap.createBitmap(source, (w - cropW) / 2, 0, cropW, h)
-        } else {
-            val cropH = (w / targetRatio).roundToInt().coerceIn(1, h)
-            Bitmap.createBitmap(source, 0, (h - cropH) / 2, w, cropH)
-        }
-    }
+    // 纯函数 centerCropToSixteenNine 已直接搬迁至 ui/pages/picker/PickerIo.kt，同包直接引用，不留 wrapper。
 
-    internal fun loadCustomWallpaperBitmap(): Bitmap? {
-        val path = customWallpaperPath ?: return null
-        val cached = cachedCustomWallpaper
-        if (cachedCustomWallpaperPath == path && cached != null && !cached.isRecycled) {
-            return cached
-        }
-        val loaded = runCatching {
-            val file = File(path)
-            if (!file.isFile) {
-                return null
-            }
-            val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return null
-            sampleBitmapShortEdge(bitmap, PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE)
-                .also { it.prepareToDraw() }
-        }.getOrNull()
-        if (loaded != null) {
-            cachedCustomWallpaper = loaded
-            cachedCustomWallpaperPath = path
-        }
-        return loaded
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerIo.kt 显式参数版本，调用点零改动。
+    internal fun loadCustomWallpaperBitmap(): Bitmap? =
+        pickerLoadCustomWallpaperBitmap(
+            path = customWallpaperPath,
+            cachedPath = cachedCustomWallpaperPath,
+            getCached = { cachedCustomWallpaper },
+            setCached = { path, bitmap ->
+                cachedCustomWallpaper = bitmap
+                cachedCustomWallpaperPath = path
+            },
+            shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+        )
 
 
 
 
-    internal fun loadApps(refreshGenerated: Boolean = false) {
-        // P3 交界：数据核收敛进 data/AppRepository.loadApps(pm)，线程/UI/状态写入留本编排。
-        didRequestAppLoad = true
-        Thread {
-            val result = loadApps(packageManager)
-            val entries = result.entries
-            val launchablePackages = result.launchablePackages
-            // P3 交界：图标预热收敛进 data/IconCache（显式传 cache + pm + 尺寸 + 条数）。
-            preloadAppIcons(appIconCache, packageManager, entries, ICON_CACHE_SIZE, PRELOAD_ICON_COUNT)
-            runOnUiThread {
-                refreshPermissionState()
-                androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
-                    apps.clear()
-                    apps.addAll(entries)
-                }
-                statusText = when {
-                    entries.isEmpty() -> "没有读取到应用。请确认已允许读取应用列表。"
-                    !packageListPermissionGranted -> "读取到 ${apps.size} 个应用，但应用列表权限状态异常。"
-                    else -> "共 ${apps.size} 个应用，其中 ${launchablePackages.size} 个有启动器入口。"
-                }
-                if (refreshGenerated) {
-                    refreshGeneratedPackages(entries)
-                }
-            }
-        }.start()
-    }
-
-    internal fun refreshGeneratedPackages(entries: List<AppEntry> = apps.toList()) {
-        if (entries.isEmpty()) {
-            generatedScanFailed = false
-            isScanningGeneratedPackages = false
-            statusText = "应用列表为空，保留已生成缓存"
-            return
-        }
-        isScanningGeneratedPackages = true
-        generatedScanFailed = false
-        Thread {
-            val packageNames = entries.map { it.packageName }.toSet()
-            val result = runCatching { scanRootGeneratedPackages(packageNames) }
-            runOnUiThread {
-                result
-                    .onSuccess { generated ->
-                        generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generated)
-                        generatedScanFailed = false
-                        statusText = "已刷新生成状态: ${generated.size} 个"
+    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    internal fun loadApps(refreshGenerated: Boolean = false) =
+        pickerLoadApps(
+            refreshGenerated = refreshGenerated,
+            markLoad = { didRequestAppLoad = true },
+            queryApps = { loadApps(packageManager) },
+            preloadIcons = { entries ->
+                preloadAppIcons(appIconCache, packageManager, entries, ICON_CACHE_SIZE, PRELOAD_ICON_COUNT)
+            },
+            postOnUi = { result ->
+                runOnUiThread {
+                    refreshPermissionState()
+                    androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                        apps.clear()
+                        apps.addAll(result.entries)
                     }
-                    .onFailure {
-                        generatedScanFailed = true
-                        statusText = "生成状态刷新失败，保留上次缓存: ${it.message ?: it.javaClass.simpleName}"
+                    statusText = when {
+                        result.entries.isEmpty() -> "没有读取到应用。请确认已允许读取应用列表。"
+                        !packageListPermissionGranted -> "读取到 ${apps.size} 个应用，但应用列表权限状态异常。"
+                        else -> "共 ${apps.size} 个应用，其中 ${result.launchablePackages.size} 个有启动器入口。"
                     }
+                    if (refreshGenerated) {
+                        refreshGeneratedPackages(result.entries)
+                    }
+                }
+            },
+        )
+
+    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    internal fun refreshGeneratedPackages(entries: List<AppEntry> = apps.toList()) =
+        pickerRefreshGeneratedPackages(
+            entries = entries,
+            onEmpty = {
+                generatedScanFailed = false
                 isScanningGeneratedPackages = false
-            }
-        }.start()
-    }
-
-
-
-
-    internal fun loadUiState() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        selectedPackageName = prefs.getString(PREF_SELECTED_PACKAGE_NAME, null)
-            ?.takeIf { it.isNotBlank() }
-        generatedFilter = GeneratedFilter.fromName(prefs.getString(PREF_GENERATED_FILTER, null))
-        showSystemApps = prefs.getBoolean(PREF_SHOW_SYSTEM_APPS, false)
-        queryText = prefs.getString(PREF_QUERY_TEXT, "") ?: ""
-        advancedSettingsCategory = AdvancedSettingsCategory.fromName(
-            prefs.getString(PREF_ADVANCED_SETTINGS_CATEGORY, null),
+                statusText = "应用列表为空，保留已生成缓存"
+            },
+            onScanningChange = { isScanningGeneratedPackages = it },
+            onScanFailed = { generatedScanFailed = it },
+            scan = ::scanRootGeneratedPackages,
+            postOnUi = { block -> runOnUiThread(Runnable { block() }) },
+            onSuccess = { generated ->
+                generatedPackageNames = updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generated)
+                generatedScanFailed = false
+                statusText = "已刷新生成状态: ${generated.size} 个"
+            },
+            onFailure = {
+                generatedScanFailed = true
+                statusText = "生成状态刷新失败，保留上次缓存: ${it.message ?: it.javaClass.simpleName}"
+            },
         )
-        advancedSettingsTab = runCatching {
-            AdvancedSettingsTab.valueOf(
-                prefs.getString(PREF_ADVANCED_SETTINGS_TAB, AdvancedSettingsTab.Sliders.name)
-                    ?: AdvancedSettingsTab.Sliders.name,
-            )
-        }.getOrDefault(AdvancedSettingsTab.Sliders)
-        previewPackageName = prefs.getString(PREF_PREVIEW_PACKAGE_NAME, null)
-            ?.takeIf { it.isNotBlank() }
-        previewDirPath = prefs.getString(PREF_PREVIEW_DIR_PATH, null)
-            ?.takeIf { it.isNotBlank() }
-        previewStripEnabled = prefs.getBoolean(PREF_PREVIEW_STRIP_ENABLED, false)
-        mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.fromPrefs(prefs)).normalLight.name, previewNormalDark = (PreviewSelections.fromPrefs(prefs)).normalDark.name, previewMonochromeLight = (PreviewSelections.fromPrefs(prefs)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.fromPrefs(prefs)).monochromeDark.name) }
-        previewDesktopBackground = PreviewDesktopBackground.fromName(
-            prefs.getString(PREF_PREVIEW_DESKTOP_BACKGROUND, null),
+
+
+
+
+    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    internal fun loadUiState() =
+        pickerLoadUiState(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            persistedReadWriteUri = contentResolver.persistedUriPermissions.firstOrNull { it.isReadPermission && it.isWritePermission }?.uri,
+            setSelectedPackage = { selectedPackageName = it },
+            setGeneratedFilter = { generatedFilter = it },
+            setShowSystemApps = { showSystemApps = it },
+            setQueryText = { queryText = it },
+            setAdvancedCategory = { advancedSettingsCategory = it },
+            setAdvancedTab = { advancedSettingsTab = it },
+            setPreviewPackage = { previewPackageName = it },
+            setPreviewDir = { previewDirPath = it },
+            setPreviewStrip = { previewStripEnabled = it },
+            updateLiveSelections = { selections ->
+                mainViewModel.updateLive { p ->
+                    p.copy(
+                        previewNormalLight = selections.normalLight.name,
+                        previewNormalDark = selections.normalDark.name,
+                        previewMonochromeLight = selections.monochromeLight.name,
+                        previewMonochromeDark = selections.monochromeDark.name,
+                    )
+                }
+            },
+            setDesktopBackground = { previewDesktopBackground = it },
+            setIconSize = { previewIconSizeDp = it },
+            setDraftIconSizeText = { draftPreviewIconSizeDpText = it },
+            setCornerRadius = { previewCornerRadiusDp = it },
+            setDraftCornerRadiusText = { draftPreviewCornerRadiusDpText = it },
+            setBatchCount = { batchPreviewCount = it },
+            setDraftBatchCountText = { draftBatchPreviewCountText = it },
+            setBatchColumns = { batchPreviewColumns = it },
+            setDraftBatchColumnsText = { draftBatchPreviewColumnsText = it },
+            setBatchIconSize = { batchPreviewIconSizeDp = it },
+            setDraftBatchIconSizeText = { draftBatchPreviewIconSizeDpText = it },
+            setBatchCorner = { batchPreviewCornerRadiusDp = it },
+            setDraftBatchCornerText = { draftBatchPreviewCornerRadiusDpText = it },
+            setBatchDesktopBg = { batchPreviewDesktopBackground = it },
+            setCustomPath = { customWallpaperPath = it },
+            setCustomInfo = { customWallpaperInfo = it },
+            setAutoRoot = { autoConfirmRootWrite = it },
+            setAutoRefresh = { autoConfirmRefresh = it },
+            setOutputUri = { outputTreeUri = it },
+            setOnboardingVisible = { onboardingVisible = it },
+            parseUri = { runCatching { Uri.parse(it) }.getOrNull() },
+            isFile = ::pickerIsCustomWallpaperFile,
+            decodeBounds = ::pickerDecodeWallpaperBounds,
         )
-        previewIconSizeDp = prefs.getInt(PREF_PREVIEW_ICON_SIZE_DP, DEFAULT_PREVIEW_ICON_SIZE_DP)
-            .coerceIn(MIN_PREVIEW_ICON_SIZE_DP, MAX_PREVIEW_ICON_SIZE_DP)
-        draftPreviewIconSizeDpText = previewIconSizeDp.toString()
-        previewCornerRadiusDp = prefs.getInt(PREF_PREVIEW_CORNER_RADIUS_DP, DEFAULT_PREVIEW_CORNER_RADIUS_DP)
-            .coerceIn(MIN_PREVIEW_CORNER_RADIUS_DP, MAX_PREVIEW_CORNER_RADIUS_DP)
-        draftPreviewCornerRadiusDpText = previewCornerRadiusDp.toString()
-        batchPreviewCount = prefs.getInt(PREF_BATCH_PREVIEW_COUNT, DEFAULT_BATCH_PREVIEW_COUNT)
-            .coerceIn(MIN_BATCH_PREVIEW_COUNT, MAX_BATCH_PREVIEW_COUNT)
-        draftBatchPreviewCountText = batchPreviewCount.toString()
-        batchPreviewColumns = prefs.getInt(PREF_BATCH_PREVIEW_COLUMNS, 4).coerceIn(2, 5)
-        draftBatchPreviewColumnsText = batchPreviewColumns.toString()
-        batchPreviewIconSizeDp = prefs.getInt(PREF_BATCH_PREVIEW_ICON_SIZE_DP, 54).coerceIn(40, 84)
-        draftBatchPreviewIconSizeDpText = batchPreviewIconSizeDp.toString()
-        batchPreviewCornerRadiusDp = prefs.getInt(PREF_BATCH_PREVIEW_CORNER_RADIUS_DP, previewCornerRadiusDp).coerceIn(0, 36)
-        draftBatchPreviewCornerRadiusDpText = batchPreviewCornerRadiusDp.toString()
-        batchPreviewDesktopBackground = PreviewDesktopBackground.fromName(
-            prefs.getString(PREF_BATCH_PREVIEW_DESKTOP_BG, PreviewDesktopBackground.DarkGray.name),
+
+    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    internal fun saveUiState() =
+        pickerSaveUiState(
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            selectedPackage = selectedPackageName,
+            generatedFilter = generatedFilter,
+            showSystemApps = showSystemApps,
+            queryText = queryText,
+            advancedCategory = advancedSettingsCategory,
+            advancedTab = advancedSettingsTab,
+            previewPackage = previewPackageName,
+            previewDir = previewDirPath,
+            previewStrip = previewStripEnabled,
+            previewNormalLight = mainViewModel.params.value.previewNormalLight,
+            previewNormalDark = mainViewModel.params.value.previewNormalDark,
+            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
+            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
+            desktopBackground = previewDesktopBackground,
+            iconSize = previewIconSizeDp,
+            cornerRadius = previewCornerRadiusDp,
+            batchCount = batchPreviewCount,
+            batchColumns = batchPreviewColumns,
+            batchIconSize = batchPreviewIconSizeDp,
+            batchCorner = batchPreviewCornerRadiusDp,
+            batchDesktopBg = batchPreviewDesktopBackground,
+            customPath = customWallpaperPath,
+            autoRoot = autoConfirmRootWrite,
+            autoRefresh = autoConfirmRefresh,
+            outputUri = outputTreeUri,
         )
-        customWallpaperPath = prefs.getString(PREF_CUSTOM_WALLPAPER_PATH, null)
-            ?.takeIf { File(it).isFile }
-        customWallpaperInfo = customWallpaperPath?.let { path ->
-            runCatching {
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeFile(path, bounds)
-                if (bounds.outWidth > 0 && bounds.outHeight > 0) {
-                    "${bounds.outWidth} × ${bounds.outHeight}"
+
+    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    internal fun refreshArtPlusIcons() =
+        pickerRefreshArtPlusIcons(
+            isBusy = isBusy,
+            isRefreshing = isRefreshingArtPlusIcons,
+            onRefreshingChange = { isRefreshingArtPlusIcons = it },
+            onStatusText = { statusText = it },
+            blockingRefresh = ::refreshArtPlusIconsBlocking,
+            contentResolver = contentResolver,
+            apkPath = applicationInfo.sourceDir,
+            postOnUi = { block -> runOnUiThread(Runnable { block() }) },
+            onSuccess = { summary ->
+                statusText = if (summary.isBlank()) {
+                    "已刷新 ART+ 图标"
                 } else {
-                    ""
+                    "已刷新 ART+ 图标: $summary"
                 }
-            }.getOrNull().orEmpty()
-        }.orEmpty()
-        autoConfirmRootWrite = prefs.getBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, prefs.getBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, false))
-        autoConfirmRefresh = prefs.getBoolean(PREF_AUTO_CONFIRM_REFRESH, false)
-        outputTreeUri = prefs.getString(PREF_OUTPUT_TREE_URI, null)?.takeIf { it.isNotBlank() }?.let { runCatching { Uri.parse(it) }.getOrNull() }
-            ?: contentResolver.persistedUriPermissions.firstOrNull { it.isReadPermission && it.isWritePermission }?.uri
-        // onboarding: if not completed and no dir, show guide
-        val hasCompleted = prefs.getBoolean(PREF_HAS_COMPLETED_ONBOARDING, false)
-        if (!hasCompleted && outputTreeUri == null) {
-            onboardingVisible = true
-        }
-    }
+            },
+            onFailure = { error ->
+                statusText = "刷新 ART+ 图标失败: ${error.message ?: error.javaClass.simpleName}"
+            },
+        )
 
-    internal fun saveUiState() {
-        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            .edit()
-            .putString(PREF_SELECTED_PACKAGE_NAME, selectedPackageName)
-            .putString(PREF_GENERATED_FILTER, generatedFilter.name)
-            .putBoolean(PREF_SHOW_SYSTEM_APPS, showSystemApps)
-            .putString(PREF_QUERY_TEXT, queryText)
-            .putString(PREF_ADVANCED_SETTINGS_CATEGORY, advancedSettingsCategory.name)
-            .putString(PREF_ADVANCED_SETTINGS_TAB, advancedSettingsTab.name)
-            .putString(PREF_PREVIEW_PACKAGE_NAME, previewPackageName)
-            .putString(PREF_PREVIEW_DIR_PATH, previewDirPath)
-            .putBoolean(PREF_PREVIEW_STRIP_ENABLED, previewStripEnabled)
-            .putString(PREF_PREVIEW_SELECTION_NORMAL_LIGHT, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).normalLight.name)
-            .putString(PREF_PREVIEW_SELECTION_NORMAL_DARK, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).normalDark.name)
-            .putString(PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).monochromeLight.name)
-            .putString(PREF_PREVIEW_SELECTION_MONOCHROME_DARK, PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).monochromeDark.name)
-            .putString(PREF_PREVIEW_DESKTOP_BACKGROUND, previewDesktopBackground.name)
-            .putInt(PREF_PREVIEW_ICON_SIZE_DP, previewIconSizeDp)
-            .putInt(PREF_PREVIEW_CORNER_RADIUS_DP, previewCornerRadiusDp)
-            .putInt(PREF_BATCH_PREVIEW_COUNT, batchPreviewCount)
-            .putInt(PREF_BATCH_PREVIEW_COLUMNS, batchPreviewColumns)
-            .putInt(PREF_BATCH_PREVIEW_ICON_SIZE_DP, batchPreviewIconSizeDp)
-            .putInt(PREF_BATCH_PREVIEW_CORNER_RADIUS_DP, batchPreviewCornerRadiusDp)
-            .putString(PREF_BATCH_PREVIEW_DESKTOP_BG, batchPreviewDesktopBackground.name)
-            .apply { customWallpaperPath?.let { putString(PREF_CUSTOM_WALLPAPER_PATH, it) } ?: remove(PREF_CUSTOM_WALLPAPER_PATH) }
-            .putBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, autoConfirmRootWrite)
-            .putBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, autoConfirmRootWrite)
-            .putBoolean(PREF_AUTO_CONFIRM_REFRESH, autoConfirmRefresh)
-            .putString(PREF_OUTPUT_TREE_URI, outputTreeUri?.toString())
-            .apply()
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    internal fun refreshPermissionState() =
+        pickerRefreshPermissionState(
+            checkQueryPermission = { pickerCheckQueryPermission(packageManager, packageName) },
+            hasUsage = ::hasUsageAccess,
+            onResult = { queryGranted, usageGranted ->
+                packageListPermissionGranted = queryGranted
+                usageAccessGranted = usageGranted
+            },
+        )
 
-    internal fun refreshArtPlusIcons() {
-        if (isBusy || isRefreshingArtPlusIcons) {
-            return
-        }
-        isRefreshingArtPlusIcons = true
-        statusText = "正在刷新 ART+ 图标..."
-        Thread {
-            // P3 交界：阻塞核收敛进 system/RootShell（显式传 ContentResolver + apkPath）。
-            val result = runCatching { refreshArtPlusIconsBlocking(contentResolver, applicationInfo.sourceDir) }
-            runOnUiThread {
-                result
-                    .onSuccess { summary ->
-                        statusText = if (summary.isBlank()) {
-                            "已刷新 ART+ 图标"
-                        } else {
-                            "已刷新 ART+ 图标: $summary"
-                        }
-                    }
-                    .onFailure { error ->
-                        statusText = "刷新 ART+ 图标失败: ${error.message ?: error.javaClass.simpleName}"
-                    }
-                isRefreshingArtPlusIcons = false
-            }
-        }.start()
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    internal fun requestDeclaredPermissions() =
+        pickerRequestDeclaredPermissions(
+            needsQuery = pickerNeedsQueryPermission(packageManager, packageName),
+            launcher = { permissionLauncher.launch(it) },
+        )
 
-    internal fun refreshPermissionState() {
-        packageListPermissionGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            packageManager.checkPermission(Manifest.permission.QUERY_ALL_PACKAGES, packageName) ==
-                PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-        usageAccessGranted = hasUsageAccess()
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerAppOps.kt 显式参数版本，调用点零改动。
+    internal fun requestSpecialPermissionsOnce() =
+        pickerRequestSpecialPermissionsOnce(
+            usageGranted = usageAccessGranted,
+            prompted = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .getBoolean(PREF_USAGE_PERMISSION_PROMPTED, false),
+            markPrompted = {
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                    .edit().putBoolean(PREF_USAGE_PERMISSION_PROMPTED, true).apply()
+            },
+            postOnDecor = { window.decorView.post(it) },
+            hasUsage = ::hasUsageAccess,
+            openSettings = ::openUsageAccessSettings,
+        )
 
-    internal fun requestDeclaredPermissions() {
-        val permissions = mutableListOf<String>()
-        if (
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-            packageManager.checkPermission(Manifest.permission.QUERY_ALL_PACKAGES, packageName) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            permissions += Manifest.permission.QUERY_ALL_PACKAGES
-        }
-        if (permissions.isNotEmpty()) {
-            permissionLauncher.launch(permissions.toTypedArray())
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
+    internal fun openAppPermissionSettings() =
+        pickerOpenAppPermissionSettings(
+            start = ::startActivity,
+            packageName = packageName,
+            onError = { statusText = it },
+        )
 
-    internal fun requestSpecialPermissionsOnce() {
-        if (usageAccessGranted) {
-            return
-        }
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        if (prefs.getBoolean(PREF_USAGE_PERMISSION_PROMPTED, false)) {
-            return
-        }
-        prefs.edit().putBoolean(PREF_USAGE_PERMISSION_PROMPTED, true).apply()
-        window.decorView.post {
-            if (!hasUsageAccess()) {
-                openUsageAccessSettings()
-            }
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
+    internal fun openUsageAccessSettings() =
+        pickerOpenUsageAccessSettings(
+            start = ::startActivity,
+            onError = { statusText = it },
+        )
 
-    internal fun openAppPermissionSettings() {
-        runCatching {
-            startActivity(
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    .setData(Uri.fromParts("package", packageName, null)),
-            )
-        }.onFailure {
-            statusText = "无法打开应用权限设置: ${it.message ?: it.javaClass.simpleName}"
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
+    internal fun openExternalLink(url: String) =
+        pickerOpenExternalLink(
+            start = ::startActivity,
+            url = url,
+            onError = { statusText = it },
+        )
 
-    internal fun openUsageAccessSettings() {
-        runCatching {
-            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        }.onFailure {
-            statusText = "无法打开使用情况访问设置: ${it.message ?: it.javaClass.simpleName}"
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
+    @Suppress("DEPRECATION")
+    internal fun currentVersionName(): String =
+        pickerCurrentVersionName(
+            getVersionName = { packageManager.getPackageInfo(packageName, 0).versionName },
+        )
 
-    internal fun openExternalLink(url: String) {
-        runCatching {
-            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-        }.onFailure {
-            statusText = "无法打开链接: ${it.message ?: it.javaClass.simpleName}"
-        }
-    }
+    // 纯函数 isNewerVersion 已直接搬迁至 ui/pages/picker/PickerCommon.kt，同包直接引用，不留 wrapper。
 
-    internal fun currentVersionName(): String = try {
-        packageManager.getPackageInfo(packageName, 0).versionName ?: "1.4.0"
-    } catch (_: Exception) {
-        "1.4.0"
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
+    internal fun checkForUpdate() =
+        pickerCheckForUpdate(
+            isChecking = isCheckingUpdate,
+            onCheckingChange = { isCheckingUpdate = it },
+            onStatusText = { statusText = it },
+            scope = mainScope,
+            resolveUrl = { pickerResolveUpdateUrl(it, "检查更新", isDebugBuild()) },
+            fetchLatest = ::pickerFetchUpdateBody,
+            currentVersion = currentVersionName(),
+            onUpdateAvailable = { info, text ->
+                updateAvailableInfo = info
+                statusText = text
+            },
+            onUpToDate = {
+                updateUpToDateDialogVisible = true
+                statusText = it
+            },
+            onFailed = { statusText = it },
+        )
 
-    internal fun isNewerVersion(latest: String, current: String): Boolean {
-        val latestParts = latest.trim().removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
-        val currentParts = current.trim().removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
-        val len = maxOf(latestParts.size, currentParts.size)
-        for (i in 0 until len) {
-            val l = latestParts.getOrElse(i) { 0 }
-            val c = currentParts.getOrElse(i) { 0 }
-            if (l != c) return l > c
-        }
-        return false
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
+    internal fun hasUsageAccess(): Boolean =
+        pickerHasUsageAccess(
+            appOps = getSystemService(AppOpsManager::class.java),
+            uid = Process.myUid(),
+            packageName = packageName,
+        )
 
-    internal fun checkForUpdate() {
-        if (isCheckingUpdate) return
-        isCheckingUpdate = true
-        statusText = "正在检查更新..."
-        mainScope.launch(Dispatchers.IO) {
-            try {
-                val url = validatedRemoteUrl(
-                    "https://api.github.com/repos/Costben/ArtPlus/releases/latest",
-                    "检查更新",
-                    isDebugBuild(),
-                )
-                val connection = (url.openConnection() as HttpURLConnection).apply {
-                    requestMethod = "GET"
-                    connectTimeout = 10_000
-                    readTimeout = 10_000
-                    setRequestProperty("Accept", "application/vnd.github+json")
-                    setRequestProperty("User-Agent", "ArtPlus-Android")
-                }
-                val code = connection.responseCode
-                val body = (if (code in 200..299) connection.inputStream else connection.errorStream)
-                    ?.bufferedReader()?.use { it.readText() } ?: ""
-                connection.disconnect()
-                if (code !in 200..299) error("HTTP $code ${body.take(200)}")
-                val json = JSONObject(body)
-                val tagName = json.optString("tag_name", "")
-                val htmlUrl = json.optString("html_url", GITHUB_REPO_URL + "/releases")
-                val latest = tagName.removePrefix("v").trim()
-                val current = currentVersionName().trim()
-                withContext(Dispatchers.Main) {
-                    if (latest.isBlank()) {
-                        statusText = "检查失败：未获取到版本信息"
-                    } else if (isNewerVersion(latest, current)) {
-                        updateAvailableInfo = UpdateInfo(latest, tagName.ifBlank { "v$latest" }, htmlUrl)
-                        statusText = "发现新版本 $tagName"
-                    } else {
-                        updateUpToDateDialogVisible = true
-                        statusText = "已是最新版本 $current"
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    statusText = "检查更新失败: ${e.message ?: e.javaClass.simpleName}"
-                }
-            } finally {
-                withContext(Dispatchers.Main) { isCheckingUpdate = false }
-            }
-        }
-    }
-
-    internal fun hasUsageAccess(): Boolean {
-        val appOps = getSystemService(AppOpsManager::class.java) ?: return false
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                Process.myUid(),
-                packageName,
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(
-                AppOpsManager.OPSTR_GET_USAGE_STATS,
-                Process.myUid(),
-                packageName,
-            )
-        }
-        return mode == AppOpsManager.MODE_ALLOWED
-    }
-
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     internal fun getApplicationInfoCompat(packageName: String): ApplicationInfo =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            packageManager.getApplicationInfo(
-                packageName,
-                PackageManager.ApplicationInfoFlags.of(PackageManager.GET_META_DATA.toLong()),
-            )
-        } else {
-            @Suppress("DEPRECATION")
-            packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
-        }
+        pickerGetApplicationInfoCompat(
+            pm = packageManager,
+            packageName = packageName,
+        )
 
     // 重构期间保留：委托到 system/DebugServer.kt 显式参数版本，调用点零改动。
     internal fun isDebugGenerateIntent(intent: Intent?): Boolean =
@@ -5825,25 +5115,26 @@ class MainActivity : ComponentActivity() {
 
 
 
-    internal fun showKeyboardFor(editText: EditText) {
-        editText.post {
-            editText.requestFocus()
-            editText.context
-                .getSystemService(InputMethodManager::class.java)
-                ?.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT)
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
+    internal fun showKeyboardFor(editText: EditText) =
+        pickerShowKeyboardFor(editText)
 
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     internal fun status(message: String) {
-        runOnUiThread { statusText = message }
+        pickerPostStatus(message) { runOnUiThread { statusText = it } }
     }
 
-    internal fun toastStatus(message: String) {
-        runOnUiThread {
-            statusText = message
-            Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
-        }
-    }
+    // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
+    internal fun toastStatus(message: String) =
+        pickerToastStatus(
+            message = message,
+            postOnUi = { text -> runOnUiThread { statusText = text } },
+            showToast = { text ->
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, text, Toast.LENGTH_SHORT).show()
+                }
+            },
+        )
 
     // 重构期间保留：委托到 system/ExportManager.kt 显式参数版本，调用点零改动。
     internal fun cancelBackup() {
@@ -6575,36 +5866,21 @@ class MainActivity : ComponentActivity() {
 
 
     companion object {
-        private const val PREFS_NAME = "artplus_mobile"
-        private const val PREF_AUTO_CONFIRM_ROOT_WRITE = "auto_confirm_root_write"
-        private const val PREF_AUTO_CONFIRM_REFRESH = "auto_confirm_refresh"
-        private const val PREF_SKIP_ROOT_WRITE_CONFIRM = "skip_root_write_confirm"
+        // Slice 2.5 已提升到 TuningParams.kt：PREFS_NAME / PREF_AUTO_CONFIRM_ROOT_WRITE /
+        // PREF_AUTO_CONFIRM_REFRESH / PREF_SKIP_ROOT_WRITE_CONFIRM / PREF_USAGE_PERMISSION_PROMPTED /
+        // PREF_SELECTED_PACKAGE_NAME / PREF_GENERATED_FILTER / PREF_QUERY_TEXT /
+        // PREF_ADVANCED_SETTINGS_CATEGORY / PREF_ADVANCED_SETTINGS_TAB /
+        // PREF_PREVIEW_PACKAGE_NAME / PREF_PREVIEW_DIR_PATH / PREF_PREVIEW_STRIP_ENABLED /
+        // PREF_BATCH_PREVIEW_COUNT / PREF_BATCH_PREVIEW_COLUMNS /
+        // PREF_BATCH_PREVIEW_ICON_SIZE_DP / PREF_BATCH_PREVIEW_CORNER_RADIUS_DP /
+        // PREF_BATCH_PREVIEW_DESKTOP_BG / PREF_CUSTOM_WALLPAPER_PATH / CUSTOM_WALLPAPER_FILE /
+        // PREF_PREVIEW_DESKTOP_BACKGROUND / PREF_PREVIEW_ICON_SIZE_DP /
+        // PREF_PREVIEW_CORNER_RADIUS_DP / PREF_SHOW_SYSTEM_APPS / PREF_OUTPUT_TREE_URI /
+        // PREF_HAS_COMPLETED_ONBOARDING / PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE，同包直接引用。
         private const val PREF_BATCH_OUTPUT_MODE = "batch_output_mode"
         private const val PREF_GPT_RUN_COUNT = "gpt_run_count"
         private const val PREF_RMBG_RUN_COUNT = "rmbg_run_count"
-        private const val PREF_USAGE_PERMISSION_PROMPTED = "usage_permission_prompted"
         private const val PREF_DEBUG_TOKEN = "debug_token"
-        private const val PREF_SELECTED_PACKAGE_NAME = "selected_package_name"
-        private const val PREF_GENERATED_FILTER = "generated_filter"
-        private const val PREF_QUERY_TEXT = "query_text"
-        private const val PREF_ADVANCED_SETTINGS_CATEGORY = "advanced_settings_category"
-        private const val PREF_ADVANCED_SETTINGS_TAB = "advanced_settings_tab"
-        private const val PREF_PREVIEW_PACKAGE_NAME = "preview_package_name"
-        private const val PREF_PREVIEW_DIR_PATH = "preview_dir_path"
-        private const val PREF_PREVIEW_STRIP_ENABLED = "preview_strip_enabled"
-        private const val PREF_BATCH_PREVIEW_COUNT = "batch_preview_count"
-        private const val PREF_BATCH_PREVIEW_COLUMNS = "batch_preview_columns"
-        private const val PREF_BATCH_PREVIEW_ICON_SIZE_DP = "batch_preview_icon_size_dp"
-        private const val PREF_BATCH_PREVIEW_CORNER_RADIUS_DP = "batch_preview_corner_radius_dp"
-        private const val PREF_BATCH_PREVIEW_DESKTOP_BG = "batch_preview_desktop_bg"
-        private const val PREF_CUSTOM_WALLPAPER_PATH = "custom_wallpaper_path"
-        private const val CUSTOM_WALLPAPER_FILE = "custom_wallpaper.png"
-        private const val PREF_PREVIEW_DESKTOP_BACKGROUND = "preview_desktop_background"
-        private const val PREF_PREVIEW_ICON_SIZE_DP = "preview_icon_size_dp"
-        private const val PREF_PREVIEW_CORNER_RADIUS_DP = "preview_corner_radius_dp"
-        private const val PREF_SHOW_SYSTEM_APPS = "show_system_apps"
-        private const val PREF_OUTPUT_TREE_URI = "output_tree_uri"
-        private const val PREF_HAS_COMPLETED_ONBOARDING = "has_completed_onboarding"
         // Slice 1.6 已提升到 TuningParams.kt：EXTRA_DEBUG_GENERATE_*（6 项），同包直接引用。
         // Slice 1.4 已提升到 TuningParams.kt：SIZE_2X2 / SIZE_1X2 / SIZE_2X1 /
         // FOREGROUND_ORIGINAL_BACKUP_NAME，同包直接引用。
@@ -6618,7 +5894,6 @@ class MainActivity : ComponentActivity() {
         // DEFAULT_PREVIEW_CORNER_RADIUS_DP / MIN_PREVIEW_CORNER_RADIUS_DP /
         // MAX_PREVIEW_CORNER_RADIUS_DP，同包直接引用。
         // Slice 2.3 已提升到 TuningParams.kt：DEFAULT/MIN/MAX_BATCH_PREVIEW_COUNT，同包直接引用。
-        private const val PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE = 480
         private val appIconCache = object : LruCache<String, Bitmap>(
             ((Runtime.getRuntime().maxMemory() / 1024) / 16).toInt().coerceAtLeast(4 * 1024),
         ) {
