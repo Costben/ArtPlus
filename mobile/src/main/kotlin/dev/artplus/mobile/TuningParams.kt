@@ -1063,3 +1063,10 @@ const val PREF_PREVIEW_SELECTION_NORMAL_LIGHT = "preview_selection_normal_light"
 const val PREF_PREVIEW_SELECTION_NORMAL_DARK = "preview_selection_normal_dark"
 const val PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT = "preview_selection_monochrome_light"
 const val PREF_PREVIEW_SELECTION_MONOCHROME_DARK = "preview_selection_monochrome_dark"
+
+// ART+ 生成包尺寸/原图备份名（原 MainActivity companion，Slice 1.4 提升）。
+// SIZE_1X1 / GPT_SOURCE_SIZE 已在顶层，-shape 同包直接引用；intArray 不能 const，用顶层 val。
+const val SIZE_2X2 = 704
+val SIZE_1X2 = intArrayOf(240, 820)
+val SIZE_2X1 = intArrayOf(820, 240)
+const val FOREGROUND_ORIGINAL_BACKUP_NAME = "recfg_original_artplus.png"

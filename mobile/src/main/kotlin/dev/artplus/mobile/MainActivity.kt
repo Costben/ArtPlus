@@ -7541,167 +7541,79 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    internal fun existingGeneratedPackageDir(packageName: String): File {
-        val currentPreviewDir = previewDirPath
-            ?.takeIf { previewPackageName == packageName }
-            ?.let(::File)
-            ?.takeIf { hasGeneratedPackageBaseAssets(it) && it != artPlusPackageDir(packageName) }
-        if (currentPreviewDir != null) {
-            return currentPreviewDir
-        }
-        runCatching { copyRootGeneratedPackageToLocal(packageName) }
-            .onSuccess { return it }
-        val localDir = artPlusPackageDir(packageName)
-        if (hasGeneratedPackageBaseAssets(localDir)) {
-            return localDir
-        }
-        return copyRootGeneratedPackageToLocal(packageName)
-    }
-
-    internal fun buildGeneratedPackageSession(packageName: String, packageDir: File): GenerationSession {
-        val recfg = decodeGeneratedBitmap(packageDir, FOREGROUND_ORIGINAL_BACKUP_NAME)
-            ?: decodeGeneratedBitmap(packageDir, "recfg.png")
-            ?: error("现有图标包缺少 recfg.png")
-        val recbg = decodeGeneratedBitmap(packageDir, "recbg.png")
-            ?: error("现有图标包缺少 recbg.png")
-        val normalizedRecfg = resizeBitmap(recfg, SIZE_1X1, SIZE_1X1)
-        val normalizedRecbg = resizeBitmap(recbg, SIZE_1X1, SIZE_1X1)
-        val monochrome = simpleMonochromeAlphaFromDefaultSubject(normalizedRecfg, invertLuma = false)
-        val original = IconCandidate(
-            recfgRaw = normalizedRecfg,
-            recbg = normalizedRecbg,
-            monochromeRaw = null,
-            monochromeFromDefaultSubject = true,
-            preserveGeometry = true,
-        )
-        return GenerationSession(
+    // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
+    internal fun existingGeneratedPackageDir(packageName: String): File =
+        existingGeneratedPackageDir(
             packageName = packageName,
-            outDir = packageDir,
-            sourceIcon = centerOnCanvas(normalizedRecfg, GPT_SOURCE_SIZE, GPT_SOURCE_SIZE),
-            baseRecfg = normalizedRecfg,
-            baseRecbg = normalizedRecbg,
-            monochromeRaw = monochrome,
-            candidates = mapOf(PreviewChoice.Original to original),
-            autoLocalChoice = PreviewChoice.Original,
-            canRebuildLocalCandidates = false,
+            previewDirPath = previewDirPath,
+            previewPackageName = previewPackageName,
+            externalArtPlusDir = getExternalFilesDir("ArtPlus"),
+            filesDir = filesDir,
+            appUid = applicationInfo.uid,
+        )
+
+    // Slice 1.4 已搬入 system/RootInstaller.kt：buildGeneratedPackageSession（纯函数，同包直接用）。
+
+    // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
+    internal fun artPlusPackageDir(packageName: String): File =
+        artPlusPackageDir(
+            packageName = packageName,
+            externalArtPlusDir = getExternalFilesDir("ArtPlus"),
+            filesDir = filesDir,
+        )
+
+    // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
+    internal fun rootGeneratedPreviewDir(packageName: String): File =
+        rootGeneratedPreviewDir(packageName = packageName, filesDir = filesDir)
+
+    // Slice 1.4 已搬入 system/RootInstaller.kt：hasGeneratedPackageBaseAssets（纯函数，同包直接用）。
+
+    // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
+    internal fun copyRootGeneratedPackageToLocal(packageName: String): File =
+        copyRootGeneratedPackageToLocal(
+            packageName = packageName,
+            filesDir = filesDir,
+            appUid = applicationInfo.uid,
+        )
+
+    // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
+    internal fun applyLiquidGlassToGeneratedPackage(dir: File) {
+        val params = mainViewModel.params.value
+        applyLiquidGlassToGeneratedPackage(
+            dir = dir,
+            nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+            liquidGlassEnabled = params.liquidGlassEnabled,
+            liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+            liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+            liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+            liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+            liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+            liquidGlassRadius = params.liquidGlassRadius,
+            liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+            liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+            liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+            liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+            liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+            foregroundShadowLevel = params.foregroundShadowLevel,
+            monochromeThemeScale = params.monochromeThemeScale,
         )
     }
 
-    internal fun artPlusPackageDir(packageName: String): File {
-        val base = getExternalFilesDir("ArtPlus") ?: File(filesDir, "ArtPlus")
-        return File(base, packageName)
-    }
-
-    internal fun rootGeneratedPreviewDir(packageName: String): File =
-        File(File(filesDir, "RootGeneratedPreview"), packageName)
-
-    internal fun hasGeneratedPackageBaseAssets(dir: File): Boolean =
-        dir.isDirectory &&
-            File(dir, "recbg.png").isFile &&
-            File(dir, "recfg.png").isFile
-
-    internal fun copyRootGeneratedPackageToLocal(packageName: String): File {
-        val targetDir = rootGeneratedPreviewDir(packageName)
-        ensureFreshDir(targetDir)
-        val sourceDir = "$ROOT_UXICONS_DIR/$packageName"
-        val appUid = applicationInfo.uid
-        val command = """
-            set -e
-            src=${shQuote(sourceDir)}
-            dst=${shQuote(targetDir.absolutePath)}
-            [ -d "${'$'}src" ] || { echo "data 中没有图标包"; exit 2; }
-            copied=0
-            find "${'$'}src" -maxdepth 1 -type f -name '*.png' | while IFS= read -r file; do
-                cp -f "${'$'}file" "${'$'}dst"/
-                copied=1
-            done
-            if ! ls "${'$'}dst"/*.png >/dev/null 2>&1; then
-                echo "data 图标包没有 PNG"
-                exit 3
-            fi
-            chown -R $appUid:$appUid "${'$'}dst" 2>/dev/null || true
-            chmod 0644 "${'$'}dst"/*.png 2>/dev/null || true
-        """.trimIndent()
-        runRootCommand(command, ROOT_SCAN_TIMEOUT_MS)
-        if (!hasGeneratedPackageBaseAssets(targetDir)) {
-            error("现有图标包缺少 recbg.png 或 recfg.png")
-        }
-        return targetDir
-    }
-
-    internal fun applyLiquidGlassToGeneratedPackage(dir: File) {
-        val baseRecbg = decodeGeneratedBitmap(dir, "recbg.png")
-            ?: error("现有图标包缺少 recbg.png")
-        val originalRecfgFile = File(dir, FOREGROUND_ORIGINAL_BACKUP_NAME)
-        val baseRecfg = decodeGeneratedBitmap(dir, FOREGROUND_ORIGINAL_BACKUP_NAME)
-            ?: decodeGeneratedBitmap(dir, "recfg.png")
-            ?: error("现有图标包缺少 recfg.png")
-        if (!originalRecfgFile.isFile) {
-            savePng(baseRecfg, originalRecfgFile)
-        }
-
-        val recbg = glassBackgroundForGeneratedPackage(dir, "recbg.png", baseRecbg, SIZE_1X1, SIZE_1X1)
-        val recbg1x2 = glassBackgroundForGeneratedPackage(dir, "recbg_1x2.png", baseRecbg, SIZE_1X2[0], SIZE_1X2[1])
-        val recbg2x1 = glassBackgroundForGeneratedPackage(dir, "recbg_2x1.png", baseRecbg, SIZE_2X1[0], SIZE_2X1[1])
-        val recbg2x2 = glassBackgroundForGeneratedPackage(dir, "recbg_2x2.png", baseRecbg, SIZE_2X2, SIZE_2X2)
-
-        savePng(recbg, File(dir, "recbg.png"))
-        savePng(recbg1x2, File(dir, "recbg_1x2.png"))
-        savePng(recbg2x1, File(dir, "recbg_2x1.png"))
-        savePng(recbg2x2, File(dir, "recbg_2x2.png"))
-
-        val outputRecfg = foregroundForSize(baseRecfg, SIZE_1X1, SIZE_1X1, forceLiquidGlass = true)
-        val recfg1x2Source = decodeGeneratedBitmap(dir, "recfg_1x2.png")
-            ?: centerOnCanvas(baseRecfg, SIZE_1X2[0], SIZE_1X2[1])
-        val recfg2x1Source = decodeGeneratedBitmap(dir, "recfg_2x1.png")
-            ?: centerOnCanvas(baseRecfg, SIZE_2X1[0], SIZE_2X1[1])
-        val recfg2x2Source = decodeGeneratedBitmap(dir, "recfg_2x2.png")
-            ?: centerOnCanvas(baseRecfg, SIZE_2X2, SIZE_2X2)
-        val recfg1x2 = foregroundForSize(recfg1x2Source, SIZE_1X2[0], SIZE_1X2[1], forceLiquidGlass = true)
-        val recfg2x1 = foregroundForSize(recfg2x1Source, SIZE_2X1[0], SIZE_2X1[1], forceLiquidGlass = true)
-        val recfg2x2 = foregroundForSize(recfg2x2Source, SIZE_2X2, SIZE_2X2, forceLiquidGlass = true)
-
-        writeDefaultSubjectMonochromeFiles(dir, baseRecfg, overwriteExisting = false)
-
-        savePng(outputRecfg, File(dir, "recfg.png"))
-        savePng(recfg1x2, File(dir, "recfg_1x2.png"))
-        savePng(recfg2x1, File(dir, "recfg_2x1.png"))
-        savePng(recfg2x2, File(dir, "recfg_2x2.png"))
-
-        savePng(normalDarkForeground(outputRecfg, recbg, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(dir, "rec_night.png"))
-        savePng(normalDarkForeground(recfg1x2, recbg1x2, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(dir, "rec_night_1x2.png"))
-        savePng(normalDarkForeground(recfg2x1, recbg2x1, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(dir, "rec_night_2x1.png"))
-        savePng(normalDarkForeground(recfg2x2, recbg2x2, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(dir, "rec_night_2x2.png"))
-    }
-
+    // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
     internal fun writeDefaultSubjectMonochromeFiles(
         dir: File,
         baseRecfg: Bitmap,
         overwriteExisting: Boolean,
     ) {
-        val subject = if (baseRecfg.width == SIZE_1X1 && baseRecfg.height == SIZE_1X1) {
-            baseRecfg
-        } else {
-            resizeBitmap(baseRecfg, SIZE_1X1, SIZE_1X1)
-        }
-        val rawLight = simpleMonochromeAlphaFromDefaultSubject(subject, invertLuma = true)
-        val rawDark = simpleMonochromeAlphaFromDefaultSubject(subject, invertLuma = false)
-        val outputs = listOf(
-            "monochrome_light.png" to scaleMonochromeForTheme(rawLight),
-            "monochrome_dark.png" to scaleMonochromeForTheme(rawDark),
-            "monochrome.png" to scaleMonochromeForTheme(rawDark),
-            "monochrome_1x2.png" to centerOnCanvas(rawDark, SIZE_1X2[0], SIZE_1X2[1]),
-            "monochrome_2x1.png" to centerOnCanvas(rawDark, SIZE_2X1[0], SIZE_2X1[1]),
-            "monochrome_2x2.png" to centerOnCanvas(rawDark, SIZE_2X2, SIZE_2X2),
+        writeDefaultSubjectMonochromeFiles(
+            dir = dir,
+            baseRecfg = baseRecfg,
+            overwriteExisting = overwriteExisting,
+            monochromeThemeScale = mainViewModel.params.value.monochromeThemeScale,
         )
-        outputs.forEach { (name, bitmap) ->
-            val target = File(dir, name)
-            if (overwriteExisting || !target.isFile) {
-                savePng(bitmap, target)
-            }
-        }
     }
 
+    // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
     internal fun glassBackgroundForGeneratedPackage(
         dir: File,
         name: String,
@@ -7709,104 +7621,50 @@ class MainActivity : ComponentActivity() {
         width: Int,
         height: Int,
     ): Bitmap {
-        val source = decodeGeneratedBitmap(dir, name) ?: fallback
-        val resized = if (source.width == width && source.height == height) {
-            source
-        } else {
-            resizeBitmap(source, width, height)
-        }
-        return liquidGlassBackgroundForSize(resized, width, height, forceLiquidGlass = true)
-    }
-
-    internal fun decodeGeneratedBitmap(dir: File, name: String): Bitmap? =
-        BitmapFactory.decodeFile(File(dir, name).absolutePath)
-
-    internal fun installLiquidGlassFilesWithRoot(packageDir: File, packageName: String) {
-        val target = "$ROOT_UXICONS_DIR/$packageName"
-        val source = packageDir.absolutePath
-        val names = listOf(
-            "recbg.png",
-            "recbg_1x2.png",
-            "recbg_2x1.png",
-            "recbg_2x2.png",
-            "recfg.png",
-            "recfg_1x2.png",
-            "recfg_2x1.png",
-            "recfg_2x2.png",
-            "rec_night.png",
-            "rec_night_1x2.png",
-            "rec_night_2x1.png",
-            "rec_night_2x2.png",
-            "monochrome_light.png",
-            "monochrome_dark.png",
-            "monochrome.png",
-            "monochrome_1x2.png",
-            "monochrome_2x1.png",
-            "monochrome_2x2.png",
+        val params = mainViewModel.params.value
+        return glassBackgroundForGeneratedPackage(
+            dir = dir,
+            name = name,
+            fallback = fallback,
+            width = width,
+            height = height,
+            liquidGlassEnabled = params.liquidGlassEnabled,
+            liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+            liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+            liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+            liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+            liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+            liquidGlassRadius = params.liquidGlassRadius,
         )
-        val copyCommands = names.joinToString(separator = "\n") { name ->
-            """
-            if [ -f ${shQuote("$source/$name")} ]; then
-                cp -f ${shQuote("$source/$name")} ${shQuote("$target/$name")}
-                chmod 0644 ${shQuote("$target/$name")}
-            fi
-            """.trimIndent()
-        }
-        val command = """
-            set -e
-            mkdir -p ${shQuote(target)}
-            $copyCommands
-            restorecon -RF ${shQuote(target)} 2>/dev/null || true
-        """.trimIndent()
-        runRootCommand(command, ROOT_SCAN_TIMEOUT_MS)
     }
 
+    // Slice 1.4 已搬入 system/RootInstaller.kt：decodeGeneratedBitmap（纯函数，同包直接用）。
+
+    // Slice 1.4 已搬入 system/RootInstaller.kt：installLiquidGlassFilesWithRoot（纯 Root IO，同包直接用）。
+
+    // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
     internal fun generateArtPlusPackage(
         app: AppEntry,
         useGpt: Boolean,
         localModeOverride: LocalSeparationMode? = null,
     ): GenerationResult {
-        val base = getExternalFilesDir("ArtPlus") ?: File(filesDir, "ArtPlus")
-        val outDir = File(base, app.packageName)
-        ensureCleanDir(outDir)
-
         val icon = app.applicationInfo.loadIcon(packageManager)
-        val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
-        val gptSourceIcon = drawDrawable(icon, GPT_SOURCE_SIZE, GPT_SOURCE_SIZE, transparent = false)
-        val localPipeline = currentLocalPipelineConfig()
-        val localSource = buildLocalIconLayers(icon, localPipeline, mainViewModel.params.value.backgroundSeparationPercent, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
-        val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, localPipeline, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode), mainViewModel.params.value.plateRemovalPercent, mainViewModel.params.value.shadowRemovalPercent, mainViewModel.params.value.backgroundSeparationPercent)
-        val localCandidates = localCandidateSet.candidates
-        val candidates = if (useGpt) {
-            // P4 交界：GPT 图层收敛进 pipeline/，显式传调参 + 凭证 + 状态回调。
-            val gptLayers = generateGptLayers(gptSourceIcon, localSource.recfg, localSource.recbg, mainViewModel.params.value.gptCustomPrompt, GptPromptPreset.fromValue(mainViewModel.params.value.gptPromptPreset), mainViewModel.params.value.foregroundSubjectPercent, GptImageMode.fromValue(mainViewModel.params.value.gptImageMode), gptModelId, gptBaseUrl, gptApiKey, isDebugBuild(), ::status)
-            localCandidates + (PreviewChoice.Gpt to IconCandidate(gptLayers.recfg, gptLayers.recbg, monochromeRaw = null, isLocal = false))
-        } else {
-            localCandidates
-        }
-        val selectedLocalMode = localModeOverride ?: LocalSeparationMode.fromValue(mainViewModel.params.value.localSeparationMode)
-        val requestedChoice = if (useGpt) {
-            PreviewChoice.Gpt
-        } else {
-            defaultPreviewChoiceForMode(selectedLocalMode, localCandidateSet.autoChoice)
-        }
-        val defaultChoice = requestedChoice.takeIf { candidates.containsKey(it) }
-            ?: localCandidateSet.autoChoice.takeIf { candidates.containsKey(it) }
-            ?: PreviewChoice.Original
-        val selections = PreviewSelections.default(defaultChoice)
-        val session = GenerationSession(
-            packageName = app.packageName,
-            outDir = outDir,
-            sourceIcon = gptSourceIcon,
-            baseRecfg = localSource.recfg,
-            baseRecbg = localSource.recbg,
-            monochromeRaw = localSource.monochrome,
-            candidates = candidates,
-            autoLocalChoice = localCandidateSet.autoChoice,
+        return generateArtPlusPackage(
+            app = app,
+            useGpt = useGpt,
+            localModeOverride = localModeOverride,
+            params = mainViewModel.params.value,
+            externalArtPlusDir = getExternalFilesDir("ArtPlus"),
+            filesDir = filesDir,
+            icon = icon,
+            gptModelId = gptModelId,
+            gptBaseUrl = gptBaseUrl,
+            gptApiKey = gptApiKey,
+            isDebug = isDebugBuild(),
+            onStatus = ::status,
+            defaultChoiceForMode = ::defaultPreviewChoiceForMode,
+            rmbgTunedForeground = ::rmbgTunedForegroundRaw,
         )
-        writePackageOutputs(session, selections)
-        status("本地分离: ${selectedLocalMode.label}/${defaultChoice.label} · 背景 $mainViewModel.params.value.backgroundSeparationPercent · 底板 $mainViewModel.params.value.plateRemovalPercent · 阴影 $mainViewModel.params.value.shadowRemovalPercent · 毛刺 $mainViewModel.params.value.edgePolishPercent")
-        return GenerationResult(outDir = outDir, session = session, selections = selections)
     }
 
 
@@ -8035,74 +7893,31 @@ class MainActivity : ComponentActivity() {
             LocalSeparationMode.Full -> PreviewChoice.Full
         }
 
+    // 重构期间保留：委托到 system/RootInstaller.kt 显式参数版本，调用点零改动。
     internal fun writePackageOutputs(session: GenerationSession, selections: PreviewSelections) {
-        val light = candidateWithCustomOverrides(session, PreviewMode.NormalLight, selections.normalLight)
-        val lightBaseRecfg = renderCandidateForegroundBase(light)
-        val lightRecfg = foregroundForSize(lightBaseRecfg, SIZE_1X1, SIZE_1X1)
-        val lightBaseRecbg = light.recbg
-        val lightRecbg = liquidGlassBackgroundForSize(lightBaseRecbg, SIZE_1X1, SIZE_1X1)
-        savePng(lightRecbg, File(session.outDir, "recbg.png"))
-        savePng(lightRecfg, File(session.outDir, "recfg.png"))
-        val recbg1x2 = liquidGlassBackgroundForSize(lightBaseRecbg, SIZE_1X2[0], SIZE_1X2[1])
-        val recbg2x1 = liquidGlassBackgroundForSize(lightBaseRecbg, SIZE_2X1[0], SIZE_2X1[1])
-        val recbg2x2 = liquidGlassBackgroundForSize(lightBaseRecbg, SIZE_2X2, SIZE_2X2)
-        savePng(recbg1x2, File(session.outDir, "recbg_1x2.png"))
-        savePng(recbg2x1, File(session.outDir, "recbg_2x1.png"))
-        savePng(recbg2x2, File(session.outDir, "recbg_2x2.png"))
-
-        val recfg1x2 = foregroundForSize(lightBaseRecfg, SIZE_1X2[0], SIZE_1X2[1])
-        val recfg2x1 = foregroundForSize(lightBaseRecfg, SIZE_2X1[0], SIZE_2X1[1])
-        val recfg2x2 = foregroundForSize(lightBaseRecfg, SIZE_2X2, SIZE_2X2)
-        savePng(recfg1x2, File(session.outDir, "recfg_1x2.png"))
-        savePng(recfg2x1, File(session.outDir, "recfg_2x1.png"))
-        savePng(recfg2x2, File(session.outDir, "recfg_2x2.png"))
-
-        val night = candidateWithCustomOverrides(session, PreviewMode.NormalDark, selections.normalDark)
-        val nightBaseRecfg = renderCandidateForegroundBase(night)
-        val nightRecfg = foregroundForSize(nightBaseRecfg, SIZE_1X1, SIZE_1X1)
-        val nightBaseRecbg = night.recbg
-        val nightRecbg = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_1X1, SIZE_1X1)
-        val nightRecfg1x2 = foregroundForSize(nightBaseRecfg, SIZE_1X2[0], SIZE_1X2[1])
-        val nightRecfg2x1 = foregroundForSize(nightBaseRecfg, SIZE_2X1[0], SIZE_2X1[1])
-        val nightRecfg2x2 = foregroundForSize(nightBaseRecfg, SIZE_2X2, SIZE_2X2)
-        val nightRecbg1x2 = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_1X2[0], SIZE_1X2[1])
-        val nightRecbg2x1 = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X1[0], SIZE_2X1[1])
-        val nightRecbg2x2 = liquidGlassBackgroundForSize(nightBaseRecbg, SIZE_2X2, SIZE_2X2)
-        savePng(normalDarkForeground(nightRecfg, nightRecbg, mainViewModel.params.value.nightSubjectLightBackgroundEnabled), File(session.outDir, "rec_night.png"))
-        savePng(
-            normalDarkForeground(nightRecfg1x2, nightRecbg1x2, mainViewModel.params.value.nightSubjectLightBackgroundEnabled),
-            File(session.outDir, "rec_night_1x2.png"),
+        val params = mainViewModel.params.value
+        writePackageOutputs(
+            session = session,
+            selections = selections,
+            edgePolishPercent = params.edgePolishPercent,
+            foregroundSubjectPercent = params.foregroundSubjectPercent,
+            rmbgTunedForeground = ::rmbgTunedForegroundRaw,
+            liquidGlassEnabled = params.liquidGlassEnabled,
+            liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
+            liquidGlassTopAlpha = params.liquidGlassTopAlpha,
+            liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
+            liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
+            liquidGlassOuterWidth = params.liquidGlassOuterWidth,
+            liquidGlassRadius = params.liquidGlassRadius,
+            liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
+            liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
+            liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
+            liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
+            liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
+            foregroundShadowLevel = params.foregroundShadowLevel,
+            monochromeThemeScale = params.monochromeThemeScale,
+            nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
         )
-        savePng(
-            normalDarkForeground(nightRecfg2x1, nightRecbg2x1, mainViewModel.params.value.nightSubjectLightBackgroundEnabled),
-            File(session.outDir, "rec_night_2x1.png"),
-        )
-        savePng(
-            normalDarkForeground(nightRecfg2x2, nightRecbg2x2, mainViewModel.params.value.nightSubjectLightBackgroundEnabled),
-            File(session.outDir, "rec_night_2x2.png"),
-        )
-
-        val rawMonochromeLight = monochromeForCandidate(
-            candidateWithCustomOverrides(session, PreviewMode.MonochromeLight, selections.monochromeLight),
-            invertLuma = true,
-        )
-        val rawMonochromeDark = monochromeForCandidate(
-            candidateWithCustomOverrides(session, PreviewMode.MonochromeDark, selections.monochromeDark),
-            invertLuma = false,
-        )
-        val monochromeLight = scaleMonochromeForTheme(rawMonochromeLight)
-        val monochromeDark = scaleMonochromeForTheme(rawMonochromeDark)
-        savePng(monochromeLight, File(session.outDir, "monochrome_light.png"))
-        savePng(monochromeDark, File(session.outDir, "monochrome_dark.png"))
-        savePng(monochromeDark, File(session.outDir, "monochrome.png"))
-        savePng(centerOnCanvas(rawMonochromeDark, SIZE_1X2[0], SIZE_1X2[1]), File(session.outDir, "monochrome_1x2.png"))
-        savePng(centerOnCanvas(rawMonochromeDark, SIZE_2X1[0], SIZE_2X1[1]), File(session.outDir, "monochrome_2x1.png"))
-        savePng(centerOnCanvas(rawMonochromeDark, SIZE_2X2, SIZE_2X2), File(session.outDir, "monochrome_2x2.png"))
-
-        savePng(adjustColor(lightRecfg, 1.3f, 1.0f), File(session.outDir, "day.png"))
-        savePng(adjustColor(lightRecfg, 0.9f, 0.9f), File(session.outDir, "nsd.png"))
-        savePng(adjustColor(lightRecfg, 0.9f, 1.05f), File(session.outDir, "mat.png"))
-        savePng(adjustColor(lightRecfg, 0.7f, 0.95f), File(session.outDir, "peb.png"))
     }
 
     // 重构期间保留：委托到 imaging/LiquidGlassPipeline.kt 显式参数版本，调用点零改动。
@@ -9988,7 +9803,8 @@ class MainActivity : ComponentActivity() {
         private const val EXTRA_DEBUG_GENERATE_ROOT_WRITE_MODE = "dev.artplus.mobile.DEBUG_GENERATE_ROOT_WRITE_MODE"
         private const val EXTRA_DEBUG_GENERATE_TOKEN = "dev.artplus.mobile.DEBUG_GENERATE_TOKEN"
         private const val CURRENT_IMAGE_TUNING_VERSION = 4
-        private const val SIZE_2X2 = 704
+        // Slice 1.4 已提升到 TuningParams.kt：SIZE_2X2 / SIZE_1X2 / SIZE_2X1 /
+        // FOREGROUND_ORIGINAL_BACKUP_NAME，同包直接引用。
         // Slice 1.3 已提升到 TuningParams.kt：RMBG_COMPONENT_DIR / RMBG_MODEL_NAME /
         // DEFAULT_RMBG_INPUT_SIZE / RMBG_MIN_* / RMBG_MAX_* / RMBG_DOWNLOAD_* /
         // RMBG_MODEL_URL_* / DEFAULT_RMBG_COMPONENT_URL / RMBG_MODEL_PRESETS(PRESET_CUSTOM) /
@@ -10015,10 +9831,8 @@ class MainActivity : ComponentActivity() {
         ) {
             override fun sizeOf(key: String, value: Bitmap): Int = value.allocationByteCount / 1024
         }
-        private val SIZE_1X2 = intArrayOf(240, 820)
-        private val SIZE_2X1 = intArrayOf(820, 240)
-        // P4 pipeline 用（误删恢复）：recfg 原图备份文件名。
-        private const val FOREGROUND_ORIGINAL_BACKUP_NAME = "recfg_original_artplus.png"
+        // Slice 1.4 已提升到 TuningParams.kt：SIZE_2X2 / SIZE_1X2 / SIZE_2X1 /
+        // FOREGROUND_ORIGINAL_BACKUP_NAME，同包直接引用。
         // Slice 1.3 已提升到 TuningParams.kt：RMBG_MIN/MAX_MANUAL/AUTO_COVERAGE /
         // RMBG_EDGE_ADJUST_MAX_RADIUS / RMBG_WEAK_ALPHA_MAX_CUT，同包直接引用。
     }
