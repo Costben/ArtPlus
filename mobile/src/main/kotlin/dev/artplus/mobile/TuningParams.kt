@@ -363,6 +363,19 @@ const val DEBUG_HTTP_MAX_HEADER_BYTES = 16 * 1024
 const val DEBUG_HTTP_MAX_BODY_BYTES = 64 * 1024
 const val DEBUG_HTTP_TOKEN_HEADER = "X-ArtPlus-Debug-Token"
 const val DEBUG_HTTP_TOKEN_PARAM = "token"
+
+/**
+ * Debug 生成 Intent extras（Epic v2 Phase 1 Slice 1.6 从 MainActivity 迁移而来）。
+ *
+ * 原为 MainActivity companion object 内 private const，现为顶层公开常量，
+ * 数值与类型未变。同包直接引用，Activity 内原有调用点零改动。
+ */
+const val EXTRA_DEBUG_GENERATE_PACKAGE = "dev.artplus.mobile.DEBUG_GENERATE_PACKAGE"
+const val EXTRA_DEBUG_GENERATE_USE_GPT = "dev.artplus.mobile.DEBUG_GENERATE_USE_GPT"
+const val EXTRA_DEBUG_GENERATE_INSTALL_ROOT = "dev.artplus.mobile.DEBUG_GENERATE_INSTALL_ROOT"
+const val EXTRA_DEBUG_GENERATE_MODE = "dev.artplus.mobile.DEBUG_GENERATE_MODE"
+const val EXTRA_DEBUG_GENERATE_ROOT_WRITE_MODE = "dev.artplus.mobile.DEBUG_GENERATE_ROOT_WRITE_MODE"
+const val EXTRA_DEBUG_GENERATE_TOKEN = "dev.artplus.mobile.DEBUG_GENERATE_TOKEN"
 const val RMBG_EDGE_FEATHER_MIN_ALPHA_DELTA = 12
 
 /**

@@ -5910,261 +5910,75 @@ class MainActivity : ComponentActivity() {
             packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
         }
 
+    // 重构期间保留：委托到 system/DebugServer.kt 显式参数版本，调用点零改动。
     internal fun isDebugGenerateIntent(intent: Intent?): Boolean =
-        intent?.getStringExtra(EXTRA_DEBUG_GENERATE_PACKAGE)?.isNotBlank() == true &&
-            isDebugTokenValid(intent.getStringExtra(EXTRA_DEBUG_GENERATE_TOKEN))
+        isDebugGenerateIntent(intent, ::isDebugTokenValid)
 
-    internal fun handleDebugGenerateIntent(intent: Intent?) {
-        if (!isDebugBuild()) {
-            return
-        }
-        if (!isDebugTokenValid(intent?.getStringExtra(EXTRA_DEBUG_GENERATE_TOKEN))) {
-            return
-        }
-        val debugPackageName = intent
-            ?.getStringExtra(EXTRA_DEBUG_GENERATE_PACKAGE)
-            ?.trim()
-            ?.takeIf { it.isNotEmpty() }
-            ?: return
-        val useGpt = intent.getBooleanExtra(EXTRA_DEBUG_GENERATE_USE_GPT, false)
-        val installWithRoot = intent.getBooleanExtra(EXTRA_DEBUG_GENERATE_INSTALL_ROOT, false)
-        val debugMode = LocalSeparationMode.fromValue(
-            intent.getStringExtra(EXTRA_DEBUG_GENERATE_MODE),
-        )
-        val rootWriteMode = RootWriteMode.fromValue(
-            intent.getStringExtra(EXTRA_DEBUG_GENERATE_ROOT_WRITE_MODE),
-        )
-        startDebugGeneration(
-            packageName = debugPackageName,
-            useGpt = useGpt,
-            installWithRoot = installWithRoot,
-            debugMode = debugMode,
-            rootWriteMode = rootWriteMode,
-        )
-    }
+    // 重构期间保留：委托到 system/DebugServer.kt 显式参数版本，调用点零改动。
+    internal fun handleDebugGenerateIntent(intent: Intent?) =
+        handleDebugGenerateIntent(intent, ::isDebugBuild, ::isDebugTokenValid, ::startDebugGeneration)
 
+    // 重构期间保留：委托到 system/DebugServer.kt 显式参数版本，调用点零改动。
     internal fun startDebugGeneration(
         packageName: String,
         useGpt: Boolean,
         installWithRoot: Boolean,
         debugMode: LocalSeparationMode,
         rootWriteMode: RootWriteMode,
-    ): Boolean {
-        var accepted = false
-        runOnMainSync {
-            if (isBusy) {
-                statusText = "调试生成排队失败，当前正在处理: $packageName"
-            } else {
-                isBusy = true
-                statusText = "调试生成中: $packageName"
-                accepted = true
-            }
-        }
-        if (!accepted) {
-            return false
-        }
-        Thread {
-            try {
-                val info = getApplicationInfoCompat(packageName)
-                val label = runCatching { info.loadLabel(packageManager)?.toString() }
-                    .getOrNull()
-                    ?.takeIf { it.isNotBlank() }
-                    ?: packageName
-                val launchable = packageManager.getLaunchIntentForPackage(packageName) != null
-                val entry = AppEntry(
-                    label = label,
-                    packageName = packageName,
-                    applicationInfo = info,
-                    launchable = launchable,
-                    iconKey = "${packageName}:${info.uid}:${info.sourceDir}",
-                )
-                val result = generateArtPlusPackage(
-                    app = entry,
-                    useGpt = useGpt,
-                    localModeOverride = debugMode,
-                )
-                if (installWithRoot) {
-                    installWithRoot(result.outDir, packageName, rootWriteMode)
-                    runOnMainSync {
-                        generatedPackageNames = markPackageGenerated(getSharedPreferences(PREFS_NAME, MODE_PRIVATE), generatedPackageNames, packageName)
-                        statusText = "调试生成完成并${rootWriteMode.label}写入 Root，未刷新，请手动点刷新 ART+ 图标: ${result.outDir.absolutePath}"
-                    }
-                } else {
-                    runOnMainSync {
-                        statusText = "调试生成完成: ${result.outDir.absolutePath}"
-                    }
+    ): Boolean =
+        startDebugGeneration(
+            packageName = packageName,
+            useGpt = useGpt,
+            installWithRoot = installWithRoot,
+            debugMode = debugMode,
+            rootWriteMode = rootWriteMode,
+            runOnMainSync = ::runOnMainSync,
+            isBusyGet = { isBusy },
+            setBusy = { isBusy = it },
+            setStatusText = { statusText = it },
+            onStatus = ::status,
+            getAppInfo = ::getApplicationInfoCompat,
+            packageManager = packageManager,
+            prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE),
+            getGeneratedNames = { generatedPackageNames },
+            setGeneratedNames = { generatedPackageNames = it },
+            generatePackage = ::generateArtPlusPackage,
+            setActiveSession = { activeGenerationSession = it },
+            updateSelections = { selections ->
+                mainViewModel.updateLive { p ->
+                    p.copy(
+                        previewNormalLight = selections.normalLight.name,
+                        previewNormalDark = selections.normalDark.name,
+                        previewMonochromeLight = selections.monochromeLight.name,
+                        previewMonochromeDark = selections.monochromeDark.name,
+                    )
                 }
-                runOnMainSync {
-                    activeGenerationSession = result.session
-                    mainViewModel.updateLive { p -> p.copy(previewNormalLight = (result.selections).normalLight.name, previewNormalDark = (result.selections).normalDark.name, previewMonochromeLight = (result.selections).monochromeLight.name, previewMonochromeDark = (result.selections).monochromeDark.name) }
-                    previewChoiceMode = null
-                    previewPackageName = packageName
-                    previewDirPath = result.outDir.absolutePath
-                    previewVersion += 1
-                    saveUiState()
-                }
-            } catch (error: Exception) {
-                status("调试生成失败: ${error.message ?: error.javaClass.simpleName}")
-            } finally {
-                runOnMainSync { isBusy = false }
-            }
-        }.start()
-        return true
-    }
-
-    internal fun debugInspectPackage(packageName: String, includeRmbg: Boolean): JSONObject {
-        val info = getApplicationInfoCompat(packageName)
-        val label = runCatching { info.loadLabel(packageManager)?.toString() }
-            .getOrNull()
-            ?.takeIf { it.isNotBlank() }
-            ?: packageName
-        val icon = info.loadIcon(packageManager)
-        val base = getExternalFilesDir("ArtPlusLab") ?: File(filesDir, "ArtPlusLab")
-        val outDir = File(base, packageName)
-        ensureFreshDir(outDir)
-        val debugTuning = currentTuningParams()
-        val localPipeline = LocalPipelineConfig.from(debugTuning)
-
-        val metadata = JSONObject()
-            .put("ok", true)
-            .put("package", packageName)
-            .put("label", label)
-            .put("output_dir", outDir.absolutePath)
-            .put("source_dir", info.sourceDir ?: "")
-            .put("public_source_dir", info.publicSourceDir ?: "")
-            .put("is_adaptive", icon is AdaptiveIconDrawable)
-            .put("settings", debugTuning.toJson())
-
-        fun saveLayer(name: String, bitmap: Bitmap, metrics: JSONObject = metadata): Bitmap {
-            savePng(bitmap, File(outDir, "$name.png"))
-            metrics.put(name, bitmapStatsJson(bitmap))
-            return bitmap
-        }
-
-        val source240 = saveLayer("source_icon_240_opaque", drawDrawable(icon, SIZE_1X1, SIZE_1X1, transparent = false))
-        val candidateSource240 = saveLayer(
-            "source_icon_240_candidate",
-            drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1),
+            },
+            setPreviewChoiceMode = { previewChoiceMode = it },
+            setPreviewPackage = { previewPackageName = it },
+            setPreviewDir = { previewDirPath = it },
+            bumpPreviewVersion = { previewVersion += 1 },
+            onSaveUiState = ::saveUiState,
         )
-        saveLayer("source_icon_240_transparent", drawDrawable(icon, SIZE_1X1, SIZE_1X1, transparent = true))
 
-        if (icon is AdaptiveIconDrawable) {
-            val renderSize = SIZE_1X1 * LOCAL_ICON_RENDER_SCALE
-            val background = drawDrawable(
-                icon.background ?: ColorDrawable(AndroidColor.WHITE),
-                renderSize,
-                renderSize,
-                transparent = false,
-            )
-            val direct = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
-            val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
-            val subtracted = if (localPipeline.backgroundSeparationEnabled) {
-                subtractBackground(composed, background, pipeline = localPipeline, backgroundSeparationPercent = mainViewModel.params.value.backgroundSeparationPercent)
-            } else {
-                composed
-            }
-            val selection = chooseBetterAdaptiveForeground(subtracted, direct, background, localPipeline, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
-            val chosen = selection.bitmap
-            val adaptiveJson = JSONObject()
-            saveLayer("adaptive_background_240", resizeBitmap(background, SIZE_1X1, SIZE_1X1), adaptiveJson)
-            saveLayer("adaptive_composed_240", resizeBitmap(composed, SIZE_1X1, SIZE_1X1), adaptiveJson)
-            saveLayer("adaptive_subtracted_foreground_240", resizeBitmap(subtracted, SIZE_1X1, SIZE_1X1), adaptiveJson)
-            saveLayer("adaptive_direct_foreground_240", resizeBitmap(direct, SIZE_1X1, SIZE_1X1), adaptiveJson)
-            saveLayer("adaptive_chosen_foreground_240", resizeBitmap(chosen, SIZE_1X1, SIZE_1X1), adaptiveJson)
-            adaptiveJson
-                .put("subtracted_has_mask_artifact", hasAdaptiveMaskArtifact(subtracted, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent))
-                .put("direct_usable", isUsableDirectAdaptiveForeground(direct, alphaCoverage(subtracted), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent))
-                .put("subtracted_coverage", alphaCoverage(subtracted))
-                .put("direct_coverage", alphaCoverage(direct))
-                .put("chosen_preserve_geometry", selection.preserveGeometry)
-            metadata.put("adaptive", adaptiveJson)
-        }
-
-        val localSource = buildLocalIconLayers(icon, localPipeline, mainViewModel.params.value.backgroundSeparationPercent, AdaptiveForegroundMode.fromValue(mainViewModel.params.value.adaptiveForegroundMode), mainViewModel.params.value.adaptiveDirectMaxCoveragePercent, mainViewModel.params.value.adaptiveDirectMaxCoverageIncreasePercent, mainViewModel.params.value.adaptiveMaskEdgeCoveragePercent, mainViewModel.params.value.adaptiveMaskMinCoveragePercent, mainViewModel.params.value.adaptiveCenterEpsilonPercent)
-        val localJson = JSONObject()
-        saveLayer("local_base_recbg", localSource.recbg, localJson)
-        saveLayer("local_base_recfg", localSource.recfg, localJson)
-        localSource.monochrome?.let { saveLayer("local_base_monochrome", it, localJson) }
-        val candidateSet = buildLocalCandidates(localSource, candidateSource240, localPipeline, OriginalForegroundCleanupMode.fromValue(mainViewModel.params.value.originalForegroundCleanupMode), mainViewModel.params.value.plateRemovalPercent, mainViewModel.params.value.shadowRemovalPercent, mainViewModel.params.value.backgroundSeparationPercent)
-        localJson.put("auto_choice", candidateSet.autoChoice.name.lowercase(Locale.US))
-        metadata.put("local", localJson)
-
-        val candidatesJson = JSONObject()
-        candidateSet.candidates.forEach { (choice, candidate) ->
-            val key = choice.name.lowercase(Locale.US)
-            val candidateJson = JSONObject()
-                .put("label", choice.label)
-                .put("preserve_geometry", candidate.preserveGeometry)
-            saveLayer("candidate_${key}_raw", candidate.recfgRaw, candidateJson)
-            val rendered = renderCandidateForeground(candidate)
-            saveLayer("candidate_${key}_rendered", rendered, candidateJson)
-            saveLayer("candidate_${key}_night", nightForeground(rendered, candidate.recbg), candidateJson)
-            saveLayer("candidate_${key}_monochrome_light", monochromeForCandidate(candidate, invertLuma = true), candidateJson)
-            saveLayer("candidate_${key}_monochrome_dark", monochromeForCandidate(candidate, invertLuma = false), candidateJson)
-            candidatesJson.put(key, candidateJson)
-        }
-
-        if (includeRmbg) {
-            val rmbgJson = JSONObject()
-            try {
-                val rmbgDebug = buildRmbgDebugCandidate(source240)
-                val rmbgCandidate = rmbgDebug.result?.candidate
-                val validationWarning = rmbgDebug.result?.validationWarning
-                rmbgJson
-                    .put("coverage", rmbgDebug.coverage)
-                    .put("manual_usable", rmbgDebug.manualUsable)
-                    .put("auto_usable", rmbgDebug.result?.autoUsable ?: false)
-                    .put("bounds", rmbgDebug.boundsText)
-                    .put("crop_risk", rmbgDebug.cropRisk)
-                    .put("backend", rmbgDebug.inference.actualBackend.value)
-                    .put("elapsed_ms", rmbgDebug.inference.elapsedMs)
-                saveLayer("candidate_rmbg_raw", rmbgDebug.foreground, rmbgJson)
-                val rendered = renderCandidateForeground(
-                    rmbgCandidate ?: IconCandidate(
-                            recfgRaw = rmbgDebug.foreground,
-                            recbg = localSource.recbg,
-                            monochromeRaw = rmbgDebug.foreground,
-                            isLocal = false,
-                    ),
-                )
-                saveLayer("candidate_rmbg_rendered", rendered, rmbgJson)
-                saveLayer("candidate_rmbg_night", nightForeground(rendered, localSource.recbg), rmbgJson)
-                saveLayer("candidate_rmbg_monochrome_light", monochromeForCandidate(
-                    rmbgCandidate ?: IconCandidate(rmbgDebug.foreground, localSource.recbg, monochromeRaw = rmbgDebug.foreground, isLocal = false),
-                    invertLuma = true,
-                ), rmbgJson)
-                saveLayer("candidate_rmbg_monochrome_dark", monochromeForCandidate(
-                    rmbgCandidate ?: IconCandidate(rmbgDebug.foreground, localSource.recbg, monochromeRaw = rmbgDebug.foreground, isLocal = false),
-                    invertLuma = false,
-                ), rmbgJson)
-                if (validationWarning != null) {
-                    rmbgJson.put("validation_warning", validationWarning)
-                }
-                rmbgJson.put("ok", true)
-                runOnMainSync {
-                    lastRmbgInferenceReport = rmbgDebug.inference
-                    lastRmbgCandidateError = null
-                }
-            } catch (error: Throwable) {
-                val message = describeRmbgFailure(error)
-                rmbgJson
-                    .put("ok", false)
-                    .put("error", message)
-                runOnMainSync {
-                    lastRmbgCandidateError = message
-                    lastRmbgInferenceReport = null
-                }
-            }
-            candidatesJson.put("rmbg", rmbgJson)
-        }
-
-        metadata.put("candidates", candidatesJson)
-        FileOutputStream(File(outDir, "metadata.json")).use { output ->
-            output.write(metadata.toString(2).toByteArray(Charsets.UTF_8))
-        }
-        return metadata
-    }
-
+    // 重构期间保留：委托到 system/DebugServer.kt 显式参数版本，调用点零改动。
+    internal fun debugInspectPackage(packageName: String, includeRmbg: Boolean): JSONObject =
+        debugInspectPackage(
+            packageName = packageName,
+            includeRmbg = includeRmbg,
+            getAppInfo = ::getApplicationInfoCompat,
+            packageManager = packageManager,
+            externalLabDir = getExternalFilesDir("ArtPlusLab"),
+            filesDir = filesDir,
+            tuning = currentTuningParams(),
+            runOnMainSync = ::runOnMainSync,
+            setLastReport = { lastRmbgInferenceReport = it },
+            setLastError = { lastRmbgCandidateError = it },
+            buildRmbgDebug = ::buildRmbgDebugCandidate,
+            describeFailure = ::describeRmbgFailure,
+            renderForeground = ::renderCandidateForeground,
+            monochromeFor = ::monochromeForCandidate,
+        )
 
     internal fun loadGptSettings() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -9796,12 +9610,7 @@ class MainActivity : ComponentActivity() {
         private const val PREF_SHOW_SYSTEM_APPS = "show_system_apps"
         private const val PREF_OUTPUT_TREE_URI = "output_tree_uri"
         private const val PREF_HAS_COMPLETED_ONBOARDING = "has_completed_onboarding"
-        private const val EXTRA_DEBUG_GENERATE_PACKAGE = "dev.artplus.mobile.DEBUG_GENERATE_PACKAGE"
-        private const val EXTRA_DEBUG_GENERATE_USE_GPT = "dev.artplus.mobile.DEBUG_GENERATE_USE_GPT"
-        private const val EXTRA_DEBUG_GENERATE_INSTALL_ROOT = "dev.artplus.mobile.DEBUG_GENERATE_INSTALL_ROOT"
-        private const val EXTRA_DEBUG_GENERATE_MODE = "dev.artplus.mobile.DEBUG_GENERATE_MODE"
-        private const val EXTRA_DEBUG_GENERATE_ROOT_WRITE_MODE = "dev.artplus.mobile.DEBUG_GENERATE_ROOT_WRITE_MODE"
-        private const val EXTRA_DEBUG_GENERATE_TOKEN = "dev.artplus.mobile.DEBUG_GENERATE_TOKEN"
+        // Slice 1.6 已提升到 TuningParams.kt：EXTRA_DEBUG_GENERATE_*（6 项），同包直接引用。
         private const val CURRENT_IMAGE_TUNING_VERSION = 4
         // Slice 1.4 已提升到 TuningParams.kt：SIZE_2X2 / SIZE_1X2 / SIZE_2X1 /
         // FOREGROUND_ORIGINAL_BACKUP_NAME，同包直接引用。
