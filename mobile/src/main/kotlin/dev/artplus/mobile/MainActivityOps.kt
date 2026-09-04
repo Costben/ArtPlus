@@ -850,9 +850,7 @@ internal fun MainActivity.currentDebugParamsOnMain(): JSONObject {
 
             if (Looper.myLooper() == Looper.getMainLooper()) {
                 ({
-                snapshot = run {
-        JSONObject()
-    }
+                snapshot = currentDebugParamsJson()
             })()
                 return@run
             }
@@ -861,9 +859,7 @@ internal fun MainActivity.currentDebugParamsOnMain(): JSONObject {
             runOnUiThread {
                 try {
                     ({
-                snapshot = run {
-        JSONObject()
-    }
+                snapshot = currentDebugParamsJson()
             })()
                 } catch (error: Throwable) {
                     failure = error
@@ -1112,9 +1108,7 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                 )
     }
                 }
-                snapshot = run {
-        JSONObject()
-    }
+                snapshot = currentDebugParamsJson()
             })()
                 return@run
             }
@@ -1350,9 +1344,7 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                 )
     }
                 }
-                snapshot = run {
-        JSONObject()
-    }
+                snapshot = currentDebugParamsJson()
             })()
                 } catch (error: Throwable) {
                     failure = error

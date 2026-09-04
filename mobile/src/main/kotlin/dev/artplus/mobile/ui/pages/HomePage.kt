@@ -1806,6 +1806,9 @@ val __act2 = LocalContext.current
                     title = "生成参数",
                     showPreviewStrip = mainViewModel.previewSession.value.previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
+                    // Phase 5 回归修复（FAIL-1）：内容分支须读已订阅的 shellState，
+                    // 裸读 shell.value 不触发重组（高亮动内容不动）。
+                    val genContentShell by mainViewModel.shell.collectAsState()
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -1898,8 +1901,8 @@ val __act2 = LocalContext.current
             )
 }
                         }
-                        when (mainViewModel.shell.value.advancedSettingsTab) {
-                            AdvancedSettingsTab.Sliders -> when (mainViewModel.shell.value.advancedSettingsCategory) {
+                        when (genContentShell.advancedSettingsTab) {
+                            AdvancedSettingsTab.Sliders -> when (genContentShell.advancedSettingsCategory) {
                                 AdvancedSettingsCategory.LiquidGlass -> {
                                     item(key = "glass_toggle") { run {
     LiquidGlassToggleCard(

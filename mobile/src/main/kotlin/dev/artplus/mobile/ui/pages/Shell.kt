@@ -329,6 +329,10 @@ import com.caverock.androidsvg.SVG
 @Composable
 internal fun MainActivity.ArtPlusScreen() {
     val tuningState = mainViewModel.params.collectAsState().value
+    // Phase 5 回归修复（FAIL-4/5）：presetUi/confirm 经 collectAsState 订阅，
+    // 渲染位禁止裸读 .value（裸读不触发重组，对话框显隐/消除全部假死）。
+    val presetUiState by mainViewModel.presetUi.collectAsState()
+    val confirmState by mainViewModel.confirm.collectAsState()
     // Slice 3.4b：非组合回调（onStop 等）内的 Toast 共用此前捕获的 Context。
     val __actCancel = LocalContext.current
     val pageBackground = if (isSystemInDarkTheme()) {
@@ -747,7 +751,7 @@ internal fun MainActivity.ArtPlusScreen() {
             // 后台态不显示底部弹窗，但保留状态供设置页“备份中...”展示
         }
 
-        mainViewModel.confirm.value.pendingServiceConfirm?.let { request ->
+        confirmState.pendingServiceConfirm?.let { request ->
             ServiceConfirmDialog(
                 request = request,
                 onConfirm = { run {
@@ -770,8 +774,8 @@ internal fun MainActivity.ArtPlusScreen() {
         }
         run {
     RootWriteConfirmDialog(
-                request = mainViewModel.confirm.value.pendingRootWriteConfirm,
-                rememberSkip = mainViewModel.confirm.value.rootWriteConfirmRememberSkip,
+                request = confirmState.pendingRootWriteConfirm,
+                rememberSkip = confirmState.rootWriteConfirmRememberSkip,
                 onDismiss = { mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) } },
                 onToggleSkip = { mainViewModel.updateConfirm { it -> it.copy(rootWriteConfirmRememberSkip = (!mainViewModel.confirm.value.rootWriteConfirmRememberSkip)) } },
                 onConfirm = { request, shouldSkip ->
@@ -816,8 +820,8 @@ internal fun MainActivity.ArtPlusScreen() {
 }
         run {
 
-            val confirmState by mainViewModel.confirm.collectAsState()
             // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
+            // Phase 5：confirmState 已提升至 ArtPlusScreen 顶层，此处复用（删重复订阅）。
             RefreshConfirmDialog(
                 visible = confirmState.refreshConfirmVisible,
                 rememberAuto = confirmState.refreshConfirmRememberAuto,
@@ -869,8 +873,8 @@ internal fun MainActivity.ArtPlusScreen() {
 }
         run {
     PresetPageDialogs(
-                saveDialogVisible = mainViewModel.presetUi.value.presetSaveDialogVisible,
-                saveInitialName = mainViewModel.presetUi.value.presetSaveName,
+                saveDialogVisible = presetUiState.presetSaveDialogVisible,
+                saveInitialName = presetUiState.presetSaveName,
                 onSaveConfirm = { name ->
                     mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
                     run {
@@ -893,7 +897,7 @@ internal fun MainActivity.ArtPlusScreen() {
     }
                 },
                 onSaveDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) } },
-                renameTarget = mainViewModel.presetUi.value.presetRenameTarget,
+                renameTarget = presetUiState.presetRenameTarget,
                 onRenameConfirm = { id, name ->
                     mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) }
                     run {
@@ -911,7 +915,7 @@ internal fun MainActivity.ArtPlusScreen() {
     }
                 },
                 onRenameDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) } },
-                actionMenuTarget = mainViewModel.presetUi.value.presetActionMenuTarget,
+                actionMenuTarget = presetUiState.presetActionMenuTarget,
                 actionMenuBusy = mainViewModel.shell.value.isBusy,
                 onActionMenuDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetActionMenuTarget = (null)) } },
                 onActionApply = { run {
@@ -1171,7 +1175,7 @@ internal fun MainActivity.ArtPlusScreen() {
                 )
     } },
                 onActionDelete = { mainViewModel.updatePresetUi { v -> v.copy(presetDeleteConfirmTarget = (it)) } },
-                deleteConfirmTarget = mainViewModel.presetUi.value.presetDeleteConfirmTarget,
+                deleteConfirmTarget = presetUiState.presetDeleteConfirmTarget,
                 onDeleteDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetDeleteConfirmTarget = (null)) } },
                 onDeleteConfirm = { run {
         deletePreset(
@@ -1196,7 +1200,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                 )
     } },
-                importDialogVisible = mainViewModel.presetUi.value.presetImportDialogVisible,
+                importDialogVisible = presetUiState.presetImportDialogVisible,
                 onImportConfirm = { text -> run {
         importPresetsFromText(
                     text = (text),
@@ -1210,7 +1214,7 @@ internal fun MainActivity.ArtPlusScreen() {
                 )
     } },
                 onImportDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) } },
-                batchPreviewConfirmTarget = mainViewModel.presetUi.value.presetBatchPreviewConfirmTarget,
+                batchPreviewConfirmTarget = presetUiState.presetBatchPreviewConfirmTarget,
                 onBatchPreviewConfirm = {
                     mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) }
                     run {
@@ -1696,10 +1700,10 @@ internal fun MainActivity.ArtPlusScreen() {
     }
                 },
                 onBatchPreviewConfirmDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) } },
-                batchPreviewProgress = mainViewModel.presetUi.value.batchPreviewProgress,
+                batchPreviewProgress = presetUiState.batchPreviewProgress,
                 onCancelBatchPreview = { mainViewModel.updatePresetUi { it -> it.copy(batchPreviewCancelled = (true)) } },
-                showRefreshConfirm = mainViewModel.presetUi.value.showBatchPreviewRefreshConfirm,
-                refreshConfirmPreset = mainViewModel.presetUi.value.activeBatchPreviewPreset ?: mainViewModel.presetUi.value.batchPreviewResult?.preset,
+                showRefreshConfirm = presetUiState.showBatchPreviewRefreshConfirm,
+                refreshConfirmPreset = presetUiState.activeBatchPreviewPreset ?: presetUiState.batchPreviewResult?.preset,
                 batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
                 onRefreshConfirm = {
                     mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) }
