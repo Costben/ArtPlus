@@ -329,6 +329,9 @@ import com.caverock.androidsvg.SVG
 
 @Composable
 internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?, launcherCount: Int, totalCount: Int, generatedCount: Int) {
+    // O1 修复：订阅 presetUi（裸读 .value 不触发重组，存/改/删后列表 stale，需重进才刷）。
+    // 只加订阅、读取经此订阅走；数据逻辑/持久化顺序/符号名一律不动。
+    val presetUiState by mainViewModel.presetUi.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val scope = rememberCoroutineScope()
     val isDark = isSystemInDarkTheme()
@@ -4856,7 +4859,7 @@ val __act2 = LocalContext.current
                 2 -> PagerShellPage(
                     title = "预设",
                     actions = {
-                        val presetCount = remember(mainViewModel.presetUi.value.presetListVersion) { presetStore.all().size }
+                        val presetCount = remember(presetUiState.presetListVersion) { presetStore.all().size }
                         TitleBarIconButton(
                             icon = Lucide.Download,
                             contentDescription = "导入预设",
@@ -4909,9 +4912,9 @@ val __act2 = LocalContext.current
                                 ) {
                                     run {
     PresetStatusCard(
-                presets = remember(mainViewModel.presetUi.value.presetListVersion) { presetStore.all() },
-                activePresetId = mainViewModel.presetUi.value.activePresetId,
-                activePresetBaseParams = mainViewModel.presetUi.value.activePresetBaseParams,
+                presets = remember(presetUiState.presetListVersion) { presetStore.all() },
+                activePresetId = presetUiState.activePresetId,
+                activePresetBaseParams = presetUiState.activePresetBaseParams,
                 currentParams = run {
         paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
     },
@@ -5400,15 +5403,15 @@ val __act2 = LocalContext.current
 }
                                     run {
     PresetLibraryCard(
-                presets = remember(mainViewModel.presetUi.value.presetListVersion) { presetStore.all() },
-                activePresetId = mainViewModel.presetUi.value.activePresetId,
-                activePresetBaseParams = mainViewModel.presetUi.value.activePresetBaseParams,
+                presets = remember(presetUiState.presetListVersion) { presetStore.all() },
+                activePresetId = presetUiState.activePresetId,
+                activePresetBaseParams = presetUiState.activePresetBaseParams,
                 currentParams = run {
         paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
     },
-                searchQuery = mainViewModel.presetUi.value.presetSearchQuery,
+                searchQuery = presetUiState.presetSearchQuery,
                 onSearchChange = { mainViewModel.updatePresetUi { v -> v.copy(presetSearchQuery = (it)) } },
-                listExpanded = mainViewModel.presetUi.value.presetListExpanded,
+                listExpanded = presetUiState.presetListExpanded,
                 onToggleExpanded = { mainViewModel.updatePresetUi { it -> it.copy(presetListExpanded = (!mainViewModel.presetUi.value.presetListExpanded)) } },
                 isBusy = mainViewModel.shell.value.isBusy,
                 onApply = { run {
