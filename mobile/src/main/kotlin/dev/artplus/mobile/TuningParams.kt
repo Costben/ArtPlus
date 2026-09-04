@@ -366,6 +366,106 @@ const val DEBUG_HTTP_TOKEN_PARAM = "token"
 const val RMBG_EDGE_FEATHER_MIN_ALPHA_DELTA = 12
 
 /**
+ * RMBG 组件/推理常量（Epic v2 Phase 1 Slice 1.3 从 MainActivity 迁移而来）。
+ *
+ * 原为 MainActivity companion object 内 private const/val，现为顶层公开常量，
+ * 数值与类型未变。同包直接引用，Activity 内原有调用点零改动。
+ */
+const val RMBG_COMPONENT_DIR = "rmbg_component"
+const val RMBG_MODEL_NAME = "bria-rmbg.onnx"
+const val DEFAULT_RMBG_INPUT_SIZE = 1024
+const val RMBG_MIN_MODEL_BYTES = 100_000_000L
+const val RMBG_MIN_COMPONENT_ZIP_BYTES = 100_000_000L
+const val RMBG_MAX_DOWNLOAD_BYTES = 2L * 1024L * 1024L * 1024L
+const val RMBG_MAX_COMPONENT_ZIP_ENTRIES = 128
+const val RMBG_MAX_COMPONENT_ZIP_UNPACK_BYTES = 800L * 1024L * 1024L
+const val RMBG_DOWNLOAD_CONNECT_TIMEOUT_MS = 30_000
+const val RMBG_DOWNLOAD_READ_TIMEOUT_MS = 1_800_000
+const val RMBG_MODEL_URL_ORIGINAL =
+    "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model.onnx"
+const val RMBG_MODEL_URL_QUANTIZED =
+    "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_quantized.onnx"
+const val RMBG_MODEL_URL_UINT8 =
+    "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_uint8.onnx"
+const val RMBG_MODEL_URL_INT8 =
+    "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_int8.onnx"
+const val RMBG_MODEL_URL_FP16 =
+    "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_fp16.onnx"
+const val RMBG_MODEL_URL_Q4 =
+    "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_q4.onnx"
+const val RMBG_MODEL_URL_BNB4 =
+    "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_bnb4.onnx"
+const val RMBG_MODEL_URL_Q4F16 =
+    "https://modelscope.cn/models/AI-ModelScope/RMBG-2.0/resolve/master/onnx/model_q4f16.onnx"
+val DEFAULT_RMBG_COMPONENT_URL =
+    RMBG_MODEL_URL_QUANTIZED.ifBlank { RMBG_MODEL_URL_ORIGINAL }
+internal val RMBG_MODEL_PRESET_CUSTOM = RmbgModelPreset(
+    id = "custom",
+    label = "自定义 URL",
+    summary = "手动填写模型或组件 ZIP 地址",
+    url = "",
+)
+internal val RMBG_MODEL_PRESETS = listOf(
+    RmbgModelPreset(
+        id = "rmbg20_quantized",
+        label = "量化推荐",
+        summary = "model_quantized.onnx · 349MB · 默认候选",
+        url = RMBG_MODEL_URL_QUANTIZED,
+    ),
+    RmbgModelPreset(
+        id = "rmbg20_uint8",
+        label = "UINT8",
+        summary = "model_uint8.onnx · 349MB · 备选",
+        url = RMBG_MODEL_URL_UINT8,
+    ),
+    RmbgModelPreset(
+        id = "rmbg20_int8",
+        label = "INT8",
+        summary = "model_int8.onnx · 349MB · 备选",
+        url = RMBG_MODEL_URL_INT8,
+    ),
+    RmbgModelPreset(
+        id = "rmbg20_original",
+        label = "原版",
+        summary = "model.onnx · 官方 ONNX",
+        url = RMBG_MODEL_URL_ORIGINAL,
+    ),
+    RmbgModelPreset(
+        id = "rmbg20_fp16",
+        label = "FP16",
+        summary = "model_fp16.onnx · 490MB · 基线",
+        url = RMBG_MODEL_URL_FP16,
+    ),
+    RmbgModelPreset(
+        id = "rmbg20_q4",
+        label = "Q4",
+        summary = "model_q4.onnx · 350MB",
+        url = RMBG_MODEL_URL_Q4,
+    ),
+    RmbgModelPreset(
+        id = "rmbg20_bnb4",
+        label = "BNB4",
+        summary = "model_bnb4.onnx · 339MB",
+        url = RMBG_MODEL_URL_BNB4,
+    ),
+    RmbgModelPreset(
+        id = "rmbg20_q4f16",
+        label = "Q4F16",
+        summary = "model_q4f16.onnx · 223MB",
+        url = RMBG_MODEL_URL_Q4F16,
+    ),
+    RMBG_MODEL_PRESET_CUSTOM,
+)
+val RMBG_NORMALIZE_MEAN = floatArrayOf(0.485f, 0.456f, 0.406f)
+val RMBG_NORMALIZE_STD = floatArrayOf(0.229f, 0.224f, 0.225f)
+const val RMBG_MIN_MANUAL_COVERAGE = 0.02
+const val RMBG_MAX_MANUAL_COVERAGE = 0.62
+const val RMBG_MIN_AUTO_COVERAGE = 0.02
+const val RMBG_MAX_AUTO_COVERAGE = 0.34
+const val RMBG_EDGE_ADJUST_MAX_RADIUS = 3
+const val RMBG_WEAK_ALPHA_MAX_CUT = 72
+
+/**
  * 全部可调参数的不可变快照（预设/撤销/批量传输用）。
  *
  * 数字与布尔为强类型；模式（LocalSeparationMode / AdaptiveForegroundMode /
