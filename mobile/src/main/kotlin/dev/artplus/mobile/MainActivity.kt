@@ -141,8 +141,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModelProvider
 import androidx.compose.runtime.mutableStateMapOf
@@ -341,23 +339,23 @@ class MainActivity : ComponentActivity() {
     }.asCoroutineDispatcher()
     internal val previewWorkerScope = CoroutineScope(SupervisorJob() + previewWorkerDispatcher)
     internal val apps = mutableStateListOf<AppEntry>()
-    internal var queryText by mutableStateOf("")
-    internal var selectedPackageName by mutableStateOf<String?>(null)
-    internal var statusText by mutableStateOf("加载应用列表中...")
-    internal var packageListPermissionGranted by mutableStateOf(true)
-    internal var usageAccessGranted by mutableStateOf(false)
-    internal var outputTreeUri by mutableStateOf<Uri?>(null)
-    internal var isBusy by mutableStateOf(false)
+    internal var queryText: String get() = mainViewModel.picker.value.queryText; set(v) { mainViewModel.updatePicker { it.copy(queryText = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var selectedPackageName: String? get() = mainViewModel.picker.value.selectedPackageName; set(v) { mainViewModel.updatePicker { it.copy(selectedPackageName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var statusText: String get() = mainViewModel.shell.value.statusText; set(v) { mainViewModel.updateShell { it.copy(statusText = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var packageListPermissionGranted: Boolean get() = mainViewModel.picker.value.packageListPermissionGranted; set(v) { mainViewModel.updatePicker { it.copy(packageListPermissionGranted = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var usageAccessGranted: Boolean get() = mainViewModel.picker.value.usageAccessGranted; set(v) { mainViewModel.updatePicker { it.copy(usageAccessGranted = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var outputTreeUri: Uri? get() = mainViewModel.shell.value.outputTreeUri; set(v) { mainViewModel.updateShell { it.copy(outputTreeUri = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isBusy: Boolean get() = mainViewModel.shell.value.isBusy; set(v) { mainViewModel.updateShell { it.copy(isBusy = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var didRequestAppLoad = false
-    internal var gptModelId by mutableStateOf("")
-    internal var gptBaseUrl by mutableStateOf("")
-    internal var gptApiKey by mutableStateOf("")
-    internal var gptSettingsSaveStatus by mutableStateOf("")
+    internal var gptModelId: String get() = mainViewModel.gptRmbgSettings.value.gptModelId; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(gptModelId = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var gptBaseUrl: String get() = mainViewModel.gptRmbgSettings.value.gptBaseUrl; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(gptBaseUrl = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var gptApiKey: String get() = mainViewModel.gptRmbgSettings.value.gptApiKey; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(gptApiKey = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var gptSettingsSaveStatus: String get() = mainViewModel.gptRmbgSettings.value.gptSettingsSaveStatus; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(gptSettingsSaveStatus = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftForegroundSubjectPercentText by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT.toString())
     internal var draftForegroundShadowLevelText by mutableStateOf(DEFAULT_FOREGROUND_SHADOW_LEVEL.toString())
     internal var draftMonochromeThemeScaleText by mutableStateOf((DEFAULT_MONOCHROME_THEME_SCALE * 100).roundToInt().toString())
-    internal var advancedSettingsCategory by mutableStateOf(AdvancedSettingsCategory.LiquidGlass)
-    internal var advancedSettingsTab by mutableStateOf(AdvancedSettingsTab.Sliders)
+    internal var advancedSettingsCategory: AdvancedSettingsCategory get() = mainViewModel.shell.value.advancedSettingsCategory; set(v) { mainViewModel.updateShell { it.copy(advancedSettingsCategory = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var advancedSettingsTab: AdvancedSettingsTab get() = mainViewModel.shell.value.advancedSettingsTab; set(v) { mainViewModel.updateShell { it.copy(advancedSettingsTab = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBackgroundSeparationText by mutableStateOf(DEFAULT_BACKGROUND_SEPARATION_PERCENT.toString())
     internal var draftPlateRemovalText by mutableStateOf(DEFAULT_PLATE_REMOVAL_PERCENT.toString())
     internal var draftShadowRemovalText by mutableStateOf(DEFAULT_SHADOW_REMOVAL_PERCENT.toString())
@@ -366,8 +364,8 @@ class MainActivity : ComponentActivity() {
     internal var draftRmbgEdgeFeatherText by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT.toString())
     internal var draftRmbgEdgeAdjustText by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT.toString())
     internal var draftRmbgWeakAlphaKeepText by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT.toString())
-    internal var liquidGlassBottomBarEnabled by mutableStateOf(true)
-    internal var liquidGlassBottomBarBlurEnabled by mutableStateOf(true)
+    internal var liquidGlassBottomBarEnabled: Boolean get() = mainViewModel.glassBar.value.liquidGlassBottomBarEnabled; set(v) { mainViewModel.updateGlassBar { it.copy(liquidGlassBottomBarEnabled = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var liquidGlassBottomBarBlurEnabled: Boolean get() = mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled; set(v) { mainViewModel.updateGlassBar { it.copy(liquidGlassBottomBarBlurEnabled = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftLiquidGlassRadiusText by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS.toString())
     internal var draftLiquidGlassOuterWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH.toString())
     internal var draftLiquidGlassTopAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA.toString())
@@ -379,117 +377,117 @@ class MainActivity : ComponentActivity() {
     internal var draftLiquidGlassSubjectInnerOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH.toString())
     internal var draftLiquidGlassSubjectShadowAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA.toString())
     internal var draftLiquidGlassSubjectOpacityText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT.toString())
-    internal var lastParamsSnapshot by mutableStateOf<TuningParams?>(null)
+    internal var lastParamsSnapshot: TuningParams? get() = mainViewModel.previewSession.value.lastParamsSnapshot; set(v) { mainViewModel.updatePreviewSession { it.copy(lastParamsSnapshot = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     // P2 交界：历史单源已收敛进 MainViewModel（state/），Activity 不再持有 tuningHistory 栈；
     // 186 live vars 与 currentTuningParams() 不动（P5 重写），同步一律走快照显式调用。
     internal val mainViewModel: MainViewModel by lazy { ViewModelProvider(this)[MainViewModel::class.java] }
-    internal var activePresetId by mutableStateOf<String?>(null)
-    internal var activePresetBaseParams by mutableStateOf<TuningParams?>(null)
-    internal var presetListVersion by mutableStateOf(0)
-    internal var batchOutputMode by mutableStateOf(BatchOutputMode.Root)
-    internal var gptRunCount by mutableStateOf(0)
-    internal var rmbgRunCount by mutableStateOf(0)
-    internal var presetSaveDialogVisible by mutableStateOf(false)
-    internal var presetSaveName by mutableStateOf("")
-    internal var presetImportDialogVisible by mutableStateOf(false)
-    internal var presetImportText by mutableStateOf("")
-    internal var presetRenameTarget by mutableStateOf<TuningPreset?>(null)
-    internal var presetActionMenuTarget by mutableStateOf<TuningPreset?>(null)
-    internal var presetDeleteConfirmTarget by mutableStateOf<TuningPreset?>(null)
-    internal var presetSearchQuery by mutableStateOf("")
-    internal var presetListExpanded by mutableStateOf(false)
-    internal var presetBatchPreviewConfirmTarget by mutableStateOf<TuningPreset?>(null)
-    internal var activeBatchPreviewPreset by mutableStateOf<TuningPreset?>(null)
-    internal var showBatchPreviewRefreshConfirm by mutableStateOf(false)
-    internal var batchPreviewProgress by mutableStateOf<BatchPreviewProgress?>(null)
-    internal var batchPreviewResult by mutableStateOf<BatchPreviewResult?>(null)
-    internal var batchPreviewCancelled by mutableStateOf(false)
-    internal var isGeneratingBatchPreview by mutableStateOf(false)
-    internal var batchPreviewCount by mutableIntStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT)
+    internal var activePresetId: String? get() = mainViewModel.presetUi.value.activePresetId; set(v) { mainViewModel.updatePresetUi { it.copy(activePresetId = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var activePresetBaseParams: TuningParams? get() = mainViewModel.presetUi.value.activePresetBaseParams; set(v) { mainViewModel.updatePresetUi { it.copy(activePresetBaseParams = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetListVersion: Int get() = mainViewModel.presetUi.value.presetListVersion; set(v) { mainViewModel.updatePresetUi { it.copy(presetListVersion = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var batchOutputMode: BatchOutputMode get() = mainViewModel.presetUi.value.batchOutputMode; set(v) { mainViewModel.updatePresetUi { it.copy(batchOutputMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var gptRunCount: Int get() = mainViewModel.presetUi.value.gptRunCount; set(v) { mainViewModel.updatePresetUi { it.copy(gptRunCount = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgRunCount: Int get() = mainViewModel.presetUi.value.rmbgRunCount; set(v) { mainViewModel.updatePresetUi { it.copy(rmbgRunCount = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetSaveDialogVisible: Boolean get() = mainViewModel.presetUi.value.presetSaveDialogVisible; set(v) { mainViewModel.updatePresetUi { it.copy(presetSaveDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetSaveName: String get() = mainViewModel.presetUi.value.presetSaveName; set(v) { mainViewModel.updatePresetUi { it.copy(presetSaveName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetImportDialogVisible: Boolean get() = mainViewModel.presetUi.value.presetImportDialogVisible; set(v) { mainViewModel.updatePresetUi { it.copy(presetImportDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetImportText: String get() = mainViewModel.presetUi.value.presetImportText; set(v) { mainViewModel.updatePresetUi { it.copy(presetImportText = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetRenameTarget: TuningPreset? get() = mainViewModel.presetUi.value.presetRenameTarget; set(v) { mainViewModel.updatePresetUi { it.copy(presetRenameTarget = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetActionMenuTarget: TuningPreset? get() = mainViewModel.presetUi.value.presetActionMenuTarget; set(v) { mainViewModel.updatePresetUi { it.copy(presetActionMenuTarget = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetDeleteConfirmTarget: TuningPreset? get() = mainViewModel.presetUi.value.presetDeleteConfirmTarget; set(v) { mainViewModel.updatePresetUi { it.copy(presetDeleteConfirmTarget = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetSearchQuery: String get() = mainViewModel.presetUi.value.presetSearchQuery; set(v) { mainViewModel.updatePresetUi { it.copy(presetSearchQuery = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetListExpanded: Boolean get() = mainViewModel.presetUi.value.presetListExpanded; set(v) { mainViewModel.updatePresetUi { it.copy(presetListExpanded = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var presetBatchPreviewConfirmTarget: TuningPreset? get() = mainViewModel.presetUi.value.presetBatchPreviewConfirmTarget; set(v) { mainViewModel.updatePresetUi { it.copy(presetBatchPreviewConfirmTarget = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var activeBatchPreviewPreset: TuningPreset? get() = mainViewModel.presetUi.value.activeBatchPreviewPreset; set(v) { mainViewModel.updatePresetUi { it.copy(activeBatchPreviewPreset = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var showBatchPreviewRefreshConfirm: Boolean get() = mainViewModel.presetUi.value.showBatchPreviewRefreshConfirm; set(v) { mainViewModel.updatePresetUi { it.copy(showBatchPreviewRefreshConfirm = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var batchPreviewProgress: BatchPreviewProgress? get() = mainViewModel.presetUi.value.batchPreviewProgress; set(v) { mainViewModel.updatePresetUi { it.copy(batchPreviewProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var batchPreviewResult: BatchPreviewResult? get() = mainViewModel.presetUi.value.batchPreviewResult; set(v) { mainViewModel.updatePresetUi { it.copy(batchPreviewResult = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var batchPreviewCancelled: Boolean get() = mainViewModel.presetUi.value.batchPreviewCancelled; set(v) { mainViewModel.updatePresetUi { it.copy(batchPreviewCancelled = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isGeneratingBatchPreview: Boolean get() = mainViewModel.presetUi.value.isGeneratingBatchPreview; set(v) { mainViewModel.updatePresetUi { it.copy(isGeneratingBatchPreview = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var batchPreviewCount: Int get() = mainViewModel.batchPreviewConfig.value.batchPreviewCount; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewCount = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBatchPreviewCountText by mutableStateOf(BatchPreviewSampler.DEFAULT_BATCH_PREVIEW_COUNT.toString())
-    internal var batchPreviewColumns by mutableIntStateOf(4)
+    internal var batchPreviewColumns: Int get() = mainViewModel.batchPreviewConfig.value.batchPreviewColumns; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewColumns = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBatchPreviewColumnsText by mutableStateOf("4")
-    internal var batchPreviewIconSizeDp by mutableIntStateOf(54)
+    internal var batchPreviewIconSizeDp: Int get() = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewIconSizeDp = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBatchPreviewIconSizeDpText by mutableStateOf("54")
-    internal var batchPreviewCornerRadiusDp by mutableIntStateOf(20)
+    internal var batchPreviewCornerRadiusDp: Int get() = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewCornerRadiusDp = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftBatchPreviewCornerRadiusDpText by mutableStateOf("20")
-    internal var batchPreviewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
-    internal var customWallpaperPath by mutableStateOf<String?>(null)
-    internal var customWallpaperInfo by mutableStateOf("")
-    internal var pendingServiceConfirm by mutableStateOf<ServiceConfirmRequest?>(null)
-    internal var autoConfirmRootWrite by mutableStateOf(false)
-    internal var pendingRootWriteConfirm by mutableStateOf<RootWriteConfirmRequest?>(null)
-    internal var rootWriteConfirmRememberSkip by mutableStateOf(false)
+    internal var batchPreviewDesktopBackground: PreviewDesktopBackground get() = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(batchPreviewDesktopBackground = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var customWallpaperPath: String? get() = mainViewModel.batchPreviewConfig.value.customWallpaperPath; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(customWallpaperPath = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var customWallpaperInfo: String get() = mainViewModel.batchPreviewConfig.value.customWallpaperInfo; set(v) { mainViewModel.updateBatchPreviewConfig { it.copy(customWallpaperInfo = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var pendingServiceConfirm: ServiceConfirmRequest? get() = mainViewModel.confirm.value.pendingServiceConfirm; set(v) { mainViewModel.updateConfirm { it.copy(pendingServiceConfirm = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var autoConfirmRootWrite: Boolean get() = mainViewModel.confirm.value.autoConfirmRootWrite; set(v) { mainViewModel.updateConfirm { it.copy(autoConfirmRootWrite = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var pendingRootWriteConfirm: RootWriteConfirmRequest? get() = mainViewModel.confirm.value.pendingRootWriteConfirm; set(v) { mainViewModel.updateConfirm { it.copy(pendingRootWriteConfirm = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rootWriteConfirmRememberSkip: Boolean get() = mainViewModel.confirm.value.rootWriteConfirmRememberSkip; set(v) { mainViewModel.updateConfirm { it.copy(rootWriteConfirmRememberSkip = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftJsonParamsText by mutableStateOf("")
-    internal var refreshConfirmVisible by mutableStateOf(false)
-    internal var autoConfirmRefresh by mutableStateOf(false)
-    internal var refreshConfirmRememberAuto by mutableStateOf(false)
+    internal var refreshConfirmVisible: Boolean get() = mainViewModel.confirm.value.refreshConfirmVisible; set(v) { mainViewModel.updateConfirm { it.copy(refreshConfirmVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var autoConfirmRefresh: Boolean get() = mainViewModel.confirm.value.autoConfirmRefresh; set(v) { mainViewModel.updateConfirm { it.copy(autoConfirmRefresh = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var refreshConfirmRememberAuto: Boolean get() = mainViewModel.confirm.value.refreshConfirmRememberAuto; set(v) { mainViewModel.updateConfirm { it.copy(refreshConfirmRememberAuto = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal val presetStore by lazy { PresetStore(getSharedPreferences(PREFS_NAME, MODE_PRIVATE)) }
-    internal var currentPage by mutableStateOf(AppPage.Home)
-    internal var showSystemApps by mutableStateOf(false)
-    internal var generatedFilter by mutableStateOf(GeneratedFilter.All)
-    internal var generatedPackageNames by mutableStateOf<Set<String>>(emptySet())
-    internal var multiSelectedPackageNames by mutableStateOf<Set<String>>(emptySet())
-    internal var batchApplyProgress by mutableStateOf<BatchApplyProgress?>(null)
-    internal var exportProgress by mutableStateOf<ExportProgress?>(null)
+    internal var currentPage: AppPage get() = mainViewModel.shell.value.currentPage; set(v) { mainViewModel.updateShell { it.copy(currentPage = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var showSystemApps: Boolean get() = mainViewModel.picker.value.showSystemApps; set(v) { mainViewModel.updatePicker { it.copy(showSystemApps = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var generatedFilter: GeneratedFilter get() = mainViewModel.picker.value.generatedFilter; set(v) { mainViewModel.updatePicker { it.copy(generatedFilter = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var generatedPackageNames: Set<String> get() = mainViewModel.picker.value.generatedPackageNames; set(v) { mainViewModel.updatePicker { it.copy(generatedPackageNames = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var multiSelectedPackageNames: Set<String> get() = mainViewModel.picker.value.multiSelectedPackageNames; set(v) { mainViewModel.updatePicker { it.copy(multiSelectedPackageNames = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var batchApplyProgress: BatchApplyProgress? get() = mainViewModel.transfer.value.batchApplyProgress; set(v) { mainViewModel.updateTransfer { it.copy(batchApplyProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var exportProgress: ExportProgress? get() = mainViewModel.transfer.value.exportProgress; set(v) { mainViewModel.updateTransfer { it.copy(exportProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     // 底部备份/导出弹窗与后台态
-    internal var backupProgress by mutableStateOf<ExportProgress?>(null)
-    internal var backupSheetVisible by mutableStateOf(false)
-    internal var singleExportSheetVisible by mutableStateOf(false)
-    internal var backupInBackground by mutableStateOf(false)
-    internal var backupBackgroundDots by mutableStateOf(1)
+    internal var backupProgress: ExportProgress? get() = mainViewModel.transfer.value.backupProgress; set(v) { mainViewModel.updateTransfer { it.copy(backupProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var backupSheetVisible: Boolean get() = mainViewModel.transfer.value.backupSheetVisible; set(v) { mainViewModel.updateTransfer { it.copy(backupSheetVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var singleExportSheetVisible: Boolean get() = mainViewModel.transfer.value.singleExportSheetVisible; set(v) { mainViewModel.updateTransfer { it.copy(singleExportSheetVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var backupInBackground: Boolean get() = mainViewModel.transfer.value.backupInBackground; set(v) { mainViewModel.updateTransfer { it.copy(backupInBackground = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var backupBackgroundDots: Int get() = mainViewModel.transfer.value.backupBackgroundDots; set(v) { mainViewModel.updateTransfer { it.copy(backupBackgroundDots = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var backupJob: Job? = null
     internal var singleExportJob: Job? = null
     internal var backupDotJob: Job? = null
-    internal var isScanningGeneratedPackages by mutableStateOf(false)
-    internal var generatedScanFailed by mutableStateOf(false)
-    internal var previewPackageName by mutableStateOf<String?>(null)
-    internal var previewDirPath by mutableStateOf<String?>(null)
-    internal var previewVersion by mutableStateOf(0)
-    internal var previewStripEnabled by mutableStateOf(false)
-    internal var sharedPreviewAssets by mutableStateOf<PreviewAssets?>(null)
-    internal var activeGenerationSession by mutableStateOf<GenerationSession?>(null)
-    internal var previewDesktopBackground by mutableStateOf(PreviewDesktopBackground.DarkGray)
-    internal var previewCornerRadiusDp by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP)
+    internal var isScanningGeneratedPackages: Boolean get() = mainViewModel.picker.value.isScanningGeneratedPackages; set(v) { mainViewModel.updatePicker { it.copy(isScanningGeneratedPackages = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var generatedScanFailed: Boolean get() = mainViewModel.picker.value.generatedScanFailed; set(v) { mainViewModel.updatePicker { it.copy(generatedScanFailed = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var previewPackageName: String? get() = mainViewModel.previewSession.value.previewPackageName; set(v) { mainViewModel.updatePreviewSession { it.copy(previewPackageName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var previewDirPath: String? get() = mainViewModel.previewSession.value.previewDirPath; set(v) { mainViewModel.updatePreviewSession { it.copy(previewDirPath = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var previewVersion: Int get() = mainViewModel.previewSession.value.previewVersion; set(v) { mainViewModel.updatePreviewSession { it.copy(previewVersion = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var previewStripEnabled: Boolean get() = mainViewModel.previewSession.value.previewStripEnabled; set(v) { mainViewModel.updatePreviewSession { it.copy(previewStripEnabled = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var sharedPreviewAssets: PreviewAssets? get() = mainViewModel.previewSession.value.sharedPreviewAssets; set(v) { mainViewModel.updatePreviewSession { it.copy(sharedPreviewAssets = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var activeGenerationSession: GenerationSession? get() = mainViewModel.previewSession.value.activeGenerationSession; set(v) { mainViewModel.updatePreviewSession { it.copy(activeGenerationSession = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var previewDesktopBackground: PreviewDesktopBackground get() = mainViewModel.previewSession.value.previewDesktopBackground; set(v) { mainViewModel.updatePreviewSession { it.copy(previewDesktopBackground = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var previewCornerRadiusDp: Int get() = mainViewModel.previewSession.value.previewCornerRadiusDp; set(v) { mainViewModel.updatePreviewSession { it.copy(previewCornerRadiusDp = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftPreviewCornerRadiusDpText by mutableStateOf(DEFAULT_PREVIEW_CORNER_RADIUS_DP.toString())
-    internal var previewIconSizeDp by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP)
+    internal var previewIconSizeDp: Int get() = mainViewModel.previewSession.value.previewIconSizeDp; set(v) { mainViewModel.updatePreviewSession { it.copy(previewIconSizeDp = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var draftPreviewIconSizeDpText by mutableStateOf(DEFAULT_PREVIEW_ICON_SIZE_DP.toString())
-    internal var previewChoiceMode by mutableStateOf<PreviewMode?>(null)
-    internal var isGptPreviewLoading by mutableStateOf(false)
-    internal var isGeneratingGptCandidate by mutableStateOf(false)
-    internal var isGeneratingRmbgCandidate by mutableStateOf(false)
-    internal var isRefreshingArtPlusIcons by mutableStateOf(false)
-    internal var isPreviewAssetsRefreshing by mutableStateOf(false)
-    internal var isPreviewOutputRefreshing by mutableStateOf(false)
-    internal var lastRmbgCandidateError by mutableStateOf<String?>(null)
-    internal var rmbgCandidatePackageName by mutableStateOf<String?>(null)
-    internal var rmbgCandidateMode by mutableStateOf<PreviewMode?>(null)
-    internal var rmbgCandidateStatusText by mutableStateOf("")
-    internal var rmbgCandidateFailurePackageName by mutableStateOf<String?>(null)
-    internal var rmbgCandidateFailureMode by mutableStateOf<PreviewMode?>(null)
-    internal var skipNextHomeReturnAnimation by mutableStateOf(false)
-    internal var pendingCustomImageMode by mutableStateOf<PreviewMode?>(null)
-    internal var pendingCustomImageKind by mutableStateOf<CustomImageKind?>(null)
-    internal var isInstallingRmbgComponent by mutableStateOf(false)
-    internal var rmbgInstallStage by mutableStateOf("")
-    internal var rmbgInstallProgress by mutableStateOf<Float?>(null)
-    internal var rmbgDialogVisible by mutableStateOf(false)
-    internal var exportDialogVisible by mutableStateOf(false)
-    internal var resetDefaultsDialogVisible by mutableStateOf(false)
-    internal var onboardingVisible by mutableStateOf(false)
-    internal var rmbgComponentUrl by mutableStateOf("")
-    internal var rmbgComponentSaveStatus by mutableStateOf("")
-    internal var lastRmbgInferenceReport by mutableStateOf<RmbgInferenceReport?>(null)
+    internal var previewChoiceMode: PreviewMode? get() = mainViewModel.previewSession.value.previewChoiceMode; set(v) { mainViewModel.updatePreviewSession { it.copy(previewChoiceMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isGptPreviewLoading: Boolean get() = mainViewModel.previewSession.value.isGptPreviewLoading; set(v) { mainViewModel.updatePreviewSession { it.copy(isGptPreviewLoading = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isGeneratingGptCandidate: Boolean get() = mainViewModel.previewSession.value.isGeneratingGptCandidate; set(v) { mainViewModel.updatePreviewSession { it.copy(isGeneratingGptCandidate = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isGeneratingRmbgCandidate: Boolean get() = mainViewModel.previewSession.value.isGeneratingRmbgCandidate; set(v) { mainViewModel.updatePreviewSession { it.copy(isGeneratingRmbgCandidate = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isRefreshingArtPlusIcons: Boolean get() = mainViewModel.previewSession.value.isRefreshingArtPlusIcons; set(v) { mainViewModel.updatePreviewSession { it.copy(isRefreshingArtPlusIcons = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isPreviewAssetsRefreshing: Boolean get() = mainViewModel.previewSession.value.isPreviewAssetsRefreshing; set(v) { mainViewModel.updatePreviewSession { it.copy(isPreviewAssetsRefreshing = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isPreviewOutputRefreshing: Boolean get() = mainViewModel.previewSession.value.isPreviewOutputRefreshing; set(v) { mainViewModel.updatePreviewSession { it.copy(isPreviewOutputRefreshing = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var lastRmbgCandidateError: String? get() = mainViewModel.previewSession.value.lastRmbgCandidateError; set(v) { mainViewModel.updatePreviewSession { it.copy(lastRmbgCandidateError = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgCandidatePackageName: String? get() = mainViewModel.previewSession.value.rmbgCandidatePackageName; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidatePackageName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgCandidateMode: PreviewMode? get() = mainViewModel.previewSession.value.rmbgCandidateMode; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidateMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgCandidateStatusText: String get() = mainViewModel.previewSession.value.rmbgCandidateStatusText; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidateStatusText = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgCandidateFailurePackageName: String? get() = mainViewModel.previewSession.value.rmbgCandidateFailurePackageName; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidateFailurePackageName = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgCandidateFailureMode: PreviewMode? get() = mainViewModel.previewSession.value.rmbgCandidateFailureMode; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgCandidateFailureMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var skipNextHomeReturnAnimation: Boolean get() = mainViewModel.previewSession.value.skipNextHomeReturnAnimation; set(v) { mainViewModel.updatePreviewSession { it.copy(skipNextHomeReturnAnimation = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var pendingCustomImageMode: PreviewMode? get() = mainViewModel.previewSession.value.pendingCustomImageMode; set(v) { mainViewModel.updatePreviewSession { it.copy(pendingCustomImageMode = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var pendingCustomImageKind: CustomImageKind? get() = mainViewModel.previewSession.value.pendingCustomImageKind; set(v) { mainViewModel.updatePreviewSession { it.copy(pendingCustomImageKind = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isInstallingRmbgComponent: Boolean get() = mainViewModel.previewSession.value.isInstallingRmbgComponent; set(v) { mainViewModel.updatePreviewSession { it.copy(isInstallingRmbgComponent = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgInstallStage: String get() = mainViewModel.previewSession.value.rmbgInstallStage; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgInstallStage = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgInstallProgress: Float? get() = mainViewModel.previewSession.value.rmbgInstallProgress; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgInstallProgress = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgDialogVisible: Boolean get() = mainViewModel.previewSession.value.rmbgDialogVisible; set(v) { mainViewModel.updatePreviewSession { it.copy(rmbgDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var exportDialogVisible: Boolean get() = mainViewModel.previewSession.value.exportDialogVisible; set(v) { mainViewModel.updatePreviewSession { it.copy(exportDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var resetDefaultsDialogVisible: Boolean get() = mainViewModel.previewSession.value.resetDefaultsDialogVisible; set(v) { mainViewModel.updatePreviewSession { it.copy(resetDefaultsDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var onboardingVisible: Boolean get() = mainViewModel.shell.value.onboardingVisible; set(v) { mainViewModel.updateShell { it.copy(onboardingVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgComponentUrl: String get() = mainViewModel.gptRmbgSettings.value.rmbgComponentUrl; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(rmbgComponentUrl = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var rmbgComponentSaveStatus: String get() = mainViewModel.gptRmbgSettings.value.rmbgComponentSaveStatus; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(rmbgComponentSaveStatus = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var lastRmbgInferenceReport: RmbgInferenceReport? get() = mainViewModel.previewSession.value.lastRmbgInferenceReport; set(v) { mainViewModel.updatePreviewSession { it.copy(lastRmbgInferenceReport = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal var previewOutputJob: Job? = null
     internal var previewOutputRevision = 0
     internal var generatedPreviewRestoreRevision = 0
     internal var debugHttpServer: DebugHttpServer? = null
     internal var rmbgRuntime: DynamicRmbgRuntime? = null
-    internal var rmbgComponentStatus by mutableStateOf("")
-    internal var isCheckingUpdate by mutableStateOf(false)
-    internal var updateAvailableInfo by mutableStateOf<UpdateInfo?>(null)
-    internal var updateUpToDateDialogVisible by mutableStateOf(false)
-    internal var mitLicenseDialogVisible by mutableStateOf(false)
+    internal var rmbgComponentStatus: String get() = mainViewModel.gptRmbgSettings.value.rmbgComponentStatus; set(v) { mainViewModel.updateGptRmbgSettings { it.copy(rmbgComponentStatus = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var isCheckingUpdate: Boolean get() = mainViewModel.updateUi.value.isCheckingUpdate; set(v) { mainViewModel.updateUpdateUi { it.copy(isCheckingUpdate = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var updateAvailableInfo: UpdateInfo? get() = mainViewModel.updateUi.value.updateAvailableInfo; set(v) { mainViewModel.updateUpdateUi { it.copy(updateAvailableInfo = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var updateUpToDateDialogVisible: Boolean get() = mainViewModel.updateUi.value.updateUpToDateDialogVisible; set(v) { mainViewModel.updateUpdateUi { it.copy(updateUpToDateDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
+    internal var mitLicenseDialogVisible: Boolean get() = mainViewModel.updateUi.value.mitLicenseDialogVisible; set(v) { mainViewModel.updateUpdateUi { it.copy(mitLicenseDialogVisible = v) } } // Slice 3.1 重构期间保留：VM单源薄wrapper
     internal val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
 
@@ -664,10 +662,12 @@ class MainActivity : ComponentActivity() {
 
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun OnboardingDialog() =
+    internal fun OnboardingDialog() {
+        val shellState by mainViewModel.shell.collectAsState()
+        // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
         OnboardingDialog(
-            visible = onboardingVisible,
-            isBusy = isBusy,
+            visible = shellState.onboardingVisible,
+            isBusy = shellState.isBusy,
             onSkip = {
                 // 允许通过外部点击关闭视为跳过
                 getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()
@@ -680,15 +680,18 @@ class MainActivity : ComponentActivity() {
                 chooseTreeLauncher.launch(null)
             },
         )
+    }
 
 
 
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun RefreshConfirmDialog() =
+    internal fun RefreshConfirmDialog() {
+        val confirmState by mainViewModel.confirm.collectAsState()
+        // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
         RefreshConfirmDialog(
-            visible = refreshConfirmVisible,
-            rememberAuto = refreshConfirmRememberAuto,
+            visible = confirmState.refreshConfirmVisible,
+            rememberAuto = confirmState.refreshConfirmRememberAuto,
             onDismiss = { refreshConfirmVisible = false },
             onToggleRemember = { refreshConfirmRememberAuto = !refreshConfirmRememberAuto },
             onConfirm = { shouldAuto ->
@@ -700,6 +703,7 @@ class MainActivity : ComponentActivity() {
                 refreshArtPlusIcons()
             },
         )
+    }
 
 
 
@@ -710,14 +714,18 @@ class MainActivity : ComponentActivity() {
 
     // 重构期间保留：委托到 ui/pages/picker/PickerCommon.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun PermissionCard() =
+    internal fun PermissionCard() {
+        val pickerState by mainViewModel.picker.collectAsState()
+        val shellState by mainViewModel.shell.collectAsState()
+        // Slice 3.1: Activity侧collect读VM单源。
         PermissionCard(
-            packageListGranted = packageListPermissionGranted,
-            usageGranted = usageAccessGranted,
-            isBusy = isBusy,
+            packageListGranted = pickerState.packageListPermissionGranted,
+            usageGranted = pickerState.usageAccessGranted,
+            isBusy = shellState.isBusy,
             onOpenAppSettings = { openAppPermissionSettings() },
             onOpenUsageSettings = { openUsageAccessSettings() },
         )
+    }
 
 
 
@@ -1074,33 +1082,40 @@ class MainActivity : ComponentActivity() {
         launcherCount: Int,
         totalCount: Int,
         generatedCount: Int,
-    ) =
+    ) {
+        val shellState by mainViewModel.shell.collectAsState()
+        // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
         StatusCard(
             selectedApp = selectedApp,
             launcherCount = launcherCount,
             totalCount = totalCount,
             generatedCount = generatedCount,
-            isBusy = isBusy,
+            isBusy = shellState.isBusy,
             hasApps = apps.isNotEmpty(),
-            statusText = statusText,
+            statusText = shellState.statusText,
             onOpenPicker = { currentPage = AppPage.AppPicker },
             appIcon = { entry -> AppIcon(entry, 48.dp) },
         )
+    }
 
     // 重构期间保留：委托到 ui/pages/home/HomeStatusCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun EmptyAppListCard() =
+    internal fun EmptyAppListCard() {
+        val pickerState by mainViewModel.picker.collectAsState()
+        val shellState by mainViewModel.shell.collectAsState()
+        // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
         EmptyAppListCard(
-            queryText = queryText,
-            showSystemApps = showSystemApps,
+            queryText = pickerState.queryText,
+            showSystemApps = pickerState.showSystemApps,
             hasHiddenSystemApps = apps.any { AppVisibility.isSystemAppFlags(it.applicationInfo.flags) && it.packageName != packageName },
-            isBusy = isBusy,
+            isBusy = shellState.isBusy,
             onShowSystemApps = {
                 showSystemApps = true
                 saveUiState()
             },
             onRefresh = { loadApps() },
         )
+    }
 
     // 重构期间保留：委托到 ui/pages/settings/SettingsTuningCards.kt 显式参数版本，调用点零改动。
     @Composable
@@ -1114,11 +1129,13 @@ class MainActivity : ComponentActivity() {
     /** 第二层级「生成设置」：顶部「滑块 / JSON」切换 + 保存成预设 + 滑块分类导航。 */
     // 重构期间保留：委托到 ui/pages/home/HomeStatusCards.kt 显式参数版本，调用点零改动。
     @Composable
-    internal fun GenerationNavCard() =
+    internal fun GenerationNavCard() {
+        val shellState by mainViewModel.shell.collectAsState()
+        // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
         GenerationNavCard(
-            isBusy = isBusy,
-            advancedSettingsTab = advancedSettingsTab,
-            advancedSettingsCategory = advancedSettingsCategory,
+            isBusy = shellState.isBusy,
+            advancedSettingsTab = shellState.advancedSettingsTab,
+            advancedSettingsCategory = shellState.advancedSettingsCategory,
             onTabSelected = {
                 advancedSettingsTab = it
                 saveUiState()
@@ -1132,6 +1149,7 @@ class MainActivity : ComponentActivity() {
                 saveUiState()
             },
         )
+    }
 
 
     // 重构期间保留：委托到 ui/pages/settings/SettingsGlassCards.kt 显式参数版本，调用点零改动。

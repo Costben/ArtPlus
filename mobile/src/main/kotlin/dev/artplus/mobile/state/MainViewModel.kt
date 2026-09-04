@@ -8,6 +8,10 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * P2 ViewModel 地基：快照/历史/预设域（单源）。
+ * Slice 3.1 收敛：非调参 UI 状态收敛为 10 组具名 StateFlow（state/UiState.kt），
+ * 调参子集为单一 MutableStateFlow<TuningParams>（params），Activity 侧 collectAsState()，
+ * draft*Text 草稿态留 UI 层不进 VM。单源：同一状态不得同时存在于 Activity 与 VM，
+ * Activity 侧仅留薄 wrapper 委托（标注“重构期间保留”），load/save 语义不变。
  *
  * Activity 管 live UI 域（186 个 `mutableStateOf` + `currentTuningParams()` 本 phase 不动，
  * 全量重写留 P5）；交界一律用 TuningParams 快照显式同步，VM 绝不读 Activity 字段。
@@ -28,6 +32,78 @@ class MainViewModel : ViewModel() {
 
     private val _historyIndex = MutableStateFlow(-1)
     val historyIndex: StateFlow<Int> = _historyIndex.asStateFlow()
+
+    // Slice 3.1：非调参 UI 状态分组单源（默认值与 MainActivity 基线一致，见 state/UiState.kt）。
+    private val _picker = MutableStateFlow(PickerState())
+    internal val picker: StateFlow<PickerState> = _picker.asStateFlow()
+
+    private val _shell = MutableStateFlow(ShellState())
+    internal val shell: StateFlow<ShellState> = _shell.asStateFlow()
+
+    private val _gptRmbgSettings = MutableStateFlow(GptRmbgSettingsState())
+    internal val gptRmbgSettings: StateFlow<GptRmbgSettingsState> = _gptRmbgSettings.asStateFlow()
+
+    private val _glassBar = MutableStateFlow(GlassBarState())
+    internal val glassBar: StateFlow<GlassBarState> = _glassBar.asStateFlow()
+
+    private val _presetUi = MutableStateFlow(PresetUiState())
+    internal val presetUi: StateFlow<PresetUiState> = _presetUi.asStateFlow()
+
+    private val _batchPreviewConfig = MutableStateFlow(BatchPreviewConfigState())
+    internal val batchPreviewConfig: StateFlow<BatchPreviewConfigState> = _batchPreviewConfig.asStateFlow()
+
+    private val _confirm = MutableStateFlow(ConfirmUiState())
+    internal val confirm: StateFlow<ConfirmUiState> = _confirm.asStateFlow()
+
+    private val _transfer = MutableStateFlow(TransferState())
+    internal val transfer: StateFlow<TransferState> = _transfer.asStateFlow()
+
+    private val _previewSession = MutableStateFlow(PreviewSessionState())
+    internal val previewSession: StateFlow<PreviewSessionState> = _previewSession.asStateFlow()
+
+    private val _updateUi = MutableStateFlow(UpdateUiState())
+    internal val updateUi: StateFlow<UpdateUiState> = _updateUi.asStateFlow()
+
+    /** Slice 3.1 分组写漏斗：不记历史，与原各直接写 var 一致，同步更新对应流触发重组。 */
+    internal fun updatePicker(transform: (PickerState) -> PickerState) {
+        _picker.value = transform(_picker.value)
+    }
+
+    internal fun updateShell(transform: (ShellState) -> ShellState) {
+        _shell.value = transform(_shell.value)
+    }
+
+    internal fun updateGptRmbgSettings(transform: (GptRmbgSettingsState) -> GptRmbgSettingsState) {
+        _gptRmbgSettings.value = transform(_gptRmbgSettings.value)
+    }
+
+    internal fun updateGlassBar(transform: (GlassBarState) -> GlassBarState) {
+        _glassBar.value = transform(_glassBar.value)
+    }
+
+    internal fun updatePresetUi(transform: (PresetUiState) -> PresetUiState) {
+        _presetUi.value = transform(_presetUi.value)
+    }
+
+    internal fun updateBatchPreviewConfig(transform: (BatchPreviewConfigState) -> BatchPreviewConfigState) {
+        _batchPreviewConfig.value = transform(_batchPreviewConfig.value)
+    }
+
+    internal fun updateConfirm(transform: (ConfirmUiState) -> ConfirmUiState) {
+        _confirm.value = transform(_confirm.value)
+    }
+
+    internal fun updateTransfer(transform: (TransferState) -> TransferState) {
+        _transfer.value = transform(_transfer.value)
+    }
+
+    internal fun updatePreviewSession(transform: (PreviewSessionState) -> PreviewSessionState) {
+        _previewSession.value = transform(_previewSession.value)
+    }
+
+    internal fun updateUpdateUi(transform: (UpdateUiState) -> UpdateUiState) {
+        _updateUi.value = transform(_updateUi.value)
+    }
 
     fun canUndo(): Boolean = _historyIndex.value > 0 && _history.value.isNotEmpty()
 
