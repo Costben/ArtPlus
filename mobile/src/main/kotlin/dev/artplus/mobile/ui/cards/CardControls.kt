@@ -571,34 +571,59 @@ internal fun NumberParameterControl(
     icon: SettingsIconKind? = null,
     showIcon: Boolean = true,
     initiallyExpanded: Boolean = false,
+    inputBackgroundColor: Color? = null,
+    standaloneCard: Boolean = false,
+    cardHeight: Dp = 78.dp,
 ) {
     val controlEnabled = enabled && !busy
     var expanded by remember { mutableStateOf(initiallyExpanded) }
     val headerInteractionSource = remember { MutableInteractionSource() }
     val headerPressed by headerInteractionSource.collectIsPressedAsState()
     val bridge = LocalSectionCardPressBridge.current
+    val columnModifier = if (standaloneCard) {
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+            .padding(bottom = if (expanded) 12.dp else 0.dp)
+    } else {
+        Modifier.fillMaxWidth()
+    }
+    val rowModifier = if (standaloneCard) {
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = cardHeight)
+            .clickable(
+                interactionSource = headerInteractionSource,
+                indication = null,
+                enabled = controlEnabled,
+                onClick = { expanded = !expanded },
+            )
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    } else {
+        Modifier
+            .fillMaxWidth()
+            .trackSectionPress(bridge, headerPressed)
+            .background(cardRowPressedColor(headerPressed))
+            .clickable(
+                interactionSource = headerInteractionSource,
+                indication = null,
+                enabled = controlEnabled,
+                onClick = { expanded = !expanded },
+            )
+            .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 13.dp)
+    }
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = columnModifier,
+        verticalArrangement = Arrangement.spacedBy(if (standaloneCard) 6.dp else 10.dp),
     ) {
         // 图1 全出血直角按压块：无 clip，直角背景由 Card 圆角裁切，左右铺满、首末补到容器边
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .trackSectionPress(bridge, headerPressed)
-                .background(cardRowPressedColor(headerPressed))
-                .clickable(
-                    interactionSource = headerInteractionSource,
-                    indication = null,
-                    enabled = controlEnabled,
-                    onClick = { expanded = !expanded },
-                )
-                .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 13.dp)
-                .semantics {
-                    role = Role.Button
-                    stateDescription = if (expanded) "已展开拖动条" else "已收起拖动条"
-                },
-            horizontalArrangement = Arrangement.spacedBy(18.dp),
+            modifier = rowModifier.semantics {
+                role = Role.Button
+                stateDescription = if (expanded) "已展开拖动条" else "已收起拖动条"
+            },
+            horizontalArrangement = Arrangement.spacedBy(if (standaloneCard) 12.dp else 18.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (showIcon) {
@@ -606,7 +631,7 @@ internal fun NumberParameterControl(
             }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp),
+                verticalArrangement = Arrangement.spacedBy(if (standaloneCard) 2.dp else 5.dp),
             ) {
                 Text(
                     text = title,
@@ -646,6 +671,7 @@ internal fun NumberParameterControl(
                             ?.coerceIn(min, max)
                             ?.let(onSave)
                     },
+                    backgroundColor = inputBackgroundColor,
                 )
             }
             KernelStyleArrow(expanded = expanded)
@@ -660,7 +686,7 @@ internal fun NumberParameterControl(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                    .padding(horizontal = if (standaloneCard) 16.dp else CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
             ) {
                 SteppedPercentSlider(
                     value = value,

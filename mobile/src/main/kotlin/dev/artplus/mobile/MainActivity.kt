@@ -206,6 +206,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -318,6 +319,8 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
 import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
+import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -962,9 +965,27 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.weight(1f),
                 )
             }
-            val chooserMode = previewChoiceMode
-            if (chooserMode != null && session != null) {
-                PreviewChoiceDialog(mode = chooserMode, session = session)
+            var activeChooserMode by remember { mutableStateOf<PreviewMode?>(null) }
+            var activeChooserSession by remember { mutableStateOf<GenerationSession?>(null) }
+            if (previewChoiceMode != null && session != null) {
+                activeChooserMode = previewChoiceMode
+                activeChooserSession = session
+            }
+            val currentChooserMode = activeChooserMode
+            val currentChooserSession = activeChooserSession
+            if (currentChooserMode != null && currentChooserSession != null) {
+                PreviewChoiceBottomSheet(
+                    show = previewChoiceMode != null && session != null,
+                    mode = currentChooserMode,
+                    session = currentChooserSession,
+                    onDismissRequest = { previewChoiceMode = null },
+                    onDismissFinished = {
+                        if (previewChoiceMode == null) {
+                            activeChooserMode = null
+                            activeChooserSession = null
+                        }
+                    },
+                )
             }
         }
     }
@@ -1484,18 +1505,22 @@ class MainActivity : ComponentActivity() {
 
 
     @Composable
-    internal fun PreviewNightFillBackgroundRow() {
+    internal fun PreviewNightFillBackgroundRow(
+        checked: Boolean = mainViewModel.params.collectAsState().value.nightSubjectLightBackgroundEnabled,
+        onCheckedChange: (Boolean) -> Unit = { updateNightSubjectLightBackgroundEnabled(it) },
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = 78.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.58f))
+                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
                 .clickable(enabled = !isBusy) {
-                    updateNightSubjectLightBackgroundEnabled(!mainViewModel.params.value.nightSubjectLightBackgroundEnabled)
+                    onCheckedChange(!checked)
                 }
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(
                 modifier = Modifier.weight(1f),
@@ -1512,17 +1537,26 @@ class MainActivity : ComponentActivity() {
                     text = "将暗色背景颜色填补到主体暗部",
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            PreviewCornerSwitch(
-                checked = mainViewModel.params.value.nightSubjectLightBackgroundEnabled,
+            Switch(
+                checked = checked,
+                onCheckedChange = null,
                 enabled = !isBusy,
             )
         }
     }
 
     @Composable
-    internal fun PreviewChoiceDialog(mode: PreviewMode, session: GenerationSession) {
+    internal fun PreviewChoiceBottomSheet(
+        show: Boolean,
+        mode: PreviewMode,
+        session: GenerationSession,
+        onDismissRequest: () -> Unit,
+        onDismissFinished: () -> Unit,
+    ) {
         val tuningState = mainViewModel.params.collectAsState().value
         val defaultChoices = listOf(
             PreviewChoice.Original,
@@ -1530,15 +1564,22 @@ class MainActivity : ComponentActivity() {
             PreviewChoice.Rmbg,
             PreviewChoice.Gpt,
         )
+        val customChoices = listOf(
+            PreviewChoice.CustomForeground,
+            PreviewChoice.CustomBackground,
+        )
         val moreChoices = listOf(
             PreviewChoice.TextSafe,
             PreviewChoice.ComponentSubject,
             PreviewChoice.ComponentBackground,
             PreviewChoice.TwoLayer,
-            PreviewChoice.CustomForeground,
-            PreviewChoice.CustomBackground,
         )
-        val selectedMoreRule = PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark).choiceFor(mode).let { choice ->
+        val selectedMoreRule = PreviewSelections.fromNames(
+            tuningState.previewNormalLight,
+            tuningState.previewNormalDark,
+            tuningState.previewMonochromeLight,
+            tuningState.previewMonochromeDark,
+        ).choiceFor(mode).let { choice ->
             when {
                 choice == PreviewChoice.Plate -> PreviewChoice.Full
                 choice in moreChoices -> choice
@@ -1546,107 +1587,149 @@ class MainActivity : ComponentActivity() {
             }
         }
         var showMoreRules by remember(mode) { mutableStateOf(false) }
-        Dialog(onDismissRequest = { previewChoiceMode = null }) {
-            ApplyDialogDimEffect()
-            Card(
+        val scrollState = rememberScrollState()
+
+        LaunchedEffect(showMoreRules) {
+            if (showMoreRules) {
+                delay(60)
+                scrollState.animateScrollTo(
+                    scrollState.maxValue,
+                    animationSpec = tween(durationMillis = 120, easing = LinearEasing),
+                )
+                delay(140)
+                scrollState.animateScrollTo(
+                    scrollState.maxValue,
+                    animationSpec = tween(durationMillis = 180, easing = LinearEasing),
+                )
+                delay(80)
+                if (scrollState.value < scrollState.maxValue) {
+                    scrollState.animateScrollTo(scrollState.maxValue)
+                }
+            }
+        }
+
+        WindowBottomSheet(
+            show = show,
+            title = "${mode.label} 来源",
+            onDismissRequest = onDismissRequest,
+            onDismissFinished = onDismissFinished,
+            insideMargin = DpSize(16.dp, 0.dp),
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.88f),
-                insideMargin = PaddingValues(16.dp),
+                    .imePadding()
+                    .verticalScroll(scrollState)
+                    .padding(bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Column(
+                Text(
+                    text = "每个槽位单独选择",
+                    style = MiuixTheme.textStyles.footnote1,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .imePadding()
-                        .verticalScroll(rememberScrollState()),
+                        .padding(bottom = 4.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                if (mode == PreviewMode.NormalDark) {
+                    PreviewNightFillBackgroundRow(
+                        checked = tuningState.nightSubjectLightBackgroundEnabled,
+                        onCheckedChange = { updateNightSubjectLightBackgroundEnabled(it) },
+                    )
+                }
+
+                NumberParameterControl(
+                    busy = isBusy,
+                    title = "主体占比",
+                    summary = "复杂游戏图标建议 100%",
+                    value = tuningState.foregroundSubjectPercent,
+                    draftText = draftForegroundSubjectPercentText,
+                    min = MIN_FOREGROUND_SUBJECT_PERCENT,
+                    max = MAX_FOREGROUND_SUBJECT_PERCENT,
+                    step = 1,
+                    onDraftChange = { draftForegroundSubjectPercentText = it },
+                    onSave = { updateForegroundSubjectPercent(it) },
+                    showIcon = false,
+                    icon = null,
+                    standaloneCard = true,
+                    cardHeight = 78.dp,
+                    inputBackgroundColor = if (isSystemInDarkTheme()) {
+                        Color.Black.copy(alpha = 0.36f)
+                    } else {
+                        Color.Black.copy(alpha = 0.09f)
+                    },
+                )
+
+                defaultChoices.forEach { choice ->
+                    PreviewChoiceRow(
+                        mode = mode,
+                        choice = choice,
+                        session = session,
+                    )
+                }
+                if (shouldShowPreviewChoiceRow(PreviewChoice.Full, session)) {
+                    PreviewChoiceRow(
+                        mode = mode,
+                        choice = PreviewChoice.Full,
+                        session = session,
+                    )
+                }
+
+                customChoices.forEach { choice ->
+                    PreviewChoiceRow(
+                        mode = mode,
+                        choice = choice,
+                        session = session,
+                    )
+                }
+
+                MoreRulesGroupRow(
+                    selectedRule = selectedMoreRule,
+                    expanded = showMoreRules,
+                    onToggle = { showMoreRules = !showMoreRules },
+                )
+                AnimatedVisibility(
+                    visible = showMoreRules,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                        expandVertically(animationSpec = tween(durationMillis = 180)),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                        shrinkVertically(animationSpec = tween(durationMillis = 160)),
                 ) {
-                    Text(
-                        text = "${mode.label} 来源",
-                        style = MiuixTheme.textStyles.title4,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = "每个槽位单独选择",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    NumberParameterControl(
-                        busy = isBusy,
-                        title = "主体占比",
-                        summary = "复杂游戏图标建议 100%",
-                        value = mainViewModel.params.value.foregroundSubjectPercent,
-                        draftText = draftForegroundSubjectPercentText,
-                        min = MIN_FOREGROUND_SUBJECT_PERCENT,
-                        max = MAX_FOREGROUND_SUBJECT_PERCENT,
-                        step = 1,
-                        onDraftChange = { draftForegroundSubjectPercentText = it },
-                        onSave = { updateForegroundSubjectPercent(it) },
-                        icon = SettingsIconKind.Scale,
-                    )
-                    if (mode == PreviewMode.NormalDark) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        PreviewNightFillBackgroundRow()
-                    }
-                    Spacer(modifier = Modifier.height(14.dp))
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        defaultChoices.forEach { choice ->
+                        moreChoices.forEach { choice ->
+                            if (shouldShowPreviewChoiceRow(choice, session)) {
+                                PreviewChoiceRow(
+                                    mode = mode,
+                                    choice = choice,
+                                    session = session,
+                                )
+                            }
+                        }
+                    }
+                }
+                AnimatedVisibility(
+                    visible = !showMoreRules && selectedMoreRule != null,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                        expandVertically(animationSpec = tween(durationMillis = 180)),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                        shrinkVertically(animationSpec = tween(durationMillis = 160)),
+                ) {
+                    moreChoices
+                        .firstOrNull { it == selectedMoreRule && shouldShowPreviewChoiceRow(it, session) }
+                        ?.let { choice ->
                             PreviewChoiceRow(
                                 mode = mode,
                                 choice = choice,
                                 session = session,
                             )
                         }
-                        if (shouldShowPreviewChoiceRow(PreviewChoice.Full, session)) {
-                            PreviewChoiceRow(
-                                mode = mode,
-                                choice = PreviewChoice.Full,
-                                session = session,
-                            )
-                        }
-                        MoreRulesGroupRow(
-                            selectedRule = selectedMoreRule,
-                            expanded = showMoreRules,
-                            onToggle = { showMoreRules = !showMoreRules },
-                        )
-                        if (showMoreRules) {
-                            moreChoices.forEach { choice ->
-                                if (shouldShowPreviewChoiceRow(choice, session)) {
-                                    PreviewChoiceRow(
-                                        mode = mode,
-                                        choice = choice,
-                                        session = session,
-                                    )
-                                }
-                            }
-                        }
-                        if (!showMoreRules && selectedMoreRule != null) {
-                            moreChoices
-                                .firstOrNull { it == selectedMoreRule && shouldShowPreviewChoiceRow(it, session) }
-                                ?.let { choice ->
-                                    PreviewChoiceRow(
-                                        mode = mode,
-                                        choice = choice,
-                                        session = session,
-                                    )
-                                }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    TextButton(
-                        text = "关闭",
-                        onClick = { previewChoiceMode = null },
-                        enabled = !isGeneratingGptCandidate && !isGeneratingRmbgCandidate,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
                 }
             }
         }
@@ -1686,13 +1769,14 @@ class MainActivity : ComponentActivity() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = 78.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(background)
                 .clickable(
                     enabled = !isBusy && !isGeneratingGptCandidate && !isGeneratingRmbgCandidate,
                     onClick = onToggle,
                 )
-                .padding(12.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -1709,7 +1793,7 @@ class MainActivity : ComponentActivity() {
                 )
                 Text(
                     text = selectedRule?.let { "当前使用: ${it.label}" }
-                        ?: "字标保全 / 底座 / 二层 / 自定义",
+                        ?: "字标保全 / 底座 / 二层",
                     style = MiuixTheme.textStyles.footnote1,
                     color = summaryColor,
                     maxLines = 1,

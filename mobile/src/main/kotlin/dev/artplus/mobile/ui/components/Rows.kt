@@ -348,7 +348,7 @@ internal fun libraryRowPressedColor(pressed: Boolean): Color =
 internal fun LibrarySettingRow(
     title: String,
     summary: String?,
-    icon: SettingsIconKind,
+    icon: SettingsIconKind? = null,
     value: String? = null,
     showValue: Boolean = true,
     showArrowUpDown: Boolean = false,
@@ -356,6 +356,7 @@ internal fun LibrarySettingRow(
     showSwitch: Boolean = false,
     checked: Boolean = false,
     enabled: Boolean = true,
+    showIcon: Boolean = icon != null,
     onCheckedChange: ((Boolean) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -388,7 +389,9 @@ internal fun LibrarySettingRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        SettingsLineIcon(kind = icon)
+        if (showIcon && icon != null) {
+            SettingsLineIcon(kind = icon)
+        }
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(5.dp),

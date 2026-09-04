@@ -294,6 +294,7 @@ import org.json.JSONObject
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Checkbox
 import top.yukonga.miuix.kmp.basic.CheckboxDefaults
 import top.yukonga.miuix.kmp.basic.DropdownColors
@@ -327,6 +328,7 @@ import com.caverock.androidsvg.SVG
 @Composable
 internal fun SectionCard(
     rowsFullBleed: Boolean = false,
+    color: Color? = null,
     content: @Composable () -> Unit,
 ) {
     Card(
@@ -339,6 +341,7 @@ internal fun SectionCard(
         } else {
             PaddingValues(16.dp)
         },
+        colors = if (color != null) CardDefaults.defaultColors(color = color) else CardDefaults.defaultColors(),
     ) {
         val bridge = remember { SectionCardPressBridge() }
         CompositionLocalProvider(LocalSectionCardPressBridge provides bridge) {

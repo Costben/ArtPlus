@@ -469,6 +469,7 @@ internal fun NumberInputBox(
     enabled: Boolean,
     onValueChange: (String) -> Unit,
     onDone: (String) -> Unit,
+    backgroundColor: Color? = null,
 ) {
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     var focused by remember { mutableStateOf(false) }
@@ -492,7 +493,7 @@ internal fun NumberInputBox(
             .height(36.dp)
             .bringIntoViewRequester(bringIntoViewRequester)
             .clip(RoundedCornerShape(11.dp))
-            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+            .background(backgroundColor ?: MiuixTheme.colorScheme.surfaceContainerHigh)
             .padding(horizontal = 6.dp),
         contentAlignment = Alignment.Center,
     ) {
