@@ -102,40 +102,53 @@ private const val LIGHT_REF_X = 0.5f
 private const val LIGHT_REF_Y = 0.7f
 private const val GRAVITY_DIR_THRESHOLD_SQ = 0.01f // |g_xy| > 0.1, ≈ 6° tilt
 
-/** Tracks gravity for a `dualPeak` highlight's primary light, with an extra UV-clockwise offset on top. */
-@Composable
-private fun rememberGravityRotatedHighlight(
+/** Computes gravity-rotated highlight for a `dualPeak` highlight's primary light without triggering recomposition. */
+private fun computeGravityRotatedHighlight(
     base: Highlight,
+    tilt: top.yukonga.miuix.kmp.blur.sensor.DeviceTilt?,
     extraDegrees: Float = 0f,
 ): Highlight {
     val baseStyle = base.style as BloomStroke
-    val tilt by rememberDeviceTilt()
-    val rotatedPrimary = remember(tilt, baseStyle.primaryLight, extraDegrees) {
-        val basePrimary = baseStyle.primaryLight
-        val gx = tilt.gravityX
-        val gy = tilt.gravityY
-        val gMagSq = gx * gx + gy * gy
-        val (lx0, ly0) = if (gMagSq > GRAVITY_DIR_THRESHOLD_SQ) {
-            val invMag = 1f / sqrt(gMagSq)
-            (gx * invMag) to (gy * invMag)
-        } else {
-            0f to -1f
-        }
-        val rad = extraDegrees * PI / 180.0
-        val c = cos(rad).toFloat()
-        val s = sin(rad).toFloat()
-        val lx = c * lx0 - s * ly0
-        val ly = s * lx0 + c * ly0
-        basePrimary.copy(
-            position = LightPosition(
-                x = LIGHT_REF_X + lx,
-                y = LIGHT_REF_Y + ly,
-                z = basePrimary.position.z,
-            ),
-        )
+    val basePrimary = baseStyle.primaryLight
+    val gx = tilt?.gravityX ?: 0f
+    val gy = tilt?.gravityY ?: -1f
+    val gMagSq = gx * gx + gy * gy
+    val (lx0, ly0) = if (gMagSq > GRAVITY_DIR_THRESHOLD_SQ) {
+        val invMag = 1f / sqrt(gMagSq)
+        (gx * invMag) to (gy * invMag)
+    } else {
+        0f to -1f
     }
-    return remember(base, rotatedPrimary) {
-        base.copy(style = baseStyle.copy(primaryLight = rotatedPrimary))
+    val rad = extraDegrees * PI / 180.0
+    val c = cos(rad).toFloat()
+    val s = sin(rad).toFloat()
+    val lx = c * lx0 - s * ly0
+    val ly = s * lx0 + c * ly0
+    val rotatedPrimary = basePrimary.copy(
+        position = LightPosition(
+            x = LIGHT_REF_X + lx,
+            y = LIGHT_REF_Y + ly,
+            z = basePrimary.position.z,
+        ),
+    )
+    return base.copy(style = baseStyle.copy(primaryLight = rotatedPrimary))
+}
+
+private class GravityHighlightCache(private val base: Highlight, private val extraDegrees: Float) {
+    private var lastGx = Float.NaN
+    private var lastGy = Float.NaN
+    private var cachedHighlight: Highlight = base
+
+    fun get(tilt: top.yukonga.miuix.kmp.blur.sensor.DeviceTilt?): Highlight {
+        val gx = tilt?.gravityX ?: 0f
+        val gy = tilt?.gravityY ?: -1f
+        if (abs(gx - lastGx) < 0.005f && abs(gy - lastGy) < 0.005f) {
+            return cachedHighlight
+        }
+        lastGx = gx
+        lastGy = gy
+        cachedHighlight = computeGravityRotatedHighlight(base, tilt, extraDegrees)
+        return cachedHighlight
     }
 }
 
@@ -284,8 +297,9 @@ fun FloatingBottomBar(
         )
     }
 
-    val baseHighlight = rememberGravityRotatedHighlight(iosIndicatorSpecular, extraDegrees = -45f)
-    val pillHighlight = rememberGravityRotatedHighlight(iosIndicatorSpecular, extraDegrees = 90f)
+    val tiltState = if (isBlurEnabled) rememberDeviceTilt() else null
+    val baseHighlightCache = remember { GravityHighlightCache(iosIndicatorSpecular, extraDegrees = -45f) }
+    val pillHighlightCache = remember { GravityHighlightCache(iosIndicatorSpecular, extraDegrees = 90f) }
 
     val combinedBackdrop = rememberCombinedBackdrop(backdrop, tabsBackdrop)
 
@@ -327,7 +341,7 @@ fun FloatingBottomBar(
                                     refractionAmount = 24.dp.toPx(),
                                 )
                             },
-                            highlight = { baseHighlight.copy(alpha = 0.75f) },
+                            highlight = { baseHighlightCache.get(tiltState?.value).copy(alpha = 0.75f) },
                             layerBlock = {
                                 val width = size.width.coerceAtLeast(1f)
                                 val s = lerp(1f, 1f + 16.dp.toPx() / width, dampedDragAnimation.pressProgress)
@@ -363,20 +377,6 @@ fun FloatingBottomBar(
                         .alpha(0f)
                         .layerBackdrop(tabsBackdrop)
                         .graphicsLayer { translationX = panelOffset }
-                        .drawBackdrop(
-                            backdrop = backdrop,
-                            shape = { pillShape },
-                            effects = {
-                                vibrancy()
-                                blur(4.dp.toPx(), 4.dp.toPx())
-                                lens(
-                                    refractionHeight = 24.dp.toPx(),
-                                    refractionAmount = 24.dp.toPx(),
-                                )
-                            },
-                            onDrawSurface = { drawRect(containerColor) },
-                        )
-                        .then(interactiveHighlight.modifier)
                         .height(56.dp)
                         .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -409,7 +409,7 @@ fun FloatingBottomBar(
                                     chromaticAberration = 0.5f,
                                 )
                             },
-                            highlight = { pillHighlight.copy(alpha = dampedDragAnimation.pressProgress) },
+                            highlight = { pillHighlightCache.get(tiltState?.value).copy(alpha = dampedDragAnimation.pressProgress) },
                             layerBlock = {
                                 scaleX = dampedDragAnimation.scaleX
                                 scaleY = dampedDragAnimation.scaleY

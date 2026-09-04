@@ -134,6 +134,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -1341,11 +1342,21 @@ class MainActivity : ComponentActivity() {
         option: PreviewDesktopBackground,
         modifier: Modifier = Modifier,
     ) {
-        val wallpaper = remember(option, customWallpaperPath) {
+        val wallpaper by produceState<Bitmap?>(
+            initialValue = if (option == PreviewDesktopBackground.Wallpaper) {
+                cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper
+            } else null,
+            key1 = option,
+            key2 = customWallpaperPath,
+        ) {
             if (option == PreviewDesktopBackground.Wallpaper) {
-                loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
+                if (value == null) {
+                    value = withContext(Dispatchers.IO) {
+                        loadCustomWallpaperBitmap() ?: loadPreviewWallpaperBitmap() ?: loadBundledPreviewWallpaperBitmap()
+                    }
+                }
             } else {
-                null
+                value = null
             }
         }
         val wallpaperImage = remember(wallpaper) { wallpaper?.asImageBitmap() }
@@ -5349,13 +5360,26 @@ class MainActivity : ComponentActivity() {
         }
 
 
+    @Volatile
+    private var cachedCustomWallpaper: Bitmap? = null
+    @Volatile
+    private var cachedCustomWallpaperPath: String? = null
+    @Volatile
+    private var cachedSystemWallpaper: Bitmap? = null
+    @Volatile
+    private var cachedBundledWallpaper: Bitmap? = null
+
     /**
      * 读取当前设备桌面壁纸并保留原始宽高比（短边缩放到 480 左右）。
      * 静态壁纸经 ImageWallpaper 暴露为 BitmapDrawable，直接取位图，无需任何权限；
      * 失败返回 null，调用方走内置图兜底。
      */
-    internal fun loadPreviewWallpaperBitmap(): Bitmap? =
-        runCatching {
+    internal fun loadPreviewWallpaperBitmap(): Bitmap? {
+        val cached = cachedSystemWallpaper
+        if (cached != null && !cached.isRecycled) {
+            return cached
+        }
+        val loaded = runCatching {
             val drawable = WallpaperManager.getInstance(this).drawable ?: return null
             val sampled = if (drawable is BitmapDrawable) {
                 drawable.bitmap?.let { sampleBitmapShortEdge(it, PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE) }
@@ -5377,9 +5401,18 @@ class MainActivity : ComponentActivity() {
             }
             sampled?.also { it.prepareToDraw() }
         }.getOrNull()
+        if (loaded != null) {
+            cachedSystemWallpaper = loaded
+        }
+        return loaded
+    }
 
-    internal fun loadBundledPreviewWallpaperBitmap(): Bitmap? =
-        runCatching {
+    internal fun loadBundledPreviewWallpaperBitmap(): Bitmap? {
+        val cached = cachedBundledWallpaper
+        if (cached != null && !cached.isRecycled) {
+            return cached
+        }
+        val loaded = runCatching {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeResource(resources, R.drawable.preview_wallpaper, bounds)
             if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
@@ -5394,6 +5427,11 @@ class MainActivity : ComponentActivity() {
             BitmapFactory.decodeResource(resources, R.drawable.preview_wallpaper, opts)
                 ?.also { it.prepareToDraw() }
         }.getOrNull()
+        if (loaded != null) {
+            cachedBundledWallpaper = loaded
+        }
+        return loaded
+    }
 
     /**
      * 导入用户上传的壁纸：只居中裁剪为 16:9，不做任何缩放压缩，避免变形；
@@ -5422,6 +5460,8 @@ class MainActivity : ComponentActivity() {
                 }
                 val info = "${cropped.width} × ${cropped.height}"
                 runOnUiThread {
+                    cachedCustomWallpaper = null
+                    cachedCustomWallpaperPath = null
                     customWallpaperPath = outFile.absolutePath
                     customWallpaperInfo = info
                     statusText = "已导入自定义壁纸（$info），「桌面」背景优先使用此图"
@@ -5438,6 +5478,8 @@ class MainActivity : ComponentActivity() {
             customWallpaperPath?.let { File(it).delete() }
             File(filesDir, CUSTOM_WALLPAPER_FILE).delete()
         }
+        cachedCustomWallpaper = null
+        cachedCustomWallpaperPath = null
         customWallpaperPath = null
         customWallpaperInfo = ""
         statusText = "已清除自定义壁纸，「桌面」背景恢复系统壁纸/内置壁纸"
@@ -5465,9 +5507,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    internal fun loadCustomWallpaperBitmap(): Bitmap? =
-        runCatching {
-            val path = customWallpaperPath ?: return null
+    internal fun loadCustomWallpaperBitmap(): Bitmap? {
+        val path = customWallpaperPath ?: return null
+        val cached = cachedCustomWallpaper
+        if (cachedCustomWallpaperPath == path && cached != null && !cached.isRecycled) {
+            return cached
+        }
+        val loaded = runCatching {
             val file = File(path)
             if (!file.isFile) {
                 return null
@@ -5476,6 +5522,12 @@ class MainActivity : ComponentActivity() {
             sampleBitmapShortEdge(bitmap, PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE)
                 .also { it.prepareToDraw() }
         }.getOrNull()
+        if (loaded != null) {
+            cachedCustomWallpaper = loaded
+            cachedCustomWallpaperPath = path
+        }
+        return loaded
+    }
 
 
 

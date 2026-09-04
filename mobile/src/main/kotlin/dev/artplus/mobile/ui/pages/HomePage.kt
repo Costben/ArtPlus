@@ -330,6 +330,12 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     val scope = rememberCoroutineScope()
     val isDark = isSystemInDarkTheme()
     val containerColor = if (isDark) Color(0xFF121212).copy(alpha = 0.4f) else Color(0xFFFAFAFA).copy(alpha = 0.4f)
+    val isBlurEnabled = liquidGlassBottomBarEnabled && liquidGlassBottomBarBlurEnabled
+    var beyondViewportCount by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        delay(300)
+        beyondViewportCount = 1
+    }
     val backdrop = rememberLayerBackdrop {
         drawRect(pageBackground)
         drawContent()
@@ -337,10 +343,11 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     Box(Modifier.fillMaxSize()) {
         HorizontalPager(
             state = pagerState,
+            beyondViewportPageCount = beyondViewportCount,
             modifier = Modifier
                 .fillMaxSize()
                 .background(pageBackground)
-                .layerBackdrop(backdrop),
+                .then(if (isBlurEnabled) Modifier.layerBackdrop(backdrop) else Modifier),
         ) { page ->
             when (page) {
                 0 -> PagerShellPage(
@@ -371,28 +378,34 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                             .padding(innerPadding)
                             .padding(horizontal = 12.dp),
                         contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        item {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                if (!packageListPermissionGranted || !usageAccessGranted) {
-                                    PermissionCard()
-                                }
-                                StatusCard(
-                                    selectedApp = selectedApp,
-                                    launcherCount = launcherCount,
-                                    totalCount = apps.size,
-                                    generatedCount = generatedCount,
-                                )
-                                GenerationActionCard(selectedApp)
-                                if (previewDirPath != null && previewPackageName != null) {
-                                    GeneratedPreviewCard()
-                                }
-                                PreviewControlCard()
-                                LayerDebugCard()
+                        if (!packageListPermissionGranted || !usageAccessGranted) {
+                            item(key = "permission") {
+                                PermissionCard()
                             }
+                        }
+                        item(key = "status") {
+                            StatusCard(
+                                selectedApp = selectedApp,
+                                launcherCount = launcherCount,
+                                totalCount = apps.size,
+                                generatedCount = generatedCount,
+                            )
+                        }
+                        item(key = "generation_action") {
+                            GenerationActionCard(selectedApp)
+                        }
+                        if (previewDirPath != null && previewPackageName != null) {
+                            item(key = "generated_preview") {
+                                GeneratedPreviewCard()
+                            }
+                        }
+                        item(key = "preview_control") {
+                            PreviewControlCard()
+                        }
+                        item(key = "layer_debug") {
+                            LayerDebugCard()
                         }
                     }
                 }
@@ -409,31 +422,29 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                             .padding(innerPadding)
                             .padding(horizontal = 12.dp),
                         contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        item {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                GenerationNavCard()
-                                when (advancedSettingsTab) {
-                                    AdvancedSettingsTab.Sliders -> when (advancedSettingsCategory) {
-                                        AdvancedSettingsCategory.LiquidGlass -> {
-                                            LiquidGlassToggleCard()
-                                            LiquidGlassSurfaceCard()
-                                            LiquidGlassSubjectCard()
-                                        }
-                                        AdvancedSettingsCategory.Local -> {
-                                            LocalRuleTuningCard()
-                                            LocalWorkflowPipelineCard()
-                                        }
-                                        AdvancedSettingsCategory.Rmbg -> {
-                                            RmbgTuningCard()
-                                        }
-                                    }
-                                    AdvancedSettingsTab.Json -> {
-                                        JsonSettingsEditorCard()
-                                    }
+                        item(key = "gen_nav") {
+                            GenerationNavCard()
+                        }
+                        when (advancedSettingsTab) {
+                            AdvancedSettingsTab.Sliders -> when (advancedSettingsCategory) {
+                                AdvancedSettingsCategory.LiquidGlass -> {
+                                    item(key = "glass_toggle") { LiquidGlassToggleCard() }
+                                    item(key = "glass_surface") { LiquidGlassSurfaceCard() }
+                                    item(key = "glass_subject") { LiquidGlassSubjectCard() }
+                                }
+                                AdvancedSettingsCategory.Local -> {
+                                    item(key = "local_rule") { LocalRuleTuningCard() }
+                                    item(key = "local_pipeline") { LocalWorkflowPipelineCard() }
+                                }
+                                AdvancedSettingsCategory.Rmbg -> {
+                                    item(key = "rmbg_tuning") { RmbgTuningCard() }
+                                }
+                            }
+                            AdvancedSettingsTab.Json -> {
+                                item(key = "json_editor") {
+                                    JsonSettingsEditorCard()
                                 }
                             }
                         }
@@ -476,16 +487,16 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                             .padding(innerPadding)
                             .padding(horizontal = 12.dp),
                         contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        item {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                PresetStatusCard()
-                                PresetLibraryCard()
-                                BatchPreviewSettingsCard()
-                            }
+                        item(key = "preset_status") {
+                            PresetStatusCard()
+                        }
+                        item(key = "preset_library") {
+                            PresetLibraryCard()
+                        }
+                        item(key = "batch_preview") {
+                            BatchPreviewSettingsCard()
                         }
                     }
                 }
@@ -516,7 +527,6 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
         }
 
         // 液态玻璃底栏（KernelSU FloatingBottomBar 1:1：vibrancy+blur4dp+lens24dp 三层玻璃+拖拽阻尼+高光镜面）
-        val isBlurEnabled = liquidGlassBottomBarEnabled && liquidGlassBottomBarBlurEnabled
         if (liquidGlassBottomBarEnabled) {
             FloatingBottomBar(
                 modifier = Modifier
@@ -524,7 +534,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                     .navigationBarsPadding()
                     .padding(horizontal = 16.dp, vertical = 10.dp)
                     .fillMaxWidth(),
-                selectedIndex = { pagerState.currentPage },
+                selectedIndex = { pagerState.targetPage },
                 onSelected = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
                 backdrop = backdrop,
                 tabsCount = 4,
@@ -540,7 +550,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                         modifier = Modifier.defaultMinSize(minWidth = 76.dp),
                     ) {
-                        val selected = pagerState.currentPage == index
+                        val selected = pagerState.targetPage == index
                         val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
                         val tint = if (isBusy) baseTint.copy(alpha = 0.45f) else baseTint
                         Image(
@@ -580,7 +590,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         Triple(Lucide.Layers, "预设", 2),
                         Triple(Lucide.Settings, "设置", 3),
                     ).forEach { (icon, label, index) ->
-                        val selected = pagerState.currentPage == index
+                        val selected = pagerState.targetPage == index
                         Box(
                             modifier = Modifier
                                 .weight(1f)
