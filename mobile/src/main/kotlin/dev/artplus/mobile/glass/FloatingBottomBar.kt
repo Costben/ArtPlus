@@ -377,6 +377,20 @@ fun FloatingBottomBar(
                         .alpha(0f)
                         .layerBackdrop(tabsBackdrop)
                         .graphicsLayer { translationX = panelOffset }
+                        .drawBackdrop(
+                            backdrop = backdrop,
+                            shape = { pillShape },
+                            effects = {
+                                vibrancy()
+                                blur(4.dp.toPx(), 4.dp.toPx())
+                                lens(
+                                    refractionHeight = 24.dp.toPx(),
+                                    refractionAmount = 24.dp.toPx(),
+                                )
+                            },
+                            onDrawSurface = { drawRect(containerColor) },
+                        )
+                        .then(interactiveHighlight.modifier)
                         .height(56.dp)
                         .padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,

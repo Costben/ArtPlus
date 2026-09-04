@@ -336,41 +336,8 @@ internal fun MainActivity.ArtPlusScreen() {
     val selectedApp by remember {
         derivedStateOf { apps.firstOrNull { it.packageName == selectedPackageName } }
     }
-    val scopedApps by remember {
-        derivedStateOf { apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, showSystemApps, packageName) } }
-    }
     val generatedCount by remember {
-        derivedStateOf { scopedApps.count { it.packageName in generatedPackageNames } }
-    }
-    val ungeneratedCount by remember {
-        derivedStateOf { scopedApps.size - generatedCount }
-    }
-    val filteredApps by remember {
-        derivedStateOf {
-            val query = queryText.trim().lowercase(Locale.ROOT)
-            val stateScopedApps = when (generatedFilter) {
-                GeneratedFilter.All -> scopedApps
-                GeneratedFilter.Generated -> scopedApps.filter { it.packageName in generatedPackageNames }
-                GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in generatedPackageNames }
-            }
-            if (query.isEmpty()) {
-                stateScopedApps
-            } else {
-                stateScopedApps.filter { entry ->
-                    entry.label.lowercase(Locale.ROOT).contains(query) ||
-                        entry.packageName.lowercase(Locale.ROOT).contains(query)
-                }
-            }
-        }
-    }
-    val scopeCount by remember {
-        derivedStateOf {
-            when (generatedFilter) {
-                GeneratedFilter.All -> scopedApps.size
-                GeneratedFilter.Generated -> generatedCount
-                GeneratedFilter.Ungenerated -> ungeneratedCount
-            }
-        }
+        derivedStateOf { apps.count { it.packageName in generatedPackageNames && AppVisibility.shouldShowInPicker(it.applicationInfo, it.launchable, showSystemApps, packageName) } }
     }
     val launcherCount by remember {
         derivedStateOf { apps.count { it.launchable } }
@@ -579,13 +546,48 @@ internal fun MainActivity.ArtPlusScreen() {
                     },
             ) {
                 when (overlayPage) {
-                    AppPage.AppPicker -> AppPickerPage(
-                        pageBackground = pageBackground,
-                        filteredApps = filteredApps,
-                        scopeCount = scopeCount,
-                        generatedCount = generatedCount,
-                        ungeneratedCount = ungeneratedCount,
-                    )
+                    AppPage.AppPicker -> {
+                        val scopedApps by remember {
+                            derivedStateOf { apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, showSystemApps, packageName) } }
+                        }
+                        val ungeneratedCount by remember {
+                            derivedStateOf { scopedApps.size - generatedCount }
+                        }
+                        val filteredApps by remember {
+                            derivedStateOf {
+                                val query = queryText.trim().lowercase(Locale.ROOT)
+                                val stateScopedApps = when (generatedFilter) {
+                                    GeneratedFilter.All -> scopedApps
+                                    GeneratedFilter.Generated -> scopedApps.filter { it.packageName in generatedPackageNames }
+                                    GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in generatedPackageNames }
+                                }
+                                if (query.isEmpty()) {
+                                    stateScopedApps
+                                } else {
+                                    stateScopedApps.filter { entry ->
+                                        entry.label.lowercase(Locale.ROOT).contains(query) ||
+                                            entry.packageName.lowercase(Locale.ROOT).contains(query)
+                                    }
+                                }
+                            }
+                        }
+                        val scopeCount by remember {
+                            derivedStateOf {
+                                when (generatedFilter) {
+                                    GeneratedFilter.All -> scopedApps.size
+                                    GeneratedFilter.Generated -> generatedCount
+                                    GeneratedFilter.Ungenerated -> ungeneratedCount
+                                }
+                            }
+                        }
+                        AppPickerPage(
+                            pageBackground = pageBackground,
+                            filteredApps = filteredApps,
+                            scopeCount = scopeCount,
+                            generatedCount = generatedCount,
+                            ungeneratedCount = ungeneratedCount,
+                        )
+                    }
 
                     AppPage.About -> AboutPage(pageBackground = pageBackground)
 

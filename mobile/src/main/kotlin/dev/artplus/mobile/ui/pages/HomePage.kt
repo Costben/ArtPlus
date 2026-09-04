@@ -89,6 +89,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -333,8 +334,10 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     val isBlurEnabled = liquidGlassBottomBarEnabled && liquidGlassBottomBarBlurEnabled
     var beyondViewportCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
-        delay(300)
+        delay(200)
         beyondViewportCount = 1
+        delay(350)
+        beyondViewportCount = 3
     }
     val backdrop = rememberLayerBackdrop {
         drawRect(pageBackground)
@@ -479,24 +482,31 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                     },
                     showPreviewStrip = previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .nestedScroll(scrollBehavior.nestedScrollConnection)
-                            .imePadding()
-                            .padding(innerPadding)
-                            .padding(horizontal = 12.dp),
-                        contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        item(key = "preset_status") {
-                            PresetStatusCard()
-                        }
-                        item(key = "preset_library") {
-                            PresetLibraryCard()
-                        }
-                        item(key = "batch_preview") {
-                            BatchPreviewSettingsCard()
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val topPadding = innerPadding.calculateTopPadding()
+                        val bottomPadding = innerPadding.calculateBottomPadding()
+                        val minContentHeight = (maxHeight - topPadding - bottomPadding - 12.dp - 88.dp + 1.dp).coerceAtLeast(0.dp)
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                                .imePadding()
+                                .padding(innerPadding)
+                                .padding(horizontal = 12.dp),
+                            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+                        ) {
+                            item(key = "preset_cards") {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .defaultMinSize(minHeight = minContentHeight),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    PresetStatusCard()
+                                    PresetLibraryCard()
+                                    BatchPreviewSettingsCard()
+                                }
+                            }
                         }
                     }
                 }

@@ -5543,8 +5543,10 @@ class MainActivity : ComponentActivity() {
             preloadAppIcons(appIconCache, packageManager, entries, ICON_CACHE_SIZE, PRELOAD_ICON_COUNT)
             runOnUiThread {
                 refreshPermissionState()
-                apps.clear()
-                apps.addAll(entries)
+                androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                    apps.clear()
+                    apps.addAll(entries)
+                }
                 statusText = when {
                     entries.isEmpty() -> "没有读取到应用。请确认已允许读取应用列表。"
                     !packageListPermissionGranted -> "读取到 ${apps.size} 个应用，但应用列表权限状态异常。"
