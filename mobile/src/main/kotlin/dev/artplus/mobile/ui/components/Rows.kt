@@ -171,6 +171,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
@@ -188,6 +189,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.PlatformTextStyle
@@ -471,6 +473,9 @@ internal fun LibraryChoiceRow(
     enabled: Boolean,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    // 全 App dropdown 点击触觉反馈唯一入口：LibraryChoiceRow 是 WindowDropdownPopup 的唯一触发点，
+    // 类型与 Miuix 官方 WindowDropdownPreference.handleClick 对齐（HapticFeedbackType.ContextClick），只加反馈不改行为。
+    val hapticFeedback = LocalHapticFeedback.current
     Box(modifier = Modifier.fillMaxWidth()) {
         LibrarySettingRow(
             title = title,
@@ -479,7 +484,10 @@ internal fun LibraryChoiceRow(
             icon = icon,
             showArrowUpDown = true,
             enabled = enabled,
-            onClick = { expanded = true },
+            onClick = {
+                hapticFeedback.performHapticFeedback(HapticFeedbackType.ContextClick)
+                expanded = true
+            },
         )
         WindowDropdownPopup(
             entry = entry,

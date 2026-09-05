@@ -1043,7 +1043,9 @@ data class LocalPipelineConfig(
 
 // ui/components 用行出血与卡片内边距（原 MainActivity companion，slice1 提升）。
 const val CHOICE_ROW_HORIZONTAL_BLEED_DP = 16
-const val SECTION_CARD_VERTICAL_PADDING_DP = 12
+// UI 标准化任务3：卡片组顶部/底部 padding 全部删掉（12 -> 0），20 个 SectionCardrowsFullBleed 卡片组经此单点生效；
+// slider 展开后若贴底边，不补卡片 padding，改由 NumberParameterControl 展开行自身最小高度提供呼吸感。
+const val SECTION_CARD_VERTICAL_PADDING_DP = 0
 
 // ui/pages 用常量（原 MainActivity companion，slice3 提升）。
 const val PREVIEW_LIVE_ASSET_DEBOUNCE_MS = 70L

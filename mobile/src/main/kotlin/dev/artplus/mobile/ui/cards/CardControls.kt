@@ -686,7 +686,11 @@ internal fun NumberParameterControl(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    // UI 标准化任务3：卡片组上下 padding 已清零，slider 展开后贴底边时不补卡片 padding，
+                    // 改用展开行自身最小高度（52dp）提供呼吸感；standaloneCard 分支自带底部 12dp，不动。
+                    .heightIn(min = if (standaloneCard) 0.dp else 52.dp)
                     .padding(horizontal = if (standaloneCard) 16.dp else CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 SteppedPercentSlider(
                     value = value,
