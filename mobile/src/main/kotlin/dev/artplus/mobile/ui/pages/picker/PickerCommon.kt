@@ -513,7 +513,8 @@ internal fun pickerOpenExternalLink(
     onError: (String) -> Unit,
 ) {
     runCatching {
-        start(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        val view = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE)
+        start(Intent.createChooser(view, "打开链接"))
     }.onFailure {
         onError("无法打开链接: ${it.message ?: it.javaClass.simpleName}")
     }

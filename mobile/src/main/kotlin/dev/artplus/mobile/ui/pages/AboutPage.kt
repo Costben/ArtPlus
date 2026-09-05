@@ -331,6 +331,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
     val scrollBehavior = MiuixScrollBehavior()
     val shell by mainViewModel.shell.collectAsState()
     val updateUi by mainViewModel.updateUi.collectAsState()
+    val aboutCtx = LocalContext.current
     val versionName = pickerCurrentVersionName(
         getVersionName = {
             @Suppress("DEPRECATION")
@@ -424,7 +425,13 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                             pickerOpenExternalLink(
                                 start = ::startActivity,
                                 url = GITHUB_REPO_URL,
-                                onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                                onError = { msg ->
+                                    pickerToastStatus(
+                                        message = msg,
+                                        postOnUi = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                                        showToast = { Toast.makeText(aboutCtx, it, Toast.LENGTH_SHORT).show() },
+                                    )
+                                },
                             )
                         },
                     )

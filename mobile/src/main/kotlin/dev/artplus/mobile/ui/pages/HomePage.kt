@@ -4875,7 +4875,7 @@ val __act2 = LocalContext.current
                         TitleBarIconButton(
                             icon = Lucide.Download,
                             contentDescription = "导入预设",
-                            enabled = !mainViewModel.shell.value.isBusy,
+                            enabled = !shellState.isBusy,
                             dimWhenDisabled = false,
                             onClick = {
                                 mainViewModel.updatePresetUi { it -> it.copy(presetImportText = ("")) }
@@ -4887,7 +4887,7 @@ val __act2 = LocalContext.current
                         TitleBarIconButton(
                             icon = Lucide.Upload,
                             contentDescription = "导出全部预设",
-                            enabled = !mainViewModel.shell.value.isBusy && presetCount > 0,
+                            enabled = !shellState.isBusy && presetCount > 0,
                             dimWhenDisabled = true,
                             onClick = { run {
     exportPresetsToClipboard(
