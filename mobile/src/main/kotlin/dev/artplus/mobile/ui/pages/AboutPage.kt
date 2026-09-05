@@ -329,6 +329,8 @@ import com.caverock.androidsvg.SVG
 @Composable
 internal fun MainActivity.AboutPage(pageBackground: Color) {
     val scrollBehavior = MiuixScrollBehavior()
+    val shell by mainViewModel.shell.collectAsState()
+    val updateUi by mainViewModel.updateUi.collectAsState()
     val versionName = pickerCurrentVersionName(
         getVersionName = {
             @Suppress("DEPRECATION")
@@ -357,7 +359,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     TitleBarIconButton(
                         icon = Lucide.ChevronLeft,
                         contentDescription = "返回",
-                        enabled = !mainViewModel.shell.value.isBusy,
+                        enabled = !shell.isBusy,
                         dimWhenDisabled = false,
                         onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
                     )
@@ -417,7 +419,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         summary = GITHUB_REPO_URL,
                         icon = SettingsIconKind.Link,
                         showArrowRight = true,
-                        enabled = !mainViewModel.shell.value.isBusy,
+                        enabled = !shell.isBusy,
                         onClick = {
                             pickerOpenExternalLink(
                                 start = ::startActivity,
@@ -432,19 +434,19 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         summary = "MIT License",
                         icon = SettingsIconKind.Shield,
                         showArrowRight = true,
-                        enabled = !mainViewModel.shell.value.isBusy,
+                        enabled = !shell.isBusy,
                         onClick = { mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (true)) } },
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     LibrarySettingRow(
                         title = "检查更新",
-                        summary = if (mainViewModel.updateUi.value.isCheckingUpdate) "检查中..." else "当前 $versionName",
+                        summary = if (updateUi.isCheckingUpdate) "检查中..." else "当前 $versionName",
                         icon = SettingsIconKind.Grid,
-                        showArrowRight = !mainViewModel.updateUi.value.isCheckingUpdate,
-                        enabled = !mainViewModel.shell.value.isBusy && !mainViewModel.updateUi.value.isCheckingUpdate,
+                        showArrowRight = !updateUi.isCheckingUpdate,
+                        enabled = !shell.isBusy && !updateUi.isCheckingUpdate,
                         onClick = {
                             pickerCheckForUpdate(
-                                isChecking = mainViewModel.updateUi.value.isCheckingUpdate,
+                                isChecking = updateUi.isCheckingUpdate,
                                 onCheckingChange = { mainViewModel.updateUpdateUi { v -> v.copy(isCheckingUpdate = (it)) } },
                                 onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                                 scope = mainScope,
@@ -477,7 +479,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
         }
     }
 
-    if (mainViewModel.updateUi.value.mitLicenseDialogVisible) {
+    if (updateUi.mitLicenseDialogVisible) {
         MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (false)) } }) {
             Column(
                 modifier = Modifier
@@ -555,7 +557,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
         }
     }
 
-    mainViewModel.updateUi.value.updateAvailableInfo?.let { info ->
+    updateUi.updateAvailableInfo?.let { info ->
         MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (null)) } }) {
             Column(
                 modifier = Modifier
@@ -619,7 +621,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
         }
     }
 
-    if (mainViewModel.updateUi.value.updateUpToDateDialogVisible) {
+    if (updateUi.updateUpToDateDialogVisible) {
         MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(updateUpToDateDialogVisible = (false)) } }) {
             Column(
                 modifier = Modifier
