@@ -334,6 +334,14 @@ internal fun MainActivity.SettingsPage(
     totalCount: Int,
     generatedCount: Int,
 ) {
+    val confirm by mainViewModel.confirm.collectAsState()
+    val shell by mainViewModel.shell.collectAsState()
+    val previewSession by mainViewModel.previewSession.collectAsState()
+    val transfer by mainViewModel.transfer.collectAsState()
+    val gptRmbgSettings by mainViewModel.gptRmbgSettings.collectAsState()
+    val presetUi by mainViewModel.presetUi.collectAsState()
+    val glassBar by mainViewModel.glassBar.collectAsState()
+    val batchPreviewConfig by mainViewModel.batchPreviewConfig.collectAsState()
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -355,15 +363,15 @@ internal fun MainActivity.SettingsPage(
             run {
 val __act1 = LocalContext.current
     OutputCard(
-                autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
-                autoConfirmRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                isBusy = mainViewModel.shell.value.isBusy,
-                outputTreeUri = mainViewModel.shell.value.outputTreeUri,
-                treeDisplay = remember(mainViewModel.shell.value.outputTreeUri) { formatTreeUriDisplay(mainViewModel.shell.value.outputTreeUri) },
-                backupActive = backupJob?.isActive == true && mainViewModel.transfer.value.backupProgress != null,
-                backupInBackground = mainViewModel.transfer.value.backupInBackground,
-                backupDots = mainViewModel.transfer.value.backupBackgroundDots,
-                exportDialogVisible = mainViewModel.previewSession.value.exportDialogVisible,
+                autoConfirmRootWrite = confirm.autoConfirmRootWrite,
+                autoConfirmRefresh = confirm.autoConfirmRefresh,
+                isBusy = shell.isBusy,
+                outputTreeUri = shell.outputTreeUri,
+                treeDisplay = remember(shell.outputTreeUri) { formatTreeUriDisplay(shell.outputTreeUri) },
+                backupActive = backupJob?.isActive == true && transfer.backupProgress != null,
+                backupInBackground = transfer.backupInBackground,
+                backupDots = transfer.backupBackgroundDots,
+                exportDialogVisible = previewSession.exportDialogVisible,
                 onAutoConfirmRootWriteChange = {
                     mainViewModel.updateConfirm { v -> v.copy(autoConfirmRootWrite = (it)) }
                     run {
@@ -762,8 +770,8 @@ val __act1 = LocalContext.current
         item(key = "preview_strip") {
             run {
     PreviewStripSettingsCard(
-                enabled = mainViewModel.previewSession.value.previewStripEnabled,
-                isBusy = mainViewModel.shell.value.isBusy,
+                enabled = previewSession.previewStripEnabled,
+                isBusy = shell.isBusy,
                 onCheckedChange = { run {
         paramsUpdatePreviewStripEnabled(
                     enabled = (it),
@@ -808,9 +816,9 @@ val __act1 = LocalContext.current
         item(key = "wallpaper") {
             run {
     WallpaperSettingsCard(
-                hasCustom = mainViewModel.batchPreviewConfig.value.customWallpaperPath != null,
-                customInfo = mainViewModel.batchPreviewConfig.value.customWallpaperInfo,
-                isBusy = mainViewModel.shell.value.isBusy,
+                hasCustom = batchPreviewConfig.customWallpaperPath != null,
+                customInfo = batchPreviewConfig.customWallpaperInfo,
+                isBusy = shell.isBusy,
                 onPickWallpaper = {
                     chooseWallpaperLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
                 },
@@ -865,11 +873,11 @@ val __act1 = LocalContext.current
             run {
     GptSettingsCard(
                 tuningState = mainViewModel.params.collectAsState().value,
-                isBusy = mainViewModel.shell.value.isBusy,
-                gptModelId = mainViewModel.gptRmbgSettings.value.gptModelId,
-                gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
-                gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
-                gptRunCount = mainViewModel.presetUi.value.gptRunCount,
+                isBusy = shell.isBusy,
+                gptModelId = gptRmbgSettings.gptModelId,
+                gptBaseUrl = gptRmbgSettings.gptBaseUrl,
+                gptApiKey = gptRmbgSettings.gptApiKey,
+                gptRunCount = presetUi.gptRunCount,
                 onGptImageModeChange = { mode ->
                     mainViewModel.updateLive { p -> p.copy(gptImageMode = (mode).value) }
                     mainViewModel.updateGptRmbgSettings { it -> it.copy(gptSettingsSaveStatus = ("")) }
@@ -900,22 +908,22 @@ val __act1 = LocalContext.current
         item(key = "rmbg") {
             run {
     RmbgComponentCard(
-                component = remember(mainViewModel.gptRmbgSettings.value.rmbgComponentStatus) { run {
+                component = remember(gptRmbgSettings.rmbgComponentStatus) { run {
         findRmbgComponent(filesDir)
     } },
-                rmbgRunCount = mainViewModel.presetUi.value.rmbgRunCount,
+                rmbgRunCount = presetUi.rmbgRunCount,
                 currentPreset = run {
-        paramsCurrentRmbgModelPreset(componentUrl = mainViewModel.gptRmbgSettings.value.rmbgComponentUrl)
+        paramsCurrentRmbgModelPreset(componentUrl = gptRmbgSettings.rmbgComponentUrl)
     },
                 allPresets = RMBG_MODEL_PRESETS,
-                lastError = mainViewModel.previewSession.value.lastRmbgCandidateError,
-                componentUrl = mainViewModel.gptRmbgSettings.value.rmbgComponentUrl,
-                isBusy = mainViewModel.shell.value.isBusy,
-                isGenerating = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
-                isInstalling = mainViewModel.previewSession.value.isInstallingRmbgComponent,
-                installStage = mainViewModel.previewSession.value.rmbgInstallStage,
-                installProgress = mainViewModel.previewSession.value.rmbgInstallProgress,
-                dialogVisible = mainViewModel.previewSession.value.rmbgDialogVisible,
+                lastError = previewSession.lastRmbgCandidateError,
+                componentUrl = gptRmbgSettings.rmbgComponentUrl,
+                isBusy = shell.isBusy,
+                isGenerating = previewSession.isGeneratingRmbgCandidate,
+                isInstalling = previewSession.isInstallingRmbgComponent,
+                installStage = previewSession.rmbgInstallStage,
+                installProgress = previewSession.rmbgInstallProgress,
+                dialogVisible = previewSession.rmbgDialogVisible,
                 onPresetSelected = { run {
         paramsUpdateRmbgModelPreset(
                     preset = (it),
@@ -1004,11 +1012,11 @@ val __act1 = LocalContext.current
             SectionCard(rowsFullBleed = true) {
                 LibrarySettingRow(
                     title = "悬浮底栏",
-                    summary = if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) "已开启" else "已关闭",
+                    summary = if (glassBar.liquidGlassBottomBarEnabled) "已开启" else "已关闭",
                     icon = SettingsIconKind.Glass,
                     showSwitch = true,
-                    checked = mainViewModel.glassBar.value.liquidGlassBottomBarEnabled,
-                    enabled = !mainViewModel.shell.value.isBusy,
+                    checked = glassBar.liquidGlassBottomBarEnabled,
+                    enabled = !shell.isBusy,
                     onCheckedChange = {
                         mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarEnabled = (it)) }
                         run {
@@ -1026,14 +1034,14 @@ val __act1 = LocalContext.current
                 LibrarySettingRow(
                     title = "底栏模糊",
                     summary = when {
-                        !mainViewModel.glassBar.value.liquidGlassBottomBarEnabled -> "需先开启悬浮底栏"
-                        mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled -> "已开启"
+                        !glassBar.liquidGlassBottomBarEnabled -> "需先开启悬浮底栏"
+                        glassBar.liquidGlassBottomBarBlurEnabled -> "已开启"
                         else -> "已关闭"
                     },
                     icon = SettingsIconKind.Glass,
                     showSwitch = true,
-                    checked = mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled,
-                    enabled = !mainViewModel.shell.value.isBusy && mainViewModel.glassBar.value.liquidGlassBottomBarEnabled,
+                    checked = glassBar.liquidGlassBottomBarBlurEnabled,
+                    enabled = !shell.isBusy && glassBar.liquidGlassBottomBarEnabled,
                     onCheckedChange = {
                         mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarBlurEnabled = (it)) }
                         run {
@@ -1057,10 +1065,10 @@ val __act1 = LocalContext.current
                     icon = settingsIconForTitle("恢复默认配置"),
                     showValue = false,
                     showArrowRight = true,
-                    enabled = !mainViewModel.shell.value.isBusy,
+                    enabled = !shell.isBusy,
                     onClick = { mainViewModel.updatePreviewSession { it -> it.copy(resetDefaultsDialogVisible = (true)) } },
                 )
-                if (mainViewModel.previewSession.value.resetDefaultsDialogVisible) {
+                if (previewSession.resetDefaultsDialogVisible) {
                     MiuixBottomDialog(onDismissRequest = { mainViewModel.updatePreviewSession { it -> it.copy(resetDefaultsDialogVisible = (false)) } }) {
                         Column(
                             modifier = Modifier
@@ -1339,7 +1347,7 @@ val __act1 = LocalContext.current
             )
 }
                                     },
-                                    enabled = !mainViewModel.shell.value.isBusy,
+                                    enabled = !shell.isBusy,
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColorsPrimary(),
                                 ) {
@@ -1363,7 +1371,7 @@ val __act1 = LocalContext.current
                     summary = "首次引导与全量备份入口",
                     icon = settingsIconForTitle("导出引导"),
                     showArrowRight = true,
-                    enabled = !mainViewModel.shell.value.isBusy,
+                    enabled = !shell.isBusy,
                     onClick = { mainViewModel.updateShell { it -> it.copy(onboardingVisible = (true)) } },
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -1372,7 +1380,7 @@ val __act1 = LocalContext.current
                     summary = "源码、开源协议与更新",
                     icon = SettingsIconKind.Link,
                     showArrowRight = true,
-                    enabled = !mainViewModel.shell.value.isBusy,
+                    enabled = !shell.isBusy,
                     onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.About)) } },
                 )
             }
