@@ -332,6 +332,12 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     // O1 修复：订阅 presetUi（裸读 .value 不触发重组，存/改/删后列表 stale，需重进才刷）。
     // 只加订阅、读取经此订阅走；数据逻辑/持久化顺序/符号名一律不动。
     val presetUiState by mainViewModel.presetUi.collectAsState()
+    // 热修复：主页生成链渲染位订阅 picker/shell/previewSession（StateFlow .value 裸读不触发重组，
+    // 生成按钮 isBusy/权限门/预览条 stale，选中 magisk 点生成也无产物/进度）。
+    // 回调内事件时读 .value 仍合法，此处只修组合期渲染读。
+    val pickerState by mainViewModel.picker.collectAsState()
+    val shellState by mainViewModel.shell.collectAsState()
+    val previewSessionState by mainViewModel.previewSession.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val scope = rememberCoroutineScope()
     val isDark = isSystemInDarkTheme()
@@ -364,7 +370,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         TitleBarIconButton(
                             icon = Lucide.RefreshCw,
                             contentDescription = "刷新",
-                            enabled = !mainViewModel.shell.value.isBusy && !mainViewModel.previewSession.value.isRefreshingArtPlusIcons,
+                            enabled = !shellState.isBusy && !previewSessionState.isRefreshingArtPlusIcons,
                             dimWhenDisabled = false,
                             onClick = {
                                 if (mainViewModel.confirm.value.autoConfirmRefresh) {
@@ -381,7 +387,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                             },
                         )
                     },
-                    showPreviewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                    showPreviewStrip = previewSessionState.previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
                     LazyColumn(
                         modifier = Modifier
@@ -393,12 +399,11 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        if (!mainViewModel.picker.value.packageListPermissionGranted || !mainViewModel.picker.value.usageAccessGranted) {
+                        if (!pickerState.packageListPermissionGranted || !pickerState.usageAccessGranted) {
                             item(key = "permission") {
                                 run {
 
-            val pickerState by mainViewModel.picker.collectAsState()
-            val shellState by mainViewModel.shell.collectAsState()
+            // 热修复：pickerState/shellState 已提升至 HomePage 顶层，此处复用（删重复订阅）。
             // Slice 3.1: Activity侧collect读VM单源。
             PermissionCard(
                 packageListGranted = pickerState.packageListPermissionGranted,
@@ -424,7 +429,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         item(key = "status") {
                             run {
 
-            val shellState by mainViewModel.shell.collectAsState()
+            // 热修复：shellState 已提升至 HomePage 顶层，此处复用（删重复订阅）。
             // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
             StatusCard(
                 selectedApp = (selectedApp),
@@ -458,7 +463,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
 val __act4 = LocalContext.current
     GenerationActionCard(
                 selectedApp = (selectedApp),
-                isBusy = mainViewModel.shell.value.isBusy,
+                isBusy = shellState.isBusy,
                 onLocalGenerate = { __g11(installWithRoot = false, useGpt = false) },
                 onLocalExport = { run {
 

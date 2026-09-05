@@ -333,6 +333,12 @@ internal fun MainActivity.ArtPlusScreen() {
     // 渲染位禁止裸读 .value（裸读不触发重组，对话框显隐/消除全部假死）。
     val presetUiState by mainViewModel.presetUi.collectAsState()
     val confirmState by mainViewModel.confirm.collectAsState()
+    // 热修复：picker/shell/previewSession 渲染位必须订阅（StateFlow .value 裸读不触发重组，
+    // 选择器高亮/selectedApp/生成按钮全部假死，仅 magisk 初始态可见）。
+    // 回调内（onClick/onConfirm 等事件时）读 .value 仍合法，此处只修组合期渲染读。
+    val pickerState by mainViewModel.picker.collectAsState()
+    val shellState by mainViewModel.shell.collectAsState()
+    val previewSessionState by mainViewModel.previewSession.collectAsState()
     // Slice 3.4b：非组合回调（onStop 等）内的 Toast 共用此前捕获的 Context。
     val __actCancel = LocalContext.current
     val pageBackground = if (isSystemInDarkTheme()) {
@@ -340,15 +346,12 @@ internal fun MainActivity.ArtPlusScreen() {
     } else {
         Color(0xFFF7F7F7)
     }
-    val selectedApp by remember {
-        derivedStateOf { apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName } }
-    }
-    val generatedCount by remember {
-        derivedStateOf { apps.count { it.packageName in mainViewModel.picker.value.generatedPackageNames && AppVisibility.shouldShowInPicker(it.applicationInfo, it.launchable, mainViewModel.picker.value.showSystemApps, packageName) } }
-    }
-    val launcherCount by remember {
-        derivedStateOf { apps.count { it.launchable } }
-    }
+    // 热修复：selectedApp/generatedCount 直接经已订阅 pickerState 计算。
+    // 原 remember{derivedStateOf{...picker.value...}} 对 StateFlow 不可观察，永不重算，
+    // selectedApp 恒定初始值（magisk），点别的行写成功但 UI 不刷、生成页 stale。
+    val selectedApp = apps.firstOrNull { it.packageName == pickerState.selectedPackageName }
+    val generatedCount = apps.count { it.packageName in pickerState.generatedPackageNames && AppVisibility.shouldShowInPicker(it.applicationInfo, it.launchable, pickerState.showSystemApps, packageName) }
+    val launcherCount = apps.count { it.launchable }
     var systemBackProgress by remember { mutableStateOf(0f) }
     val completingBackProgress = remember { Animatable(0f) }
     val cancellingBackProgress = remember { Animatable(0f) }
@@ -360,23 +363,23 @@ internal fun MainActivity.ArtPlusScreen() {
         completingBackProgress.value,
         cancellingBackProgress.value,
     )
-    val sharedPreviewSession = mainViewModel.previewSession.value.activeGenerationSession?.takeIf {
-        it.packageName == mainViewModel.previewSession.value.previewPackageName && it.outDir.absolutePath == mainViewModel.previewSession.value.previewDirPath
+    val sharedPreviewSession = previewSessionState.activeGenerationSession?.takeIf {
+        it.packageName == previewSessionState.previewPackageName && it.outDir.absolutePath == previewSessionState.previewDirPath
     }
     val sharedPreviewTuning = run {
     paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
 }
 
     LaunchedEffect(
-        mainViewModel.previewSession.value.previewPackageName,
-        mainViewModel.previewSession.value.previewDirPath,
+        previewSessionState.previewPackageName,
+        previewSessionState.previewDirPath,
         sharedPreviewSession,
         PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark),
-        mainViewModel.previewSession.value.previewVersion,
+        previewSessionState.previewVersion,
         sharedPreviewTuning,
     ) {
-        val dirPath = mainViewModel.previewSession.value.previewDirPath
-        val packageName = mainViewModel.previewSession.value.previewPackageName
+        val dirPath = previewSessionState.previewDirPath
+        val packageName = previewSessionState.previewPackageName
         if (dirPath.isNullOrBlank() || packageName.isNullOrBlank()) {
             mainViewModel.updatePreviewSession { it -> it.copy(sharedPreviewAssets = (null)) }
             mainViewModel.updatePreviewSession { it -> it.copy(isPreviewAssetsRefreshing = (false)) }
@@ -491,8 +494,8 @@ internal fun MainActivity.ArtPlusScreen() {
         }
     }
 
-    LaunchedEffect(mainViewModel.shell.value.currentPage, mainViewModel.previewSession.value.skipNextHomeReturnAnimation, isCompletingBackGesture) {
-        if (mainViewModel.shell.value.currentPage != AppPage.Home) {
+    LaunchedEffect(shellState.currentPage, previewSessionState.skipNextHomeReturnAnimation, isCompletingBackGesture) {
+        if (shellState.currentPage != AppPage.Home) {
             if (!isCompletingBackGesture) {
                 systemBackProgress = 0f
                 completingBackProgress.snapTo(0f)
@@ -504,7 +507,7 @@ internal fun MainActivity.ArtPlusScreen() {
                 )
             }
             mainViewModel.updatePreviewSession { it -> it.copy(skipNextHomeReturnAnimation = (false)) }
-        } else if (mainViewModel.previewSession.value.skipNextHomeReturnAnimation || isCompletingBackGesture) {
+        } else if (previewSessionState.skipNextHomeReturnAnimation || isCompletingBackGesture) {
             delay(90)
             if (!isCompletingBackGesture) {
                 systemBackProgress = 0f
@@ -520,7 +523,7 @@ internal fun MainActivity.ArtPlusScreen() {
         }
     }
 
-    PredictiveBackHandler(enabled = mainViewModel.shell.value.currentPage != AppPage.Home && !isCompletingBackGesture) { backEvents ->
+    PredictiveBackHandler(enabled = shellState.currentPage != AppPage.Home && !isCompletingBackGesture) { backEvents ->
         var latestProgress = systemBackProgress
         try {
             backEvents.collect { backEvent ->
@@ -532,7 +535,7 @@ internal fun MainActivity.ArtPlusScreen() {
         } catch (_: CancellationException) {
             val start = maxOf(latestProgress, systemBackProgress).coerceIn(0f, 1f)
             systemBackProgress = 0f
-            if (start > 0f && mainViewModel.shell.value.currentPage != AppPage.Home && !isCompletingBackGesture) {
+            if (start > 0f && shellState.currentPage != AppPage.Home && !isCompletingBackGesture) {
                 cancellingBackProgress.snapTo(start)
                 cancellingBackProgress.animateTo(
                     targetValue = 0f,
@@ -545,8 +548,8 @@ internal fun MainActivity.ArtPlusScreen() {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        val overlayPage = mainViewModel.shell.value.currentPage.takeIf { it != AppPage.Home }
-        val dimReveal = if (mainViewModel.previewSession.value.skipNextHomeReturnAnimation || isCompletingBackGesture || backProgress > 0f) {
+        val overlayPage = shellState.currentPage.takeIf { it != AppPage.Home }
+        val dimReveal = if (previewSessionState.skipNextHomeReturnAnimation || isCompletingBackGesture || backProgress > 0f) {
             backProgress.coerceIn(0f, 1f)
         } else {
             0f
@@ -591,7 +594,7 @@ internal fun MainActivity.ArtPlusScreen() {
         }
 
         if (overlayPage != null) {
-            val isCompletingBack = mainViewModel.previewSession.value.skipNextHomeReturnAnimation || isCompletingBackGesture
+            val isCompletingBack = previewSessionState.skipNextHomeReturnAnimation || isCompletingBackGesture
             val reveal = if (isCompletingBack || backProgress > 0f) {
                 backProgress.coerceIn(0f, 1f)
             } else {
@@ -614,38 +617,32 @@ internal fun MainActivity.ArtPlusScreen() {
             ) {
                 when (overlayPage) {
                     AppPage.AppPicker -> {
-                        val scopedApps by remember {
-                            derivedStateOf { apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, mainViewModel.picker.value.showSystemApps, packageName) } }
+                        // 热修复：经已订阅 pickerState 推导（原 remember{derivedStateOf{...picker.value...}}
+                        // 对 StateFlow 不可观察，query/过滤/系统开关永不重算）。
+                        val scopedApps = remember(apps.toList(), pickerState.showSystemApps) {
+                            apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, pickerState.showSystemApps, packageName) }
                         }
-                        val ungeneratedCount by remember {
-                            derivedStateOf { scopedApps.size - generatedCount }
-                        }
-                        val filteredApps by remember {
-                            derivedStateOf {
-                                val query = mainViewModel.picker.value.queryText.trim().lowercase(Locale.ROOT)
-                                val stateScopedApps = when (mainViewModel.picker.value.generatedFilter) {
-                                    GeneratedFilter.All -> scopedApps
-                                    GeneratedFilter.Generated -> scopedApps.filter { it.packageName in mainViewModel.picker.value.generatedPackageNames }
-                                    GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in mainViewModel.picker.value.generatedPackageNames }
-                                }
-                                if (query.isEmpty()) {
-                                    stateScopedApps
-                                } else {
-                                    stateScopedApps.filter { entry ->
-                                        entry.label.lowercase(Locale.ROOT).contains(query) ||
-                                            entry.packageName.lowercase(Locale.ROOT).contains(query)
-                                    }
+                        val ungeneratedCount = scopedApps.size - generatedCount
+                        val filteredApps = remember(scopedApps, pickerState.queryText, pickerState.generatedFilter, pickerState.generatedPackageNames) {
+                            val query = pickerState.queryText.trim().lowercase(Locale.ROOT)
+                            val stateScopedApps = when (pickerState.generatedFilter) {
+                                GeneratedFilter.All -> scopedApps
+                                GeneratedFilter.Generated -> scopedApps.filter { it.packageName in pickerState.generatedPackageNames }
+                                GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in pickerState.generatedPackageNames }
+                            }
+                            if (query.isEmpty()) {
+                                stateScopedApps
+                            } else {
+                                stateScopedApps.filter { entry ->
+                                    entry.label.lowercase(Locale.ROOT).contains(query) ||
+                                        entry.packageName.lowercase(Locale.ROOT).contains(query)
                                 }
                             }
                         }
-                        val scopeCount by remember {
-                            derivedStateOf {
-                                when (mainViewModel.picker.value.generatedFilter) {
-                                    GeneratedFilter.All -> scopedApps.size
-                                    GeneratedFilter.Generated -> generatedCount
-                                    GeneratedFilter.Ungenerated -> ungeneratedCount
-                                }
-                            }
+                        val scopeCount = when (pickerState.generatedFilter) {
+                            GeneratedFilter.All -> scopedApps.size
+                            GeneratedFilter.Generated -> generatedCount
+                            GeneratedFilter.Ungenerated -> ungeneratedCount
                         }
                         AppPickerPage(
                             pageBackground = pageBackground,
@@ -2195,7 +2192,7 @@ internal fun MainActivity.ArtPlusScreen() {
         run {
 val __act1 = LocalContext.current
 
-            val shellState by mainViewModel.shell.collectAsState()
+            // 热修复：shellState 已提升至 ArtPlusScreen 顶层，此处复用（删重复订阅）。
             // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
             OnboardingDialog(
                 visible = shellState.onboardingVisible,

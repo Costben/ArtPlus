@@ -334,6 +334,11 @@ internal fun MainActivity.AppPickerPage(
     generatedCount: Int,
     ungeneratedCount: Int,
 ) {
+    // 热修复：选择器渲染位订阅 picker/shell（StateFlow .value 裸读不触发重组，
+    // 行高亮 AppRow selected/multi/generated/isBusy 全部 stale，点行写成功但不变色）。
+    // 回调内事件时读 .value 仍合法，此处只修组合期渲染读。
+    val pickerState by mainViewModel.picker.collectAsState()
+    val shellState by mainViewModel.shell.collectAsState()
     val scrollBehavior = MiuixScrollBehavior()
 
     Scaffold(
@@ -346,7 +351,7 @@ internal fun MainActivity.AppPickerPage(
                     TitleBarIconButton(
                         icon = Lucide.ChevronLeft,
                         contentDescription = "返回",
-                        enabled = !mainViewModel.shell.value.isBusy,
+                        enabled = !shellState.isBusy,
                         dimWhenDisabled = false,
                         onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
                     )
@@ -373,14 +378,14 @@ internal fun MainActivity.AppPickerPage(
                 totalCount = (scopeCount),
                 generatedCount = (generatedCount),
                 ungeneratedCount = (ungeneratedCount),
-                multiCount = mainViewModel.picker.value.multiSelectedPackageNames.size,
-                isScanning = mainViewModel.picker.value.isScanningGeneratedPackages,
-                scanFailed = mainViewModel.picker.value.generatedScanFailed,
-                isBusy = mainViewModel.shell.value.isBusy,
+                multiCount = pickerState.multiSelectedPackageNames.size,
+                isScanning = pickerState.isScanningGeneratedPackages,
+                scanFailed = pickerState.generatedScanFailed,
+                isBusy = shellState.isBusy,
                 hasApps = apps.isNotEmpty(),
-                showSystemApps = mainViewModel.picker.value.showSystemApps,
-                generatedFilter = mainViewModel.picker.value.generatedFilter,
-                queryText = mainViewModel.picker.value.queryText,
+                showSystemApps = pickerState.showSystemApps,
+                generatedFilter = pickerState.generatedFilter,
+                queryText = pickerState.queryText,
                 onRefreshGenerated = { run {
         mainViewModel.refreshGeneratedPackagesAsync(
                     entries = (apps.toList()),
@@ -557,10 +562,10 @@ internal fun MainActivity.AppPickerPage(
 
                 val filteredPackageNames = remember(((filteredApps))) { ((filteredApps)).map { it.packageName }.toSet() }
                 AppMultiSelectActions(
-                    selectedCount = mainViewModel.picker.value.multiSelectedPackageNames.size,
+                    selectedCount = pickerState.multiSelectedPackageNames.size,
                     hasFiltered = filteredPackageNames.isNotEmpty(),
-                    allFilteredSelected = pickerAllFilteredSelected(filteredPackageNames, mainViewModel.picker.value.multiSelectedPackageNames),
-                    isBusy = mainViewModel.shell.value.isBusy,
+                    allFilteredSelected = pickerAllFilteredSelected(filteredPackageNames, pickerState.multiSelectedPackageNames),
+                    isBusy = shellState.isBusy,
                     onToggleFiltered = {
                         val allSelected = pickerAllFilteredSelected(filteredPackageNames, mainViewModel.picker.value.multiSelectedPackageNames)
                         mainViewModel.updatePicker { it -> it.copy(multiSelectedPackageNames = (if (allSelected) {
@@ -1066,8 +1071,7 @@ internal fun MainActivity.AppPickerPage(
                 item {
                     run {
 
-            val pickerState by mainViewModel.picker.collectAsState()
-            val shellState by mainViewModel.shell.collectAsState()
+            // 热修复：pickerState/shellState 已提升至 AppPickerPage 顶层，此处复用（删重复订阅）。
             // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
             EmptyAppListCard(
                 queryText = pickerState.queryText,
@@ -1152,10 +1156,10 @@ internal fun MainActivity.AppPickerPage(
                     run {
     AppRow(
                 entry = (entry),
-                selected = (entry.packageName == mainViewModel.picker.value.selectedPackageName),
-                multiSelected = (entry.packageName in mainViewModel.picker.value.multiSelectedPackageNames),
-                generated = (entry.packageName in mainViewModel.picker.value.generatedPackageNames),
-                isBusy = mainViewModel.shell.value.isBusy,
+                selected = (entry.packageName == pickerState.selectedPackageName),
+                multiSelected = (entry.packageName in pickerState.multiSelectedPackageNames),
+                generated = (entry.packageName in pickerState.generatedPackageNames),
+                isBusy = shellState.isBusy,
                 onClick = ({
                                 run {
 
