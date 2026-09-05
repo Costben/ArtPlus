@@ -656,7 +656,7 @@ internal fun PreviewControlCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                    .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 PreviewDesktopBackground.entries.forEach { option ->
