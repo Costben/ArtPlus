@@ -340,11 +340,14 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     val previewSessionState by mainViewModel.previewSession.collectAsState()
     // 热修复2：四宫格预览链订阅 batchPreviewConfig（wallpaperKey 裸读不触发重组，壁纸切换后预览 stale）。
     val batchConfigState by mainViewModel.batchPreviewConfig.collectAsState()
+    // 底栏订阅：glassBar .value 裸读不触发重组，设置页开关翻转后底栏显隐/模糊 stale。
+    // 回调内事件时读 .value 仍合法，此处只修组合期渲染读。
+    val glassBar by mainViewModel.glassBar.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val scope = rememberCoroutineScope()
     val isDark = isSystemInDarkTheme()
     val containerColor = if (isDark) Color(0xFF121212).copy(alpha = 0.4f) else Color(0xFFFAFAFA).copy(alpha = 0.4f)
-    val isBlurEnabled = mainViewModel.glassBar.value.liquidGlassBottomBarEnabled && mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled
+    val isBlurEnabled = glassBar.liquidGlassBottomBarEnabled && glassBar.liquidGlassBottomBarBlurEnabled
     var beyondViewportCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
         delay(200)
@@ -5808,7 +5811,7 @@ val __act2 = LocalContext.current
         }
 
         // 液态玻璃底栏（KernelSU FloatingBottomBar 1:1：vibrancy+blur4dp+lens24dp 三层玻璃+拖拽阻尼+高光镜面）
-        if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) {
+        if (glassBar.liquidGlassBottomBarEnabled) {
             FloatingBottomBar(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
