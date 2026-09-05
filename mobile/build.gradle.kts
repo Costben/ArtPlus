@@ -108,7 +108,11 @@ dependencies {
 
     implementation("com.caverock:androidsvg-aar:1.4")
     implementation("com.composables:icons-lucide-android:1.1.0")
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
+    // 热修复2-16KB：onnxruntime-android 1.20.0 的 libonnxruntime4j_jni.so ELF LOAD 段为 4KB 对齐(0x1000)，
+    // Android 16 可调试包弹窗“LOAD 区段未对齐”；1.21.1 起该 .so 已是 16KB 对齐(0x4000，readelf 实锤最小修复版)。
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.21.1")
+    // 热修复2-16KB：androidx.graphics:graphics-path 1.0.1 -> 1.1.0（16KB 对齐版本，直钉显式提升传递依赖）。
+    implementation("androidx.graphics:graphics-path:1.1.0")
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.3")
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:0.9.3")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.3")

@@ -329,8 +329,14 @@ import com.caverock.androidsvg.SVG
 @Composable
 internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
     val scrollBehavior = MiuixScrollBehavior()
-    val result = mainViewModel.presetUi.value.batchPreviewResult
-    val preset = result?.preset ?: mainViewModel.presetUi.value.activeBatchPreviewPreset
+    // 热修复2：批量预览渲染位订阅 presetUi/shell/batchPreviewConfig（StateFlow .value 裸读不触发重组，
+    // 批量结果回填/桌面背景/列数/尺寸/圆角切换后 stale，亮色↔暗色点了不变）。
+    // 回调内（onClick/onSave 等事件时）读 .value 仍合法，此处只修组合期渲染读。
+    val batchPresetUi by mainViewModel.presetUi.collectAsState()
+    val batchShell by mainViewModel.shell.collectAsState()
+    val batchConfig by mainViewModel.batchPreviewConfig.collectAsState()
+    val result = batchPresetUi.batchPreviewResult
+    val preset = result?.preset ?: batchPresetUi.activeBatchPreviewPreset
     val coroutineScope = rememberCoroutineScope()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val isDark = isSystemInDarkTheme()
@@ -359,7 +365,7 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                     TitleBarIconButton(
                         icon = Lucide.ChevronLeft,
                         contentDescription = "返回",
-                        enabled = !mainViewModel.shell.value.isBusy,
+                        enabled = !batchShell.isBusy,
                         dimWhenDisabled = false,
                         onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
                     )
@@ -368,7 +374,7 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                     TitleBarIconButton(
                         icon = Lucide.RefreshCw,
                         contentDescription = "重新生成",
-                        enabled = !mainViewModel.shell.value.isBusy && !mainViewModel.presetUi.value.isGeneratingBatchPreview && preset != null,
+                        enabled = !batchShell.isBusy && !batchPresetUi.isGeneratingBatchPreview && preset != null,
                         dimWhenDisabled = true,
                         paddingStart = 0.dp,
                         paddingEnd = 16.dp,
@@ -380,10 +386,10 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
     ) { innerPadding ->
         // 预览框高度锁死：内容行数 + 1 行，框内无滚动可抢，所有纵向手势归页面
         val previewContentRows = result?.items?.size?.let { count ->
-            if (count <= 0) 0 else (count + mainViewModel.batchPreviewConfig.value.batchPreviewColumns - 1) / mainViewModel.batchPreviewConfig.value.batchPreviewColumns
+            if (count <= 0) 0 else (count + batchConfig.batchPreviewColumns - 1) / batchConfig.batchPreviewColumns
         } ?: 0
         val previewDisplayRows = previewContentRows + 1
-        val previewRowHeight = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp.dp + 6.dp + PREVIEW_LABEL_HEIGHT_DP.dp
+        val previewRowHeight = batchConfig.batchPreviewIconSizeDp.dp + 6.dp + PREVIEW_LABEL_HEIGHT_DP.dp
         val previewFrameHeight = 18.dp + previewRowHeight * previewDisplayRows +
             18.dp * (previewDisplayRows - 1) + 18.dp
         val overscrollEffect = rememberOverscrollEffect()
@@ -421,10 +427,10 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
 val __act2 = LocalContext.current
     PreviewBackgroundOption(
                 option = (bgOption),
-                selected = (mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground == bgOption),
-                isBusy = mainViewModel.shell.value.isBusy,
+                selected = (batchConfig.batchPreviewDesktopBackground == bgOption),
+                isBusy = batchShell.isBusy,
                 wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-                wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                wallpaperKey = batchConfig.customWallpaperPath,
                 loadWallpaper = {
                     withContext(Dispatchers.IO) {
                         run {
@@ -500,10 +506,10 @@ val __act2 = LocalContext.current
                     }
 
                     NumberParameterControl(
-                        busy = mainViewModel.shell.value.isBusy,
+                        busy = batchShell.isBusy,
                         title = "列数",
                         summary = "控制桌面每行图标数量，切换列数会自动适配图标大小",
-                        value = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
+                        value = batchConfig.batchPreviewColumns,
                         draftText = draftBatchPreviewColumnsText,
                         min = 2,
                         max = 5,
@@ -553,10 +559,10 @@ val __act2 = LocalContext.current
                     )
 
                     NumberParameterControl(
-                        busy = mainViewModel.shell.value.isBusy,
+                        busy = batchShell.isBusy,
                         title = "图标大小",
                         summary = "控制预览图标的显示大小",
-                        value = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
+                        value = batchConfig.batchPreviewIconSizeDp,
                         draftText = draftBatchPreviewIconSizeDpText,
                         min = 40,
                         max = 84,
@@ -604,10 +610,10 @@ val __act2 = LocalContext.current
                     )
 
                     NumberParameterControl(
-                        busy = mainViewModel.shell.value.isBusy,
+                        busy = batchShell.isBusy,
                         title = "图标圆角",
                         summary = "控制预览图标的圆角大小",
-                        value = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
+                        value = batchConfig.batchPreviewCornerRadiusDp,
                         draftText = draftBatchPreviewCornerRadiusDpText,
                         min = 0,
                         max = 36,
@@ -716,10 +722,10 @@ val __act2 = LocalContext.current
                         run {
 val __act1 = LocalContext.current
     PreviewDesktopBackgroundSurface(
-                option = (mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground),
+                option = (batchConfig.batchPreviewDesktopBackground),
                 modifier = (Modifier.fillMaxSize()),
                 wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-                wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                wallpaperKey = batchConfig.customWallpaperPath,
                 loadWallpaper = {
                     withContext(Dispatchers.IO) {
                         run {
@@ -771,12 +777,13 @@ val __act1 = LocalContext.current
                                 modifier = Modifier.fillMaxSize(),
                             ) { page ->
                                 val currentMode = modes[page]
-                                val isLightBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground == PreviewDesktopBackground.LightGray
+                                // 热修复2：宫格渲染位经已订阅 batchConfig 读取（裸读列数/尺寸/圆角/背景不触发重组）。
+                                val isLightBg = batchConfig.batchPreviewDesktopBackground == PreviewDesktopBackground.LightGray
                                 val labelColor = if (isLightBg) Color(0xFF222222) else Color.White
                                 val shadowColor = if (isLightBg) Color.White.copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.85f)
 
                                 LazyVerticalGrid(
-                                    columns = GridCells.Fixed(mainViewModel.batchPreviewConfig.value.batchPreviewColumns),
+                                    columns = GridCells.Fixed(batchConfig.batchPreviewColumns),
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 18.dp),
                                     verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -794,8 +801,8 @@ val __act1 = LocalContext.current
     GeneratedIconPreview(
                 assets = (item.assets),
                 mode = (currentMode),
-                modifier = (Modifier.size(mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp.dp)),
-                cornerRadiusDp = (mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp),
+                modifier = (Modifier.size(batchConfig.batchPreviewIconSizeDp.dp)),
+                cornerRadiusDp = (batchConfig.batchPreviewCornerRadiusDp),
                 materialColorProvider = { __a0: String, __a1: Color -> run {
         pickerSystemMaterialColor(
                     resources = resources,
@@ -809,10 +816,10 @@ val __act1 = LocalContext.current
                                             } else {
                                                 run {
     MissingIconPreview(
-                modifier = (Modifier.size(mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp.dp)),
+                modifier = (Modifier.size(batchConfig.batchPreviewIconSizeDp.dp)),
                 mode = (currentMode),
                 compact = (true),
-                cornerRadiusDp = (mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp),
+                cornerRadiusDp = (batchConfig.batchPreviewCornerRadiusDp),
                 materialColorProvider = { __a0: String, __a1: Color -> run {
         pickerSystemMaterialColor(
                     resources = resources,

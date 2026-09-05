@@ -338,6 +338,8 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     val pickerState by mainViewModel.picker.collectAsState()
     val shellState by mainViewModel.shell.collectAsState()
     val previewSessionState by mainViewModel.previewSession.collectAsState()
+    // 热修复2：四宫格预览链订阅 batchPreviewConfig（wallpaperKey 裸读不触发重组，壁纸切换后预览 stale）。
+    val batchConfigState by mainViewModel.batchPreviewConfig.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val scope = rememberCoroutineScope()
     val isDark = isSystemInDarkTheme()
@@ -945,23 +947,25 @@ val __act4 = LocalContext.current
             )
 }
                         }
-                        if (mainViewModel.previewSession.value.previewDirPath != null && mainViewModel.previewSession.value.previewPackageName != null) {
+                        // 热修复2：预览卡渲染位经已订阅 previewSessionState 读取（裸读 .value 不触发重组，
+                        // 切应用后 previewDirPath/previewPackageName/sharedPreviewAssets 变化 UI 无感，四宫格 stale/消失）。
+                        if (previewSessionState.previewDirPath != null && previewSessionState.previewPackageName != null) {
                             item(key = "generated_preview") {
                                 run {
 val __act3 = LocalContext.current
     GeneratedPreviewCard(
-                dirPath = mainViewModel.previewSession.value.previewDirPath,
-                packageName = mainViewModel.previewSession.value.previewPackageName,
-                session = mainViewModel.previewSession.value.activeGenerationSession?.takeIf {
-                    it.packageName == mainViewModel.previewSession.value.previewPackageName && it.outDir.absolutePath == mainViewModel.previewSession.value.previewDirPath
+                dirPath = previewSessionState.previewDirPath,
+                packageName = previewSessionState.previewPackageName,
+                session = previewSessionState.activeGenerationSession?.takeIf {
+                    it.packageName == previewSessionState.previewPackageName && it.outDir.absolutePath == previewSessionState.previewDirPath
                 },
-                displayAssets = mainViewModel.previewSession.value.sharedPreviewAssets,
-                previewLoading = mainViewModel.previewSession.value.isGptPreviewLoading || mainViewModel.previewSession.value.isPreviewAssetsRefreshing || mainViewModel.previewSession.value.isPreviewOutputRefreshing,
-                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                iconSizeDp = mainViewModel.previewSession.value.previewIconSizeDp,
-                cornerRadiusDp = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                displayAssets = previewSessionState.sharedPreviewAssets,
+                previewLoading = previewSessionState.isGptPreviewLoading || previewSessionState.isPreviewAssetsRefreshing || previewSessionState.isPreviewOutputRefreshing,
+                desktopBackground = previewSessionState.previewDesktopBackground,
+                iconSizeDp = previewSessionState.previewIconSizeDp,
+                cornerRadiusDp = previewSessionState.previewCornerRadiusDp,
                 wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-                wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                wallpaperKey = batchConfigState.customWallpaperPath,
                 loadWallpaper = {
                     withContext(Dispatchers.IO) {
                         run {
@@ -1001,20 +1005,20 @@ val __act3 = LocalContext.current
                     fallback = __a1,
                 )
     } },
-                previewChoiceMode = mainViewModel.previewSession.value.previewChoiceMode,
+                previewChoiceMode = previewSessionState.previewChoiceMode,
                 tuningState = mainViewModel.params.collectAsState().value,
-                isBusy = mainViewModel.shell.value.isBusy,
-                isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
-                isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
+                isBusy = shellState.isBusy,
+                isGeneratingGptCandidate = previewSessionState.isGeneratingGptCandidate,
+                isGeneratingRmbgCandidate = previewSessionState.isGeneratingRmbgCandidate,
                 draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
                 isDark = isSystemInDarkTheme(),
                 nightSubjectLightBackgroundEnabled = mainViewModel.params.collectAsState().value.nightSubjectLightBackgroundEnabled,
-                rmbgCandidatePackageName = mainViewModel.previewSession.value.rmbgCandidatePackageName,
-                rmbgCandidateMode = mainViewModel.previewSession.value.rmbgCandidateMode,
-                rmbgCandidateFailurePackageName = mainViewModel.previewSession.value.rmbgCandidateFailurePackageName,
-                rmbgCandidateFailureMode = mainViewModel.previewSession.value.rmbgCandidateFailureMode,
-                lastRmbgCandidateError = mainViewModel.previewSession.value.lastRmbgCandidateError,
-                rmbgCandidateStatusText = mainViewModel.previewSession.value.rmbgCandidateStatusText,
+                rmbgCandidatePackageName = previewSessionState.rmbgCandidatePackageName,
+                rmbgCandidateMode = previewSessionState.rmbgCandidateMode,
+                rmbgCandidateFailurePackageName = previewSessionState.rmbgCandidateFailurePackageName,
+                rmbgCandidateFailureMode = previewSessionState.rmbgCandidateFailureMode,
+                lastRmbgCandidateError = previewSessionState.lastRmbgCandidateError,
+                rmbgCandidateStatusText = previewSessionState.rmbgCandidateStatusText,
                 gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
                 gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
                 hasRmbgComponent = run {
@@ -1479,16 +1483,17 @@ val __act3 = LocalContext.current
 val __act2 = LocalContext.current
     PreviewControlCard(
                 tuningState = mainViewModel.params.collectAsState().value,
-                isBusy = mainViewModel.shell.value.isBusy,
-                previewCornerRadiusDp = mainViewModel.previewSession.value.previewCornerRadiusDp,
+                // 热修复2：预览控制卡渲染位经已订阅状态读取（裸读 .value 不触发重组）。
+                isBusy = shellState.isBusy,
+                previewCornerRadiusDp = previewSessionState.previewCornerRadiusDp,
                 draftPreviewCornerRadiusDpText = draftPreviewCornerRadiusDpText,
-                previewIconSizeDp = mainViewModel.previewSession.value.previewIconSizeDp,
+                previewIconSizeDp = previewSessionState.previewIconSizeDp,
                 draftPreviewIconSizeDpText = draftPreviewIconSizeDpText,
                 draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
-                previewStripEnabled = mainViewModel.previewSession.value.previewStripEnabled,
-                previewDesktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
+                previewStripEnabled = previewSessionState.previewStripEnabled,
+                previewDesktopBackground = previewSessionState.previewDesktopBackground,
                 wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-                wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                wallpaperKey = batchConfigState.customWallpaperPath,
                 loadWallpaper = {
                     withContext(Dispatchers.IO) {
                         run {
@@ -1797,12 +1802,13 @@ val __act2 = LocalContext.current
                         item(key = "layer_debug") {
                             run {
     LayerDebugCard(
-                dirPath = mainViewModel.previewSession.value.previewDirPath,
-                packageName = mainViewModel.previewSession.value.previewPackageName,
-                session = mainViewModel.previewSession.value.activeGenerationSession?.takeIf {
-                    it.packageName == mainViewModel.previewSession.value.previewPackageName && it.outDir.absolutePath == mainViewModel.previewSession.value.previewDirPath
+                // 热修复2：调试卡渲染位经已订阅 previewSessionState 读取。
+                dirPath = previewSessionState.previewDirPath,
+                packageName = previewSessionState.previewPackageName,
+                session = previewSessionState.activeGenerationSession?.takeIf {
+                    it.packageName == previewSessionState.previewPackageName && it.outDir.absolutePath == previewSessionState.previewDirPath
                 },
-                assets = mainViewModel.previewSession.value.sharedPreviewAssets,
+                assets = previewSessionState.sharedPreviewAssets,
                 tuningState = mainViewModel.params.collectAsState().value,
             )
 }
@@ -1812,7 +1818,8 @@ val __act2 = LocalContext.current
 
                 1 -> PagerShellPage(
                     title = "生成参数",
-                    showPreviewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                    // 热修复2：翻页壳渲染位经已订阅 previewSessionState 读取。
+                    showPreviewStrip = previewSessionState.previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
                     // Phase 5 回归修复（FAIL-1）：内容分支须读已订阅的 shellState，
                     // 裸读 shell.value 不触发重组（高亮动内容不动）。
@@ -4893,7 +4900,7 @@ val __act2 = LocalContext.current
                             paddingEnd = 16.dp,
                         )
                     },
-                    showPreviewStrip = mainViewModel.previewSession.value.previewStripEnabled,
+                    showPreviewStrip = previewSessionState.previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
                     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                         val topPadding = innerPadding.calculateTopPadding()
@@ -5709,7 +5716,8 @@ val __act2 = LocalContext.current
                         TitleBarIconButton(
                             icon = Lucide.Save,
                             contentDescription = null,
-                            enabled = !mainViewModel.shell.value.isBusy,
+                            // 热修复2：渲染位经已订阅 shellState 读取。
+                            enabled = !shellState.isBusy,
                             dimWhenDisabled = false,
                             onClick = { run {
     paramsSaveSettingsPage(
@@ -5909,8 +5917,11 @@ internal fun MainActivity.HomePreviewStrip(
     onHeightMeasured: (androidx.compose.ui.unit.Dp) -> Unit = {},
 ) {
     val density = LocalDensity.current
-    val assets = mainViewModel.previewSession.value.sharedPreviewAssets
-    val loading = mainViewModel.previewSession.value.isPreviewAssetsRefreshing || mainViewModel.previewSession.value.isPreviewOutputRefreshing || mainViewModel.previewSession.value.isGptPreviewLoading
+    // 热修复2：顶部 1×4 预览条渲染位订阅 previewSession（裸读 .value 不触发重组，切应用后条带 stale）。
+    val stripPreviewState by mainViewModel.previewSession.collectAsState()
+    val stripBatchConfig by mainViewModel.batchPreviewConfig.collectAsState()
+    val assets = stripPreviewState.sharedPreviewAssets
+    val loading = stripPreviewState.isPreviewAssetsRefreshing || stripPreviewState.isPreviewOutputRefreshing || stripPreviewState.isGptPreviewLoading
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -5932,11 +5943,11 @@ val __act1 = LocalContext.current
                 assets = (assets),
                 mode = (mode),
                 loading = (loading),
-                desktopBackground = (mainViewModel.previewSession.value.previewDesktopBackground),
-                iconSizeDp = (mainViewModel.previewSession.value.previewIconSizeDp),
-                cornerRadiusDp = (mainViewModel.previewSession.value.previewCornerRadiusDp),
+                desktopBackground = (stripPreviewState.previewDesktopBackground),
+                iconSizeDp = (stripPreviewState.previewIconSizeDp),
+                cornerRadiusDp = (stripPreviewState.previewCornerRadiusDp),
                 wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-                wallpaperKey = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                wallpaperKey = stripBatchConfig.customWallpaperPath,
                 loadWallpaper = {
                     withContext(Dispatchers.IO) {
                         run {
