@@ -18,6 +18,7 @@ outputs/tmp/
 CLAUDE.md
 AGENTS.md
 CONTEXT.md
+PASEO_AUTONOMOUS_ORCHESTRATOR_PLAYBOOK.md
 # docs (local only, not tracked, except assets)
 docs/*
 !docs/assets/
