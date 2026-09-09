@@ -95,10 +95,10 @@ class MainViewModelUiStateTest {
         val vm = MainViewModel()
         vm.updateConfirm { it.copy(autoConfirmRefresh = true) }
         vm.updateTransfer { it.copy(backupBackgroundDots = 3) }
-        vm.updateUpdateUi { it.copy(mitLicenseDialogVisible = true) }
+        vm.updateUpdateUi { it.copy(gplLicenseDialogVisible = true) }
         assertTrue(vm.confirm.value.autoConfirmRefresh)
         assertEquals(3, vm.transfer.value.backupBackgroundDots)
-        assertTrue(vm.updateUi.value.mitLicenseDialogVisible)
+        assertTrue(vm.updateUi.value.gplLicenseDialogVisible)
         // 历史栈语义不受分组更新影响
         assertTrue(vm.history.value.isEmpty())
         assertFalse(vm.canUndo())

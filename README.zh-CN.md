@@ -8,7 +8,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![UI Framework](https://img.shields.io/badge/UI-MIUIX%20Compose-FF6900?style=flat-square)](https://github.com)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)](LICENSE)
 
 <p><a href="README.md">English</a> | <b>简体中文</b></p>
 
@@ -146,4 +146,4 @@ mobile/build/outputs/apk/release/mobile-release.apk
 
 ## 📄 许可证
 
-[MIT](LICENSE)
+[GPL-3.0-or-later](LICENSE)

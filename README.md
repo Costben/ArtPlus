@@ -8,7 +8,7 @@
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![UI Framework](https://img.shields.io/badge/UI-MIUIX%20Compose-FF6900?style=flat-square)](https://github.com)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)](LICENSE)
 
 <p><b>English</b> | <a href="README.zh-CN.md">简体中文</a></p>
 
@@ -160,4 +160,4 @@ Issues and pull requests are welcome. If an icon converts badly, please attach t
 
 ## License
 
-[MIT](LICENSE)
+[GPL-3.0-or-later](LICENSE)

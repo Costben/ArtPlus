@@ -438,11 +438,11 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     Spacer(modifier = Modifier.height(4.dp))
                     LibrarySettingRow(
                         title = "开源协议",
-                        summary = "MIT License",
+                        summary = "GPL-3.0-or-later",
                         icon = SettingsIconKind.Shield,
                         showArrowRight = true,
                         enabled = !shell.isBusy,
-                        onClick = { mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (true)) } },
+                        onClick = { mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (true)) } },
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     LibrarySettingRow(
@@ -476,7 +476,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
             }
             item {
                 Text(
-                    text = "© 2026 Costben · MIT License",
+                    text = "© 2026 Costben · GPL-3.0-or-later",
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     textAlign = TextAlign.Center,
@@ -486,8 +486,8 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
         }
     }
 
-    if (updateUi.mitLicenseDialogVisible) {
-        MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (false)) } }) {
+    if (updateUi.gplLicenseDialogVisible) {
+        MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (false)) } }) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -504,7 +504,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "MIT License",
+                    text = "GPL-3.0-or-later",
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     textAlign = TextAlign.Center,
@@ -519,7 +519,11 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         .padding(12.dp),
                 ) {
                     Text(
-                        text = MIT_LICENSE_TEXT,
+                        text = remember(aboutCtx) {
+                            runCatching {
+                                aboutCtx.assets.open(GPL_LICENSE_ASSET_PATH).bufferedReader().readText()
+                            }.getOrDefault(GPL_LICENSE_FALLBACK_TEXT)
+                        },
                         style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
                         color = MiuixTheme.colorScheme.onSurface,
                     )
@@ -529,7 +533,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Button(
-                        onClick = { mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (false)) } },
+                        onClick = { mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (false)) } },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(),
                     ) {
@@ -542,7 +546,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     }
                     Button(
                         onClick = {
-                            mainViewModel.updateUpdateUi { it -> it.copy(mitLicenseDialogVisible = (false)) }
+                            mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (false)) }
                             pickerOpenExternalLink(
                                 start = ::startActivity,
                                 url = GITHUB_LICENSE_URL,

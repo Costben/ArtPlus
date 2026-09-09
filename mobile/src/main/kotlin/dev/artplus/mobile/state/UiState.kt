@@ -145,5 +145,5 @@ internal data class UpdateUiState(
     val isCheckingUpdate: Boolean = false,
     val updateAvailableInfo: UpdateInfo? = null,
     val updateUpToDateDialogVisible: Boolean = false,
-    val mitLicenseDialogVisible: Boolean = false,
+    val gplLicenseDialogVisible: Boolean = false,
 )

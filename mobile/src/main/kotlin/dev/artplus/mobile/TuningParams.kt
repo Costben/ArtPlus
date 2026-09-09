@@ -1054,24 +1054,11 @@ const val BACK_GESTURE_COMMIT_PROGRESS = 0.28f
 const val BACK_GESTURE_PAGE_TRANSLATION_RATIO = 1.0f
 const val GITHUB_REPO_URL = "https://github.com/Costben/ArtPlus"
 const val GITHUB_LICENSE_URL = "https://github.com/Costben/ArtPlus/blob/main/LICENSE"
-const val MIT_LICENSE_TEXT =
-"MIT License\n\n" +
-    "Copyright (c) 2026 Costben\n\n" +
-    "Permission is hereby granted, free of charge, to any person obtaining a copy\n" +
-    "of this software and associated documentation files (the \"Software\"), to deal\n" +
-    "in the Software without restriction, including without limitation the rights\n" +
-    "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n" +
-    "copies of the Software, and to permit persons to whom the Software is\n" +
-    "furnished to do so, subject to the following conditions:\n\n" +
-    "The above copyright notice and this permission notice shall be included in all\n" +
-    "copies or substantial portions of the Software.\n\n" +
-    "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n" +
-    "IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n" +
-    "FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n" +
-    "AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n" +
-    "LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n" +
-    "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n" +
-    "SOFTWARE."
+const val GPL_LICENSE_ASSET_PATH = "gpl-3.0.txt"
+const val GPL_LICENSE_FALLBACK_TEXT =
+    "GNU General Public License v3.0 or later\n\n" +
+    "Full text is bundled in this app and published at:\n" +
+    "https://github.com/Costben/ArtPlus/blob/main/LICENSE"
 
 // 预览选择 prefs 键（原 MainActivity companion，slice5 提升）。
 const val PREF_PREVIEW_SELECTION_NORMAL_LIGHT = "preview_selection_normal_light"

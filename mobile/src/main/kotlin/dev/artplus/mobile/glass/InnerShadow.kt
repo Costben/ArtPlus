@@ -1,5 +1,6 @@
 // Adapted from Kyant0/AndroidLiquidGlass — https://github.com/Kyant0/AndroidLiquidGlass (Apache 2.0).
 // Mirrored from compose-miuix-ui example.
+// SPDX-License-Identifier: Apache-2.0
 
 package dev.artplus.mobile.glass
 

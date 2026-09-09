@@ -1,5 +1,6 @@
-// Adapted from KernelSU — https://github.com/tiann/kernelSU (Apache 2.0).
+// Adapted from KernelSU Manager — https://github.com/tiann/KernelSU (GPL-3.0-or-later).
 // Adapted from compose-miuix-ui example (IosLiquidGlassNavigationBar) — Apache 2.0.
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 package dev.artplus.mobile.glass
 
