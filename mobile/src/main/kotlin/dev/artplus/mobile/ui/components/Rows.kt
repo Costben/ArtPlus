@@ -22,15 +22,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.composables.icons.lucide.Cpu
-import com.composables.icons.lucide.GlassWater
-import com.composables.icons.lucide.KeyRound
-import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.Palette
-import com.composables.icons.lucide.Radius
-import com.composables.icons.lucide.Scale
-import com.composables.icons.lucide.Shield
-import com.composables.icons.lucide.Sparkles
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.basic.DropdownEntry
 import io.github.suqi8.coui.kmp.basic.Switch
@@ -57,6 +48,7 @@ import io.github.suqi8.coui.kmp.preference.ArrowPreference
 import io.github.suqi8.coui.kmp.preference.SwitchPreference
 import io.github.suqi8.coui.kmp.preference.WindowDropdownPreference
 import io.github.suqi8.coui.kmp.window.WindowDialog
+import io.github.suqi8.coui.kmp.icon.extended.*
 
 /** 行右侧的值文本：ColorOS 右对齐次级文本。 */
 @Composable
@@ -404,30 +396,30 @@ internal fun settingsIconVector(kind: SettingsIconKind): ImageVector = when (kin
     SettingsIconKind.Grid -> COUIIcons.GridView
     SettingsIconKind.CheckBadge -> COUIIcons.Ok
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Shield -> Lucide.Shield
+    SettingsIconKind.Shield -> COUIIcons.Lock
     SettingsIconKind.FileUpload -> COUIIcons.Import
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Glass -> Lucide.GlassWater
+    SettingsIconKind.Glass -> COUIIcons.Background
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Radius -> Lucide.Radius
+    SettingsIconKind.Radius -> COUIIcons.Trim
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Chip -> Lucide.Cpu
+    SettingsIconKind.Chip -> COUIIcons.Tasks
     SettingsIconKind.Layers -> COUIIcons.Layers
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Spark -> Lucide.Sparkles
+    SettingsIconKind.Spark -> COUIIcons.Tune
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Scale -> Lucide.Scale
+    SettingsIconKind.Scale -> COUIIcons.ZoomOut
     SettingsIconKind.Cutout -> COUIIcons.Tune
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Palette -> Lucide.Palette
+    SettingsIconKind.Palette -> COUIIcons.Theme
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Plate -> Lucide.Palette
+    SettingsIconKind.Plate -> COUIIcons.Theme
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Shadow -> Lucide.Sparkles
+    SettingsIconKind.Shadow -> COUIIcons.Tune
     SettingsIconKind.Eraser -> COUIIcons.Clear
     SettingsIconKind.Link -> COUIIcons.Link
     // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Key -> Lucide.KeyRound
+    SettingsIconKind.Key -> COUIIcons.Lock
     SettingsIconKind.Prompt -> COUIIcons.Messages
     SettingsIconKind.Refresh -> COUIIcons.Refresh
     SettingsIconKind.Dot -> COUIIcons.Settings

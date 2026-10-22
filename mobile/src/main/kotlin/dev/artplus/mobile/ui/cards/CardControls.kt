@@ -39,8 +39,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.CircleShape
-import com.composables.icons.lucide.Eye
-import com.composables.icons.lucide.Lucide
 import java.util.Locale
 import kotlinx.coroutines.isActive
 import io.github.suqi8.coui.kmp.basic.BasicComponent
@@ -66,6 +64,7 @@ import dev.artplus.mobile.ui.components.SettingsIconKind
 import dev.artplus.mobile.ui.components.SettingsLineIcon
 import dev.artplus.mobile.ui.components.SteppedPercentSlider
 import dev.artplus.mobile.ui.components.settingsIconForTitle
+import io.github.suqi8.coui.kmp.icon.extended.*
 
 internal fun formatScale(value: Float): String =
     String.format(Locale.US, "%.2f", value)
@@ -318,7 +317,7 @@ internal fun CompactPresetRow(
                 cornerRadius = 8.dp,
             ) {
                 Icon(
-                    imageVector = Lucide.Eye,
+                    imageVector = COUIIcons.Show,
                     contentDescription = "批量预览",
                     modifier = Modifier.size(16.dp),
                     tint = COUITheme.colorScheme.onSurfaceVariantSummary,

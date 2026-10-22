@@ -7,8 +7,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
-import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.Save
 import dev.artplus.mobile.MainActivity
 import dev.artplus.mobile.PREFS_NAME
 import dev.artplus.mobile.data.AppEntry
@@ -22,6 +20,8 @@ import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveRmbgSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveSettingsPage
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.*
 
 /**
  * S4.x：从 HomePage 的 `when (page)` 分支原样搬出的 tab 页（纯移动，key/remember 原样保留）。
@@ -41,7 +41,7 @@ PagerShellPage(
                     title = "设置",
                     actions = {
                         TitleBarIconButton(
-                            icon = Lucide.Save,
+                            icon = COUIIcons.Ok,
                             contentDescription = "保存",
                             // 热修复2：渲染位经已订阅 shellState 读取。
                             enabled = !shellState.isBusy,
