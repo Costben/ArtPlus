@@ -148,7 +148,7 @@ internal fun MainActivity.AppPickerPage(
                 )
     } },
                 onToggleSystemApps = {
-                    mainViewModel.updatePicker { it -> it.copy(showSystemApps = (!mainViewModel.picker.value.showSystemApps)) }
+                    mainViewModel.updatePicker { it -> it.copy(showSystemApps = !it.showSystemApps) }
                     run {
         pickerSaveUiState(
                     prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),

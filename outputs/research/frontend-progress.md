@@ -20,3 +20,5 @@
 | D10 | S1.1 | 基线对比忽略 `unused_imports_pct` / `import_line_ratio_pct` 两个派生比率 | 删行会让比率机械上升，绝对量指标另有 `unused_imports` / `import_lines` 兜底 |
 | D11 | S1.3 | 审计脚本把 Kotlin 委托/操作符符号（`getValue`/`setValue` 等 30 个）视为已使用 | 它们由 `by` 与运算符语法隐式调用，正文无字面名；按旧判定删掉会编译失败（已实测） |
 | D12 | S1.3 | 审计脚本的注释剥离改为逐字符扫描（字符串内 `/*` 不再吞代码） | `SettingsPage` 的 `"$dir/*.png"` 曾把 366–650 行整段吞掉，导致 `CancellationException` 被误判未使用；修后 `hardcoded_cjk` 676→685 是「看得更准」，已重写基线 |
+| D13 | S1.5 | ⑥「三处 Toast 冗余 runOnUiThread」不删 | 计划未指名三处；实测所有 `showToast` 回调都经 `pickerToastStatus` 从任意线程调用，删包裹会在非 Looper 线程抛 `Can't toast on a thread that has not called Looper.prepare()`。改为保留并在此登记 |
+| D14 | S1.5 | ② 给保存键补 `contentDescription = "保存"` 使 `hardcoded_cjk` 685→686，随即重写基线 | 这是 S5.4 文案抽取的输入，不是回归；终局该指标为 0 |

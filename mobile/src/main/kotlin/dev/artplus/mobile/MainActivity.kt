@@ -229,27 +229,26 @@ class MainActivity : ComponentActivity() {
         }
 
         mainViewModel.onCreatePostContent(
-            isDebugIntent = run {
-    isDebugGenerateIntent((intent), { __a0: String? -> run {
-        __a0 != null && __a0 == run {
-
-                    val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                    val existing = prefs.getString(MainActivity.PREF_DEBUG_TOKEN, null)
-                        ?.takeIf { it.length >= 32 }
-                    if (existing != null) {
-                        return@run existing
-                    }
-                    val created = UUID.randomUUID().toString() + UUID.randomUUID().toString()
-                    prefs.edit().putString(MainActivity.PREF_DEBUG_TOKEN, created).apply()
-                    return@run created
-        }
-    } })
-},
+            isDebugIntent = isDebugGenerateIntent(intent) { token ->
+                token != null && token == debugGenerateToken()
+            },
             onRequestDeclaredPermissions = ::requestDeclaredPermissions,
             onRequestSpecialPermissionsOnce = ::requestSpecialPermissionsOnce,
             onLoadApps = { loadApps() },
             onHandleDebugIntent = { handleDebugGenerateIntent(intent) },
         )
+    }
+
+    /**
+     * S1.5：debug 生成 token 的读/建（原嵌在 onCreatePostContent 参数里的 run{} 三层嵌套，等价重写）。
+     * 仅在 isDebugGenerateIntent 需要校验时调用，行为与原来一致：≥32 字符即复用，否则新建并落盘。
+     */
+    private fun debugGenerateToken(): String {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.getString(PREF_DEBUG_TOKEN, null)?.takeIf { it.length >= 32 }?.let { return it }
+        val created = UUID.randomUUID().toString() + UUID.randomUUID().toString()
+        prefs.edit().putString(PREF_DEBUG_TOKEN, created).apply()
+        return created
     }
 
     override fun onDestroy() {

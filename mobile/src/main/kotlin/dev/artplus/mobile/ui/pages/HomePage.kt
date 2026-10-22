@@ -342,8 +342,7 @@ val __act4 = LocalContext.current
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onGenerateFallback = { generateSelectedApp(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.All)) },
                     onBeginBusy = { msg ->
-                        mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                        mainViewModel.updateShell { it -> it.copy(isBusy = true, statusText = msg) }
                     },
                     onLaunch = { name, block -> run {
 
@@ -461,8 +460,7 @@ val __act4 = LocalContext.current
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onGenerateFallback = { generateSelectedApp(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.StandardOnly)) },
                     onBeginBusy = { msg ->
-                        mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                        mainViewModel.updateShell { it -> it.copy(isBusy = true, statusText = msg) }
                     },
                     onLaunch = { name, block -> run {
 
@@ -580,8 +578,7 @@ val __act4 = LocalContext.current
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onGenerateFallback = { generateSelectedApp(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.MonochromeOnly)) },
                     onBeginBusy = { msg ->
-                        mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                        mainViewModel.updateShell { it -> it.copy(isBusy = true, statusText = msg) }
                     },
                     onLaunch = { name, block -> run {
 
@@ -5456,7 +5453,7 @@ val __act2 = LocalContext.current
                     actions = {
                         TitleBarIconButton(
                             icon = Lucide.Save,
-                            contentDescription = null,
+                            contentDescription = "保存",
                             // 热修复2：渲染位经已订阅 shellState 读取。
                             enabled = !shellState.isBusy,
                             onClick = { run {

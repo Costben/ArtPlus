@@ -75,7 +75,7 @@ val __act1 = LocalContext.current
                 autoConfirmRefresh = confirm.autoConfirmRefresh,
                 isBusy = shell.isBusy,
                 outputTreeUri = shell.outputTreeUri,
-                treeDisplay = remember(shell.outputTreeUri) { formatTreeUriDisplay(shell.outputTreeUri) },
+                treeDisplay = remember(shell.outputTreeUri?.toString()) { formatTreeUriDisplay(shell.outputTreeUri) },
                 backupActive = backupJob?.isActive == true && transfer.backupProgress != null,
                 backupInBackground = transfer.backupInBackground,
                 backupDots = transfer.backupBackgroundDots,
