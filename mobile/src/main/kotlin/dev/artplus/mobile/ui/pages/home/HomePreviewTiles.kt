@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.aspectRatio
@@ -435,15 +436,30 @@ internal fun PreviewBackgroundOption(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val borderColor = if (selected) {
+    // 卡片本体：未选中 surfaceContainer（浅色为白）+ dividerLine 细描边；
+    // 选中 tertiaryContainer（COUI 的 15% 蓝浅底，不是 primaryContainer 的实心 #0080FF）
+    // + 1.5dp primaryVariant 描边，文字用 onSurface —— 浅底深字，不会出现「选中变黑/变蓝、
+    // 字看不清」。
+    val containerColor = if (selected) {
+        COUITheme.colorScheme.tertiaryContainer
+    } else {
+        COUITheme.colorScheme.surfaceContainer
+    }
+    val outlineColor = if (selected) {
         COUITheme.colorScheme.primaryVariant
     } else {
-        COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.18f)
+        COUITheme.colorScheme.dividerLine
+    }
+    val labelColor = if (selected) {
+        COUITheme.colorScheme.onSurface
+    } else {
+        COUITheme.colorScheme.onSurfaceVariantSummary
     }
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(COUITheme.colorScheme.secondaryVariant.copy(alpha = if (selected) 0.82f else 0.52f))
+            .background(containerColor)
+            .border(if (selected) 1.5.dp else 1.dp, outlineColor, RoundedCornerShape(12.dp))
             .clickable(enabled = !isBusy && !selected, onClick = onClick)
             .padding(horizontal = 6.dp, vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -454,7 +470,7 @@ internal fun PreviewBackgroundOption(
                 .fillMaxWidth()
                 .height(22.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(borderColor.copy(alpha = 0.14f))
+                .background(outlineColor.copy(alpha = 0.18f))
                 .padding(2.dp),
         ) {
             PreviewDesktopBackgroundSurface(
@@ -470,11 +486,7 @@ internal fun PreviewBackgroundOption(
         Text(
             text = option.label,
             style = COUITheme.textStyles.footnote1,
-            color = if (selected) {
-                COUITheme.colorScheme.onSurface
-            } else {
-                COUITheme.colorScheme.onSurfaceVariantSummary
-            },
+            color = labelColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
