@@ -1144,8 +1144,10 @@ internal fun MainActivity.PagerShellPage(
     val host = LocalPagerShellHost.current
     if (host != null) {
         val index = LocalPagerShellPageIndex.current
+        // 顶栏随本页左右移动，滚动行为也每页一份：材质透明度跟本页自己的滚动距离走。
+        val scrollBehavior = PinnedScrollBehavior()
         // 每页只持有一份 spec，页面重组时回写字段；只有顶栏读它，不会回头重组本页。
-        val spec = remember { PagerBarSpec(title, navigationIcon, actions) }
+        val spec = remember { PagerBarSpec(title, navigationIcon, actions, scrollBehavior) }
         SideEffect {
             spec.title = title
             spec.navigationIcon = navigationIcon
@@ -1155,7 +1157,7 @@ internal fun MainActivity.PagerShellPage(
             host.specs[index] = spec
             onDispose { if (host.specs[index] === spec) host.specs.remove(index) }
         }
-        PagerShellPageBody(host.scrollBehavior, showPreviewStrip, content)
+        PagerShellPageBody(scrollBehavior, showPreviewStrip, content)
     } else {
         val pageColor = AppBarBlurOverlayDefaults.containerColor()
         val scrollBehavior = PinnedScrollBehavior()

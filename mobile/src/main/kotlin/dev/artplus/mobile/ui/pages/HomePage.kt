@@ -2,6 +2,7 @@ package dev.artplus.mobile.ui.pages
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -14,14 +15,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import io.github.suqi8.coui.kmp.basic.PinnedScrollBehavior
-import io.github.suqi8.coui.kmp.basic.rememberTopAppBarState
 import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
@@ -56,15 +55,8 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
         drawRect(pageColor)
         drawContent()
     }
-    // 顶栏不折叠；共用的钉住行为只记录滚动距离（驱动材质透明度），换页时清零，避免带到下一页。
-    val topBarState = rememberTopAppBarState()
-    val scrollBehavior = PinnedScrollBehavior(state = topBarState)
-    val host = remember(scrollBehavior) { PagerShellHost(scrollBehavior) }
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.currentPage }.collect {
-            topBarState.contentOffset = 0f
-        }
-    }
+    // 顶栏按页各一根、随页面左右移动，滚动行为由各页自己持有（见 PagerShellPage）。
+    val host = remember { PagerShellHost() }
     var beyondViewportCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
         delay(200)
@@ -99,16 +91,19 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
 
         // 顶栏/底栏的玻璃材质都采样 barBackdrop（页面内容），自身不在录制范围内。
         CompositionLocalProvider(LocalBackdrop provides barBackdrop) {
-            PagerShellHostTopBar(
-                host = host,
-                pagerState = pagerState,
-                modifier = Modifier.align(Alignment.TopCenter),
-            )
-            PagerShellBottomBar(
-                pagerState = pagerState,
-                onSelectPage = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val pageWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
+                PagerShellSlidingTopBars(
+                    host = host,
+                    pagerState = pagerState,
+                    pageWidthPx = pageWidthPx,
+                )
+                PagerShellBottomBar(
+                    pagerState = pagerState,
+                    onSelectPage = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+            }
         }
     }
 }

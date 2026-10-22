@@ -1,9 +1,11 @@
 package dev.artplus.mobile.ui.pages
 
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
@@ -16,10 +18,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import io.github.suqi8.coui.kmp.basic.BottomFloatingAccessoryNavigationBar
 import io.github.suqi8.coui.kmp.basic.BottomFloatingNavigationBarItem
 import io.github.suqi8.coui.kmp.basic.PinnedTopAppBar
@@ -30,16 +34,21 @@ import io.github.suqi8.coui.kmp.icon.extended.GridView
 import io.github.suqi8.coui.kmp.icon.extended.Layers
 import io.github.suqi8.coui.kmp.icon.extended.Tune
 import io.github.suqi8.coui.kmp.utils.rememberGalleryDensity
+import kotlin.math.roundToInt
 
 /**
  * 单页的顶栏内容。每个 pager 页只持有一份，字段为 State：页面重组时在 SideEffect 里回写，
  * 只有读它的顶栏会重组，pager 本身不受影响。
+ *
+ * [scrollBehavior] 也是每页一份：顶栏随页面左右移动，材质透明度必须跟本页自己的滚动距离走，
+ * 否则切到另一页时会沿用上一页的滚动量。
  */
 @Stable
 internal class PagerBarSpec(
     title: String,
     navigationIcon: (@Composable () -> Unit)?,
     actions: @Composable RowScope.() -> Unit,
+    val scrollBehavior: ScrollBehavior,
 ) {
     var title by mutableStateOf(title)
     var navigationIcon by mutableStateOf(navigationIcon)
@@ -47,11 +56,11 @@ internal class PagerBarSpec(
 }
 
 /**
- * pager 宿主：与 COUI demo（Coui17Root）一致，整个 pager 只有一根顶栏和一根底栏，
- * 共用同一个 [scrollBehavior]（钉住行为，只提供滚动距离）；各页只通过 [specs] 登记自己的标题和按钮。
+ * pager 宿主：底栏全局只有一根，顶栏按页各一根。各页通过 [specs] 登记自己的标题、按钮和滚动行为，
+ * 宿主据此把每页的顶栏画在该页正上方，随 pager 一起左右移动。
  */
 @Stable
-internal class PagerShellHost(val scrollBehavior: ScrollBehavior) {
+internal class PagerShellHost {
     val specs = mutableStateMapOf<Int, PagerBarSpec>()
 }
 
@@ -103,23 +112,36 @@ internal fun rememberShellContentTop(): Dp {
 }
 
 /**
- * 宿主顶栏：渲染 `pagerState.currentPage` 页登记的 spec。spec 与 currentPage 只在这里读，
- * 标题/按钮变化只重组这一小块，不会带动 pager。
+ * 每页各一根顶栏，横向偏移跟随 pager：第 page 页的顶栏始终压在该页内容的正上方，
+ * 拖动时和内容同速左右移动。
+ *
+ * 偏移在 layout 阶段读 pager 状态，滑动过程不触发重组；只画当前页及左右各一页，
+ * 更远的页整根都在屏幕外。
  */
 @Composable
-internal fun PagerShellHostTopBar(
+internal fun BoxScope.PagerShellSlidingTopBars(
     host: PagerShellHost,
     pagerState: PagerState,
-    modifier: Modifier = Modifier,
+    pageWidthPx: Float,
 ) {
-    val spec = host.specs[pagerState.currentPage]
-    PagerShellTopAppBar(
-        title = spec?.title.orEmpty(),
-        navigationIcon = spec?.navigationIcon,
-        actions = spec?.actions ?: {},
-        scrollBehavior = host.scrollBehavior,
-        modifier = modifier,
-    )
+    val currentPage = pagerState.currentPage
+    val pageCount = pagerState.pageCount
+    for (page in (currentPage - 1)..(currentPage + 1)) {
+        if (page < 0 || page >= pageCount) continue
+        val spec = host.specs[page] ?: continue
+        PagerShellTopAppBar(
+            title = spec.title,
+            navigationIcon = spec.navigationIcon,
+            actions = spec.actions,
+            scrollBehavior = spec.scrollBehavior,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset {
+                    val delta = page - pagerState.currentPage - pagerState.currentPageOffsetFraction
+                    IntOffset((delta * pageWidthPx).roundToInt(), 0)
+                },
+        )
+    }
 }
 
 /**
