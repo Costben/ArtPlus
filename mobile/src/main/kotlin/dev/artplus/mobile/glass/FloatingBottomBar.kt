@@ -57,18 +57,18 @@ import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.blur.blur
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.highlight.BloomStroke
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
-import top.yukonga.miuix.kmp.blur.highlight.LightPosition
-import top.yukonga.miuix.kmp.blur.highlight.LightSource
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
-import top.yukonga.miuix.kmp.theme.LocalContentColor
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import io.github.suqi8.coui.kmp.blur.Backdrop
+import io.github.suqi8.coui.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.highlight.BloomStroke
+import io.github.suqi8.coui.kmp.blur.highlight.Highlight
+import io.github.suqi8.coui.kmp.blur.highlight.LightPosition
+import io.github.suqi8.coui.kmp.blur.highlight.LightSource
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.sensor.rememberDeviceTilt
+import io.github.suqi8.coui.kmp.theme.LocalContentColor
+import io.github.suqi8.coui.kmp.theme.COUITheme
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -98,7 +98,7 @@ private val iosIndicatorSpecular: Highlight = Highlight(
     ),
 )
 
-// Mirrors miuix-blur HighlightStyle's LIGHT_REF — keep in sync.
+// Mirrors coui-blur HighlightStyle's LIGHT_REF — keep in sync.
 private const val LIGHT_REF_X = 0.5f
 private const val LIGHT_REF_Y = 0.7f
 private const val GRAVITY_DIR_THRESHOLD_SQ = 0.01f // |g_xy| > 0.1, ≈ 6° tilt
@@ -106,7 +106,7 @@ private const val GRAVITY_DIR_THRESHOLD_SQ = 0.01f // |g_xy| > 0.1, ≈ 6° tilt
 /** Computes gravity-rotated highlight for a `dualPeak` highlight's primary light without triggering recomposition. */
 private fun computeGravityRotatedHighlight(
     base: Highlight,
-    tilt: top.yukonga.miuix.kmp.blur.sensor.DeviceTilt?,
+    tilt: io.github.suqi8.coui.kmp.blur.sensor.DeviceTilt?,
     extraDegrees: Float = 0f,
 ): Highlight {
     val baseStyle = base.style as BloomStroke
@@ -140,7 +140,7 @@ private class GravityHighlightCache(private val base: Highlight, private val ext
     private var lastGy = Float.NaN
     private var cachedHighlight: Highlight = base
 
-    fun get(tilt: top.yukonga.miuix.kmp.blur.sensor.DeviceTilt?): Highlight {
+    fun get(tilt: io.github.suqi8.coui.kmp.blur.sensor.DeviceTilt?): Highlight {
         val gx = tilt?.gravityX ?: 0f
         val gy = tilt?.gravityY ?: -1f
         if (abs(gx - lastGx) < 0.005f && abs(gy - lastGy) < 0.005f) {
@@ -193,12 +193,12 @@ fun FloatingBottomBar(
 ) {
     val isInDark = isSystemInDarkTheme()
     val pillShape = remember { CircleShape }
-    val accentColor = MiuixTheme.colorScheme.primary
-    val tabContentColor = MiuixTheme.colorScheme.onSurface
+    val accentColor = COUITheme.colorScheme.primary
+    val tabContentColor = COUITheme.colorScheme.onSurface
     val containerColor = if (isBlurEnabled) {
         if (isInDark) Color(0xFF121212).copy(alpha = 0.4f) else Color(0xFFFAFAFA).copy(alpha = 0.4f)
     } else {
-        if (isInDark) Color(0xFF121212) else Color(0xFFFAFAFA)
+        COUITheme.colorScheme.bar
     }
 
     val tabsBackdrop = rememberLayerBackdrop()

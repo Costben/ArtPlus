@@ -111,10 +111,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -293,34 +293,32 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.theme.COUITheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -341,11 +339,8 @@ internal fun MainActivity.ArtPlusScreen() {
     val previewSessionState by mainViewModel.previewSession.collectAsState()
     // Slice 3.4b：非组合回调（onStop 等）内的 Toast 共用此前捕获的 Context。
     val __actCancel = LocalContext.current
-    val pageBackground = if (isSystemInDarkTheme()) {
-        Color.Black
-    } else {
-        Color(0xFFF7F7F7)
-    }
+    // ColorOS 17 页面底色即 surface（浅色 F0F1F2 / 深色 000000），与 TopAppBar、Scaffold 默认色一致。
+    val pageBackground = COUITheme.colorScheme.surface
     // 热修复：selectedApp/generatedCount 直接经已订阅 pickerState 计算。
     // 原 remember{derivedStateOf{...picker.value...}} 对 StateFlow 不可观察，永不重算，
     // selectedApp 恒定初始值（magisk），点别的行写成功但 UI 不刷、生成页 stale。
@@ -589,7 +584,9 @@ internal fun MainActivity.ArtPlusScreen() {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.45f * overlayDim)),
+                    .background(
+                        COUITheme.colorScheme.windowDimming.let { it.copy(alpha = it.alpha * overlayDim) },
+                    ),
             )
         }
 
@@ -2235,7 +2232,7 @@ internal fun MainActivity.PagerShellPage(
     showPreviewStrip: Boolean = false,
     content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
 ) {
-    val pageScrollBehavior = MiuixScrollBehavior()
+    val pageScrollBehavior = COUIScrollBehavior()
     var stripHeight by remember { mutableStateOf(0.dp) }
     val isDark = isSystemInDarkTheme()
     val targetExtra = if (showPreviewStrip) {
@@ -2252,8 +2249,6 @@ internal fun MainActivity.PagerShellPage(
             TopAppBar(
                 title = title,
                 scrollBehavior = pageScrollBehavior,
-                navigationIconPadding = 0.dp,
-                actionIconPadding = 0.dp,
                 navigationIcon = navigationIcon,
                 actions = actions,
             )

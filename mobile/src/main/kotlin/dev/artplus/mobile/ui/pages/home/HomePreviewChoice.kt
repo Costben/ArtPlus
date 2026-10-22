@@ -111,10 +111,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -294,36 +294,36 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.window.WindowBottomSheet
-import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.window.WindowBottomSheet
+import io.github.suqi8.coui.kmp.layout.BottomSheetDefaults
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.theme.darkColorScheme
+import io.github.suqi8.coui.kmp.theme.lightColorScheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -352,20 +352,21 @@ internal fun MoreRulesGroupRow(
     onToggle: () -> Unit,
 ) {
     val selected = selectedRule != null
+    // 选中态用 ColorOS 浅蓝底（tertiaryContainer）+ 蓝色文字；未选中为中性灰底（面板是白底，不能再用 surfaceContainerHigh）
     val background = if (selected) {
-        MiuixTheme.colorScheme.primaryVariant
+        COUITheme.colorScheme.tertiaryContainer
     } else {
-        MiuixTheme.colorScheme.surfaceContainerHigh
+        COUITheme.colorScheme.secondaryVariant
     }
     val titleColor = if (selected) {
-        MiuixTheme.colorScheme.onPrimaryVariant
+        COUITheme.colorScheme.onTertiaryContainer
     } else {
-        MiuixTheme.colorScheme.onSurface
+        COUITheme.colorScheme.onSurface
     }
     val summaryColor = if (selected) {
-        MiuixTheme.colorScheme.onPrimaryVariant
+        COUITheme.colorScheme.onTertiaryContainer
     } else {
-        MiuixTheme.colorScheme.onSurfaceVariantSummary
+        COUITheme.colorScheme.onSurfaceVariantSummary
     }
 
     Row(
@@ -388,7 +389,7 @@ internal fun MoreRulesGroupRow(
         ) {
             Text(
                 text = "更多规则",
-                style = MiuixTheme.textStyles.body1,
+                style = COUITheme.textStyles.body1,
                 color = titleColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -396,7 +397,7 @@ internal fun MoreRulesGroupRow(
             Text(
                 text = selectedRule?.let { "当前使用: ${it.label}" }
                     ?: "字标保全 / 底座 / 二层",
-                style = MiuixTheme.textStyles.footnote1,
+                style = COUITheme.textStyles.footnote1,
                 color = summaryColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -557,20 +558,21 @@ internal fun PreviewChoiceRow(
     val canImportCustom = customMissing
     val missingCandidate = missingLocalCandidate && !canImportCustom
     val enabled = !isBusy && !isGeneratingGptCandidate && !isGeneratingRmbgCandidate && !missingCandidate
+    // 选中态用 ColorOS 浅蓝底（tertiaryContainer）+ 蓝色文字；未选中为中性灰底（面板是白底，不能再用 surfaceContainerHigh）
     val background = if (selected) {
-        MiuixTheme.colorScheme.primaryVariant
+        COUITheme.colorScheme.tertiaryContainer
     } else {
-        MiuixTheme.colorScheme.surfaceContainerHigh
+        COUITheme.colorScheme.secondaryVariant
     }
     val titleColor = if (selected) {
-        MiuixTheme.colorScheme.onPrimaryVariant
+        COUITheme.colorScheme.onTertiaryContainer
     } else {
-        MiuixTheme.colorScheme.onSurface
+        COUITheme.colorScheme.onSurface
     }
     val summaryColor = if (selected) {
-        MiuixTheme.colorScheme.onPrimaryVariant
+        COUITheme.colorScheme.onTertiaryContainer
     } else {
-        MiuixTheme.colorScheme.onSurfaceVariantSummary
+        COUITheme.colorScheme.onSurfaceVariantSummary
     }
 
     Row(
@@ -597,7 +599,7 @@ internal fun PreviewChoiceRow(
             modifier = Modifier
                 .size(58.dp)
                 .clip(RoundedCornerShape(16.dp))
-                .background(MiuixTheme.colorScheme.secondaryContainer),
+                .background(COUITheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
             if (choice == PreviewChoice.Gpt && isGeneratingGptCandidate) {
@@ -629,7 +631,7 @@ internal fun PreviewChoiceRow(
         ) {
             Text(
                 text = choice.label,
-                style = MiuixTheme.textStyles.body1,
+                style = COUITheme.textStyles.body1,
                 color = titleColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -651,7 +653,7 @@ internal fun PreviewChoiceRow(
                     effectiveChoice.isComposedBackgroundCombination -> effectiveChoice.summary
                     else -> choice.summary
                 },
-                style = MiuixTheme.textStyles.footnote1,
+                style = COUITheme.textStyles.footnote1,
                 color = summaryColor,
                 maxLines = if (choice == PreviewChoice.Rmbg && rmbgFailure != null) 4 else 2,
                 overflow = TextOverflow.Ellipsis,
@@ -755,7 +757,6 @@ internal fun PreviewChoiceBottomSheet(
         title = "${mode.label} 来源",
         onDismissRequest = onDismissRequest,
         onDismissFinished = onDismissFinished,
-        insideMargin = DpSize(16.dp, 0.dp),
     ) {
         Column(
             modifier = Modifier
@@ -767,8 +768,8 @@ internal fun PreviewChoiceBottomSheet(
         ) {
             Text(
                 text = "每个槽位单独选择",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                style = COUITheme.textStyles.footnote1,
+                color = COUITheme.colorScheme.onSurfaceVariantSummary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -800,11 +801,7 @@ internal fun PreviewChoiceBottomSheet(
                 icon = null,
                 standaloneCard = true,
                 cardHeight = 78.dp,
-                inputBackgroundColor = if (isDark) {
-                    Color.Black.copy(alpha = 0.36f)
-                } else {
-                    Color.Black.copy(alpha = 0.09f)
-                },
+                inputBackgroundColor = COUITheme.colorScheme.secondaryContainer,
             )
 
             defaultChoices.forEach { choice ->

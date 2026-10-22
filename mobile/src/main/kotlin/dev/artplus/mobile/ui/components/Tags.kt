@@ -111,10 +111,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -291,34 +291,50 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.theme.darkColorScheme
+import io.github.suqi8.coui.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.BasicComponent
+import io.github.suqi8.coui.kmp.basic.HighlightedIconButton
+import io.github.suqi8.coui.kmp.basic.HorizontalDivider
+import io.github.suqi8.coui.kmp.basic.Icon
+import io.github.suqi8.coui.kmp.basic.TagView
+import io.github.suqi8.coui.kmp.basic.TagViewDefaults
+import io.github.suqi8.coui.kmp.basic.TextFieldMode
+import io.github.suqi8.coui.kmp.icon.extended.Back
+import io.github.suqi8.coui.kmp.icon.extended.More
+import io.github.suqi8.coui.kmp.layout.DialogButtonBar
+import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
+import io.github.suqi8.coui.kmp.preference.ArrowPreference
+import io.github.suqi8.coui.kmp.preference.SwitchPreference
+import io.github.suqi8.coui.kmp.preference.WindowDropdownPreference
+import io.github.suqi8.coui.kmp.theme.LocalContentColor
+import io.github.suqi8.coui.kmp.window.WindowDialog
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -332,23 +348,14 @@ internal data class AppListTag(
 
 @Composable
 internal fun AppStatusTag(tag: AppListTag) {
-    Box(
-        modifier = Modifier
-            .background(
-                color = tag.backgroundColor,
-                shape = RoundedCornerShape(6.dp),
-            ),
-    ) {
-        Text(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-            text = tag.label,
-            fontSize = 9.sp,
-            fontWeight = FontWeight(750),
-            color = tag.contentColor,
-            maxLines = 1,
-            softWrap = false,
-        )
-    }
+    TagView(
+        text = tag.label,
+        cornerRadius = 4.dp,
+        colors = TagViewDefaults.tagViewColors(
+            containerColor = tag.backgroundColor,
+            contentColor = tag.contentColor,
+        ),
+    )
 }
 
 @Composable
@@ -368,9 +375,9 @@ internal fun KernelStyleArrow(modifier: Modifier = Modifier, expanded: Boolean =
             }
             .padding(start = 8.dp)
             .size(width = 10.dp, height = 16.dp),
-        imageVector = MiuixIcons.Basic.ArrowRight,
+        imageVector = COUIIcons.Basic.ArrowRight,
         contentDescription = null,
-        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantActions),
+        colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantActions),
     )
 }
 
@@ -380,13 +387,13 @@ internal fun BrandMark(size: Dp, text: String) {
         modifier = Modifier
             .size(size)
             .clip(RoundedCornerShape(16.dp))
-            .background(MiuixTheme.colorScheme.primaryVariant),
+            .background(COUITheme.colorScheme.primaryVariant),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = text,
-            style = MiuixTheme.textStyles.title4,
-            color = MiuixTheme.colorScheme.onPrimaryVariant,
+            style = COUITheme.textStyles.title4,
+            color = COUITheme.colorScheme.onPrimary,
             maxLines = 1,
         )
     }
@@ -397,14 +404,14 @@ internal fun MetricPill(label: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(999.dp))
-            .background(MiuixTheme.colorScheme.secondaryContainer)
+            .background(COUITheme.colorScheme.secondaryVariant)
             .padding(horizontal = 10.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSecondaryContainer,
+            style = COUITheme.textStyles.footnote1,
+            color = COUITheme.colorScheme.onSurfaceSecondary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -419,9 +426,9 @@ internal fun StatusDot(active: Boolean) {
             .clip(RoundedCornerShape(999.dp))
             .background(
                 if (active) {
-                    MiuixTheme.colorScheme.primaryVariant
+                    COUITheme.colorScheme.primaryVariant
                 } else {
-                    MiuixTheme.colorScheme.secondaryContainer
+                    COUITheme.colorScheme.secondaryContainer
                 },
             ),
     )
@@ -438,9 +445,7 @@ internal fun LayerDebugTile(label: String, bitmap: ImageBitmap?, modifier: Modif
                 .fillMaxWidth()
                 .height(76.dp)
                 .clip(RoundedCornerShape(14.dp))
-                .background(
-                    if (isSystemInDarkTheme()) Color(0xFF333333) else Color(0xFFE0E0E0),
-                ),
+                .background(COUITheme.colorScheme.secondaryVariant),
             contentAlignment = Alignment.Center,
         ) {
             if (bitmap != null) {
@@ -453,8 +458,8 @@ internal fun LayerDebugTile(label: String, bitmap: ImageBitmap?, modifier: Modif
             } else {
                 Text(
                     text = "无",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    style = COUITheme.textStyles.footnote1,
+                    color = COUITheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,
                 )
             }
@@ -462,8 +467,8 @@ internal fun LayerDebugTile(label: String, bitmap: ImageBitmap?, modifier: Modif
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            style = COUITheme.textStyles.footnote1,
+            color = COUITheme.colorScheme.onSurfaceVariantSummary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -479,8 +484,8 @@ internal fun RmbgInstallProgressBar(text: String, progress: Float?, active: Bool
         if (text.isNotBlank()) {
             Text(
                 text = text,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                style = COUITheme.textStyles.footnote1,
+                color = COUITheme.colorScheme.onSurfaceVariantSummary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -490,15 +495,4 @@ internal fun RmbgInstallProgressBar(text: String, progress: Float?, active: Bool
             modifier = Modifier.fillMaxWidth(),
         )
     }
-}
-
-@Composable
-internal fun LiquidGlassSectionTitle(title: String) {
-    Text(
-        text = title,
-        style = MiuixTheme.textStyles.title4,
-        color = MiuixTheme.colorScheme.onSurface,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-    )
 }

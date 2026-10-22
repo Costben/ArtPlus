@@ -112,10 +112,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -153,6 +153,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawBehind
@@ -294,34 +295,34 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.NavigationBar
+import io.github.suqi8.coui.kmp.basic.NavigationBarItem
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.theme.COUITheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -345,8 +346,6 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     val glassBar by mainViewModel.glassBar.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val scope = rememberCoroutineScope()
-    val isDark = isSystemInDarkTheme()
-    val containerColor = if (isDark) Color(0xFF121212).copy(alpha = 0.4f) else Color(0xFFFAFAFA).copy(alpha = 0.4f)
     val isBlurEnabled = glassBar.liquidGlassBottomBarEnabled && glassBar.liquidGlassBottomBarBlurEnabled
     var beyondViewportCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
@@ -400,9 +399,9 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                             .nestedScroll(scrollBehavior.nestedScrollConnection)
                             .imePadding()
                             .padding(innerPadding)
-                            .padding(horizontal = 12.dp),
-                        contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                            .padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 88.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         if (!pickerState.packageListPermissionGranted || !pickerState.usageAccessGranted) {
                             item(key = "permission") {
@@ -1833,9 +1832,9 @@ val __act2 = LocalContext.current
                             .nestedScroll(scrollBehavior.nestedScrollConnection)
                             .imePadding()
                             .padding(innerPadding)
-                            .padding(horizontal = 12.dp),
-                        contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                            .padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 88.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         item(key = "gen_nav") {
                             run {
@@ -4884,8 +4883,6 @@ val __act2 = LocalContext.current
                                 mainViewModel.updatePresetUi { it -> it.copy(presetImportText = ("")) }
                                 mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (true)) }
                             },
-                            paddingStart = 0.dp,
-                            paddingEnd = 8.dp,
                         )
                         TitleBarIconButton(
                             icon = Lucide.Upload,
@@ -4899,8 +4896,6 @@ val __act2 = LocalContext.current
                 onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             )
 } },
-                            paddingStart = 0.dp,
-                            paddingEnd = 16.dp,
                         )
                     },
                     showPreviewStrip = previewSessionState.previewStripEnabled,
@@ -4908,22 +4903,22 @@ val __act2 = LocalContext.current
                     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                         val topPadding = innerPadding.calculateTopPadding()
                         val bottomPadding = innerPadding.calculateBottomPadding()
-                        val minContentHeight = (maxHeight - topPadding - bottomPadding - 12.dp - 88.dp + 1.dp).coerceAtLeast(0.dp)
+                        val minContentHeight = (maxHeight - topPadding - bottomPadding - 16.dp - 88.dp + 1.dp).coerceAtLeast(0.dp)
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                                 .imePadding()
                                 .padding(innerPadding)
-                                .padding(horizontal = 12.dp),
-                            contentPadding = PaddingValues(top = 12.dp, bottom = 88.dp),
+                                .padding(horizontal = 16.dp),
+                            contentPadding = PaddingValues(top = 16.dp, bottom = 88.dp),
                         ) {
                             item(key = "preset_cards") {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .defaultMinSize(minHeight = minContentHeight),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
                                 ) {
                                     run {
     PresetStatusCard(
@@ -5794,8 +5789,6 @@ val __act2 = LocalContext.current
                 setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
             )
 } },
-                            paddingStart = 0.dp,
-                            paddingEnd = 16.dp,
                         )
                     },
                 ) { innerPadding, scrollBehavior ->
@@ -5835,7 +5828,7 @@ val __act2 = LocalContext.current
                         modifier = Modifier.defaultMinSize(minWidth = 76.dp),
                     ) {
                         val selected = pagerState.targetPage == index
-                        val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
+                        val baseTint = if (selected) COUITheme.colorScheme.primaryVariant else COUITheme.colorScheme.onSurfaceVariantSummary
                         val tint = if (mainViewModel.shell.value.isBusy) baseTint.copy(alpha = 0.45f) else baseTint
                         Image(
                             imageVector = icon,
@@ -5845,7 +5838,7 @@ val __act2 = LocalContext.current
                         )
                         Text(
                             text = label,
-                            style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                            style = COUITheme.textStyles.footnote1.copy(fontSize = 11.sp),
                             color = tint,
                             maxLines = 1,
                             softWrap = false,
@@ -5854,59 +5847,29 @@ val __act2 = LocalContext.current
                 }
             }
         } else {
+            // 非玻璃模式：ColorOS 原生底部导航栏（底色取 bar，延伸到手势条下方）。
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .background(containerColor.copy(alpha = 0.92f))
-                    .height(64.dp)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center,
+                    .fillMaxWidth()
+                    .background(COUITheme.colorScheme.bar),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                NavigationBar(modifier = Modifier.navigationBarsPadding()) {
+                    val isBusy = shellState.isBusy
                     listOf(
                         Triple(Lucide.Grid2x2, "主页", 0),
                         Triple(Lucide.SlidersHorizontal, "生成参数", 1),
                         Triple(Lucide.Layers, "预设", 2),
                         Triple(Lucide.Settings, "设置", 3),
                     ).forEach { (icon, label, index) ->
-                        val selected = pagerState.targetPage == index
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(
-                                    if (selected) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.22f)
-                                    else Color.Transparent,
-                                )
-                                .clickable { scope.launch { pagerState.animateScrollToPage(index) } },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
-                            ) {
-                                val baseTint = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurfaceVariantSummary
-                                val tint = if (mainViewModel.shell.value.isBusy) baseTint.copy(alpha = 0.45f) else baseTint
-                                Image(
-                                    imageVector = icon,
-                                    contentDescription = label,
-                                    modifier = Modifier.size(20.dp),
-                                    colorFilter = ColorFilter.tint(tint),
-                                )
-                                Text(
-                                    text = label,
-                                    style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
-                                    color = tint,
-                                    maxLines = 1,
-                                )
-                            }
-                        }
+                        NavigationBarItem(
+                            selected = pagerState.targetPage == index,
+                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            icon = icon,
+                            label = label,
+                            // 生成中仅弱化显示，仍可切页（与原行为一致）。
+                            modifier = Modifier.alpha(if (isBusy) 0.45f else 1f),
+                        )
                     }
                 }
             }
@@ -5928,7 +5891,7 @@ internal fun MainActivity.HomePreviewStrip(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 0.dp)
+            .padding(horizontal = 16.dp, vertical = 0.dp)
             .onGloballyPositioned { coords ->
                 val h = with(density) { coords.size.height.toDp() }
                 if (h > 0.dp) onHeightMeasured(h)

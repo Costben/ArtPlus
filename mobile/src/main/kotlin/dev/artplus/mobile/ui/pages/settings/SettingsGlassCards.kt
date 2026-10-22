@@ -1,25 +1,9 @@
 package dev.artplus.mobile
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * Slice 2.3：液态玻璃设置卡片（原 MainActivity 本体原样搬迁）。
@@ -73,7 +57,6 @@ internal fun LiquidGlassSurfaceCard(
     SectionCard(rowsFullBleed = true) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             NumberParameterControl(
                 busy = isBusy,
@@ -87,6 +70,7 @@ internal fun LiquidGlassSurfaceCard(
                 onSave = onSaveRadius,
                 icon = SettingsIconKind.Radius,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "外框高度",
@@ -100,6 +84,7 @@ internal fun LiquidGlassSurfaceCard(
                 onSave = onSaveOuterWidth,
                 icon = SettingsIconKind.Glass,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "顶部强度",
@@ -113,6 +98,7 @@ internal fun LiquidGlassSurfaceCard(
                 onSave = onSaveTopAlpha,
                 icon = SettingsIconKind.Spark,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "底边强度",
@@ -126,6 +112,7 @@ internal fun LiquidGlassSurfaceCard(
                 onSave = onSaveBottomAlpha,
                 icon = SettingsIconKind.Spark,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "背景灰雾",
@@ -139,6 +126,7 @@ internal fun LiquidGlassSurfaceCard(
                 onSave = onSaveBackgroundMistAlpha,
                 icon = SettingsIconKind.Shadow,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "底部灰雾",
@@ -179,7 +167,6 @@ internal fun LiquidGlassSubjectCard(
     SectionCard(rowsFullBleed = true) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             NumberParameterControl(
                 busy = isBusy,
@@ -194,6 +181,7 @@ internal fun LiquidGlassSubjectCard(
                 onSave = onSaveSubjectScale,
                 icon = SettingsIconKind.Scale,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "主体外框宽度",
@@ -207,6 +195,7 @@ internal fun LiquidGlassSubjectCard(
                 onSave = onSaveSubjectOutlineWidth,
                 icon = SettingsIconKind.Spark,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "主体内框宽度",
@@ -220,6 +209,7 @@ internal fun LiquidGlassSubjectCard(
                 onSave = onSaveSubjectInnerOutlineWidth,
                 icon = SettingsIconKind.Spark,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "主体阴影",
@@ -233,6 +223,7 @@ internal fun LiquidGlassSubjectCard(
                 onSave = onSaveSubjectShadowAlpha,
                 icon = SettingsIconKind.Shadow,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "主体透明度",
@@ -247,57 +238,5 @@ internal fun LiquidGlassSubjectCard(
                 icon = SettingsIconKind.Glass,
             )
         }
-    }
-}
-
-@Composable
-internal fun LiquidGlassToggleRow(
-    enabled: Boolean,
-    isBusy: Boolean,
-    onToggle: () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
-    val bridge = LocalSectionCardPressBridge.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .trackSectionPress(bridge, pressed)
-            .cardRowBleed(bleedPx)
-            .background(cardRowPressedColor(pressed))
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = !isBusy,
-                onClick = onToggle,
-            )
-            .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        SettingsLineIcon(kind = SettingsIconKind.Glass)
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(5.dp),
-        ) {
-            Text(
-                text = "液态玻璃风格",
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "开启后按当前液态玻璃参数重绘背景和前景光影",
-                modifier = Modifier.basicMarquee(),
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-                softWrap = false,
-            )
-        }
-        LiquidGlassSwitch(checked = enabled, enabled = !isBusy)
     }
 }

@@ -28,5 +28,4 @@
             </intent-filter>
         </activity>
     </application>
-    <uses-sdk tools:overrideLibrary="top.yukonga.miuix.kmp.blur" />
 </manifest>

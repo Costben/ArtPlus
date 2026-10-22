@@ -111,10 +111,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -294,36 +294,38 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.window.WindowBottomSheet
-import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.EmptyState
+import io.github.suqi8.coui.kmp.utils.PressFeedbackType
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.window.WindowBottomSheet
+import io.github.suqi8.coui.kmp.layout.BottomSheetDefaults
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.theme.darkColorScheme
+import io.github.suqi8.coui.kmp.theme.lightColorScheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -348,89 +350,71 @@ internal fun StatusCard(
     val statusLabel = if (isBusy) "运行中" else "就绪"
     val enabled = !isBusy && hasApps
 
+    // COUI 可点击卡片：Tint 按压反馈由 Card 提供；不可用时不挂 onClick
     Card(
         modifier = Modifier.fillMaxWidth(),
         insideMargin = PaddingValues(16.dp),
+        pressFeedbackType = PressFeedbackType.Tint,
+        onClick = if (enabled) onOpenPicker else null,
     ) {
-        val interactionSource = remember { MutableInteractionSource() }
-        val pressed by interactionSource.collectIsPressedAsState()
-        val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
-        val bridge = remember { SectionCardPressBridge() }
-        CompositionLocalProvider(LocalSectionCardPressBridge provides bridge) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (selectedApp == null) {
+                BrandMark(size = 48.dp, text = "UX")
+            } else {
+                appIcon(selectedApp)
+            }
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .sectionPressOverlay(bridge, extendTopEdge = true),
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .trackSectionPress(bridge, pressed)
-                        .cardRowBleed(bleedPx)
-                        .background(cardRowPressedColor(pressed))
-                        .clickable(
-                            interactionSource = interactionSource,
-                            indication = null,
-                            enabled = enabled,
-                            onClick = onOpenPicker,
-                        )
-                        .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-                        .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    if (selectedApp == null) {
-                        BrandMark(size = 48.dp, text = "UX")
-                    } else {
-                        appIcon(selectedApp)
-                    }
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            StatusDot(active = isBusy)
-                            Text(
-                                text = statusLabel,
-                                style = MiuixTheme.textStyles.title4,
-                                color = MiuixTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                        Text(
-                            text = selectedApp?.label ?: "选择一个应用开始生成",
-                            style = MiuixTheme.textStyles.body1,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = selectedApp?.packageName ?: statusText,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = "启动器 $launcherCount 个 / 全部 $totalCount 个 / 已生成 $generatedCount 个",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    Image(
-                        imageVector = Lucide.ChevronRight,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
+                    StatusDot(active = isBusy)
+                    Text(
+                        text = statusLabel,
+                        style = COUITheme.textStyles.title4,
+                        color = COUITheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
+                Text(
+                    text = selectedApp?.label ?: "选择一个应用开始生成",
+                    style = COUITheme.textStyles.body1,
+                    color = COUITheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = selectedApp?.packageName ?: statusText,
+                    style = COUITheme.textStyles.footnote1,
+                    color = COUITheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "启动器 $launcherCount 个 / 全部 $totalCount 个 / 已生成 $generatedCount 个",
+                    style = COUITheme.textStyles.footnote1,
+                    color = COUITheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
+            // COUI 右箭头（与 ArrowPreference 末端箭头一致）
+            Image(
+                modifier = Modifier.size(width = 12.dp, height = 24.dp),
+                imageVector = COUIIcons.Basic.ArrowRight,
+                contentDescription = null,
+                colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantActions),
+            )
         }
     }
 }
@@ -460,56 +444,40 @@ internal fun EmptyAppListCard(
         },
         insideMargin = PaddingValues(16.dp),
     ) {
-        Column(
+        // COUI EmptyState 承载插画 + 标题 + 说明；两个操作保持 TextButton 以保留 enabled 语义
+        EmptyState(
+            title = "没有可显示的应用",
+            subtitle = hintText,
             modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Image(
-                imageVector = Lucide.Layers,
-                contentDescription = null,
-                modifier = Modifier.size(36.dp),
-                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
-            )
-            Text(
-                text = "没有可显示的应用",
-                style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { contentDescription = "没有可显示的应用" },
-            )
-            Text(
-                text = hintText,
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.semantics { contentDescription = hintText },
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            if (hasHiddenSystemApps && !showSystemApps) {
-                TextButton(
-                    text = "显示系统应用",
-                    onClick = onShowSystemApps,
-                    enabled = !isBusy,
-                    modifier = Modifier.fillMaxWidth().semantics {
-                        contentDescription = "显示系统应用按钮"
-                    },
+            illustration = {
+                Image(
+                    imageVector = Lucide.Layers,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-            }
+            },
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        if (hasHiddenSystemApps && !showSystemApps) {
             TextButton(
-                text = "刷新应用列表",
-                onClick = onRefresh,
+                text = "显示系统应用",
+                onClick = onShowSystemApps,
                 enabled = !isBusy,
                 modifier = Modifier.fillMaxWidth().semantics {
-                    contentDescription = "刷新应用列表"
+                    contentDescription = "显示系统应用按钮"
                 },
             )
+            Spacer(modifier = Modifier.height(8.dp))
         }
+        TextButton(
+            text = "刷新应用列表",
+            onClick = onRefresh,
+            enabled = !isBusy,
+            modifier = Modifier.fillMaxWidth().semantics {
+                contentDescription = "刷新应用列表"
+            },
+        )
     }
 }
 
@@ -568,34 +536,20 @@ internal fun GenerationActionCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Button(
+            TextButton(
+                text = "本地生成",
                 onClick = onLocalGenerate,
                 enabled = canRun,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColorsPrimary(),
-            ) {
-                Text(
-                    text = "本地生成",
-                    style = MiuixTheme.textStyles.button,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Button(
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+            )
+            TextButton(
+                text = "本地导出",
                 onClick = onLocalExport,
                 enabled = !isBusy,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColorsPrimary(),
-            ) {
-                Text(
-                    text = "本地导出",
-                    style = MiuixTheme.textStyles.button,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+                colors = ButtonDefaults.textButtonColorsPrimary(),
+            )
         }
         Spacer(modifier = Modifier.height(10.dp))
         Row(
@@ -607,18 +561,24 @@ internal fun GenerationActionCard(
                 onClick = onWriteAll,
                 enabled = canRun,
                 modifier = Modifier.weight(1f),
+                // 三等分行：默认 12dp 内边距会让 4 个汉字换行，收窄到 4dp 保持单行。
+                insideMargin = PaddingValues(horizontal = 4.dp),
             )
             CompactActionButton(
                 text = "写入标准",
                 onClick = onWriteStandard,
                 enabled = canRun,
                 modifier = Modifier.weight(1f),
+                // 三等分行：默认 12dp 内边距会让 4 个汉字换行，收窄到 4dp 保持单行。
+                insideMargin = PaddingValues(horizontal = 4.dp),
             )
             CompactActionButton(
                 text = "写入单色",
                 onClick = onWriteMono,
                 enabled = canRun,
                 modifier = Modifier.weight(1f),
+                // 三等分行：默认 12dp 内边距会让 4 个汉字换行，收窄到 4dp 保持单行。
+                insideMargin = PaddingValues(horizontal = 4.dp),
             )
         }
     }

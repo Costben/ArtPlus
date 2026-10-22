@@ -14,6 +14,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModelProvider
 import androidx.compose.runtime.mutableStateOf
@@ -28,9 +29,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.theme.ColorSchemeMode
+import io.github.suqi8.coui.kmp.theme.ThemeController
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 
@@ -220,9 +221,9 @@ class MainActivity : ComponentActivity() {
                 onDispose {}
             }
 
-            MiuixTheme(
-                colors = if (darkMode) darkColorScheme() else lightColorScheme(),
-            ) {
+            // 主题跟随系统深浅色，由 ThemeController 提供完整 ColorOS 调色板与 LocalContentColor。
+            val themeController = remember { ThemeController(ColorSchemeMode.System) }
+            COUITheme(controller = themeController) {
                 ArtPlusScreen()
             }
         }

@@ -111,10 +111,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -294,36 +294,36 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.window.WindowBottomSheet
-import top.yukonga.miuix.kmp.layout.BottomSheetDefaults
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.window.WindowBottomSheet
+import io.github.suqi8.coui.kmp.layout.BottomSheetDefaults
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.theme.darkColorScheme
+import io.github.suqi8.coui.kmp.theme.lightColorScheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -471,12 +471,12 @@ internal fun MissingIconPreview(
         PreviewMode.MonochromeLight -> md3LightBackground
         PreviewMode.MonochromeDark -> md3DarkBackground
         PreviewMode.NormalLight,
-        null -> MiuixTheme.colorScheme.surfaceContainerHigh
+        null -> COUITheme.colorScheme.surfaceContainerHigh
     }
     val markColor = when (mode) {
         PreviewMode.MonochromeDark -> Color.White
         PreviewMode.NormalDark -> Color(0xFFE7E1E5)
-        else -> MiuixTheme.colorScheme.onSurfaceVariantSummary
+        else -> COUITheme.colorScheme.onSurfaceVariantSummary
     }
     val outerRadius = cornerRadiusDp.dp
     val innerRadius = (cornerRadiusDp * 0.7f).dp
@@ -570,7 +570,7 @@ internal fun PreviewTile(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
-            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
+            .background(COUITheme.colorScheme.surfaceContainerHigh)
             .clickable(enabled = choiceEnabled, onClick = onClick)
             .padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -578,8 +578,8 @@ internal fun PreviewTile(
     ) {
         Text(
             text = label,
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            style = COUITheme.textStyles.footnote1,
+            color = COUITheme.colorScheme.onSurfaceVariantSummary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -692,7 +692,7 @@ internal fun TopPreviewStripTile(
         ) {
             Text(
                 text = mode.label,
-                style = MiuixTheme.textStyles.footnote1.copy(fontSize = 10.sp),
+                style = COUITheme.textStyles.footnote1.copy(fontSize = 10.sp),
                 color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -720,14 +720,14 @@ internal fun PreviewBackgroundOption(
     onClick: () -> Unit,
 ) {
     val borderColor = if (selected) {
-        MiuixTheme.colorScheme.primaryVariant
+        COUITheme.colorScheme.primaryVariant
     } else {
-        MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.18f)
+        COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.18f)
     }
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(MiuixTheme.colorScheme.secondaryContainer.copy(alpha = if (selected) 0.82f else 0.52f))
+            .background(COUITheme.colorScheme.secondaryVariant.copy(alpha = if (selected) 0.82f else 0.52f))
             .clickable(enabled = !isBusy && !selected, onClick = onClick)
             .padding(horizontal = 6.dp, vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -753,11 +753,11 @@ internal fun PreviewBackgroundOption(
         }
         Text(
             text = option.label,
-            style = MiuixTheme.textStyles.footnote1,
+            style = COUITheme.textStyles.footnote1,
             color = if (selected) {
-                MiuixTheme.colorScheme.onSurface
+                COUITheme.colorScheme.onSurface
             } else {
-                MiuixTheme.colorScheme.onSurfaceVariantSummary
+                COUITheme.colorScheme.onSurfaceVariantSummary
             },
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

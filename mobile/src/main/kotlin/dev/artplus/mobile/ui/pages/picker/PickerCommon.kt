@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,13 +40,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
+import io.github.suqi8.coui.kmp.theme.COUITheme
 
 /**
  * Slice 2.5：应用选择器通用弹窗/杂项（原 MainActivity 残留本体原样搬迁）。
@@ -65,63 +66,43 @@ internal fun OnboardingDialog(
     onChooseDir: () -> Unit,
 ) {
     if (!visible) return
-    MiuixBottomDialog(onDismissRequest = onSkip) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(MiuixTheme.colorScheme.background)
-                .padding(horizontal = 24.dp, vertical = 22.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = "设置备份目录",
-                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                color = MiuixTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "首次使用建议先选择一个外部目录，用于备份已写入系统的全部图标（含官方图标）。选择后将自动执行一次全量备份，并在该目录创建 .nomedia 避免出现在相册。",
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                textAlign = TextAlign.Center,
-                maxLines = 5,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Button(
-                    onClick = onSkip,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(
-                        text = "跳过",
-                        style = MiuixTheme.textStyles.button,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                    )
-                }
-                Button(
-                    onClick = onChooseDir,
-                    enabled = !isBusy,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = "选择目录",
-                        style = MiuixTheme.textStyles.button,
-                        color = Color.White,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
+    ArtDialog(
+        title = "设置备份目录",
+        summary = "首次使用建议先选择一个外部目录，用于备份已写入系统的全部图标（含官方图标）。选择后将自动执行一次全量备份，并在该目录创建 .nomedia 避免出现在相册。",
+        onDismissRequest = onSkip,
+        centered = true,
+        negative = DialogButtonBarAction(text = "跳过", onClick = onSkip),
+        positive = DialogButtonBarAction(
+            text = "选择目录",
+            enabled = !isBusy,
+            recommended = true,
+            onClick = onChooseDir,
+        ),
+    )
+}
+
+/** 「以后都自动确认」勾选行：整行可点，Checkbox 使用 COUI 默认配色。 */
+@Composable
+private fun ColumnScope.RememberChoiceRow(checked: Boolean, onToggle: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .align(Alignment.CenterHorizontally)
+            .clip(RoundedCornerShape(999.dp))
+            .clickable { onToggle() }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Checkbox(
+            state = ToggleableState(checked),
+            onClick = onToggle,
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = "以后都自动确认",
+            style = COUITheme.textStyles.footnote2,
+            color = COUITheme.colorScheme.onSurfaceVariantSummary,
+        )
     }
 }
 
@@ -134,87 +115,19 @@ internal fun RefreshConfirmDialog(
     onConfirm: (rememberAuto: Boolean) -> Unit,
 ) {
     if (!visible) return
-    MiuixBottomDialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(MiuixTheme.colorScheme.background)
-                .padding(horizontal = 24.dp, vertical = 22.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = "确认刷新",
-                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                color = MiuixTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "将重新扫描已生成图标并刷新显示，确认继续？",
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                textAlign = TextAlign.Center,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(999.dp))
-                    .clickable { onToggleRemember() }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Checkbox(
-                    state = ToggleableState(rememberAuto),
-                    onClick = onToggleRemember,
-                    colors = CheckboxDefaults.checkboxColors(
-                        checkedBackgroundColor = MiuixTheme.colorScheme.primaryVariant,
-                        checkedForegroundColor = MiuixTheme.colorScheme.onPrimaryVariant,
-                        uncheckedBackgroundColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
-                        uncheckedForegroundColor = Color.Transparent,
-                    ),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "以后都自动确认",
-                    style = MiuixTheme.textStyles.footnote2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(
-                        text = "取消",
-                        style = MiuixTheme.textStyles.button,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                    )
-                }
-                Button(
-                    onClick = { onConfirm(rememberAuto) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = "刷新",
-                        style = MiuixTheme.textStyles.button,
-                        color = Color.White,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
+    ArtDialog(
+        title = "确认刷新",
+        summary = "将重新扫描已生成图标并刷新显示，确认继续？",
+        onDismissRequest = onDismiss,
+        centered = true,
+        negative = DialogButtonBarAction(text = "取消", onClick = onDismiss),
+        positive = DialogButtonBarAction(
+            text = "刷新",
+            recommended = true,
+            onClick = { onConfirm(rememberAuto) },
+        ),
+    ) {
+        RememberChoiceRow(checked = rememberAuto, onToggle = onToggleRemember)
     }
 }
 
@@ -226,21 +139,22 @@ internal fun PermissionCard(
     onOpenAppSettings: () -> Unit,
     onOpenUsageSettings: () -> Unit,
 ) {
-    SectionCard {
+    SectionCard(rowsFullBleed = true) {
         SettingLine(
             title = "应用列表",
             summary = if (packageListGranted) "已声明并可读取已安装应用" else "需要允许读取应用列表",
             value = if (packageListGranted) "已允许" else "待授权",
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        SectionDivider()
         SettingLine(
             title = "使用情况访问",
             summary = if (usageGranted) "已允许任务/使用情况访问" else "Android 只能在系统设置中授权",
             value = if (usageGranted) "已允许" else "待授权",
         )
-        Spacer(modifier = Modifier.height(12.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             TextButton(
@@ -268,107 +182,47 @@ internal fun RootWriteConfirmDialog(
     onConfirm: (request: RootWriteConfirmRequest, skip: Boolean) -> Unit,
 ) {
     val current = request ?: return
-    MiuixBottomDialog(onDismissRequest = onDismiss) {
+    ArtDialog(
+        title = "确认写入",
+        onDismissRequest = onDismiss,
+        centered = true,
+        negative = DialogButtonBarAction(text = "取消", onClick = onDismiss),
+        positive = DialogButtonBarAction(
+            text = "确认写入",
+            recommended = true,
+            onClick = { onConfirm(current, rememberSkip) },
+        ),
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(MiuixTheme.colorScheme.background)
-                .padding(horizontal = 24.dp, vertical = 22.dp),
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = "确认写入",
-                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                color = MiuixTheme.colorScheme.onSurface,
+                text = "将直接把当前生成的内容写入到指定路径：",
+                style = COUITheme.textStyles.body1,
+                color = COUITheme.colorScheme.onSurfaceVariantSummary,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
+            )
+            Text(
+                text = current.targetPath,
+                style = COUITheme.textStyles.footnote1.copy(fontWeight = FontWeight.SemiBold),
+                color = COUITheme.colorScheme.primaryVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = "将直接把当前生成的内容写入到指定路径：",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = current.targetPath,
-                    style = MiuixTheme.textStyles.footnote1.copy(fontWeight = FontWeight.SemiBold),
-                    color = MiuixTheme.colorScheme.primaryVariant,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "是否确认写入${current.rootWriteMode.label}？",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(999.dp))
-                    .clickable { onToggleSkip() }
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Checkbox(
-                    state = ToggleableState(rememberSkip),
-                    onClick = onToggleSkip,
-                    colors = CheckboxDefaults.checkboxColors(
-                        checkedBackgroundColor = MiuixTheme.colorScheme.primaryVariant,
-                        checkedForegroundColor = MiuixTheme.colorScheme.onPrimaryVariant,
-                        uncheckedBackgroundColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
-                        uncheckedForegroundColor = Color.Transparent,
-                    ),
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "以后都自动确认",
-                    style = MiuixTheme.textStyles.footnote2,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(
-                        text = "取消",
-                        style = MiuixTheme.textStyles.button,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                    )
-                }
-                Button(
-                    onClick = { onConfirm(current, rememberSkip) },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = "确认写入",
-                        style = MiuixTheme.textStyles.button,
-                        color = Color.White,
-                        maxLines = 1,
-                    )
-                }
-            }
+            Text(
+                text = "是否确认写入${current.rootWriteMode.label}？",
+                style = COUITheme.textStyles.body1,
+                color = COUITheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
         }
+        RememberChoiceRow(checked = rememberSkip, onToggle = onToggleSkip)
     }
 }
+
 
 internal fun pickerSystemMaterialColor(
     resources: Resources,

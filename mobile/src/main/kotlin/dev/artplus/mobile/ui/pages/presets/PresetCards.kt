@@ -29,9 +29,14 @@ import com.composables.icons.lucide.Layers
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Search
 import com.composables.icons.lucide.X
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import io.github.suqi8.coui.kmp.basic.EmptyState
+import io.github.suqi8.coui.kmp.basic.TagView
+import io.github.suqi8.coui.kmp.basic.TagViewDefaults
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TextFieldMode
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.theme.COUITheme
 
 /**
  * Slice 2.1：预设页卡片 UI（原 MainActivity.PresetStatusCard / PresetLibraryCard 原样搬迁）。
@@ -68,9 +73,9 @@ internal fun PresetStatusCard(
                         .clip(CircleShape)
                         .background(
                             if (activePreset != null) {
-                                if (isPresetModified) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.6f) else MiuixTheme.colorScheme.primaryVariant
+                                if (isPresetModified) COUITheme.colorScheme.primaryVariant.copy(alpha = 0.6f) else COUITheme.colorScheme.primaryVariant
                             } else {
-                                MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
+                                COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)
                             }
                         ),
                 )
@@ -87,27 +92,21 @@ internal fun PresetStatusCard(
                                 activePreset != null -> "当前生效：${activePreset.name}"
                                 else -> "当前生效：自定义调参"
                             },
-                            style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
-                            color = MiuixTheme.colorScheme.onSurface,
+                            style = COUITheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
+                            color = COUITheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         if (activePreset != null && isPresetModified) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                            ) {
-                                Text(
-                                    text = "已修改",
-                                    style = MiuixTheme.textStyles.footnote2.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 11.sp,
-                                    ),
-                                    color = MiuixTheme.colorScheme.primaryVariant,
-                                )
-                            }
+                            // 状态标签：COUI TagView，tertiaryContainer 蓝色淡底
+                            TagView(
+                                text = "已修改",
+                                cornerRadius = 4.dp,
+                                colors = TagViewDefaults.tagViewColors(
+                                    containerColor = COUITheme.colorScheme.tertiaryContainer,
+                                    contentColor = COUITheme.colorScheme.onTertiaryContainer,
+                                ),
+                            )
                         }
                     }
                     Text(
@@ -116,8 +115,8 @@ internal fun PresetStatusCard(
                             activePreset != null -> "与快照保持一致 · 更新于 ${formatPresetDate(activePreset.updatedAt)}"
                             else -> "未绑定预设快照 · 可保存为独立快照"
                         },
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = COUITheme.textStyles.footnote1,
+                        color = COUITheme.colorScheme.onSurfaceVariantSummary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -252,104 +251,62 @@ internal fun PresetLibraryCard(
             ) {
                 Text(
                     text = "预设快照库 (${presets.size})",
-                    style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
+                    style = COUITheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
+                    color = COUITheme.colorScheme.onSurface,
                 )
                 if (presets.isNotEmpty()) {
                     Text(
                         text = "轻按条目套用",
-                        style = MiuixTheme.textStyles.footnote2,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = COUITheme.textStyles.footnote2,
+                        color = COUITheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
             }
 
             if (presets.size >= 8) {
-                Row(
+                // 搜索框：secondaryVariant 圆角底 + COUI TextField（无自带底，带清除按钮）
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .background(COUITheme.colorScheme.secondaryVariant),
                 ) {
-                    Image(
-                        imageVector = Lucide.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                    )
-                    BasicTextField(
+                    TextField(
                         value = searchQuery,
                         onValueChange = { onSearchChange(it) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
+                        backgroundMode = TextFieldMode.None,
+                        label = "搜索预设名称...",
+                        showClearButton = true,
                         singleLine = true,
-                        textStyle = MiuixTheme.textStyles.body2.copy(
-                            color = MiuixTheme.colorScheme.onSurface,
-                        ),
-                        cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
-                        decorationBox = { innerTextField ->
-                            if (searchQuery.isEmpty()) {
-                                Text(
-                                    text = "搜索预设名称...",
-                                    style = MiuixTheme.textStyles.body2,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
-                                )
-                            }
-                            innerTextField()
+                        leadingIcon = {
+                            Image(
+                                imageVector = Lucide.Search,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary),
+                            )
                         },
                     )
-                    if (searchQuery.isNotEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .clickable { onSearchChange("") },
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Image(
-                                imageVector = Lucide.X,
-                                contentDescription = "清除",
-                                modifier = Modifier.size(14.dp),
-                                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                            )
-                        }
-                    }
                 }
             }
 
             if (presets.isEmpty()) {
-                Box(
+                EmptyState(
+                    title = "暂无预设快照",
+                    subtitle = "在「生成参数」微调好效果后，点击上方「保存为预设」即可创建",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
+                        .padding(vertical = 8.dp),
+                    illustration = {
                         Image(
                             imageVector = Lucide.Layers,
                             contentDescription = null,
                             modifier = Modifier.size(36.dp),
-                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
+                            colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
                         )
-                        Text(
-                            text = "暂无预设快照",
-                            style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.Medium),
-                            color = MiuixTheme.colorScheme.onSurface,
-                        )
-                        Text(
-                            text = "在「生成参数」微调好效果后，点击上方「保存为预设」即可创建",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 24.dp),
-                        )
-                    }
-                }
+                    },
+                )
             } else if (filtered.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -359,8 +316,8 @@ internal fun PresetLibraryCard(
                 ) {
                     Text(
                         text = "未找到包含「$searchQuery」的预设",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = COUITheme.textStyles.footnote1,
+                        color = COUITheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
             } else {
@@ -393,8 +350,8 @@ internal fun PresetLibraryCard(
                         ) {
                             Text(
                                 text = if (listExpanded) "收起 ▴" else "展开查看全部 (共 ${presets.size} 个) ▾",
-                                style = MiuixTheme.textStyles.footnote1.copy(fontWeight = FontWeight.Medium),
-                                color = MiuixTheme.colorScheme.primaryVariant,
+                                style = COUITheme.textStyles.footnote1.copy(fontWeight = FontWeight.Medium),
+                                color = COUITheme.colorScheme.primaryVariant,
                             )
                         }
                     }

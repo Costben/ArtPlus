@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.state.ToggleableState
@@ -45,12 +46,16 @@ import androidx.compose.ui.unit.sp
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Search
 import com.composables.icons.lucide.X
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.basic.TagView
+import io.github.suqi8.coui.kmp.basic.TagViewDefaults
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TextFieldMode
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.theme.COUITheme
 
 /**
  * Slice 2.5：应用选择器组件与行（原 MainActivity 残留本体原样搬迁）。
@@ -103,8 +108,8 @@ internal fun AppPickerStatusCard(
                         .size(10.dp)
                         .clip(CircleShape)
                         .background(
-                            if (multiCount > 0) MiuixTheme.colorScheme.primaryVariant
-                            else MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
+                            if (multiCount > 0) COUITheme.colorScheme.primaryVariant
+                            else COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
                         ),
                 )
                 Column(
@@ -117,33 +122,26 @@ internal fun AppPickerStatusCard(
                     ) {
                         Text(
                             text = "应用列表 $filteredCount/$totalCount",
-                            style = MiuixTheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
-                            color = MiuixTheme.colorScheme.onSurface,
+                            style = COUITheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
+                            color = COUITheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                         if (multiCount > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                            ) {
-                                Text(
-                                    text = "多选 $multiCount",
-                                    style = MiuixTheme.textStyles.footnote2.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 11.sp,
-                                    ),
-                                    color = MiuixTheme.colorScheme.primaryVariant,
-                                )
-                            }
+                            TagView(
+                                text = "多选 $multiCount",
+                                cornerRadius = 4.dp,
+                                colors = TagViewDefaults.tagViewColors(
+                                    containerColor = COUITheme.colorScheme.tertiaryContainer,
+                                    contentColor = COUITheme.colorScheme.onTertiaryContainer,
+                                ),
+                            )
                         }
                     }
                     Text(
                         text = statusText,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = COUITheme.textStyles.footnote1,
+                        color = COUITheme.colorScheme.onSurfaceVariantSummary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -188,12 +186,12 @@ internal fun AppPickerFilterCard(
             enabled = !isBusy,
             onCheckedChange = { onToggleSystemApps() },
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        SectionDivider()
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 12.dp),
+                .padding(top = 12.dp, bottom = 12.dp),
         ) {
             val filters = GeneratedFilter.entries
             SegmentedControl(
@@ -221,59 +219,38 @@ internal fun AppPickerSearchCard(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // 标准搜索条：复刻 PresetLibraryCard 的搜索实现，高度与按钮对齐 48dp
-            Row(
+            // 搜索条：COUI TextField（无底线模式）置于中性胶囊底板内，高度与按钮对齐 48dp
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                    .padding(horizontal = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(COUITheme.colorScheme.secondaryVariant)
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.CenterStart,
             ) {
-                Image(
-                    imageVector = Lucide.Search,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                )
-                BasicTextField(
+                TextField(
                     value = queryText,
-                    onValueChange = onQueryChange,
-                    modifier = Modifier.weight(1f),
+                    onValueChange = { text ->
+                        // 清除按钮把文本置空：沿用原 onClearQuery 路径
+                        if (text.isEmpty() && queryText.isNotEmpty()) onClearQuery() else onQueryChange(text)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundMode = TextFieldMode.None,
+                    label = "搜索应用或包名...",
                     singleLine = true,
-                    textStyle = MiuixTheme.textStyles.body2.copy(
-                        color = MiuixTheme.colorScheme.onSurface,
-                    ),
-                    cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
-                    decorationBox = { innerTextField ->
-                        if (queryText.isEmpty()) {
-                            Text(
-                                text = "搜索应用或包名...",
-                                style = MiuixTheme.textStyles.body2,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
-                            )
-                        }
-                        innerTextField()
+                    showClearButton = true,
+                    leadingIcon = {
+                        Image(
+                            imageVector = Lucide.Search,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .size(16.dp),
+                            colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary),
+                        )
                     },
                 )
-                if (queryText.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clip(CircleShape)
-                            .clickable { onClearQuery() },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            imageVector = Lucide.X,
-                            contentDescription = "清除",
-                            modifier = Modifier.size(14.dp),
-                            colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-                        )
-                    }
-                }
             }
             multiSelectContent()
         }
@@ -304,7 +281,7 @@ internal fun AppPickerControlsCard(
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         AppPickerStatusCard(
             filteredCount = filteredCount,
@@ -398,14 +375,15 @@ internal fun AppRow(
     onToggleMultiSelect: () -> Unit,
     icon: @Composable () -> Unit,
 ) {
-    val selectedTagBg = MiuixTheme.colorScheme.primaryVariant
-    val selectedTagFg = MiuixTheme.colorScheme.onPrimaryVariant
-    val multiSelectedTagBg = MiuixTheme.colorScheme.primaryContainer
-    val multiSelectedTagFg = MiuixTheme.colorScheme.onPrimaryContainer
-    val generatedTagBg = MiuixTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
-    val generatedTagFg = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
-    val allTagBg = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
-    val allTagFg = MiuixTheme.colorScheme.onSecondaryContainer
+    val selectedTagBg = COUITheme.colorScheme.primaryVariant
+    val selectedTagFg = COUITheme.colorScheme.onPrimary
+    val multiSelectedTagBg = COUITheme.colorScheme.tertiaryContainer
+    val multiSelectedTagFg = COUITheme.colorScheme.onTertiaryContainer
+    // tertiaryContainer 在 COUI 中是蓝色淡染，「已生成」改用中性色，避免与「已选 / 多选」同色相
+    val generatedTagBg = COUITheme.colorScheme.secondaryContainer
+    val generatedTagFg = COUITheme.colorScheme.onSecondaryContainer
+    val allTagBg = COUITheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+    val allTagFg = COUITheme.colorScheme.onSecondaryContainer
     val tags = remember(
         selected,
         multiSelected,
@@ -428,24 +406,21 @@ internal fun AppRow(
         }
     }
 
+    // 选中态：蓝色淡染叠在卡片底色上（tertiaryContainer 为半透明，需先合成才不会透出页面底色）
+    val cardBase = COUITheme.colorScheme.surfaceContainer
+    val tint = COUITheme.colorScheme.tertiaryContainer
     val containerBg = when {
-        selected -> MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
-        multiSelected -> MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
-        else -> MiuixTheme.colorScheme.surfaceContainerHigh
+        selected -> tint.compositeOver(cardBase)
+        multiSelected -> tint.copy(alpha = tint.alpha * 0.6f).compositeOver(cardBase)
+        else -> cardBase
     }
-    // Card 本身无 colors 参数（miuix 0.9.1），用外层背景 + clip 模拟 CompactPresetRow 的选中态
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(containerBg)
-            .clickable(onClick = onClick),
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 14.dp,
+        insideMargin = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+        colors = CardDefaults.defaultColors(color = containerBg),
+        onClick = onClick,
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
-            showIndication = false,
-        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -456,12 +431,6 @@ internal fun AppRow(
                 state = ToggleableState(multiSelected),
                 onClick = onToggleMultiSelect,
                 enabled = !isBusy,
-                colors = CheckboxDefaults.checkboxColors(
-                    checkedBackgroundColor = MiuixTheme.colorScheme.primaryVariant,
-                    checkedForegroundColor = MiuixTheme.colorScheme.onPrimaryVariant,
-                    uncheckedBackgroundColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.35f),
-                    uncheckedForegroundColor = Color.Transparent,
-                ),
             )
             icon()
             Column(
@@ -471,19 +440,19 @@ internal fun AppRow(
                 Text(
                     text = entry.label,
                     modifier = Modifier.basicMarquee(),
-                    style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight(550)),
-                    color = if (selected) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurface,
+                    style = COUITheme.textStyles.body1.copy(fontWeight = FontWeight(550)),
+                    color = if (selected) COUITheme.colorScheme.primaryVariant else COUITheme.colorScheme.onSurface,
                     maxLines = 1,
                     softWrap = false,
                 )
                 Text(
                     text = entry.packageName,
                     modifier = Modifier.basicMarquee(),
-                    style = MiuixTheme.textStyles.footnote1.copy(
+                    style = COUITheme.textStyles.footnote1.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight(550),
                     ),
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    color = COUITheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,
                     softWrap = false,
                 )
@@ -499,7 +468,6 @@ internal fun AppRow(
                     }
                 }
             }
-        }
         }
     }
 }
@@ -534,7 +502,7 @@ internal fun AppIcon(
                     .fillMaxSize()
                     .padding(4.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MiuixTheme.colorScheme.secondaryContainer),
+                    .background(COUITheme.colorScheme.secondaryContainer),
             )
         } else {
             Image(

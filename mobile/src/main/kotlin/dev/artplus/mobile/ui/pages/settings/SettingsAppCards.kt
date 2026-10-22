@@ -7,48 +7,26 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
+import io.github.suqi8.coui.kmp.theme.COUITheme
 
 /**
  * Slice 2.3：设置页应用/输出/AI/RMBG 卡片（原 MainActivity 本体原样搬迁）。
@@ -153,7 +131,7 @@ internal fun GptSettingsCard(
                 )
             },
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        SectionDivider()
         LibraryChoiceRow(
             title = "AI 提示词",
             summary = GptPromptPreset.fromValue(tuningState.gptPromptPreset).summary,
@@ -181,7 +159,7 @@ internal fun GptSettingsCard(
                 shrinkVertically(animationSpec = tween(durationMillis = 160)),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.height(6.dp))
+                SectionDivider()
                 SettingsTextInputRow(
                     title = "自定义前景提示词",
                     value = tuningState.gptCustomPrompt,
@@ -193,7 +171,7 @@ internal fun GptSettingsCard(
                 )
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        SectionDivider()
         SettingsTextInputRow(
             title = "模型 ID",
             value = gptModelId,
@@ -203,7 +181,7 @@ internal fun GptSettingsCard(
             enabled = !isBusy,
             onValueChange = onGptModelIdChange,
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        SectionDivider()
         SettingsTextInputRow(
             title = "Base URL",
             value = gptBaseUrl,
@@ -213,7 +191,7 @@ internal fun GptSettingsCard(
             enabled = !isBusy,
             onValueChange = onGptBaseUrlChange,
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        SectionDivider()
         SettingsTextInputRow(
             title = "API key",
             value = gptApiKey,
@@ -224,7 +202,7 @@ internal fun GptSettingsCard(
             enabled = !isBusy,
             onValueChange = onGptApiKeyChange,
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        SectionDivider()
         SettingsInfoRow(
             title = "累计调用",
             summary = "已累计调用 AI 云端接口的次数",
@@ -262,20 +240,21 @@ internal fun RmbgComponentCard(
             value = if (component == null) "未安装" else "已安装",
             icon = settingsIconForTitle("RMBG 状态"),
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        SectionDivider()
         SettingsInfoRow(
             title = "累计调用",
             summary = "已累计运行 RMBG 模型抠图的次数",
             value = "$rmbgRunCount 次",
             icon = settingsIconForTitle("累计调用"),
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        SectionDivider()
         LibraryChoiceRow(
             title = "模型版本",
             summary = currentPreset.summary,
             value = currentPreset.label,
             icon = SettingsIconKind.Layers,
             enabled = !isBusy && !isGenerating && !isInstalling,
+            summaryBelow = true,
             entry = remember(currentPreset, allPresets) {
                 val preset = currentPreset
                 DropdownEntry(
@@ -291,16 +270,16 @@ internal fun RmbgComponentCard(
             },
         )
         if (lastError != null) {
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = lastError.orEmpty(),
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.error,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                style = COUITheme.textStyles.footnote1,
+                color = COUITheme.colorScheme.error,
                 maxLines = 4,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        SectionDivider()
         LibrarySettingRow(
             title = "模型或组件 ZIP 地址",
             summary = if (componentUrl.isBlank()) "粘贴 ZIP 地址或从本地选择 · 未设置" else componentUrl,
@@ -311,105 +290,59 @@ internal fun RmbgComponentCard(
             onClick = { onDialogVisibleChange(true) },
         )
         if (isInstalling || installStage.isNotBlank()) {
-            Spacer(modifier = Modifier.height(10.dp))
-            RmbgInstallProgressBar(
-                text = installStage.ifBlank { if (isInstalling) "安装中" else "" },
-                progress = installProgress,
-                active = isInstalling,
-            )
+            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                RmbgInstallProgressBar(
+                    text = installStage.ifBlank { if (isInstalling) "安装中" else "" },
+                    progress = installProgress,
+                    active = isInstalling,
+                )
+            }
         }
     }
     if (dialogVisible) {
-        MiuixBottomDialog(onDismissRequest = { onDialogVisibleChange(false) }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "模型或组件 ZIP 地址",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+        val actionEnabled = !isBusy && !isGenerating && !isInstalling
+        ArtDialog(
+            title = "模型或组件 ZIP 地址",
+            summary = "粘贴 ZIP 地址，或从本地选择模型文件",
+            onDismissRequest = { onDialogVisibleChange(false) },
+            negative = DialogButtonBarAction(
+                text = "选择 ZIP",
+                enabled = actionEnabled,
+                onClick = {
+                    onDialogVisibleChange(false)
+                    onPickZip()
+                },
+            ),
+            positive = DialogButtonBarAction(
+                text = if (isInstalling) "安装中" else "一键安装",
+                enabled = actionEnabled,
+                recommended = true,
+                onClick = {
+                    onDialogVisibleChange(false)
+                    onInstallFromUrl()
+                },
+            ),
+            neutral = if (component != null) {
+                DialogButtonBarAction(
+                    text = "清除已安装 RMBG",
+                    enabled = actionEnabled,
+                    onClick = {
+                        onDialogVisibleChange(false)
+                        onClearInstalled()
+                    },
                 )
-                Text(
-                    text = "粘贴 ZIP 地址，或从本地选择模型文件",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                TextField(
-                    value = componentUrl,
-                    onValueChange = onComponentUrlChange,
-                    label = "请填写 ZIP 地址",
-                    singleLine = true,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = {
-                            onDialogVisibleChange(false)
-                            onPickZip()
-                        },
-                        enabled = !isBusy && !isGenerating && !isInstalling,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "选择 ZIP",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            onDialogVisibleChange(false)
-                            onInstallFromUrl()
-                        },
-                        enabled = !isBusy && !isGenerating && !isInstalling,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = if (isInstalling) "安装中" else "一键安装",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-                if (component != null) {
-                    Button(
-                        onClick = {
-                            onDialogVisibleChange(false)
-                            onClearInstalled()
-                        },
-                        enabled = !isBusy && !isGenerating && !isInstalling,
-                        colors = ButtonDefaults.buttonColors(
-                            color = MiuixTheme.colorScheme.surfaceContainerHigh,
-                            contentColor = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(
-                            text = "清除已安装 RMBG",
-                            style = MiuixTheme.textStyles.button,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
+            } else {
+                null
+            },
+        ) {
+            TextField(
+                value = componentUrl,
+                onValueChange = onComponentUrlChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = "请填写 ZIP 地址",
+                showClearButton = true,
+                singleLine = true,
+            )
         }
     }
 }
@@ -440,7 +373,7 @@ internal fun OutputCard(
             value = "data",
             icon = settingsIconForTitle("Root 目标"),
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        SectionDivider()
         LibrarySettingRow(
             title = "自动确认写入",
             summary = if (autoConfirmRootWrite) "点击写入时直接写入 Root 目标" else "点击写入时会弹出二次确认提示",
@@ -450,7 +383,7 @@ internal fun OutputCard(
             enabled = !isBusy,
             onCheckedChange = onAutoConfirmRootWriteChange,
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        SectionDivider()
         LibrarySettingRow(
             title = "自动确认刷新",
             summary = if (autoConfirmRefresh) "点击刷新按钮时直接执行刷新" else "点击刷新按钮时会弹出二次确认提示",
@@ -460,7 +393,7 @@ internal fun OutputCard(
             enabled = !isBusy,
             onCheckedChange = onAutoConfirmRefreshChange,
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        SectionDivider()
         val outputTreeDisplay = remember(outputTreeUri) { treeDisplay }
         val isBackupActive = backupActive
         val isBackupInBg = backupInBackground && isBackupActive
@@ -500,77 +433,37 @@ internal fun OutputCard(
                 }
             }
         }
-        MiuixBottomDialog(onDismissRequest = onExportDialogDismiss) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "备份到外部目录",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = if (outputTreeUri == null) "将把 /data/oplus/uxicons 内的全部图标（含官方与已写入）备份到你选择的目录" else "将把已写入系统的全部图标备份到你选择的目录",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                TextField(
-                    value = draftExportPath,
-                    onValueChange = { draftExportPath = it },
-                    label = "备份路径",
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = false,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = {
-                            onExportDialogDismiss()
-                            onChooseTree()
-                        },
-                        enabled = !isBusy,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "选择目录",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            onExportDialogDismiss()
-                            onBackupAll()
-                        },
-                        enabled = !isBusy,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "备份当前所有图标",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
+        ArtDialog(
+            title = "备份到外部目录",
+            summary = if (outputTreeUri == null) "将把 /data/oplus/uxicons 内的全部图标（含官方与已写入）备份到你选择的目录" else "将把已写入系统的全部图标备份到你选择的目录",
+            onDismissRequest = onExportDialogDismiss,
+            negative = DialogButtonBarAction(
+                text = "选择目录",
+                enabled = !isBusy,
+                onClick = {
+                    onExportDialogDismiss()
+                    onChooseTree()
+                },
+            ),
+            positive = DialogButtonBarAction(
+                text = "备份当前所有图标",
+                enabled = !isBusy,
+                recommended = true,
+                onClick = {
+                    onExportDialogDismiss()
+                    onBackupAll()
+                },
+            ),
+        ) {
+            TextField(
+                value = draftExportPath,
+                onValueChange = { draftExportPath = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = "备份路径",
+                showClearButton = true,
+                singleLine = false,
+                maxLines = 4,
+            )
         }
     }
 }
@@ -603,75 +496,12 @@ internal fun InputSettingsCard(launcherCount: Int, totalCount: Int, generatedCou
             value = "启动器",
             icon = settingsIconForTitle("应用范围"),
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        SectionDivider()
         SettingsInfoRow(
             title = "已生成",
             summary = "来自本地缓存；手动刷新后才重新读取 data 路径",
             value = "$generatedCount",
             icon = settingsIconForTitle("已生成"),
         )
-    }
-}
-
-@Composable
-internal fun ShowSystemAppsToggleRow(
-    checked: Boolean,
-    isBusy: Boolean,
-    onToggle: () -> Unit,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    val bleedPx = with(LocalDensity.current) { CHOICE_ROW_HORIZONTAL_BLEED_DP.dp.roundToPx() }
-    val bridge = LocalSectionCardPressBridge.current
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .trackSectionPress(bridge, pressed)
-            .cardRowBleed(bleedPx)
-            .background(cardRowPressedColor(pressed))
-            .semantics {
-                contentDescription = "显示系统应用开关"
-                stateDescription = if (checked) "已开启" else "已关闭"
-                role = Role.Switch
-            }
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = !isBusy,
-                onClick = onToggle,
-            )
-            .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp)
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        SettingsLineIcon(kind = SettingsIconKind.Shield)
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(5.dp),
-        ) {
-            Text(
-                text = "显示系统应用",
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = if (checked) "已包含系统应用，可搜索和批量选择" else "仅显示用户应用；系统应用已隐藏",
-                modifier = Modifier.basicMarquee(),
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-                softWrap = false,
-            )
-        }
-        Box(
-            modifier = Modifier.semantics {
-                contentDescription = "显示系统应用"
-            },
-        ) {
-            LiquidGlassSwitch(checked = checked, enabled = !isBusy)
-        }
     }
 }

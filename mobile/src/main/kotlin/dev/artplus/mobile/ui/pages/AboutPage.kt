@@ -111,10 +111,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -293,34 +293,35 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.theme.darkColorScheme
+import io.github.suqi8.coui.kmp.theme.lightColorScheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -328,7 +329,7 @@ import com.caverock.androidsvg.SVG
 
 @Composable
 internal fun MainActivity.AboutPage(pageBackground: Color) {
-    val scrollBehavior = MiuixScrollBehavior()
+    val scrollBehavior = COUIScrollBehavior()
     val shell by mainViewModel.shell.collectAsState()
     val updateUi by mainViewModel.updateUi.collectAsState()
     val aboutCtx = LocalContext.current
@@ -355,7 +356,6 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
             TopAppBar(
                 title = "关于",
                 scrollBehavior = scrollBehavior,
-                navigationIconPadding = 0.dp,
                 navigationIcon = {
                     TitleBarIconButton(
                         icon = Lucide.ChevronLeft,
@@ -374,9 +374,9 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                 .background(pageBackground)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .padding(innerPadding)
-                .padding(horizontal = 12.dp),
-            contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 Card {
@@ -394,20 +394,20 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         )
                         Text(
                             text = "ArtPlus Mobile",
-                            style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                            color = MiuixTheme.colorScheme.onSurface,
+                            style = COUITheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
+                            color = COUITheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,
                         )
                         Text(
                             text = if (versionCode.isNotBlank()) "$versionName ($versionCode)" else versionName,
-                            style = MiuixTheme.textStyles.body2,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            style = COUITheme.textStyles.body2,
+                            color = COUITheme.colorScheme.onSurfaceVariantSummary,
                             textAlign = TextAlign.Center,
                         )
                         Text(
                             text = "ColorOS ART+ 图标生成与预览工具",
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            style = COUITheme.textStyles.footnote1,
+                            color = COUITheme.colorScheme.onSurfaceVariantSummary,
                             textAlign = TextAlign.Center,
                         )
                     }
@@ -435,7 +435,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                             )
                         },
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    SectionDivider()
                     LibrarySettingRow(
                         title = "开源协议",
                         summary = "GPL-3.0-or-later",
@@ -444,7 +444,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         enabled = !shell.isBusy,
                         onClick = { mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (true)) } },
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    SectionDivider()
                     LibrarySettingRow(
                         title = "检查更新",
                         summary = if (updateUi.isCheckingUpdate) "检查中..." else "当前 $versionName",
@@ -477,8 +477,8 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
             item {
                 Text(
                     text = "© 2026 Costben · GPL-3.0-or-later",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    style = COUITheme.textStyles.footnote1,
+                    color = COUITheme.colorScheme.onSurfaceVariantSummary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 )
@@ -487,187 +487,79 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
     }
 
     if (updateUi.gplLicenseDialogVisible) {
-        MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (false)) } }) {
-            Column(
+        val dismissLicense = { mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (false)) } }
+        ArtDialog(
+            title = "开源协议",
+            summary = "GPL-3.0-or-later",
+            onDismissRequest = dismissLicense,
+            negative = DialogButtonBarAction(text = "关闭", onClick = dismissLicense),
+            positive = DialogButtonBarAction(
+                text = "在 GitHub 查看",
+                recommended = true,
+                onClick = {
+                    dismissLicense()
+                    pickerOpenExternalLink(
+                        start = ::startActivity,
+                        url = GITHUB_LICENSE_URL,
+                        onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    )
+                },
+            ),
+        ) {
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .heightIn(min = 80.dp, max = 360.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(COUITheme.colorScheme.secondaryVariant)
+                    .verticalScroll(rememberScrollState())
+                    .padding(12.dp),
             ) {
                 Text(
-                    text = "开源协议",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
+                    text = remember(aboutCtx) {
+                        runCatching {
+                            aboutCtx.assets.open(GPL_LICENSE_ASSET_PATH).bufferedReader().readText()
+                        }.getOrDefault(GPL_LICENSE_FALLBACK_TEXT)
+                    },
+                    style = COUITheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                    color = COUITheme.colorScheme.onSurface,
                 )
-                Text(
-                    text = "GPL-3.0-or-later",
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 80.dp, max = 360.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                        .verticalScroll(rememberScrollState())
-                        .padding(12.dp),
-                ) {
-                    Text(
-                        text = remember(aboutCtx) {
-                            runCatching {
-                                aboutCtx.assets.open(GPL_LICENSE_ASSET_PATH).bufferedReader().readText()
-                            }.getOrDefault(GPL_LICENSE_FALLBACK_TEXT)
-                        },
-                        style = MiuixTheme.textStyles.footnote1.copy(fontSize = 11.sp),
-                        color = MiuixTheme.colorScheme.onSurface,
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = { mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (false)) } },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "关闭",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (false)) }
-                            pickerOpenExternalLink(
-                                start = ::startActivity,
-                                url = GITHUB_LICENSE_URL,
-                                onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "在 GitHub 查看",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
             }
         }
     }
 
     updateUi.updateAvailableInfo?.let { info ->
-        MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (null)) } }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "发现新版本",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = "最新 ${info.tagName} · 当前 $versionName\n点击前往下载页查看更新内容。",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Button(
-                        onClick = { mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (null)) } },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(),
-                    ) {
-                        Text(
-                            text = "稍后",
-                            style = MiuixTheme.textStyles.button,
-                            color = MiuixTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            val url = info.htmlUrl
-                            mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (null)) }
-                            pickerOpenExternalLink(
-                                start = ::startActivity,
-                                url = url,
-                                onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColorsPrimary(),
-                    ) {
-                        Text(
-                            text = "前往下载",
-                            style = MiuixTheme.textStyles.button,
-                            color = Color.White,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-        }
+        val dismissUpdate = { mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (null)) } }
+        ArtDialog(
+            title = "发现新版本",
+            summary = "最新 ${info.tagName} · 当前 $versionName\n点击前往下载页查看更新内容。",
+            onDismissRequest = dismissUpdate,
+            centered = true,
+            negative = DialogButtonBarAction(text = "稍后", onClick = dismissUpdate),
+            positive = DialogButtonBarAction(
+                text = "前往下载",
+                recommended = true,
+                onClick = {
+                    val url = info.htmlUrl
+                    dismissUpdate()
+                    pickerOpenExternalLink(
+                        start = ::startActivity,
+                        url = url,
+                        onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    )
+                },
+            ),
+        )
     }
 
     if (updateUi.updateUpToDateDialogVisible) {
-        MiuixBottomDialog(onDismissRequest = { mainViewModel.updateUpdateUi { it -> it.copy(updateUpToDateDialogVisible = (false)) } }) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(MiuixTheme.colorScheme.background)
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Text(
-                    text = "已是最新版本",
-                    style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                    color = MiuixTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = "当前 $versionName 已是最新，无需更新。",
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    textAlign = TextAlign.Center,
-                )
-                Button(
-                    onClick = { mainViewModel.updateUpdateUi { it -> it.copy(updateUpToDateDialogVisible = (false)) } },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = "知道了",
-                        style = MiuixTheme.textStyles.button,
-                        color = Color.White,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
+        val dismissUpToDate = { mainViewModel.updateUpdateUi { it -> it.copy(updateUpToDateDialogVisible = (false)) } }
+        ArtDialog(
+            title = "已是最新版本",
+            summary = "当前 $versionName 已是最新，无需更新。",
+            onDismissRequest = dismissUpToDate,
+            centered = true,
+            positive = DialogButtonBarAction(text = "知道了", recommended = true, onClick = dismissUpToDate),
+        )
     }
 }

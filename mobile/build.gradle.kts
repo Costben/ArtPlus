@@ -113,9 +113,11 @@ dependencies {
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.21.1")
     // 热修复2-16KB：androidx.graphics:graphics-path 1.0.1 -> 1.1.0（16KB 对齐版本，直钉显式提升传递依赖）。
     implementation("androidx.graphics:graphics-path:1.1.0")
-    implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.3")
-    implementation("top.yukonga.miuix.kmp:miuix-icons-android:0.9.3")
-    implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.3")
-    implementation("top.yukonga.miuix.kmp:miuix-preference-android:0.9.3")
+    // COUI17（../coui 本地发布，见 settings.gradle.kts 的 couiRepo）。
+    val couiVersion = providers.gradleProperty("couiVersion").get()
+    implementation("io.github.suqi8.coui.kmp:coui-ui:$couiVersion")
+    implementation("io.github.suqi8.coui.kmp:coui-icons:$couiVersion")
+    implementation("io.github.suqi8.coui.kmp:coui-blur:$couiVersion")
+    implementation("io.github.suqi8.coui.kmp:coui-preference:$couiVersion")
     implementation("io.github.kyant0:shapes:1.2.0")
 }

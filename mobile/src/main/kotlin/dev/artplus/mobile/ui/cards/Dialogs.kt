@@ -111,10 +111,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -291,34 +291,36 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TextFieldMode
+import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.theme.darkColorScheme
+import io.github.suqi8.coui.kmp.theme.lightColorScheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -331,140 +333,18 @@ internal fun BatchApplyProgressDialog(progress: BatchApplyProgress) {
     } else {
         (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
     }
-    Dialog(onDismissRequest = {}) {
-        ApplyDialogDimEffect()
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(18.dp),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(
-                    text = progress.title,
-                    style = MiuixTheme.textStyles.title4,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = progress.currentLabel,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(12.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth(fraction)
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(MiuixTheme.colorScheme.primaryVariant),
-                    )
-                }
-                Text(
-                    text = buildString {
-                        append("${progress.completed}/${progress.total}")
-                        if (progress.failures > 0) {
-                            append(" · 失败 ${progress.failures}")
-                        }
-                    },
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+    // 批量应用期间不可被外部点击 / 返回键关闭（onDismissRequest 缺省为 null）
+    ArtProgressDialog(
+        title = progress.title,
+        message = progress.currentLabel,
+        progress = fraction,
+        footer = buildString {
+            append("${progress.completed}/${progress.total}")
+            if (progress.failures > 0) {
+                append(" · 失败 ${progress.failures}")
             }
-        }
-    }
-}
-
-@Composable
-internal fun ExportProgressDialog(progress: ExportProgress) {
-    val fraction = if (progress.total <= 0) 0f else (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
-    val infiniteTransition = rememberInfiniteTransition(label = "exportProgress")
-    val indeterminateFraction by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 1200, easing = LinearEasing)),
-        label = "indeterminate",
+        },
     )
-    Dialog(onDismissRequest = {}) {
-        ApplyDialogDimEffect()
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            insideMargin = PaddingValues(18.dp),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(
-                    text = progress.title,
-                    style = MiuixTheme.textStyles.title4,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = progress.currentLabel,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (progress.isIndeterminate) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(12.dp)
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(0.35f)
-                                .graphicsLayer { translationX = (size.width * 1.2f * indeterminateFraction) - size.width * 0.35f }
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(MiuixTheme.colorScheme.primaryVariant),
-                        )
-                    }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(12.dp)
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .fillMaxWidth(fraction)
-                                .clip(RoundedCornerShape(999.dp))
-                                .background(MiuixTheme.colorScheme.primaryVariant),
-                        )
-                    }
-                    Text(
-                        text = "${progress.completed}/${progress.total}",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -474,176 +354,36 @@ internal fun BackupProgressBottomSheet(
     onBackground: () -> Unit,
 ) {
     val fraction = if (progress.total <= 0) 0f else (progress.completed.toFloat() / progress.total.toFloat()).coerceIn(0f, 1f)
-    val infiniteTransition = rememberInfiniteTransition(label = "backupSheet")
-    val indeterminateFraction by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(animation = tween(durationMillis = 1200, easing = LinearEasing)),
-        label = "indeterminate",
-    )
-    Dialog(
-        onDismissRequest = onBackground,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        ApplyDialogDimEffect()
-        var animateIn by remember { mutableStateOf(false) }
-        LaunchedEffect(Unit) { animateIn = true }
-        val offsetY by animateFloatAsState(
-            targetValue = if (animateIn) 0f else 320f,
-            animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f),
-            label = "BackupSheetSlideUp",
-        )
-        val alpha by animateFloatAsState(
-            targetValue = if (animateIn) 1f else 0f,
-            animationSpec = tween(durationMillis = 180),
-            label = "BackupSheetFadeIn",
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onBackground,
-                )
-                .imePadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        translationY = offsetY
-                        this.alpha = alpha
-                    }
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = {},
-                    ),
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(MiuixTheme.colorScheme.background)
-                        .padding(start = 24.dp, end = 24.dp, top = 18.dp, bottom = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = progress.title,
-                        style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                        color = MiuixTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth(),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    // 第一行：正在备份 + 进度分数/百分比
-                    val line1 = when {
-                        progress.isIndeterminate -> "正在备份"
-                        progress.title.contains("导出") -> "正在导出 ${progress.completed}/${progress.total}"
-                        else -> "正在备份 ${progress.completed}/${progress.total}"
-                    }
-                    Text(
-                        text = line1,
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    // 第二行：包名，单行显示不换行
-                    val pkgName = remember(progress.currentLabel) {
-                        val raw = progress.currentLabel
-                        when {
-                            ":" in raw -> raw.substringAfterLast(":").trim()
-                            "：" in raw -> raw.substringAfterLast("：").trim()
-                            raw.contains("/") && raw.contains(" ") -> raw.substringAfterLast(" ").trim().takeIf { it.contains(".") } ?: ""
-                            else -> ""
-                        }.takeIf { it.isNotBlank() && it != raw.trim() } ?: ""
-                    }
-                    if (pkgName.isNotBlank()) {
-                        Text(
-                            text = pkgName,
-                            style = MiuixTheme.textStyles.footnote1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            softWrap = false,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    // 进度条固定位置，高度恒定不跳动
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(12.dp)
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(MiuixTheme.colorScheme.surfaceContainerHigh),
-                    ) {
-                        if (progress.isIndeterminate) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(0.35f)
-                                    .graphicsLayer { translationX = (size.width * 1.2f * indeterminateFraction) - size.width * 0.35f }
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .background(MiuixTheme.colorScheme.primaryVariant),
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .fillMaxWidth(fraction)
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .background(MiuixTheme.colorScheme.primaryVariant),
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Button(
-                            onClick = onStop,
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(
-                                color = Color(0xFFE53935),
-                                contentColor = Color.White,
-                            ),
-                        ) {
-                            Text(
-                                text = "停止备份",
-                                style = MiuixTheme.textStyles.button,
-                                color = Color.White,
-                                maxLines = 1,
-                            )
-                        }
-                        Button(
-                            onClick = onBackground,
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColorsPrimary(),
-                        ) {
-                            Text(
-                                text = "后台备份",
-                                style = MiuixTheme.textStyles.button,
-                                color = Color.White,
-                                maxLines = 1,
-                            )
-                        }
-                    }
-                }
-            }
-        }
+    // 第一行：正在备份 + 进度分数/百分比
+    val line1 = when {
+        progress.isIndeterminate -> "正在备份"
+        progress.title.contains("导出") -> "正在导出 ${progress.completed}/${progress.total}"
+        else -> "正在备份 ${progress.completed}/${progress.total}"
     }
+    // 第二行：包名，单行显示不换行
+    val pkgName = remember(progress.currentLabel) {
+        val raw = progress.currentLabel
+        when {
+            ":" in raw -> raw.substringAfterLast(":").trim()
+            "：" in raw -> raw.substringAfterLast("：").trim()
+            raw.contains("/") && raw.contains(" ") -> raw.substringAfterLast(" ").trim().takeIf { it.contains(".") } ?: ""
+            else -> ""
+        }.takeIf { it.isNotBlank() && it != raw.trim() } ?: ""
+    }
+    // 点击外部 / 返回键 = 后台备份（与原行为一致）；「停止备份」用 error 色文字，「后台备份」为推荐按钮
+    ArtProgressDialog(
+        title = progress.title,
+        message = line1,
+        detail = pkgName,
+        progress = if (progress.isIndeterminate) null else fraction,
+        onDismissRequest = onBackground,
+        negative = DialogButtonBarAction(text = "停止备份", onClick = onStop),
+        positive = DialogButtonBarAction(text = "后台备份", onClick = onBackground, recommended = true),
+        buttonColors = ButtonDefaults.textButtonColorsBorderless(
+            textColor = COUITheme.colorScheme.error,
+            disabledTextColor = COUITheme.colorScheme.error.copy(alpha = 0.4f),
+        ),
+    )
 }
 
 @Composable
@@ -655,58 +395,21 @@ internal fun PresetNameDialog(
     onDismiss: () -> Unit,
 ) {
     var name by remember(initialName) { mutableStateOf(initialName) }
-    MiuixBottomDialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(MiuixTheme.colorScheme.background)
-                .padding(horizontal = 24.dp, vertical = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            InlineInputField(
-                value = name,
-                onValueChange = { name = it },
-                label = "预设名称",
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(
-                        text = "取消",
-                        style = MiuixTheme.textStyles.button,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                    )
-                }
-                Button(
-                    onClick = { onConfirm(name.trim()) },
-                    enabled = name.trim().isNotEmpty(),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = confirmLabel,
-                        style = MiuixTheme.textStyles.button,
-                        color = Color.White,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
+    ArtDialog(
+        title = title,
+        onDismissRequest = onDismiss,
+        negative = DialogButtonBarAction(text = "取消", onClick = onDismiss),
+        positive = DialogButtonBarAction(
+            text = confirmLabel,
+            enabled = name.trim().isNotEmpty(),
+            onClick = { onConfirm(name.trim()) },
+        ),
+    ) {
+        InlineInputField(
+            value = name,
+            onValueChange = { name = it },
+            label = "预设名称",
+        )
     }
 }
 
@@ -716,80 +419,25 @@ internal fun PresetImportDialog(
     onDismiss: () -> Unit,
 ) {
     var text by remember { mutableStateOf("") }
-    MiuixBottomDialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(MiuixTheme.colorScheme.background)
-                .padding(horizontal = 24.dp, vertical = 22.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = "导入预设 JSON",
-                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            BasicTextField(
-                value = text,
-                onValueChange = { text = it },
-                singleLine = false,
-                textStyle = MiuixTheme.textStyles.body1.copy(
-                    color = MiuixTheme.colorScheme.onSurface,
-                ),
-                cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                    .padding(12.dp),
-                decorationBox = { innerTextField ->
-                    Box {
-                        if (text.isEmpty()) {
-                            Text(
-                                text = "粘贴导出的预设 JSON...",
-                                style = MiuixTheme.textStyles.body1,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                        }
-                        innerTextField()
-                    }
-                },
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(
-                        text = "取消",
-                        style = MiuixTheme.textStyles.button,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                    )
-                }
-                Button(
-                    onClick = { onConfirm(text) },
-                    enabled = text.trim().isNotEmpty(),
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = "导入",
-                        style = MiuixTheme.textStyles.button,
-                        color = Color.White,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
+    ArtDialog(
+        title = "导入预设 JSON",
+        onDismissRequest = onDismiss,
+        negative = DialogButtonBarAction(text = "取消", onClick = onDismiss),
+        positive = DialogButtonBarAction(
+            text = "导入",
+            enabled = text.trim().isNotEmpty(),
+            onClick = { onConfirm(text) },
+        ),
+    ) {
+        TextField(
+            value = text,
+            onValueChange = { text = it },
+            modifier = Modifier.fillMaxWidth(),
+            backgroundMode = TextFieldMode.Rectangle,
+            label = "粘贴导出的预设 JSON...",
+            minLines = 5,
+            maxLines = 8,
+        )
     }
 }
 
@@ -799,61 +447,12 @@ internal fun ServiceConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    MiuixBottomDialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(MiuixTheme.colorScheme.background)
-                .padding(horizontal = 24.dp, vertical = 22.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = request.title,
-                style = MiuixTheme.textStyles.title3.copy(fontWeight = FontWeight.Bold),
-                color = MiuixTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = request.message,
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                textAlign = TextAlign.Center,
-                maxLines = 6,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(),
-                ) {
-                    Text(
-                        text = "取消",
-                        style = MiuixTheme.textStyles.button,
-                        color = MiuixTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                    )
-                }
-                Button(
-                    onClick = onConfirm,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColorsPrimary(),
-                ) {
-                    Text(
-                        text = request.confirmLabel,
-                        style = MiuixTheme.textStyles.button,
-                        color = Color.White,
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
-    }
+    ArtAlertDialog(
+        title = request.title,
+        summary = request.message,
+        confirmText = request.confirmLabel,
+        cancelText = "取消",
+        onConfirm = onConfirm,
+        onCancel = onDismiss,
+    )
 }

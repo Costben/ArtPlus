@@ -1,28 +1,21 @@
 package dev.artplus.mobile
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TextFieldMode
+import io.github.suqi8.coui.kmp.theme.COUITheme
 
 /**
  * Slice 2.3：JSON 调参编辑器（原 MainActivity 本体原样搬迁）。
@@ -67,38 +60,31 @@ internal fun JsonSettingsEditor(
     ) {
         Text(
             text = "全部调参参数（含本地工作流开关、分离/清理/RMBG/液态玻璃/自适应/各模式选型）。可视化改动会同步到这里，也可直接编辑 JSON 后保存。",
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            style = COUITheme.textStyles.footnote1,
+            color = COUITheme.colorScheme.onSurfaceVariantSummary,
             maxLines = 3,
             overflow = TextOverflow.Ellipsis,
         )
-        BasicTextField(
+        // JSON 编辑区固定 340dp 高度，超出部分在框内滚动；Rectangle 模式为 ColorOS 描边输入框
+        TextField(
             value = draftText,
             onValueChange = onDraftChange,
-            singleLine = false,
-            textStyle = MiuixTheme.textStyles.body1.copy(
-                color = MiuixTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(340.dp),
+            backgroundMode = TextFieldMode.Rectangle,
+            minLines = 12,
+            textStyle = COUITheme.textStyles.body1.copy(
+                color = COUITheme.colorScheme.onSurface,
                 fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
             ),
-            cursorBrush = SolidColor(MiuixTheme.colorScheme.primaryVariant),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(340.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-                .padding(12.dp),
-            decorationBox = { innerTextField ->
-                Box(modifier = Modifier.fillMaxSize()) {
-                    innerTextField()
-                }
-            },
         )
         Text(
             text = "缺失的键保持当前值；非法 JSON 会提示错误且不生效。",
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            style = COUITheme.textStyles.footnote1,
+            color = COUITheme.colorScheme.onSurfaceVariantSummary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )

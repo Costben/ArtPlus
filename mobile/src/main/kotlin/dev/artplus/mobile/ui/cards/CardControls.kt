@@ -111,10 +111,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -151,6 +151,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawBehind
@@ -291,128 +292,75 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.BasicComponent
+import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.basic.TabRowDefaults
+import io.github.suqi8.coui.kmp.basic.TabRowWithContour
+import io.github.suqi8.coui.kmp.basic.TagView
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.theme.darkColorScheme
+import io.github.suqi8.coui.kmp.theme.lightColorScheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.caverock.androidsvg.SVG
 
-@Composable
-internal fun SegmentOption(label: String, selected: Boolean, modifier: Modifier, enabled: Boolean = true, onClick: () -> Unit) {
-    val background = if (selected) {
-        MiuixTheme.colorScheme.primaryVariant
-    } else {
-        MiuixTheme.colorScheme.surfaceContainerHigh
-    }
-    val foreground = if (selected) {
-        MiuixTheme.colorScheme.onPrimaryVariant
-    } else {
-        MiuixTheme.colorScheme.onSurfaceVariantSummary
-    }
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(background)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(vertical = 8.dp, horizontal = 4.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            style = MiuixTheme.textStyles.button,
-            color = foreground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-internal fun DecimalParameterControl(
-    title: String,
-    summary: String,
-    value: Float,
-    draftText: String,
-    min: Float,
-    max: Float,
-    onDraftChange: (String) -> Unit,
-    onSave: (Float) -> Unit,
-    enabled: Boolean = true,
-    busy: Boolean = false,
-    icon: SettingsIconKind? = null,
-) {
-    val controlEnabled = enabled && !busy
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(5.dp),
-        ) {
-            Text(
-                text = title,
-                style = MiuixTheme.textStyles.body1,
-                color = MiuixTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "$summary · 范围 ${formatScale(min)}-${formatScale(max)}",
-                style = MiuixTheme.textStyles.footnote1,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            )
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            DecimalInputBox(
-                value = draftText,
-                fallbackValue = formatScale(value),
-                enabled = controlEnabled,
-                onValueChange = onDraftChange,
-                onDone = { submitted ->
-                    submitted.toFloatOrNull()
-                        ?.coerceIn(min, max)
-                        ?.let(onSave)
-                },
-            )
-        }
-    }
-}
-
 internal fun formatScale(value: Float): String =
     String.format(Locale.US, "%.2f", value)
+
+/**
+ * 分段控件的禁用态包装：COUI TabRow 系列没有 enabled 参数，
+ * 禁用时降低透明度并用透明层吞掉触摸，行为与原先 enabled=false 等价。
+ */
+@Composable
+private fun SegmentEnabledScope(
+    enabled: Boolean,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (enabled) 1f else 0.5f),
+    ) {
+        content()
+        if (!enabled) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {},
+                    ),
+            )
+        }
+    }
+}
 
 @Composable
 internal fun SegmentedControl(
@@ -425,133 +373,19 @@ internal fun SegmentedControl(
     if (labels.isEmpty()) {
         return
     }
-    val shape = RoundedCornerShape(16.dp)
     val safeSelectedIndex = selectedIndex.coerceIn(0, labels.lastIndex)
-    val density = LocalDensity.current
-    var widthPx by remember(labels.size) { mutableStateOf(0) }
-    val gap = 10.dp
-    val gapPx = with(density) { gap.toPx() }
-    val minSegmentWidth = if (scrollable) 86.dp else 0.dp
-    val minSegmentWidthPx = with(density) { minSegmentWidth.toPx() }
-    val segmentWidthPx = if (widthPx == 0) {
-        0f
-    } else if (scrollable) {
-        val availableWidth = (widthPx.toFloat() - gapPx * (labels.size - 1)).coerceAtLeast(1f)
-        maxOf(minSegmentWidthPx, availableWidth / labels.size.toFloat())
-    } else {
-        val availableWidth = (widthPx.toFloat() - gapPx * (labels.size - 1)).coerceAtLeast(1f)
-        availableWidth / labels.size.toFloat()
-    }
-    val selectedOffsetPx by animateFloatAsState(
-        targetValue = (segmentWidthPx + gapPx) * safeSelectedIndex,
-        animationSpec = tween(durationMillis = 220),
-        label = "SegmentedControlOffset",
-    )
-    val selectedWidth = with(density) { segmentWidthPx.toDp() }
-    val contentWidth = with(density) {
-        (segmentWidthPx * labels.size + gapPx * (labels.size - 1)).toDp()
-    }
-    val optionBackground = if (isSystemInDarkTheme()) {
-        Color(0xFF444444)
-    } else {
-        Color(0xFFEFEFEF)
-    }
-    val scrollState = rememberScrollState()
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(42.dp)
-            .onGloballyPositioned { coordinates ->
-                widthPx = coordinates.size.width
+    SegmentEnabledScope(enabled = enabled) {
+        // COUI 分段按钮：自带滑动轮廓动画；scrollable 时每段至少 86dp，超出可横向滚动。
+        TabRowWithContour(
+            tabs = labels,
+            selectedTabIndex = safeSelectedIndex,
+            onTabSelected = { index ->
+                if (enabled && index != safeSelectedIndex) {
+                    onSelected(index)
+                }
             },
-    ) {
-        Box(
-            modifier = Modifier
-                .then(
-                    if (widthPx > 0) {
-                        Modifier.width(contentWidth)
-                    } else {
-                        Modifier.fillMaxWidth()
-                    }
-                )
-                .fillMaxHeight()
-                .then(if (scrollable) Modifier.horizontalScroll(scrollState) else Modifier),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(gap),
-            ) {
-                labels.forEach {
-                    Box(
-                        modifier = Modifier
-                            .then(
-                                if (widthPx > 0) {
-                                    Modifier.width(selectedWidth)
-                                } else {
-                                    Modifier.weight(1f)
-                                }
-                            )
-                            .fillMaxHeight()
-                            .clip(shape)
-                            .background(optionBackground),
-                    )
-                }
-            }
-            if (widthPx > 0) {
-                Box(
-                    modifier = Modifier
-                        .offset { IntOffset(selectedOffsetPx.roundToInt(), 0) }
-                        .width(selectedWidth)
-                        .fillMaxHeight()
-                        .clip(shape)
-                        .background(MiuixTheme.colorScheme.primaryVariant),
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(gap),
-            ) {
-                labels.forEachIndexed { index, label ->
-                    val selected = index == safeSelectedIndex
-                    val interactionSource = remember { MutableInteractionSource() }
-                    val foreground = if (selected) {
-                        Color.White
-                    } else {
-                        MiuixTheme.colorScheme.onSurfaceVariantSummary
-                    }
-                    Box(
-                        modifier = Modifier
-                            .then(
-                                if (widthPx > 0) {
-                                    Modifier.width(selectedWidth)
-                                } else {
-                                    Modifier.weight(1f)
-                                }
-                            )
-                            .fillMaxHeight()
-                            .clip(shape)
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null,
-                                enabled = enabled && !selected,
-                            ) {
-                                onSelected(index)
-                            }
-                            .padding(horizontal = 2.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = label,
-                            style = MiuixTheme.textStyles.button,
-                            color = foreground,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
-            }
-        }
+            minWidth = if (scrollable) 86.dp else TabRowDefaults.TabRowWithContourMinWidth,
+        )
     }
 }
 
@@ -577,105 +411,51 @@ internal fun NumberParameterControl(
 ) {
     val controlEnabled = enabled && !busy
     var expanded by remember { mutableStateOf(initiallyExpanded) }
-    val headerInteractionSource = remember { MutableInteractionSource() }
-    val headerPressed by headerInteractionSource.collectIsPressedAsState()
-    val bridge = LocalSectionCardPressBridge.current
-    val columnModifier = if (standaloneCard) {
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-            .padding(bottom = if (expanded) 12.dp else 0.dp)
-    } else {
-        Modifier.fillMaxWidth()
-    }
-    val rowModifier = if (standaloneCard) {
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = cardHeight)
-            .clickable(
-                interactionSource = headerInteractionSource,
-                indication = null,
-                enabled = controlEnabled,
-                onClick = { expanded = !expanded },
-            )
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-    } else {
-        Modifier
-            .fillMaxWidth()
-            .trackSectionPress(bridge, headerPressed)
-            .background(cardRowPressedColor(headerPressed))
-            .clickable(
-                interactionSource = headerInteractionSource,
-                indication = null,
-                enabled = controlEnabled,
-                onClick = { expanded = !expanded },
-            )
-            .padding(horizontal = CHOICE_ROW_HORIZONTAL_BLEED_DP.dp, vertical = 13.dp)
-    }
-    Column(
-        modifier = columnModifier,
-        verticalArrangement = Arrangement.spacedBy(if (standaloneCard) 6.dp else 10.dp),
-    ) {
-        // 图1 全出血直角按压块：无 clip，直角背景由 Card 圆角裁切，左右铺满、首末补到容器边
-        Row(
-            modifier = rowModifier.semantics {
-                role = Role.Button
-                stateDescription = if (expanded) "已展开拖动条" else "已收起拖动条"
+    val body: @Composable ColumnScope.() -> Unit = {
+        // 头部行：COUI BasicComponent，按压反馈由 COUI 指示器提供
+        BasicComponent(
+            modifier = (if (standaloneCard) Modifier.heightIn(min = cardHeight) else Modifier)
+                .semantics {
+                    stateDescription = if (expanded) "已展开拖动条" else "已收起拖动条"
+                },
+            title = title,
+            summary = summary,
+            startAction = if (showIcon) {
+                { SettingsLineIcon(kind = icon ?: settingsIconForTitle(title)) }
+            } else {
+                null
             },
-            horizontalArrangement = Arrangement.spacedBy(if (standaloneCard) 12.dp else 18.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (showIcon) {
-                SettingsLineIcon(kind = icon ?: settingsIconForTitle(title))
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(if (standaloneCard) 2.dp else 5.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MiuixTheme.textStyles.body1,
-                    color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = summary,
-                    modifier = if (expanded) Modifier.basicMarquee() else Modifier,
-                    style = MiuixTheme.textStyles.footnote1,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    softWrap = false,
-                )
-            }
-            // 输入框区域消费点击，避免误触切换折叠
-            Box(
-                modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    enabled = controlEnabled,
-                    onClick = {},
-                ),
-            ) {
-                NumberInputBox(
-                    value = draftText,
-                    fallbackValue = value,
-                    min = min,
-                    max = max,
-                    enabled = controlEnabled,
-                    onValueChange = onDraftChange,
-                    onDone = { submitted ->
-                        submitted.toIntOrNull()
-                            ?.coerceIn(min, max)
-                            ?.let(onSave)
-                    },
-                    backgroundColor = inputBackgroundColor,
-                )
-            }
-            KernelStyleArrow(expanded = expanded)
-        }
+            endActions = {
+                // 输入框区域消费点击，避免误触切换折叠
+                Box(
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        enabled = controlEnabled,
+                        onClick = {},
+                    ),
+                ) {
+                    NumberInputBox(
+                        value = draftText,
+                        fallbackValue = value,
+                        min = min,
+                        max = max,
+                        enabled = controlEnabled,
+                        onValueChange = onDraftChange,
+                        onDone = { submitted ->
+                            submitted.toIntOrNull()
+                                ?.coerceIn(min, max)
+                                ?.let(onSave)
+                        },
+                        backgroundColor = inputBackgroundColor,
+                    )
+                }
+                KernelStyleArrow(expanded = expanded)
+            },
+            onClick = { expanded = !expanded },
+            role = Role.Button,
+            enabled = controlEnabled,
+        )
         AnimatedVisibility(
             visible = expanded,
             enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
@@ -686,10 +466,10 @@ internal fun NumberParameterControl(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // UI 标准化任务3：卡片组上下 padding 已清零，slider 展开后贴底边时不补卡片 padding，
-                    // 改用展开行自身最小高度（52dp）提供呼吸感；standaloneCard 分支自带底部 12dp，不动。
+                    // 全出血行展开后用最小高度（52dp）提供呼吸感；standaloneCard 分支自带底部 12dp。
                     .heightIn(min = if (standaloneCard) 0.dp else 52.dp)
-                    .padding(horizontal = if (standaloneCard) 16.dp else CHOICE_ROW_HORIZONTAL_BLEED_DP.dp),
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = if (standaloneCard) 12.dp else 0.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 SteppedPercentSlider(
@@ -703,6 +483,17 @@ internal fun NumberParameterControl(
             }
         }
     }
+    if (standaloneCard) {
+        // 底部弹层内的独立卡片：中性 secondaryVariant 填充，避免与面板同色
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            insideMargin = PaddingValues(0.dp),
+            colors = CardDefaults.defaultColors(color = COUITheme.colorScheme.secondaryVariant),
+            content = body,
+        )
+    } else {
+        Column(modifier = Modifier.fillMaxWidth(), content = body)
+    }
 }
 
 @Composable
@@ -715,107 +506,101 @@ internal fun CompactPresetRow(
     onMore: () -> Unit,
     busy: Boolean = false,
 ) {
-    val containerBg = if (isActive) {
-        MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+    // 选中态用 COUI 蓝色淡底卡片（tertiaryContainer），未选中用中性 secondaryVariant
+    val containerColor = if (isActive) {
+        COUITheme.colorScheme.tertiaryContainer
     } else {
-        MiuixTheme.colorScheme.surfaceContainerHigh
+        COUITheme.colorScheme.secondaryVariant
     }
+    val activeTextColor = COUITheme.colorScheme.onTertiaryContainer
     val tags = remember(preset.params) { preset.featureTags() }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(containerBg)
-            .clickable(enabled = !busy) { onApply() }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 14.dp,
+        insideMargin = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+        colors = CardDefaults.defaultColors(color = containerColor),
+        onClick = if (busy) null else onApply,
     ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(
-                    if (isActive) {
-                        if (isModified) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.6f) else MiuixTheme.colorScheme.primaryVariant
-                    } else {
-                        Color.Transparent
-                    }
-                ),
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(3.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Text(
-                    text = preset.name,
-                    style = MiuixTheme.textStyles.body1.copy(
-                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isActive) {
+                            if (isModified) COUITheme.colorScheme.primaryVariant.copy(alpha = 0.6f) else COUITheme.colorScheme.primaryVariant
+                        } else {
+                            Color.Transparent
+                        }
                     ),
-                    color = if (isActive) MiuixTheme.colorScheme.primaryVariant else MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                tags.forEach { tag ->
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.12f))
-                            .padding(horizontal = 5.dp, vertical = 1.dp),
-                    ) {
-                        Text(
-                            text = tag,
-                            style = MiuixTheme.textStyles.footnote2.copy(fontSize = 10.sp),
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = preset.name,
+                        style = COUITheme.textStyles.body1.copy(
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                        ),
+                        color = if (isActive) activeTextColor else COUITheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    tags.forEach { tag ->
+                        TagView(text = tag, cornerRadius = 4.dp)
                     }
                 }
+
+                Text(
+                    text = formatPresetDate(preset.updatedAt) + if (isActive) (if (isModified) " · 已套用 (已修改)" else " · 已套用") else "",
+                    style = COUITheme.textStyles.footnote2,
+                    color = if (isActive) activeTextColor.copy(alpha = 0.8f) else COUITheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
 
-            Text(
-                text = formatPresetDate(preset.updatedAt) + if (isActive) (if (isModified) " · 已套用 (已修改)" else " · 已套用") else "",
-                style = MiuixTheme.textStyles.footnote2,
-                color = if (isActive) MiuixTheme.colorScheme.primaryVariant.copy(alpha = 0.8f) else MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(enabled = !busy) { onPreview() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    imageVector = Lucide.Eye,
+                    contentDescription = "批量预览",
+                    modifier = Modifier.size(16.dp),
+                    colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary),
+                )
+            }
 
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .clickable(enabled = !busy) { onPreview() },
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                imageVector = Lucide.Eye,
-                contentDescription = "批量预览",
-                modifier = Modifier.size(16.dp),
-                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .clickable(enabled = !busy) { onMore() },
-            contentAlignment = Alignment.Center,
-        ) {
-            Image(
-                imageVector = Lucide.EllipsisVertical,
-                contentDescription = "更多操作",
-                modifier = Modifier.size(16.dp),
-                colorFilter = ColorFilter.tint(MiuixTheme.colorScheme.onSurfaceVariantSummary),
-            )
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(enabled = !busy) { onMore() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    imageVector = Lucide.EllipsisVertical,
+                    contentDescription = "更多操作",
+                    modifier = Modifier.size(16.dp),
+                    colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary),
+                )
+            }
         }
     }
 }
@@ -840,36 +625,13 @@ internal fun PresetMenuItem(
     onClick: () -> Unit,
     enabled: Boolean = true,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val pressed by interactionSource.collectIsPressedAsState()
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (pressed) MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f) else Color.Transparent)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                enabled = enabled,
-                onClick = onClick,
-            )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            text = title,
-            style = MiuixTheme.textStyles.body1.copy(fontWeight = FontWeight.SemiBold),
-            color = MiuixTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = summary,
-            style = MiuixTheme.textStyles.footnote1,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+    // COUI 行：按压反馈、标题/摘要配色与禁用态均由 BasicComponent 提供
+    BasicComponent(
+        title = title,
+        summary = summary,
+        onClick = onClick,
+        enabled = enabled,
+    )
 }
 
 @Composable
@@ -880,84 +642,16 @@ internal fun AdvancedCategoryTabs(
 ) {
     val categories = AdvancedSettingsCategory.entries
     val safeSelectedIndex = categories.indexOf(selected).coerceAtLeast(0)
-    val density = LocalDensity.current
-    var widthPx by remember(categories.size) { mutableStateOf(0) }
-    val gap = 12.dp
-    val gapPx = with(density) { gap.toPx() }
-    val segmentWidthPx = if (widthPx == 0) {
-        0f
-    } else {
-        ((widthPx.toFloat() - gapPx * (categories.size - 1)).coerceAtLeast(1f) / categories.size.toFloat())
-    }
-    val selectedOffsetPx by animateFloatAsState(
-        targetValue = (segmentWidthPx + gapPx) * safeSelectedIndex,
-        animationSpec = tween(durationMillis = 240),
-        label = "AdvancedCategoryOffset",
-    )
-    val selectedWidth = with(density) { segmentWidthPx.toDp() }
-    val selectedColor = if (isSystemInDarkTheme()) {
-        Color(0xFF555555)
-    } else {
-        Color(0xFFF1F1F1)
-    }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .onGloballyPositioned { widthPx = it.size.width },
-    ) {
-        if (segmentWidthPx > 0f) {
-            Box(
-                modifier = Modifier
-                    .width(selectedWidth)
-                    .fillMaxHeight()
-                    .offset { IntOffset(selectedOffsetPx.roundToInt(), 0) }
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(selectedColor),
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(gap),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            categories.forEach { category ->
-                val isSelected = category == selected
-                val interactionSource = remember(category) { MutableInteractionSource() }
-                val textColor by animateColorAsState(
-                    targetValue = if (isSelected) {
-                        MiuixTheme.colorScheme.onSurface
-                    } else {
-                        MiuixTheme.colorScheme.onSurfaceVariantSummary
-                    },
-                    animationSpec = tween(durationMillis = 180),
-                    label = "AdvancedCategoryText",
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(18.dp))
-                        .clickable(
-                            enabled = enabled && !isSelected,
-                            interactionSource = interactionSource,
-                            indication = null,
-                        ) { onSelected(category) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = category.label,
-                        style = MiuixTheme.textStyles.title4.copy(
-                            fontWeight = FontWeight(700),
-                            fontSize = 16.sp,
-                        ),
-                        color = textColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                    )
+    SegmentEnabledScope(enabled = enabled) {
+        // 分类导航用无轮廓的 COUI TabRow，与上方轮廓分段按钮形成层级
+        TabRow(
+            tabs = categories.map { it.label },
+            selectedTabIndex = safeSelectedIndex,
+            onTabSelected = { index ->
+                if (enabled && index != safeSelectedIndex) {
+                    onSelected(categories[index])
                 }
-            }
-        }
+            },
+        )
     }
 }

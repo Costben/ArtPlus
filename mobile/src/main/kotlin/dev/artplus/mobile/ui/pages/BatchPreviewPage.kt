@@ -111,10 +111,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import top.yukonga.miuix.kmp.blur.layerBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.drawBackdrop
-import top.yukonga.miuix.kmp.blur.blur
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.blur.drawBackdrop
+import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
 import dev.artplus.mobile.glass.FloatingBottomBar
@@ -293,34 +293,35 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.Checkbox
-import top.yukonga.miuix.kmp.basic.CheckboxDefaults
-import top.yukonga.miuix.kmp.basic.DropdownColors
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.Slider
-import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.Switch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.basic.ArrowUpDown
-import top.yukonga.miuix.kmp.popup.WindowDropdownPopup
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.basic.Button
+import io.github.suqi8.coui.kmp.basic.ButtonDefaults
+import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.CheckboxDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownColors
+import io.github.suqi8.coui.kmp.basic.DropdownDefaults
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.basic.Slider
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
+import io.github.suqi8.coui.kmp.basic.TabRow
+import io.github.suqi8.coui.kmp.basic.TabRowWithContour
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.TextField
+import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
+import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.theme.darkColorScheme
+import io.github.suqi8.coui.kmp.theme.lightColorScheme
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -328,7 +329,7 @@ import com.caverock.androidsvg.SVG
 
 @Composable
 internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
-    val scrollBehavior = MiuixScrollBehavior()
+    val scrollBehavior = COUIScrollBehavior()
     // 热修复2：批量预览渲染位订阅 presetUi/shell/batchPreviewConfig（StateFlow .value 裸读不触发重组，
     // 批量结果回填/桌面背景/列数/尺寸/圆角切换后 stale，亮色↔暗色点了不变）。
     // 回调内（onClick/onSave 等事件时）读 .value 仍合法，此处只修组合期渲染读。
@@ -339,7 +340,6 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
     val preset = result?.preset ?: batchPresetUi.activeBatchPreviewPreset
     val coroutineScope = rememberCoroutineScope()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
-    val isDark = isSystemInDarkTheme()
 
     val modes = remember {
         listOf(
@@ -359,8 +359,6 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
             TopAppBar(
                 title = preset?.name ?: "批量预览",
                 scrollBehavior = scrollBehavior,
-                navigationIconPadding = 0.dp,
-                actionIconPadding = 0.dp,
                 navigationIcon = {
                     TitleBarIconButton(
                         icon = Lucide.ChevronLeft,
@@ -376,8 +374,6 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                         contentDescription = "重新生成",
                         enabled = !batchShell.isBusy && !batchPresetUi.isGeneratingBatchPreview && preset != null,
                         dimWhenDisabled = true,
-                        paddingStart = 0.dp,
-                        paddingEnd = 16.dp,
                         onClick = { mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (true)) } },
                     )
                 },
@@ -401,15 +397,15 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                 .overscroll(overscrollEffect)
                 .padding(innerPadding)
                 .imePadding()
-                .padding(bottom = 12.dp)
+                .padding(top = 16.dp, bottom = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // 1. 桌面控制卡：背景一行 + 三个主页化参数行（无图标、默认展开）
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 16.dp),
             ) {
                 SectionCard(rowsFullBleed = true) {
                     Column(
@@ -664,50 +660,20 @@ val __act2 = LocalContext.current
             }
 
             // 2. 4 风格切换栏（控制卡下方、预览框上方）
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                tabTitles.forEachIndexed { index, title ->
-                    val selected = pagerState.currentPage == index
-                    val bg = if (selected) {
-                        MiuixTheme.colorScheme.primaryVariant
-                    } else {
-                        if (isDark) MiuixTheme.colorScheme.surfaceContainerHigh else Color.White
-                    }
-                    val textColor = if (selected) Color.White else MiuixTheme.colorScheme.onSurface
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(38.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(bg)
-                            .clickable {
-                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = title,
-                            style = MiuixTheme.textStyles.body2.copy(
-                                fontSize = 13.sp,
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                            ),
-                            color = textColor,
-                            maxLines = 1,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
+            TabRowWithContour(
+                tabs = tabTitles,
+                selectedTabIndex = pagerState.currentPage,
+                onTabSelected = { index ->
+                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
 
             // 3. 桌面展示框：高度锁死为内容行数 + 1 行，框内不滚动
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 16.dp),
             ) {
                 Card(
                     cornerRadius = 20.dp,
@@ -767,7 +733,7 @@ val __act1 = LocalContext.current
                             ) {
                                 Text(
                                     text = "暂无预览数据",
-                                    style = MiuixTheme.textStyles.body2,
+                                    style = COUITheme.textStyles.body2,
                                     color = Color.White.copy(alpha = 0.8f),
                                 )
                             }

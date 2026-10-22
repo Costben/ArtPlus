@@ -57,7 +57,6 @@ internal fun LocalRuleTuningCard(
     SectionCard(rowsFullBleed = true) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             NumberParameterControl(
                 busy = isBusy,
@@ -71,6 +70,7 @@ internal fun LocalRuleTuningCard(
                 onSave = onSaveBackgroundSeparation,
                 icon = SettingsIconKind.Cutout,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "底板清理",
@@ -83,6 +83,7 @@ internal fun LocalRuleTuningCard(
                 onSave = onSavePlateRemoval,
                 icon = SettingsIconKind.Plate,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "旧阴影清理",
@@ -95,6 +96,7 @@ internal fun LocalRuleTuningCard(
                 onSave = onSaveShadowRemoval,
                 icon = SettingsIconKind.Eraser,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "边缘修补",
@@ -119,22 +121,39 @@ internal fun LocalWorkflowPipelineCard(
 ) {
     SectionCard(rowsFullBleed = true) {
         LocalWorkflowToggleRow("背景估计与相减", "普通图标和 Adaptive 图标的背景分离", tuningState.localBackgroundSeparationEnabled, "background", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("Adaptive 自动选层", "在合成前景与直接前景之间自动判断", tuningState.localAdaptiveSelectionEnabled, "adaptive", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("角落蒙版清理", "清理 Adaptive 四角残留", tuningState.localCornerMaskCleanupEnabled, "corner", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("透明边缘补色", "修复本地抠图透明边的颜色残留", tuningState.localAlphaEdgeColorRepairEnabled, "alpha_edge_repair", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("普通背景估计", "关闭后跳过普通背景相减与拼合", tuningState.localPlainBackgroundEstimationEnabled, "plain_background", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("原始前景清理", "应用原始前景的底板清理规则", tuningState.localOriginalCleanupEnabled, "original", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("底板清理", "检测并移除连接到边缘的底板", tuningState.localPlateCleanupEnabled, "plate", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("底板修边", "修复底板移除后的边缘颜色", tuningState.localPlateEdgeRepairEnabled, "plate_edge", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("彩色残留清理", "清除底板颜色在主体边缘的残留", tuningState.localPlateResidueCleanupEnabled, "plate_residue", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("长阴影清理", "移除原图中偏移的长阴影", tuningState.localShadowCleanupEnabled, "shadow", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("阴影边缘修复", "保留阴影交界处的抗锯齿边缘", tuningState.localShadowEdgeRepairEnabled, "shadow_edge", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("前景收边", "执行局部侵蚀和边缘羽化", tuningState.localEdgeTrimEnabled, "edge_trim", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("拼合背景候选", "生成主体与重建背景的组合候选", tuningState.localComposedBackgroundEnabled, "composed", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("二层候选", "运行底板/主体分层候选算法", tuningState.localTwoLayerCandidateEnabled, "two_layer", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("组件候选", "生成底座作为主体或背景的候选", tuningState.localComponentCandidatesEnabled, "component", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("字标保全候选", "保留更完整文字的安全候选", tuningState.localTextSafeCandidateEnabled, "text_safe", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("自动候选选择", "关闭后固定使用完整清理结果", tuningState.localAutoSelectionEnabled, "auto", isBusy, onToggle)
+        SectionDivider()
         LocalWorkflowToggleRow("本地最终边缘润色", "渲染本地候选时执行最后的边缘处理", tuningState.localEdgePolishEnabled, "edge_polish", isBusy, onToggle)
     }
 }
@@ -179,7 +198,6 @@ internal fun RmbgTuningCard(
     SectionCard(rowsFullBleed = true) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             NumberParameterControl(
                 busy = isBusy,
@@ -193,6 +211,7 @@ internal fun RmbgTuningCard(
                 onSave = onSaveAlphaStrength,
                 icon = SettingsIconKind.Cutout,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "边缘柔化",
@@ -205,6 +224,7 @@ internal fun RmbgTuningCard(
                 onSave = onSaveEdgeFeather,
                 icon = SettingsIconKind.Cutout,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "边缘扩缩",
@@ -217,6 +237,7 @@ internal fun RmbgTuningCard(
                 onSave = onSaveEdgeAdjust,
                 icon = SettingsIconKind.Scale,
             )
+            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "弱透明保留",
