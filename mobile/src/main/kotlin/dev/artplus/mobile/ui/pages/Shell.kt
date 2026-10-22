@@ -660,12 +660,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         )
             } },
                         onSaveLiquidGlass = { run {
-                paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                tuningActions.save()
             } },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
@@ -871,12 +866,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         )
             } },
                         onSaveLiquidGlass = { run {
-                paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                tuningActions.save()
             } },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
@@ -945,12 +935,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         )
             } },
                         onSaveLiquidGlass = { run {
-                paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                tuningActions.save()
             } },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
@@ -1089,12 +1074,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         )
             } },
                         onSaveLiquidGlass = { run {
-                paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                tuningActions.save()
             } },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
@@ -1163,12 +1143,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         )
             } },
                         onSaveLiquidGlass = { run {
-                paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                tuningActions.save()
             } },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(

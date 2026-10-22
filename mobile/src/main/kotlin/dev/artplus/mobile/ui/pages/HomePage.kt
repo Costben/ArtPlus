@@ -878,12 +878,7 @@ val __act2 = LocalContext.current
                     getParams = { mainViewModel.params.value },
                     updateLive = mainViewModel::updateLive,
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -903,12 +898,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassRadiusText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -922,12 +912,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassOuterWidthText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -941,12 +926,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassTopAlphaText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -960,12 +940,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassBottomAlphaText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -979,12 +954,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassBackgroundMistAlphaText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -998,12 +968,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassBottomDarkAlphaText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -1023,12 +988,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassSubjectScaleText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -1042,12 +1002,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassSubjectOutlineWidthText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -1061,12 +1016,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -1080,12 +1030,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassSubjectShadowAlphaText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -1099,12 +1044,7 @@ val __act2 = LocalContext.current
                     updateLive = mainViewModel::updateLive,
                     setDraftText = { draftLiquidGlassSubjectOpacityText = it },
                     onSave = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onRefresh = tuningActions.refresh,
@@ -1351,12 +1291,7 @@ val __act2 = LocalContext.current
                         )
             } },
                         onSaveLiquidGlass = { run {
-                paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                tuningActions.save()
             } },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
@@ -1531,12 +1466,7 @@ val __act2 = LocalContext.current
                         )
             } },
                         onSaveLiquidGlass = { run {
-                paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                tuningActions.save()
             } },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
@@ -1629,12 +1559,7 @@ val __act2 = LocalContext.current
                         )
             } },
                         onSaveLiquidGlass = { run {
-                paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                tuningActions.save()
             } },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
@@ -1733,12 +1658,7 @@ val __act2 = LocalContext.current
                         )
             } },
                         onSaveLiquidGlass = { run {
-                paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                tuningActions.save()
             } },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
@@ -1833,12 +1753,7 @@ val __act2 = LocalContext.current
                 )
     } },
                 saveLiquidGlass = { run {
-        paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+        tuningActions.save()
     } },
                 saveUi = { run {
         persistUiState()

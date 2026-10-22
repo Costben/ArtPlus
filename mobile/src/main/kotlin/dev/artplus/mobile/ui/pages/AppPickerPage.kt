@@ -322,12 +322,7 @@ internal fun MainActivity.AppPickerPage(
                                 )
                     } },
                                 onSaveLiquidGlass = { run {
-                        paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+                        tuningActions.save()
                     } },
                                 onSaveGpt = { run {
                         paramsSaveGptSettings(

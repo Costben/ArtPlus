@@ -619,12 +619,7 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                     )
         } },
                     onSaveLiquidGlass = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     onSaveGpt = { run {
             paramsSaveGptSettings(
@@ -719,12 +714,7 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                     )
         } },
                     onSaveLiquidGlass = { run {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+            tuningActions.save()
         } },
                     onSaveGpt = { run {
             paramsSaveGptSettings(
@@ -1254,12 +1244,7 @@ internal fun MainActivity.loadTuningParams(): Unit =
                 getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
                 getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
                 onSave = { run {
-        paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+        tuningActions.save()
     } },
             )
 } },

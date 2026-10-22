@@ -7,7 +7,7 @@ import androidx.compose.runtime.Stable
  * S2.2：主页「写入 / 保存 / 刷新」三件事的唯一入口。
  *
  * 收口前：43 份 onWrite 写入块复制粘贴（每加一个调参字段要改 43 处）、
- * 29 处 `paramsSaveLiquidGlassSettings(...)` 内联、37 份预览刷新块复制粘贴。
+ * 29 处液态玻璃保存调用内联、37 份预览刷新块复制粘贴。
  * 收口后：Activity 内 `tuningActions` 构造一次，调用点一律 `tuningActions.write` /
  * `tuningActions.save()` / `tuningActions.refresh`。
  *

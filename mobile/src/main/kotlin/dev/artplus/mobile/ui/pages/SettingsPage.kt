@@ -620,12 +620,7 @@ val __act1 = LocalContext.current
                     onCheckedChange = {
                         mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarEnabled = (it)) }
                         run {
-    paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+    tuningActions.save()
 }
                         mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭")) }
                     },
@@ -645,12 +640,7 @@ val __act1 = LocalContext.current
                     onCheckedChange = {
                         mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarBlurEnabled = (it)) }
                         run {
-    paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+    tuningActions.save()
 }
                         mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭")) }
                     },
@@ -750,12 +740,7 @@ paramsApplyTuningParams(
             )
 } },
             onSaveLiquidGlass = { run {
-    paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
-                    )
+    tuningActions.save()
 } },
             onSaveGpt = { run {
     paramsSaveGptSettings(
