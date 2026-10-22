@@ -95,5 +95,5 @@ internal fun MainActivity.persistUiState() {
  * 收口后：`setStatus(...)`，`updateShell` 的调用点只剩真正需要多字段合并的位置。
  */
 internal fun MainActivity.setStatus(text: String) {
-    setStatus(text)
+    mainViewModel.setStatusText(text)
 }
