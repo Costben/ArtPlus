@@ -76,6 +76,7 @@ internal fun KernelStyleArrow(modifier: Modifier = Modifier, expanded: Boolean =
             .padding(start = 8.dp)
             .size(width = 10.dp, height = 16.dp),
         imageVector = COUIIcons.Basic.ArrowRight,
+        // decorative：纯装饰（箭头/应用图标），语义由相邻文本承载
         contentDescription = null,
         colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantActions),
     )
@@ -150,6 +151,7 @@ internal fun LayerDebugTile(label: String, bitmap: ImageBitmap?, modifier: Modif
         ) {
             if (bitmap != null) {
                 Image(
+                    // decorative：纯装饰（箭头/应用图标），语义由相邻文本承载
                     bitmap = bitmap,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),

@@ -123,6 +123,7 @@ internal fun StatusCard(
             Image(
                 modifier = Modifier.size(width = 12.dp, height = 24.dp),
                 imageVector = COUIIcons.Basic.ArrowRight,
+                // decorative：纯装饰（箭头/应用图标），语义由相邻文本承载
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantActions),
             )
@@ -163,7 +164,7 @@ internal fun EmptyAppListCard(
             illustration = {
                 Icon(
                     imageVector = COUIIcons.Layers,
-                    contentDescription = null,
+                    contentDescription = "暂无内容",
                     modifier = Modifier.size(36.dp),
                     tint = COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
                 )

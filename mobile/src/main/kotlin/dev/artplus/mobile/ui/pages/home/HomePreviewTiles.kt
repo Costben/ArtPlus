@@ -81,7 +81,7 @@ internal fun PreviewDesktopBackgroundSurface(
         if (wallpaperImage != null) {
             Image(
                 bitmap = wallpaperImage,
-                contentDescription = null,
+                contentDescription = "壁纸预览",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
             )
@@ -120,7 +120,7 @@ internal fun GeneratedIconPreview(
                 assets?.recbg?.let { bitmap ->
                     Image(
                         bitmap = bitmap.asImageBitmap(),
-                        contentDescription = null,
+                        contentDescription = "图标背景预览",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.FillBounds,
                     )
@@ -128,7 +128,7 @@ internal fun GeneratedIconPreview(
                 assets?.recfg?.let { bitmap ->
                     Image(
                         bitmap = bitmap.asImageBitmap(),
-                        contentDescription = null,
+                        contentDescription = "图标前景预览",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit,
                     )
@@ -138,7 +138,7 @@ internal fun GeneratedIconPreview(
                 assets?.recNight?.let { bitmap ->
                     Image(
                         bitmap = bitmap.asImageBitmap(),
-                        contentDescription = null,
+                        contentDescription = "深色图标背景预览",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit,
                     )
@@ -148,7 +148,7 @@ internal fun GeneratedIconPreview(
                 assets?.monochromeLight?.let { bitmap ->
                     Image(
                         bitmap = bitmap.asImageBitmap(),
-                        contentDescription = null,
+                        contentDescription = "单色图标预览",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit,
                         colorFilter = ColorFilter.tint(md3LightForeground),
@@ -159,7 +159,7 @@ internal fun GeneratedIconPreview(
                 assets?.monochromeDark?.let { bitmap ->
                     Image(
                         bitmap = bitmap.asImageBitmap(),
-                        contentDescription = null,
+                        contentDescription = "单色深色图标预览",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Fit,
                         colorFilter = ColorFilter.tint(md3DarkForeground),

@@ -282,7 +282,7 @@ internal fun PresetLibraryCard(
                         leadingIcon = {
                             Icon(
                                 imageVector = COUIIcons.Search,
-                                contentDescription = null,
+                                contentDescription = "搜索预设",
                                 modifier = Modifier.size(16.dp),
                                 tint = COUITheme.colorScheme.onSurfaceVariantSummary,
                             )
@@ -301,7 +301,7 @@ internal fun PresetLibraryCard(
                     illustration = {
                         Icon(
                             imageVector = COUIIcons.Layers,
-                            contentDescription = null,
+                            contentDescription = "暂无预设",
                             modifier = Modifier.size(36.dp),
                             tint = COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
                         )

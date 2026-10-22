@@ -247,7 +247,7 @@ internal fun AppPickerSearchCard(
                     leadingIcon = {
                         Icon(
                             imageVector = COUIIcons.Search,
-                            contentDescription = null,
+                            contentDescription = "搜索",
                             modifier = Modifier
                                 .padding(end = 8.dp)
                                 .size(16.dp),
@@ -511,7 +511,7 @@ internal fun AppIcon(
         } else {
             Image(
                 bitmap = current,
-                contentDescription = null,
+                contentDescription = "应用图标",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
             )

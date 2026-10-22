@@ -142,7 +142,7 @@ internal fun LibrarySettingRow(
                                 .padding(start = 4.dp)
                                 .size(width = 10.dp, height = 16.dp),
                             imageVector = COUIIcons.Basic.ArrowUpDown,
-                            contentDescription = null,
+                            contentDescription = "排序",
                             colorFilter = ColorFilter.tint(
                                 if (enabled) {
                                     COUITheme.colorScheme.onSurfaceVariantActions
@@ -429,7 +429,7 @@ internal fun settingsIconVector(kind: SettingsIconKind): ImageVector = when (kin
 internal fun SettingsLineIcon(kind: SettingsIconKind, modifier: Modifier = Modifier) {
     Icon(
         imageVector = settingsIconVector(kind),
-        contentDescription = null,
+        contentDescription = "设置项图标",
         modifier = modifier.size(18.dp),
         tint = COUITheme.colorScheme.onSurface,
     )
