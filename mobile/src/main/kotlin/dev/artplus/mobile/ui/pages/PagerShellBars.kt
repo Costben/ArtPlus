@@ -126,8 +126,8 @@ internal fun PagerShellHostTopBar(
  * 与 demo 的 `Coui17AccessoryBar` 同款：悬浮胶囊底栏，限定在 gallery 密度下渲染。
  * 玻璃采样源取自 [io.github.suqi8.coui.kmp.blur.LocalBackdrop]，由宿主提供。
  *
- * 首尾配件都传空实现并常隐：配件槽的占位和胶囊偏移按「已配置」算，只配一侧会让胶囊偏离居中；
- * 两侧对称配置（demo `配色` 页的状态）胶囊才居中，同时走 MetaBallSurface 那条玻璃路径。
+ * 首尾配件都传空实现并常隐，即系统相册「创作」页的状态：配件槽的占位和胶囊偏移按「已配置」算，
+ * 只配一侧会让胶囊偏离居中。PLK110 实测该状态与配件展开时是同一种半透明材质，胶囊亮度随背后内容变化。
  */
 @Composable
 internal fun PagerShellBottomBar(
