@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 暗色主题：窗口底色与页面底色（COUI 深色材质 #303030）一致，否则页面缩放/二级页滑出时边缘会露出别的底色。 -->
+    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowBackground">#FF303030</item>
+        <item name="android:colorAccent">#2f6fed</item>
+    </style>
+</resources>
