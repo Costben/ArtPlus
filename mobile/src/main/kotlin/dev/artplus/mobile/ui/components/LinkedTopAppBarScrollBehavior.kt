@@ -41,6 +41,9 @@ private class LinkedTopAppBarScrollBehavior(
     override val isPinned: Boolean = false
     override val flingAnimationSpec: DecayAnimationSpec<Float>? = null
 
+    /** Whether the current gesture pulled the list past its top, i.e. the bar may expand. */
+    private var atTopPull: Boolean = false
+
     override val nestedScrollConnection: NestedScrollConnection =
         object : NestedScrollConnection {
             // Never swallow the scroll before the list sees it: that is what made the bar collapse
@@ -53,9 +56,19 @@ private class LinkedTopAppBarScrollBehavior(
                 available: Offset,
                 source: NestedScrollSource,
             ): Offset {
-                // Follow what the list consumed; when it cannot scroll any further (pull-down at
-                // the top) follow the leftover so the bar still expands under the finger.
-                val delta = if (consumed.y != 0f) consumed.y else available.y
+                // Collapse with the list, but only expand once the list is pinned at its top:
+                // `available` is what the list could not consume, which is the pull-down overscroll.
+                val delta = when {
+                    consumed.y < 0f -> {
+                        atTopPull = false
+                        consumed.y
+                    }
+                    consumed.y == 0f && available.y > 0f -> {
+                        atTopPull = true
+                        available.y
+                    }
+                    else -> 0f
+                }
                 if (delta == 0f) return Offset.Zero
                 val previous = state.heightOffset
                 state.heightOffset += delta
@@ -67,12 +80,9 @@ private class LinkedTopAppBarScrollBehavior(
                 val limit = state.heightOffsetLimit
                 val current = state.heightOffset
                 if (limit != 0f && current != 0f && current != limit) {
-                    val target = when {
-                        available.y < -1f -> limit
-                        available.y > 1f -> 0f
-                        current < limit / 2f -> limit
-                        else -> 0f
-                    }
+                    // A half-collapsed bar settles back to collapsed unless the pull happened at
+                    // the list's top; expanding mid-list is what felt like a premature reveal.
+                    val target = if (atTopPull) 0f else limit
                     AnimationState(initialValue = current).animateTo(target, snapAnimationSpec) {
                         state.heightOffset = value
                     }
