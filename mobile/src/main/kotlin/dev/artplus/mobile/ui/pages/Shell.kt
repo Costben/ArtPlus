@@ -362,7 +362,7 @@ internal fun MainActivity.ArtPlusScreen() {
         it.packageName == previewSessionState.previewPackageName && it.outDir.absolutePath == previewSessionState.previewDirPath
     }
     val sharedPreviewTuning = run {
-    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+    mainViewModel.params.value
 }
 
     LaunchedEffect(
@@ -876,7 +876,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     rawName = (name),
                     store = presetStore,
                     current = run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         },
                     viewModel = mainViewModel,
                     onSaved = { preset, msg ->
@@ -919,7 +919,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
                     isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
                     before = run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         },
                     viewModel = mainViewModel,
                     onApplied = { p, merged, msg ->
@@ -931,7 +931,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         captureUndo = (true),
                         refreshPreview = (true),
                         getBefore = { run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             } },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -1035,7 +1035,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                             tuning = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                             defaultLocal = { auto -> run {
@@ -1147,7 +1147,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     preset = (it),
                     store = presetStore,
                     current = run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         },
                     viewModel = mainViewModel,
                     onOverwritten = { p, cur, msg ->
@@ -1219,7 +1219,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
                     generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
                     originalParams = run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         },
                     cacheDir = cacheDir,
                     loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
@@ -1278,7 +1278,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         captureUndo = (false),
                         refreshPreview = (false),
                         getBefore = { run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             } },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -1382,7 +1382,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                             tuning = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                             defaultLocal = { auto -> run {
@@ -1488,7 +1488,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         captureUndo = (false),
                         refreshPreview = (true),
                         getBefore = { run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             } },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -1592,7 +1592,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                             tuning = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                             defaultLocal = { auto -> run {
@@ -1709,7 +1709,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
                     generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
                     originalParams = run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         },
                     cacheDir = cacheDir,
                     loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
@@ -1768,7 +1768,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         captureUndo = (false),
                         refreshPreview = (false),
                         getBefore = { run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             } },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -1872,7 +1872,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                             tuning = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                             defaultLocal = { auto -> run {
@@ -1978,7 +1978,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         captureUndo = (false),
                         refreshPreview = (true),
                         getBefore = { run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             } },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -2082,7 +2082,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                             tuning = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                             defaultLocal = { auto -> run {

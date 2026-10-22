@@ -1109,7 +1109,7 @@ paramsApplyTuningParams(
             captureUndo = (true),
             refreshPreview = (true),
             getBefore = { run {
-    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+    mainViewModel.params.value
 } },
             onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
             onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -1213,7 +1213,7 @@ paramsApplyTuningParams(
                 rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                 outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                 tuning = run {
-        paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        mainViewModel.params.value
     },
                 onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                 defaultLocal = { auto -> run {

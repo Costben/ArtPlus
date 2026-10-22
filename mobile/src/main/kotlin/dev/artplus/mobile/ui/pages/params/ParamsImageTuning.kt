@@ -440,12 +440,8 @@ internal fun paramsSaveImageTuningSettings(
         .apply()
 }
 
-/** 汇总当前全部调参字段为不可变快照（预设保存、撤销、debug 往返共用）。 */
-internal fun paramsCurrentTuningParams(getParams: () -> TuningParams): TuningParams =
-    getParams()
-
 internal fun paramsCurrentLocalPipelineConfig(getParams: () -> TuningParams): LocalPipelineConfig =
-    LocalPipelineConfig.from(paramsCurrentTuningParams(getParams))
+    LocalPipelineConfig.from(getParams())
 
 internal fun paramsUpdateNightSubjectLightBackgroundEnabled(
     enabled: Boolean,

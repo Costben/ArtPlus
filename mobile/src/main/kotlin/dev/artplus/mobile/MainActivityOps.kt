@@ -360,7 +360,7 @@ internal fun MainActivity.startDebugHttpServerIfNeeded() {
                 externalLabDir = getExternalFilesDir("ArtPlusLab"),
                 filesDir = filesDir,
                 tuning = run {
-        paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        mainViewModel.params.value
     },
                 runOnMainSync = { __a0: () -> Unit -> run {
 
@@ -884,14 +884,14 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                 run {
         paramsApplyTuningParams(
                     params = (TuningParams.fromParamMap(params, run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         })),
                     rebuildCandidates = (true),
                     persist = (true),
                     captureUndo = (false),
                     refreshPreview = (true),
                     getBefore = { run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         } },
                     onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                     onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -995,7 +995,7 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -1120,14 +1120,14 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                 run {
         paramsApplyTuningParams(
                     params = (TuningParams.fromParamMap(params, run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         })),
                     rebuildCandidates = (true),
                     persist = (true),
                     captureUndo = (false),
                     refreshPreview = (true),
                     getBefore = { run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         } },
                     onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                     onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -1231,7 +1231,7 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -1875,7 +1875,7 @@ internal fun MainActivity.loadTuningParams(): Unit =
             )
 } },
             getParams = { run {
-    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+    mainViewModel.params.value
 } },
             setDraftJsonParamsText = { draftJsonParamsText = it },
         )

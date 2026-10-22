@@ -692,7 +692,7 @@ internal fun MainActivity.AppPickerPage(
                             preset = (p),
                             batchPackageNames = (pkgs),
                             beforeParams = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             store = presetStore,
                             selectedAtStart = mainViewModel.picker.value.selectedPackageName,
@@ -705,7 +705,7 @@ internal fun MainActivity.AppPickerPage(
                                 captureUndo = (true),
                                 refreshPreview = (true),
                                 getBefore = { run {
-                        paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                        mainViewModel.params.value
                     } },
                                 onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                                 onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -809,7 +809,7 @@ internal fun MainActivity.AppPickerPage(
                                     rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                                     outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                                     tuning = run {
-                            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                            mainViewModel.params.value
                         },
                                     onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                                     defaultLocal = { auto -> run {

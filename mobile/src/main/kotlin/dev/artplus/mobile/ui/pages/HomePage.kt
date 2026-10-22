@@ -1091,7 +1091,7 @@ val __act3 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -1211,7 +1211,7 @@ val __act3 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -1548,7 +1548,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -1954,7 +1954,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -2088,7 +2088,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -2216,7 +2216,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -2344,7 +2344,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -2472,7 +2472,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -2600,7 +2600,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -2728,7 +2728,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -2862,7 +2862,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -2990,7 +2990,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -3118,7 +3118,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -3246,7 +3246,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -3374,7 +3374,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -3508,7 +3508,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -3634,7 +3634,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -3760,7 +3760,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -3886,7 +3886,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -4017,7 +4017,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -4151,7 +4151,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -4277,7 +4277,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -4403,7 +4403,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -4529,7 +4529,7 @@ val __act2 = LocalContext.current
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                         tuning = run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             },
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
@@ -4634,7 +4634,7 @@ val __act2 = LocalContext.current
                                     run {
     JsonSettingsEditorCard(
                 currentParams = run {
-        paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        mainViewModel.params.value
     },
                 draftText = draftJsonParamsText,
                 onDraftChange = { draftJsonParamsText = it },
@@ -4642,7 +4642,7 @@ val __act2 = LocalContext.current
         saveJsonParamsFromText(
                     text = (it),
                     current = run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         },
                     onApplyParams = { run {
             paramsApplyTuningParams(
@@ -4652,7 +4652,7 @@ val __act2 = LocalContext.current
                         captureUndo = (true),
                         refreshPreview = (true),
                         getBefore = { run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             } },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -4756,7 +4756,7 @@ val __act2 = LocalContext.current
                             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                             tuning = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                             defaultLocal = { auto -> run {
@@ -4857,7 +4857,7 @@ val __act2 = LocalContext.current
     } },
                 onRestore = {
                     draftJsonParamsText = run {
-        paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        mainViewModel.params.value
     }.toJson().toString(4)
                     mainViewModel.updateShell { it -> it.copy(statusText = ("已恢复为当前参数 JSON")) }
                 },
@@ -4925,7 +4925,7 @@ val __act2 = LocalContext.current
                 activePresetId = presetUiState.activePresetId,
                 activePresetBaseParams = presetUiState.activePresetBaseParams,
                 currentParams = run {
-        paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        mainViewModel.params.value
     },
                 isBusy = mainViewModel.shell.value.isBusy,
                 onOverwrite = { run {
@@ -4933,7 +4933,7 @@ val __act2 = LocalContext.current
                     preset = (it),
                     store = presetStore,
                     current = run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         },
                     viewModel = mainViewModel,
                     onOverwritten = { p, cur, msg ->
@@ -4956,7 +4956,7 @@ val __act2 = LocalContext.current
                     isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
                     isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
                     before = run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         },
                     viewModel = mainViewModel,
                     onReset = { p, merged, msg ->
@@ -4968,7 +4968,7 @@ val __act2 = LocalContext.current
                         captureUndo = (true),
                         refreshPreview = (true),
                         getBefore = { run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             } },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -5072,7 +5072,7 @@ val __act2 = LocalContext.current
                             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                             tuning = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                             defaultLocal = { auto -> run {
@@ -5202,7 +5202,7 @@ val __act2 = LocalContext.current
                         captureUndo = (true),
                         refreshPreview = (true),
                         getBefore = { run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             } },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -5306,7 +5306,7 @@ val __act2 = LocalContext.current
                             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                             tuning = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                             defaultLocal = { auto -> run {
@@ -5416,7 +5416,7 @@ val __act2 = LocalContext.current
                 activePresetId = presetUiState.activePresetId,
                 activePresetBaseParams = presetUiState.activePresetBaseParams,
                 currentParams = run {
-        paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+        mainViewModel.params.value
     },
                 searchQuery = presetUiState.presetSearchQuery,
                 onSearchChange = { mainViewModel.updatePresetUi { v -> v.copy(presetSearchQuery = (it)) } },
@@ -5430,7 +5430,7 @@ val __act2 = LocalContext.current
                     isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
                     isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
                     before = run {
-            paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+            mainViewModel.params.value
         },
                     viewModel = mainViewModel,
                     onApplied = { p, merged, msg ->
@@ -5442,7 +5442,7 @@ val __act2 = LocalContext.current
                         captureUndo = (true),
                         refreshPreview = (true),
                         getBefore = { run {
-                paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                mainViewModel.params.value
             } },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
@@ -5546,7 +5546,7 @@ val __act2 = LocalContext.current
                             rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                             outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
                             tuning = run {
-                    paramsCurrentTuningParams(getParams = { mainViewModel.params.value })
+                    mainViewModel.params.value
                 },
                             onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                             defaultLocal = { auto -> run {
