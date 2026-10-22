@@ -209,7 +209,7 @@ val __act4 = LocalContext.current
     GenerationActionCard(
                 selectedApp = (selectedApp),
                 isBusy = shellState.isBusy,
-                onLocalGenerate = { __g11(installWithRoot = false, useGpt = false) },
+                onLocalGenerate = { generateSelectedApp(installWithRoot = false, useGpt = false) },
                 onLocalExport = { run {
 
                 if (mainViewModel.shell.value.outputTreeUri == null) {
@@ -340,7 +340,7 @@ val __act4 = LocalContext.current
                     autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
                     targetPath = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName }?.let { "$ROOT_UXICONS_DIR/${it.packageName}" },
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
-                    onGenerateFallback = { __g11(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.All)) },
+                    onGenerateFallback = { generateSelectedApp(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.All)) },
                     onBeginBusy = { msg ->
                         mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
                         mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
@@ -459,7 +459,7 @@ val __act4 = LocalContext.current
                     autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
                     targetPath = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName }?.let { "$ROOT_UXICONS_DIR/${it.packageName}" },
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
-                    onGenerateFallback = { __g11(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.StandardOnly)) },
+                    onGenerateFallback = { generateSelectedApp(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.StandardOnly)) },
                     onBeginBusy = { msg ->
                         mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
                         mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
@@ -578,7 +578,7 @@ val __act4 = LocalContext.current
                     autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
                     targetPath = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName }?.let { "$ROOT_UXICONS_DIR/${it.packageName}" },
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
-                    onGenerateFallback = { __g11(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.MonochromeOnly)) },
+                    onGenerateFallback = { generateSelectedApp(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.MonochromeOnly)) },
                     onBeginBusy = { msg ->
                         mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
                         mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
@@ -1051,8 +1051,8 @@ val __act3 = LocalContext.current
         } },
                 )
     } },
-                onGenerateGpt = { __g7(it) },
-                onGenerateRmbg = { __g9(it) },
+                onGenerateGpt = { generateGptCandidateForMode(it) },
+                onGenerateRmbg = { applyRmbgCandidateForMode(it) },
                 onChooseCustom = { mode, kind -> run {
 
                 if (mainViewModel.shell.value.isBusy || mainViewModel.previewSession.value.isGeneratingGptCandidate || mainViewModel.previewSession.value.isGeneratingRmbgCandidate) {
@@ -1087,7 +1087,7 @@ val __act3 = LocalContext.current
                         ),
                     )
         } },
-                    onGenerateGpt = { __g7((mode)) },
+                    onGenerateGpt = { generateGptCandidateForMode((mode)) },
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onCommitSelections = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
                     onSaveUi = { run {
@@ -1214,7 +1214,7 @@ val __act3 = LocalContext.current
         } },
                 )
     } },
-                onApplyPreviewChoiceToAll = { __g1(it) },
+                onApplyPreviewChoiceToAll = { applyPreviewChoiceToAll(it) },
                 onDismissChoice = { mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) } },
                 onDismissChoiceFinished = { },
             )
@@ -5659,7 +5659,7 @@ val __act1 = LocalContext.current
     }
 }
 
-private fun MainActivity.__g3(confirmed: Boolean = false): Unit {
+private fun MainActivity.generateGptCandidate(confirmed: Boolean = false): Unit {
     val __actF4 = this
             val session = mainViewModel.previewSession.value.activeGenerationSession ?: return
             if (mainViewModel.gptRmbgSettings.value.gptBaseUrl.trim().isEmpty() || mainViewModel.gptRmbgSettings.value.gptApiKey.trim().isEmpty()) {
@@ -5677,7 +5677,7 @@ private fun MainActivity.__g3(confirmed: Boolean = false): Unit {
                     message = ("将调用云端图像接口（已累计 ${mainViewModel.presetUi.value.gptRunCount} 次）。确认继续？"),
                     confirmLabel = ("继续"),
                     onConfirm = ({
-                        __g3(confirmed = true)
+                        generateGptCandidate(confirmed = true)
                     }),
                 ))) }
     }
@@ -5816,7 +5816,7 @@ private fun MainActivity.__g3(confirmed: Boolean = false): Unit {
     }
 }
 
-private fun MainActivity.__g1(choice: PreviewChoice): Unit {
+private fun MainActivity.applyPreviewChoiceToAll(choice: PreviewChoice): Unit {
     val __actF5 = this
     return homeApplyPreviewChoiceToAll(
                     choice = choice,
@@ -6046,8 +6046,8 @@ private fun MainActivity.__g1(choice: PreviewChoice): Unit {
             } },
                     )
         } },
-                    onGenerateGptAll = { __g3() },
-                    onGenerateRmbgAll = { __g2() },
+                    onGenerateGptAll = { generateGptCandidate() },
+                    onGenerateRmbgAll = { generateRmbgCandidate() },
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     candidateAvailable = { s, c -> candidateForChoice(s, c) != null },
                     onCommitDefault = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
@@ -6177,11 +6177,11 @@ private fun MainActivity.__g1(choice: PreviewChoice): Unit {
                 )
 }
 
-private fun MainActivity.__g2(confirmed: Boolean = false): Unit {
+private fun MainActivity.generateRmbgCandidate(confirmed: Boolean = false): Unit {
     val __actF6 = this
             val session = mainViewModel.previewSession.value.activeGenerationSession ?: return
             if (session.candidates[PreviewChoice.Rmbg] != null) {
-                __g1(PreviewChoice.Rmbg)
+                applyPreviewChoiceToAll(PreviewChoice.Rmbg)
                 mainViewModel.updateShell { it -> it.copy(statusText = ("已使用现有 RMBG 候选")) }
                 return
             }
@@ -6206,7 +6206,7 @@ private fun MainActivity.__g2(confirmed: Boolean = false): Unit {
                     message = ("将运行本地 ONNX 模型抠图（已累计 ${mainViewModel.presetUi.value.rmbgRunCount} 次）。确认继续？"),
                     confirmLabel = ("继续"),
                     onConfirm = ({
-                        __g2(confirmed = true)
+                        generateRmbgCandidate(confirmed = true)
                     }),
                 ))) }
     }
@@ -6417,7 +6417,7 @@ private fun MainActivity.__g2(confirmed: Boolean = false): Unit {
     }
 }
 
-private fun MainActivity.__g7(mode: PreviewMode, confirmed: Boolean = false): Unit {
+private fun MainActivity.generateGptCandidateForMode(mode: PreviewMode, confirmed: Boolean = false): Unit {
     val __actF8 = this
             val session = mainViewModel.previewSession.value.activeGenerationSession ?: return
             if (mainViewModel.gptRmbgSettings.value.gptBaseUrl.trim().isEmpty() || mainViewModel.gptRmbgSettings.value.gptApiKey.trim().isEmpty()) {
@@ -6435,7 +6435,7 @@ private fun MainActivity.__g7(mode: PreviewMode, confirmed: Boolean = false): Un
                     message = ("将调用云端图像接口（已累计 ${mainViewModel.presetUi.value.gptRunCount} 次）。确认继续？"),
                     confirmLabel = ("继续"),
                     onConfirm = ({
-                        __g7(mode, confirmed = true)
+                        generateGptCandidateForMode(mode, confirmed = true)
                     }),
                 ))) }
     }
@@ -6573,7 +6573,7 @@ private fun MainActivity.__g7(mode: PreviewMode, confirmed: Boolean = false): Un
     }
 }
 
-private fun MainActivity.__g9(mode: PreviewMode, confirmed: Boolean = false): Unit {
+private fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed: Boolean = false): Unit {
     val __actF10 = this
             val session = mainViewModel.previewSession.value.activeGenerationSession ?: return
             if (session.candidates[PreviewChoice.Rmbg] != null) {
@@ -6597,7 +6597,7 @@ private fun MainActivity.__g9(mode: PreviewMode, confirmed: Boolean = false): Un
                         ),
                     )
         } },
-                    onGenerateGpt = { __g7((mode)) },
+                    onGenerateGpt = { generateGptCandidateForMode((mode)) },
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onCommitSelections = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
                     onSaveUi = { run {
@@ -6748,7 +6748,7 @@ private fun MainActivity.__g9(mode: PreviewMode, confirmed: Boolean = false): Un
                     message = ("将运行本地 ONNX 模型抠图（已累计 ${mainViewModel.presetUi.value.rmbgRunCount} 次）。确认继续？"),
                     confirmLabel = ("继续"),
                     onConfirm = ({
-                        __g9(mode, confirmed = true)
+                        applyRmbgCandidateForMode(mode, confirmed = true)
                     }),
                 ))) }
     }
@@ -6958,7 +6958,7 @@ private fun MainActivity.__g9(mode: PreviewMode, confirmed: Boolean = false): Un
     }
 }
 
-private fun MainActivity.__g11(installWithRoot: Boolean, useGpt: Boolean, rootWriteMode: RootWriteMode = RootWriteMode.All, confirmed: Boolean = false): Unit {
+private fun MainActivity.generateSelectedApp(installWithRoot: Boolean, useGpt: Boolean, rootWriteMode: RootWriteMode = RootWriteMode.All, confirmed: Boolean = false): Unit {
     val __actF12 = this
     return homeGenerateSelected(
                     entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
@@ -7110,6 +7110,6 @@ private fun MainActivity.__g11(installWithRoot: Boolean, useGpt: Boolean, rootWr
                             }
                         }
                     },
-                    onConfirmedRetry = { root: Boolean, gpt: Boolean, mode: RootWriteMode -> __g11(root, gpt, mode, confirmed = true) },
+                    onConfirmedRetry = { root: Boolean, gpt: Boolean, mode: RootWriteMode -> generateSelectedApp(root, gpt, mode, confirmed = true) },
                 )
 }
