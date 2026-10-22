@@ -29,3 +29,5 @@
 | D19 | S2.4 | 合并时把残留的 `it.previewVersion` 改写为 `v.previewVersion`（2 处） | 合并重命名形参后，原 `it` 指向同一 StateFlow 快照，改写等价；不改则编译失败 |
 | D20 | S3.1 | 裸读规则落地为「总量棘轮 + lint `StateFlowValueCalledInComposition` 精确拦截」两层，而非一次性全清 | `ui/` 现有 426 处裸读，其中绝大多数在事件回调里（合法）；一次性全清需要重写 400+ 个回调，风险远大于收益。精确的组合期违例由 lint 拦（当前 0） |
 | D21 | S3.5 | 调参快照改为页面顶层单次订阅（HomePage/SettingsPage/Shell 各一处），而非逐 item 提升 | 逐 item 提升要在 10 个不同 item 作用域各订阅一次，仍是多订阅；顶层一次覆盖全部读点，重组开销留给 P6 的 backdrop 治理 |
+| D22 | S3.2 | 并入 S3.1 落地：HomePage 的两张卡片改为只消费 `isBusy` / `statusText`，`HomePage:1925` 一类祖先订阅兜底读点已清零（lint 组合期裸读 0） | 计划要求「各自 collectAsState 或只传所需字段」，现状已是后者；再造一层订阅只会增加重组面 |
+| D23 | S3.3+S3.4 | 合并为一个 commit：根级保留**一次** params 订阅，但组合体字段读点全部收进 `derivedStateOf`，effect key 换成 16 字段 `PreviewEffectKey` | 「根组合不读 params」若做成彻底取消订阅，`StateFlow.value` 不在快照系统里，预览资产将永不刷新（实测会退化）。保留单订阅 + 字段化 key 同时满足 S3.4 的验收（改 gptCustomPrompt 不重解码） |

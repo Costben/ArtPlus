@@ -35,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -69,7 +70,6 @@ import kotlinx.coroutines.withContext
 
 @Composable
 internal fun MainActivity.ArtPlusScreen() {
-    val tuningState by mainViewModel.params.collectAsState()
     // Phase 5 回归修复（FAIL-4/5）：presetUi/confirm 经 collectAsState 订阅，
     // 渲染位禁止裸读 .value（裸读不触发重组，对话框显隐/消除全部假死）。
     val presetUiState by mainViewModel.presetUi.collectAsState()
@@ -97,6 +97,9 @@ internal fun MainActivity.ArtPlusScreen() {
     val cancellingBackProgress = remember { Animatable(0f) }
     val childEnterProgress = remember { Animatable(1f) }
     var isCompletingBackGesture by remember { mutableStateOf(false) }
+    // S3.3：根级只保留一次 params 订阅，且**不在组合体里直接读字段**——
+    // 所有读点都收进下面的 derivedStateOf，根组合体只消费派生的 16 字段 key。
+    val paramsSnapshot by mainViewModel.params.collectAsState()
     val screenScope = rememberCoroutineScope()
     val backProgress = maxOf(
         systemBackProgress,
@@ -106,17 +109,38 @@ internal fun MainActivity.ArtPlusScreen() {
     val sharedPreviewSession = previewSessionState.activeGenerationSession?.takeIf {
         it.packageName == previewSessionState.previewPackageName && it.outDir.absolutePath == previewSessionState.previewDirPath
     }
-    val sharedPreviewTuning = run {
-    mainViewModel.params.value
-}
+    // S3.3 / S3.4：预览资产 effect 的 key 只由「预览选择 4 字段 + 12 个视觉参数」派生。
+    // 改 gptCustomPrompt / rmbg* 等其余 60+ 字段不再触发 4 张 PNG 重解码。
+    val previewEffectKey by remember {
+        derivedStateOf {
+            val p = paramsSnapshot
+            PreviewEffectKey(
+                selections = PreviewSelections.fromNames(p.previewNormalLight, p.previewNormalDark, p.previewMonochromeLight, p.previewMonochromeDark),
+                liquidGlassEnabled = p.liquidGlassEnabled,
+                liquidGlassBackgroundMistAlpha = p.liquidGlassBackgroundMistAlpha,
+                liquidGlassTopAlpha = p.liquidGlassTopAlpha,
+                liquidGlassBottomAlpha = p.liquidGlassBottomAlpha,
+                liquidGlassBottomDarkAlpha = p.liquidGlassBottomDarkAlpha,
+                liquidGlassOuterWidth = p.liquidGlassOuterWidth,
+                liquidGlassRadius = p.liquidGlassRadius,
+                liquidGlassSubjectScalePercent = p.liquidGlassSubjectScalePercent,
+                liquidGlassSubjectShadowAlpha = p.liquidGlassSubjectShadowAlpha,
+                liquidGlassSubjectOutlineWidth = p.liquidGlassSubjectOutlineWidth,
+                liquidGlassSubjectInnerOutlineWidth = p.liquidGlassSubjectInnerOutlineWidth,
+                liquidGlassSubjectOpacityPercent = p.liquidGlassSubjectOpacityPercent,
+                foregroundShadowLevel = p.foregroundShadowLevel,
+                monochromeThemeScale = p.monochromeThemeScale,
+                nightSubjectLightBackgroundEnabled = p.nightSubjectLightBackgroundEnabled,
+            )
+        }
+    }
 
     LaunchedEffect(
         previewSessionState.previewPackageName,
         previewSessionState.previewDirPath,
         sharedPreviewSession,
-        PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark),
         previewSessionState.previewVersion,
-        sharedPreviewTuning,
+        previewEffectKey,
     ) {
         val dirPath = previewSessionState.previewDirPath
         val packageName = previewSessionState.previewPackageName
@@ -1284,3 +1308,26 @@ internal fun MainActivity.PagerShellPage(
         }
     }
 }
+
+/**
+ * S3.4：预览资产 effect 的字段化 key。
+ * 只有这 16 个字段变化才需要重新解码 recbg/recfg/rec_night 等 PNG。
+ */
+private data class PreviewEffectKey(
+    val selections: PreviewSelections,
+    val liquidGlassEnabled: Boolean,
+    val liquidGlassBackgroundMistAlpha: Int,
+    val liquidGlassTopAlpha: Int,
+    val liquidGlassBottomAlpha: Int,
+    val liquidGlassBottomDarkAlpha: Int,
+    val liquidGlassOuterWidth: Int,
+    val liquidGlassRadius: Int,
+    val liquidGlassSubjectScalePercent: Int,
+    val liquidGlassSubjectShadowAlpha: Int,
+    val liquidGlassSubjectOutlineWidth: Int,
+    val liquidGlassSubjectInnerOutlineWidth: Int,
+    val liquidGlassSubjectOpacityPercent: Int,
+    val foregroundShadowLevel: Int,
+    val monochromeThemeScale: Float,
+    val nightSubjectLightBackgroundEnabled: Boolean,
+)
