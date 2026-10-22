@@ -22,6 +22,8 @@ android {
         versionCode = 15
         versionName = "1.5.0-alpha2"
 
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
         ndk {
             abiFilters += listOf("arm64-v8a")
         }
@@ -102,6 +104,11 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.4.10")
     testImplementation("org.json:json:20240303")
+    // S3.8：仪器化冒烟只依赖已缓存的 androidx.test.*（ui-test-junit4 未在本地缓存，离线拉不到）
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:core:1.7.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
     implementation("androidx.activity:activity-compose:1.13.0")
     // P2 ViewModel 地基：lifecycle-bom 未发布（dl.google.com 全版本 404），改直钉版本；
     // 2.9.4 与 activity-compose 1.13.0 同期，本地缓存可 resolve。

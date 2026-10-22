@@ -32,3 +32,5 @@
 | D22 | S3.2 | 并入 S3.1 落地：HomePage 的两张卡片改为只消费 `isBusy` / `statusText`，`HomePage:1925` 一类祖先订阅兜底读点已清零（lint 组合期裸读 0） | 计划要求「各自 collectAsState 或只传所需字段」，现状已是后者；再造一层订阅只会增加重组面 |
 | D23 | S3.3+S3.4 | 合并为一个 commit：根级保留**一次** params 订阅，但组合体字段读点全部收进 `derivedStateOf`，effect key 换成 16 字段 `PreviewEffectKey` | 「根组合不读 params」若做成彻底取消订阅，`StateFlow.value` 不在快照系统里，预览资产将永不刷新（实测会退化）。保留单订阅 + 字段化 key 同时满足 S3.4 的验收（改 gptCustomPrompt 不重解码） |
 | D24 | 门禁 | 棘轮忽略 `import_lines` / `imports_total` / `kt_files`（保留 `unused_imports` 与 `import_line_ratio_pct`） | 新增一个文件或一行 `mutableStateOf` import 就判红是假阳性；真正要守的是「未使用 import = 0」与「import 占比 < 3%」 |
+| D25 | S3.8 | 仪器化冒烟用 UI Automator 而非 compose-ui-test | `androidx.compose.ui:ui-test-junit4` 不在本地依赖缓存，离线构建拉不到；UI Automator 2.4.0 已缓存且能覆盖「启动→4 页→选择入口」 |
+| D26 | S3.8 | 冒烟测试跑法固定 `ANDROID_SERIAL=<目标机>` | 现场 adb 有 3 台设备，其中 2 台的 instrumentation 会 process crashed，联网跑会把整批判红 |
