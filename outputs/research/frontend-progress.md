@@ -23,3 +23,5 @@
 | D13 | S1.5 | ⑥「三处 Toast 冗余 runOnUiThread」不删 | 计划未指名三处；实测所有 `showToast` 回调都经 `pickerToastStatus` 从任意线程调用，删包裹会在非 Looper 线程抛 `Can't toast on a thread that has not called Looper.prepare()`。改为保留并在此登记 |
 | D14 | S1.5 | ② 给保存键补 `contentDescription = "保存"` 使 `hardcoded_cjk` 685→686，随即重写基线 | 这是 S5.4 文案抽取的输入，不是回归；终局该指标为 0 |
 | D15 | S2.1 | 新增 `state/UiPersistOps.kt` 使 `kt_files` / `files_in_dev_artplus_mobile` 77→78，随即重写基线 | 收口必须新增一个实现文件；该指标由 S4.5 的目录→包名对齐一次性压到 ≤20，此处不做局部妥协 |
+| D16 | S2.2 | `TuningActions` 由 Activity 的 `by lazy` 持有（而非 HomePage 里 `remember`） | 调用点分布在 HomePage/SettingsPage/AppPickerPage/Shell/MainActivityOps 五个文件的多个 composable 里；`remember` 只能覆盖单个组合作用域，会退化成 5 份实例。「构造一次」的语义用 Activity 级 lazy 更严格 |
+| D17 | S2.2 | 刷新入口 `refresh` 保留 `(Boolean)` 形参（rebuildLocalCandidates） | 37 个调用点的原表达式就是 `{ rebuild -> ... }`，改成无参会改变语义 |

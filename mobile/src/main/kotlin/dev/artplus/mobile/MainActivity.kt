@@ -46,6 +46,9 @@ class MainActivity : ComponentActivity() {
         }
     }.asCoroutineDispatcher()
     internal val previewWorkerScope = CoroutineScope(SupervisorJob() + previewWorkerDispatcher)
+    /** S2.2：写入/保存/刷新三件事的唯一入口，Activity 生命周期内构造一次。 */
+    internal val tuningActions by lazy { buildTuningActions() }
+
     internal val apps = mutableStateListOf<AppEntry>()
     internal var didRequestAppLoad = false
     internal var draftForegroundSubjectPercentText by mutableStateOf(DEFAULT_FOREGROUND_SUBJECT_PERCENT.toString())
