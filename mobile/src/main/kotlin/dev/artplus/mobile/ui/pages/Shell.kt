@@ -1,7 +1,5 @@
 package dev.artplus.mobile.ui.pages
 
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.WindowInsets
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
@@ -56,8 +54,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import io.github.suqi8.coui.kmp.basic.PinnedScrollBehavior
 import io.github.suqi8.coui.kmp.basic.ScrollBehavior
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import io.github.suqi8.coui.kmp.basic.AppBarBlurOverlayDefaults
@@ -1138,7 +1136,7 @@ val __act1 = LocalContext.current
 @Composable
 internal fun MainActivity.PagerShellPage(
     title: String,
-    navigationIcon: @Composable () -> Unit = {},
+    navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     showPreviewStrip: Boolean = false,
     content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
@@ -1160,7 +1158,7 @@ internal fun MainActivity.PagerShellPage(
         PagerShellPageBody(host.scrollBehavior, showPreviewStrip, content)
     } else {
         val pageColor = AppBarBlurOverlayDefaults.containerColor()
-        val scrollBehavior = rememberPinnedShellScrollBehavior()
+        val scrollBehavior = PinnedScrollBehavior()
         val barBackdrop = rememberLayerBackdrop {
             drawRect(pageColor)
             drawContent()
@@ -1199,7 +1197,7 @@ private fun MainActivity.PagerShellPageBody(
         animationSpec = tween(durationMillis = 180),
         label = "previewStripExtra",
     )
-    val contentTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + ShellBarHeight
+    val contentTop = rememberShellContentTop()
     Box(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier

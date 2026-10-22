@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import io.github.suqi8.coui.kmp.basic.PinnedScrollBehavior
 import io.github.suqi8.coui.kmp.basic.rememberTopAppBarState
 import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
@@ -57,7 +58,7 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     }
     // 顶栏不折叠；共用的钉住行为只记录滚动距离（驱动材质透明度），换页时清零，避免带到下一页。
     val topBarState = rememberTopAppBarState()
-    val scrollBehavior = rememberPinnedShellScrollBehavior(topBarState)
+    val scrollBehavior = PinnedScrollBehavior(state = topBarState)
     val host = remember(scrollBehavior) { PagerShellHost(scrollBehavior) }
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }.collect {
