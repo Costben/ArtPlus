@@ -1,5 +1,6 @@
 package dev.artplus.mobile.state
 
+import dev.artplus.mobile.ui.cards.AppPage
 import androidx.lifecycle.ViewModel
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,8 +51,6 @@ class MainViewModel : ViewModel() {
     private val _gptRmbgSettings = MutableStateFlow(GptRmbgSettingsState())
     internal val gptRmbgSettings: StateFlow<GptRmbgSettingsState> = _gptRmbgSettings.asStateFlow()
 
-    private val _glassBar = MutableStateFlow(GlassBarState())
-    internal val glassBar: StateFlow<GlassBarState> = _glassBar.asStateFlow()
 
     private val _presetUi = MutableStateFlow(PresetUiState())
     internal val presetUi: StateFlow<PresetUiState> = _presetUi.asStateFlow()
@@ -80,12 +79,18 @@ class MainViewModel : ViewModel() {
         _shell.value = transform(_shell.value)
     }
 
-    internal fun updateGptRmbgSettings(transform: (GptRmbgSettingsState) -> GptRmbgSettingsState) {
-        _gptRmbgSettings.value = transform(_gptRmbgSettings.value)
+    /** 页面跳转专用入口（底栏/顶栏按钮），避免每次跳转都写一遍 updateShell 的 copy。 */
+    internal fun setPage(page: AppPage) {
+        _shell.value = _shell.value.copy(currentPage = page)
     }
 
-    internal fun updateGlassBar(transform: (GlassBarState) -> GlassBarState) {
-        _glassBar.value = transform(_glassBar.value)
+    /** 状态栏文案专用写入口：`MainActivity.setStatus` 的唯一落点（单字段，不经过 transform）。 */
+    internal fun setStatusText(text: String) {
+        _shell.value = _shell.value.copy(statusText = text)
+    }
+
+    internal fun updateGptRmbgSettings(transform: (GptRmbgSettingsState) -> GptRmbgSettingsState) {
+        _gptRmbgSettings.value = transform(_gptRmbgSettings.value)
     }
 
     internal fun updatePresetUi(transform: (PresetUiState) -> PresetUiState) {

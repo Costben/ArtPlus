@@ -1,16 +1,12 @@
 package dev.artplus.mobile.ui.pages
 
-import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import io.github.suqi8.coui.kmp.blur.layerBackdrop
-import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -18,24 +14,21 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import io.github.suqi8.coui.kmp.basic.BottomFloatingNavigationBarItem
-import io.github.suqi8.coui.kmp.basic.BottomFloatingNavigationBar
-import io.github.suqi8.coui.kmp.icon.COUIIcons
-import io.github.suqi8.coui.kmp.icon.extended.GridView
-import io.github.suqi8.coui.kmp.icon.extended.Layers
-import io.github.suqi8.coui.kmp.icon.extended.Settings
-import io.github.suqi8.coui.kmp.icon.extended.Tune
+import io.github.suqi8.coui.kmp.basic.rememberTopAppBarState
+import io.github.suqi8.coui.kmp.blur.LocalBackdrop
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
 import dev.artplus.mobile.MainActivity
 import dev.artplus.mobile.data.AppEntry
 import dev.artplus.mobile.ui.pages.tabs.HomeTabPage
 import dev.artplus.mobile.ui.pages.tabs.ParamsTabPage
 import dev.artplus.mobile.ui.pages.tabs.PresetTabPage
-import dev.artplus.mobile.ui.pages.tabs.SettingsTabPage
 
 @Composable
 internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?, launcherCount: Int, totalCount: Int, generatedCount: Int) {
@@ -50,14 +43,27 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     val previewSessionState by mainViewModel.previewSession.collectAsState()
     // 热修复2：四宫格预览链订阅 batchPreviewConfig（wallpaperKey 裸读不触发重组，壁纸切换后预览 stale）。
     val batchConfigState by mainViewModel.batchPreviewConfig.collectAsState()
-    // 底栏订阅：glassBar .value 裸读不触发重组，设置页开关翻转后底栏显隐/模糊 stale。
-    // 回调内事件时读 .value 仍合法，此处只修组合期渲染读。
-    val glassBar by mainViewModel.glassBar.collectAsState()
     // S3.5：调参快照在页面顶层订阅一次，取代 11 处内联 `collectAsState()`（每处都是一次独立订阅 + 一次重组）。
     val paramsState by mainViewModel.params.collectAsState()
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
     val scope = rememberCoroutineScope()
-    val isBlurEnabled = glassBar.liquidGlassBottomBarEnabled && glassBar.liquidGlassBottomBarBlurEnabled
+    // 与 COUI demo（Coui17Root）一致：整个 pager 只录一次 barBackdrop（先铺页面底色再画内容），
+    // 顶栏/底栏作为录制 Box 的兄弟节点叠在上面，不参与采样。LayerBackdrop 只有一块 graphicsLayer，
+    // 挂在每个 pager 页上会被屏外邻页覆盖，底栏就会糊错页面。
+    val pageColor = pageBackground
+    val barBackdrop = rememberLayerBackdrop {
+        drawRect(pageColor)
+        drawContent()
+    }
+    // 顶栏不折叠；共用的钉住行为只记录滚动距离（驱动材质透明度），换页时清零，避免带到下一页。
+    val topBarState = rememberTopAppBarState()
+    val scrollBehavior = rememberPinnedShellScrollBehavior(topBarState)
+    val host = remember(scrollBehavior) { PagerShellHost(scrollBehavior) }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collect {
+            topBarState.contentOffset = 0f
+        }
+    }
     var beyondViewportCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
         delay(200)
@@ -65,59 +71,43 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
         delay(350)
         beyondViewportCount = 3
     }
-    val backdrop = rememberLayerBackdrop {
-        drawRect(pageBackground)
-        drawContent()
-    }
     Box(Modifier.fillMaxSize()) {
-        HorizontalPager(
-            state = pagerState,
-            beyondViewportPageCount = beyondViewportCount,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(pageBackground),
-        ) { page ->
-            // S6.1：只有当前页 ±1 挂 backdrop，远页不参与采样（beyondViewportCount 仍为 3，
-            // 保证滚动时页面不重建，但 4 层 backdrop 采样降为最多 3 层）。
-            val near = kotlin.math.abs(page - pagerState.currentPage) <= 1
-            Box(
-                modifier = if (isBlurEnabled && near) Modifier.layerBackdrop(backdrop) else Modifier,
-            ) {
-            when (page) {
-                0 -> HomeTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
-                1 -> ParamsTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
-                2 -> PresetTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
-                3 -> SettingsTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
-            }
+                .background(pageColor)
+                .layerBackdrop(barBackdrop),
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                beyondViewportPageCount = beyondViewportCount,
+                modifier = Modifier.fillMaxSize(),
+            ) { page ->
+                CompositionLocalProvider(
+                    LocalPagerShellHost provides host,
+                    LocalPagerShellPageIndex provides page,
+                ) {
+                    when (page) {
+                        0 -> HomeTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+                        1 -> ParamsTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+                        2 -> PresetTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+                    }
+                }
             }
         }
 
-        // ColorOS 17 floating capsule bar: COUI BottomFloatingNavigationBar over the page backdrop.
-        // The bar forwards its modifier into the capsule row, so alignment and the gesture-bar inset
-        // ride on this wrapper instead of the bar itself.
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .navigationBarsPadding(),
-        ) {
-            BottomFloatingNavigationBar(
-                backdrop = if (isBlurEnabled) backdrop else null,
-            ) {
-                listOf(
-                    Triple(COUIIcons.GridView, "主页", 0),
-                    Triple(COUIIcons.Tune, "生成参数", 1),
-                    Triple(COUIIcons.Layers, "预设", 2),
-                    Triple(COUIIcons.Settings, "设置", 3),
-                ).forEach { (icon, label, index) ->
-                    BottomFloatingNavigationBarItem(
-                        selected = pagerState.targetPage == index,
-                        onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                        icon = icon,
-                        label = label,
-                    )
-                }
-            }
+        // 顶栏/底栏的玻璃材质都采样 barBackdrop（页面内容），自身不在录制范围内。
+        CompositionLocalProvider(LocalBackdrop provides barBackdrop) {
+            PagerShellHostTopBar(
+                host = host,
+                pagerState = pagerState,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+            PagerShellBottomBar(
+                pagerState = pagerState,
+                onSelectPage = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
     }
 }

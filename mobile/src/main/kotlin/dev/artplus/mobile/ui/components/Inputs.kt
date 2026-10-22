@@ -51,6 +51,7 @@ import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import io.github.suqi8.coui.kmp.basic.HighlightedIconButton
+import io.github.suqi8.coui.kmp.basic.couiTopAppBarActionItem
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.basic.TextFieldMode
 
@@ -270,6 +271,7 @@ internal fun TitleBarIconButton(
     HighlightedIconButton(
         onClick = onClick,
         enabled = enabled,
+        modifier = Modifier.couiTopAppBarActionItem(),
     ) {
         Icon(
             imageVector = icon,

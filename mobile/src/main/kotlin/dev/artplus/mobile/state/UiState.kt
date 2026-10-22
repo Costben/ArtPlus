@@ -69,11 +69,6 @@ internal data class GptRmbgSettingsState(
     val rmbgComponentStatus: String = "",
 )
 
-internal data class GlassBarState(
-    val liquidGlassBottomBarEnabled: Boolean = true,
-    val liquidGlassBottomBarBlurEnabled: Boolean = true,
-)
-
 internal data class PresetUiState(
     val activePresetId: String? = null,
     val activePresetBaseParams: TuningParams? = null,

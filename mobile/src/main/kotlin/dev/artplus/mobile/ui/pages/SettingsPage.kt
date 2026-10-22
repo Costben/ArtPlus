@@ -92,7 +92,6 @@ internal fun MainActivity.SettingsPage(
     val transfer by mainViewModel.transfer.collectAsState()
     val gptRmbgSettings by mainViewModel.gptRmbgSettings.collectAsState()
     val presetUi by mainViewModel.presetUi.collectAsState()
-    val glassBar by mainViewModel.glassBar.collectAsState()
     val batchPreviewConfig by mainViewModel.batchPreviewConfig.collectAsState()
     LazyColumn(
         modifier = Modifier
@@ -616,41 +615,6 @@ val __act1 = LocalContext.current
     } },
             )
 }
-        }
-        item(key = "bottom_bar") {
-            SectionCard(rowsFullBleed = true) {
-                LibrarySettingRow(
-                    title = "悬浮底栏",
-                    summary = if (glassBar.liquidGlassBottomBarEnabled) "已开启" else "已关闭",
-                    icon = SettingsIconKind.Glass,
-                    showSwitch = true,
-                    checked = glassBar.liquidGlassBottomBarEnabled,
-                    enabled = !shell.isBusy,
-                    onCheckedChange = {
-                        mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarEnabled = (it)) }
-                        tuningActions.save()
-                        setStatus((if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭"))
-                    },
-                )
-                SectionDivider()
-                LibrarySettingRow(
-                    title = "底栏模糊",
-                    summary = when {
-                        !glassBar.liquidGlassBottomBarEnabled -> "需先开启悬浮底栏"
-                        glassBar.liquidGlassBottomBarBlurEnabled -> "已开启"
-                        else -> "已关闭"
-                    },
-                    icon = SettingsIconKind.Glass,
-                    showSwitch = true,
-                    checked = glassBar.liquidGlassBottomBarBlurEnabled,
-                    enabled = !shell.isBusy && glassBar.liquidGlassBottomBarEnabled,
-                    onCheckedChange = {
-                        mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarBlurEnabled = (it)) }
-                        tuningActions.save()
-                        setStatus((if (mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭"))
-                    },
-                )
-            }
         }
         item(key = "reset_defaults") {
             SectionCard(rowsFullBleed = true) {

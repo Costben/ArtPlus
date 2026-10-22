@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
+import dev.artplus.mobile.ui.cards.AppPage
 import dev.artplus.mobile.MainActivity
 import dev.artplus.mobile.PREFS_NAME
 import dev.artplus.mobile.data.AppEntry
@@ -21,6 +22,7 @@ import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveRmbgSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveSettingsPage
 import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
 import io.github.suqi8.coui.kmp.icon.extended.*
 
 /**
@@ -39,6 +41,14 @@ internal fun MainActivity.SettingsTabPage(
 
 PagerShellPage(
                     title = "设置",
+                    navigationIcon = {
+                        TitleBarIconButton(
+                            icon = COUIIcons.ChevronBackward,
+                            contentDescription = "返回",
+                            enabled = !shellState.isBusy,
+                            onClick = { mainViewModel.setPage(AppPage.Home) },
+                        )
+                    },
                     actions = {
                         TitleBarIconButton(
                             icon = COUIIcons.Ok,

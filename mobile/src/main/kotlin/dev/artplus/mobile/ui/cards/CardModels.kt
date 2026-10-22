@@ -84,6 +84,7 @@ internal enum class AppPage(val order: Int) {
     AppPicker(1),
     About(2),
     BatchPreview(3),
+    Settings(4),
 }
 
 internal enum class GeneratedFilter(val label: String) {

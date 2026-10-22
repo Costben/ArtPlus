@@ -27,6 +27,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.Settings
 import io.github.suqi8.coui.kmp.icon.extended.Refresh
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -128,6 +129,13 @@ PagerShellPage(
                                     mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (true)) }
                                 }
                             },
+                        )
+                        // 设置从底栏移到右上角：点击进入二级设置页（overlay，返回手势可退）。
+                        TitleBarIconButton(
+                            icon = COUIIcons.Settings,
+                            contentDescription = "设置",
+                            enabled = true,
+                            onClick = { mainViewModel.setPage(AppPage.Settings) },
                         )
                     },
                     showPreviewStrip = previewSessionState.previewStripEnabled,

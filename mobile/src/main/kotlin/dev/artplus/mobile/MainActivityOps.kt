@@ -1304,10 +1304,6 @@ internal fun MainActivity.loadTuningParams(): Unit =
                 setDraftSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
                 setDraftSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
                 setDraftSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
-                setBottomBarEnabled = { mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarEnabled = (it)) } },
-                setBottomBarBlurEnabled = { mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarBlurEnabled = (it)) } },
-                getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
                 onSave = { run {
         tuningActions.save()
     } },

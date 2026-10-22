@@ -121,8 +121,6 @@ internal fun MainActivity.buildTuningActions(): TuningActions {
             paramsSaveLiquidGlassSettings(
                         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
                         getParams = { mainViewModel.params.value },
-                        getBottomBarEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarEnabled },
-                        getBottomBarBlurEnabled = { mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled },
                     )
         },
         refresh = refresh,

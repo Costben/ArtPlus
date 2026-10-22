@@ -33,8 +33,6 @@ import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA
 import dev.artplus.mobile.PREF_LIQUID_GLASS_BACKGROUND_LEVEL_LEGACY
 import dev.artplus.mobile.PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA
 import dev.artplus.mobile.PREF_LIQUID_GLASS_BOTTOM_ALPHA
-import dev.artplus.mobile.PREF_LIQUID_GLASS_BOTTOM_BAR_BLUR_ENABLED
-import dev.artplus.mobile.PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED
 import dev.artplus.mobile.PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA
 import dev.artplus.mobile.PREF_LIQUID_GLASS_ENABLED
 import dev.artplus.mobile.PREF_LIQUID_GLASS_LAYERED_MIGRATED
@@ -70,10 +68,6 @@ internal fun paramsLoadLiquidGlassSettings(
     setDraftSubjectInnerOutlineWidthText: (String) -> Unit,
     setDraftSubjectShadowAlphaText: (String) -> Unit,
     setDraftSubjectOpacityText: (String) -> Unit,
-    setBottomBarEnabled: (Boolean) -> Unit,
-    setBottomBarBlurEnabled: (Boolean) -> Unit,
-    getBottomBarEnabled: () -> Boolean,
-    getBottomBarBlurEnabled: () -> Boolean,
     onSave: () -> Unit,
 ) {
     val migratedToLayered = prefs.getBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, false)
@@ -137,8 +131,6 @@ internal fun paramsLoadLiquidGlassSettings(
         DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
     ).coerceIn(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT)) }
     setDraftSubjectOpacityText(getParams().liquidGlassSubjectOpacityPercent.toString())
-    setBottomBarEnabled(prefs.getBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED, true))
-    setBottomBarBlurEnabled(prefs.getBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_BLUR_ENABLED, true))
     if (!migratedToLayered) {
         onSave()
     }
@@ -147,28 +139,18 @@ internal fun paramsLoadLiquidGlassSettings(
 internal fun paramsSaveLiquidGlassSettings(
     prefs: SharedPreferences,
     getParams: () -> TuningParams,
-    getBottomBarEnabled: () -> Boolean,
-    getBottomBarBlurEnabled: () -> Boolean,
 ) {
     prefs
         .edit()
-        .paramsPutLiquidGlassSettings(
-            params = getParams(),
-            bottomBarEnabled = getBottomBarEnabled(),
-            bottomBarBlurEnabled = getBottomBarBlurEnabled(),
-        )
+        .paramsPutLiquidGlassSettings(params = getParams())
         .apply()
 }
 
 internal fun SharedPreferences.Editor.paramsPutLiquidGlassSettings(
     params: TuningParams,
-    bottomBarEnabled: Boolean,
-    bottomBarBlurEnabled: Boolean,
 ): SharedPreferences.Editor =
     putBoolean(PREF_LIQUID_GLASS_LAYERED_MIGRATED, true)
         .putBoolean(PREF_LIQUID_GLASS_ENABLED, params.liquidGlassEnabled)
-        .putBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED, bottomBarEnabled)
-        .putBoolean(PREF_LIQUID_GLASS_BOTTOM_BAR_BLUR_ENABLED, bottomBarBlurEnabled)
         .putInt(PREF_LIQUID_GLASS_RADIUS, params.liquidGlassRadius)
         .putInt(PREF_LIQUID_GLASS_OUTER_WIDTH, params.liquidGlassOuterWidth)
         .putInt(PREF_LIQUID_GLASS_TOP_ALPHA, params.liquidGlassTopAlpha)

@@ -1,5 +1,7 @@
 package dev.artplus.mobile.ui.pages
 
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.WindowInsets
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
@@ -16,14 +18,11 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -46,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -59,9 +57,10 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.basic.ScrollBehavior
-import io.github.suqi8.coui.kmp.basic.Scaffold
-import io.github.suqi8.coui.kmp.basic.TopAppBar
-import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import io.github.suqi8.coui.kmp.basic.AppBarBlurOverlayDefaults
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.AppVisibility
 import dev.artplus.mobile.BACK_GESTURE_COMMIT_PROGRESS
@@ -90,7 +89,7 @@ import dev.artplus.mobile.ui.cards.BatchApplyProgressDialog
 import dev.artplus.mobile.ui.cards.GeneratedFilter
 import dev.artplus.mobile.ui.cards.PreviewSelections
 import dev.artplus.mobile.ui.cards.ServiceConfirmDialog
-import dev.artplus.mobile.ui.components.rememberLinkedTopAppBarScrollBehavior
+import dev.artplus.mobile.ui.pages.tabs.SettingsTabPage
 import dev.artplus.mobile.ui.pages.home.HomePreviewStrip
 import dev.artplus.mobile.ui.pages.params.paramsApplyTuningParams
 import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
@@ -127,8 +126,8 @@ internal fun MainActivity.ArtPlusScreen() {
     val previewSessionState by mainViewModel.previewSession.collectAsState()
     // Slice 3.4b：非组合回调（onStop 等）内的 Toast 共用此前捕获的 Context。
     val __actCancel = LocalContext.current
-    // ColorOS 17 页面底色即 surface（浅色 F0F1F2 / 深色 000000），与 TopAppBar、Scaffold 默认色一致。
-    val pageBackground = COUITheme.colorScheme.surface
+    // 与 COUI demo 一致：页面底色和顶栏材质底色取 AppBarBlurOverlay 的 containerColor（深色下与 surface 不同）。
+    val pageBackground = AppBarBlurOverlayDefaults.containerColor()
     // 热修复：selectedApp/generatedCount 直接经已订阅 pickerState 计算。
     // 原 remember{derivedStateOf{...picker.value...}} 对 StateFlow 不可观察，永不重算，
     // selectedApp 恒定初始值（magisk），点别的行写成功但 UI 不刷、生成页 stale。
@@ -332,7 +331,9 @@ internal fun MainActivity.ArtPlusScreen() {
                         shadowElevation = overlayShadowPx * overlayCover
                         shape = overlayShape
                         clip = true
-                    },
+                    }
+                    // 二级页自己的底色：脱离 pager 后没有 pager 背景兜底，必须自己铺色，否则整页透明。
+                    .background(pageBackground),
             ) {
                 when (overlayPage) {
                     AppPage.AppPicker -> {
@@ -375,6 +376,14 @@ internal fun MainActivity.ArtPlusScreen() {
                     AppPage.About -> AboutPage(pageBackground = pageBackground)
 
                     AppPage.BatchPreview -> BatchPreviewPage(pageBackground = pageBackground)
+
+                    AppPage.Settings -> SettingsTabPage(
+                        pageBackground = pageBackground,
+                        selectedApp = selectedApp,
+                        launcherCount = launcherCount,
+                        totalCount = apps.size,
+                        generatedCount = generatedCount,
+                    )
 
                     AppPage.Home -> Unit
                 }
@@ -1121,8 +1130,10 @@ val __act1 = LocalContext.current
 }
 
 /**
- * KernelSU 式的分页壳：每页拥有独立的 TopAppBar（标题+按钮随本页左右滑动），
- * 页面滚动命中该页自身的 scrollBehavior 折叠顶栏。
+ * 分页壳的一页。与 COUI demo 的 `Coui17PageContent` 同构：
+ * - 托管模式（在 [HomePage] 的 pager 里）：不画顶栏，只向宿主登记标题/按钮，滚动距离经宿主共用的
+ *   scrollBehavior 驱动顶栏材质；
+ * - 独立模式（设置页 overlay，没有宿主）：自带 scrollBehavior、backdrop 和同一根顶栏。
  */
 @Composable
 internal fun MainActivity.PagerShellPage(
@@ -1132,9 +1143,54 @@ internal fun MainActivity.PagerShellPage(
     showPreviewStrip: Boolean = false,
     content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
 ) {
-    val pageScrollBehavior = rememberLinkedTopAppBarScrollBehavior()
+    val host = LocalPagerShellHost.current
+    if (host != null) {
+        val index = LocalPagerShellPageIndex.current
+        // 每页只持有一份 spec，页面重组时回写字段；只有顶栏读它，不会回头重组本页。
+        val spec = remember { PagerBarSpec(title, navigationIcon, actions) }
+        SideEffect {
+            spec.title = title
+            spec.navigationIcon = navigationIcon
+            spec.actions = actions
+        }
+        DisposableEffect(host, index) {
+            host.specs[index] = spec
+            onDispose { if (host.specs[index] === spec) host.specs.remove(index) }
+        }
+        PagerShellPageBody(host.scrollBehavior, showPreviewStrip, content)
+    } else {
+        val pageColor = AppBarBlurOverlayDefaults.containerColor()
+        val scrollBehavior = rememberPinnedShellScrollBehavior()
+        val barBackdrop = rememberLayerBackdrop {
+            drawRect(pageColor)
+            drawContent()
+        }
+        Box(modifier = Modifier.fillMaxSize()) {
+            // 只录页面内容；顶栏是录制 Box 的兄弟节点，不会采到自己。
+            Box(modifier = Modifier.fillMaxSize().layerBackdrop(barBackdrop)) {
+                PagerShellPageBody(scrollBehavior, showPreviewStrip, content)
+            }
+            CompositionLocalProvider(LocalBackdrop provides barBackdrop) {
+                PagerShellTopAppBar(
+                    title = title,
+                    navigationIcon = navigationIcon,
+                    actions = actions,
+                    scrollBehavior = scrollBehavior,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+            }
+        }
+    }
+}
+
+/** 页面内容 + 预览条。顶栏固定不折叠，内容起点是常量，不需要跟顶栏联动位移。 */
+@Composable
+private fun MainActivity.PagerShellPageBody(
+    scrollBehavior: ScrollBehavior,
+    showPreviewStrip: Boolean,
+    content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
+) {
     var stripHeight by remember { mutableStateOf(0.dp) }
-    val isDark = isSystemInDarkTheme()
     val targetExtra = if (showPreviewStrip) {
         if (stripHeight > 0.dp) stripHeight else 84.dp
     } else 0.dp
@@ -1143,59 +1199,29 @@ internal fun MainActivity.PagerShellPage(
         animationSpec = tween(durationMillis = 180),
         label = "previewStripExtra",
     )
-    // Backdrop for the ColorOS app bar material: the page content only, so the bar never samples
-    // its own pixels. Content scrolls under the bar through the lists' contentPadding.
-    val pageSurface = COUITheme.colorScheme.surface
-    val appBarBackdrop = rememberLayerBackdrop {
-        drawRect(pageSurface)
-        drawContent()
-    }
-    // Constant top inset (status bar + expanded bar) instead of the measured bar height: the bar
-    // shrinks while collapsing, and a moving contentPadding would drag the list under the finger.
-    val contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
-        TopAppBarDefaults.ExpandedHeight
-    Scaffold(
-        containerColor = Color.Transparent,
-        topBar = {
-            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
-                TopAppBar(
-                    title = title,
-                    scrollBehavior = pageScrollBehavior,
-                    navigationIcon = navigationIcon,
-                    actions = actions,
-                    gradientGlass = true,
-                    showDivider = false,
-                )
-            }
-        },
-    ) { innerPadding ->
+    val contentTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + ShellBarHeight
+    Box(modifier = Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .layerBackdrop(appBarBackdrop),
+                .padding(top = animatedExtra),
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = animatedExtra),
-            ) {
-                content(PaddingValues(top = contentTopInset), pageScrollBehavior)
-            }
-            AnimatedVisibility(
-                visible = showPreviewStrip,
-                enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                    expandVertically(animationSpec = tween(durationMillis = 180)),
-                exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                    shrinkVertically(animationSpec = tween(durationMillis = 160)),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = innerPadding.calculateTopPadding())
-                    .zIndex(1f),
-            ) {
-                HomePreviewStrip(
-                    onHeightMeasured = { h -> if (h > 0.dp) stripHeight = h },
-                )
-            }
+            content(PaddingValues(top = contentTop), scrollBehavior)
+        }
+        AnimatedVisibility(
+            visible = showPreviewStrip,
+            enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                expandVertically(animationSpec = tween(durationMillis = 180)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                shrinkVertically(animationSpec = tween(durationMillis = 160)),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = contentTop)
+                .zIndex(1f),
+        ) {
+            HomePreviewStrip(
+                onHeightMeasured = { h -> if (h > 0.dp) stripHeight = h },
+            )
         }
     }
 }
