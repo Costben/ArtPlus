@@ -1,0 +1,516 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "io.github.suqi8.coui.kmp",
+    "module": "coui-core",
+    "version": "1.2.0-694ca414-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.6.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "metadataApiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.foundation",
+          "module": "foundation",
+          "version": {
+            "requires": "1.11.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "coui-core-metadata-1.2.0-694ca414-SNAPSHOT.jar",
+          "url": "coui-core-1.2.0-694ca414-SNAPSHOT.jar",
+          "size": 5949,
+          "sha512": "a8148db1d99f054e1c73e94cd355a67a691ed77cee5b1e8d328390f9ddc4a6dd6b80e02c49b27bcf4c2f6730dd21e91d7e405c58d409393134013a7e6dcf8519",
+          "sha256": "17d6c383812ed67f0bf27787ba5bd336b8538e7f4bd57824f0d4e4a492fa6032",
+          "sha1": "99ae1285cfdc199ad95f41bf2c81f875c345491f",
+          "md5": "ba52f8a872303a87b3689a0fd7cebda1"
+        }
+      ]
+    },
+    {
+      "name": "metadataSourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "files": [
+        {
+          "name": "coui-core-kotlin-1.2.0-694ca414-SNAPSHOT-sources.jar",
+          "url": "coui-core-1.2.0-694ca414-SNAPSHOT-sources.jar",
+          "size": 6194,
+          "sha512": "a348f9da5c5df65c588ea6e4976662c0a3ff77bd37466f069e2d69cf0ea9db1a4441d1eeb3d9c81cc3d52821bfb9ce3eb3060bbbccd6675ff6ec5ab23539d5da",
+          "sha256": "3a7c2d3fc84945bb9ddbdc75a3dab59f852e30db9c48d6149642c1c5201a8661",
+          "sha1": "e6c7f0b494ad7dbfbba703347ab49339ccdb28cb",
+          "md5": "f59c1f2157db08e278b135f9b4a55cdb"
+        }
+      ]
+    },
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "available-at": {
+        "url": "../../coui-core-android/1.2.0-694ca414-SNAPSHOT/coui-core-android-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-android",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "available-at": {
+        "url": "../../coui-core-android/1.2.0-694ca414-SNAPSHOT/coui-core-android-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-android",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "available-at": {
+        "url": "../../coui-core-android/1.2.0-694ca414-SNAPSHOT/coui-core-android-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-android",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "desktopApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../coui-core-desktop/1.2.0-694ca414-SNAPSHOT/coui-core-desktop-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-desktop",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "desktopRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../coui-core-desktop/1.2.0-694ca414-SNAPSHOT/coui-core-desktop-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-desktop",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "desktopSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../coui-core-desktop/1.2.0-694ca414-SNAPSHOT/coui-core-desktop-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-desktop",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-iosarm64/1.2.0-694ca414-SNAPSHOT/coui-core-iosarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-iosarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-iosarm64/1.2.0-694ca414-SNAPSHOT/coui-core-iosarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-iosarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64ResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresources",
+        "org.gradle.usage": "kotlin-multiplatformresources",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-iosarm64/1.2.0-694ca414-SNAPSHOT/coui-core-iosarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-iosarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-iosarm64/1.2.0-694ca414-SNAPSHOT/coui-core-iosarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-iosarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-iossimulatorarm64/1.2.0-694ca414-SNAPSHOT/coui-core-iossimulatorarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-iossimulatorarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-iossimulatorarm64/1.2.0-694ca414-SNAPSHOT/coui-core-iossimulatorarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-iossimulatorarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64ResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresources",
+        "org.gradle.usage": "kotlin-multiplatformresources",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-iossimulatorarm64/1.2.0-694ca414-SNAPSHOT/coui-core-iossimulatorarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-iossimulatorarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-iossimulatorarm64/1.2.0-694ca414-SNAPSHOT/coui-core-iossimulatorarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-iossimulatorarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../coui-core-js/1.2.0-694ca414-SNAPSHOT/coui-core-js-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-js",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../coui-core-js/1.2.0-694ca414-SNAPSHOT/coui-core-js-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-js",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../coui-core-js/1.2.0-694ca414-SNAPSHOT/coui-core-js-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-js",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresourcesjs",
+        "org.gradle.usage": "kotlin-multiplatformresourcesjs",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../coui-core-js/1.2.0-694ca414-SNAPSHOT/coui-core-js-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-js",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-macosarm64/1.2.0-694ca414-SNAPSHOT/coui-core-macosarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-macosarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-macosarm64/1.2.0-694ca414-SNAPSHOT/coui-core-macosarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-macosarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64ResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresources",
+        "org.gradle.usage": "kotlin-multiplatformresources",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-macosarm64/1.2.0-694ca414-SNAPSHOT/coui-core-macosarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-macosarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-core-macosarm64/1.2.0-694ca414-SNAPSHOT/coui-core-macosarm64-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-macosarm64",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../coui-core-wasm-js/1.2.0-694ca414-SNAPSHOT/coui-core-wasm-js-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-wasm-js",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../coui-core-wasm-js/1.2.0-694ca414-SNAPSHOT/coui-core-wasm-js-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-wasm-js",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../coui-core-wasm-js/1.2.0-694ca414-SNAPSHOT/coui-core-wasm-js-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-wasm-js",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresourcesjs",
+        "org.gradle.usage": "kotlin-multiplatformresourcesjs",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../coui-core-wasm-js/1.2.0-694ca414-SNAPSHOT/coui-core-wasm-js-1.2.0-694ca414-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-core-wasm-js",
+        "version": "1.2.0-694ca414-SNAPSHOT"
+      }
+    }
+  ]
+}
