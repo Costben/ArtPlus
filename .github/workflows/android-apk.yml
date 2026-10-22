@@ -50,7 +50,14 @@ jobs:
       - name: Lint (baseline：只拦新增)
         run: ./gradlew :mobile:lintDebug --no-daemon --console=plain
 
-      - name: Structure audit (strict)
+      # 逐 Slice 门禁：未达标指标只报告 + 棘轮防劣化；全量 --strict 作为 P7 DoD 单独列出
+      - name: Structure audit (ratchet)
+        run: |
+          python3 outputs/research/frontend-audit.py
+          python3 outputs/research/frontend-bare-read-check.py
+
+      - name: Structure audit (strict, report only)
+        continue-on-error: true
         run: python3 outputs/research/frontend-audit.py --strict
 
   build:

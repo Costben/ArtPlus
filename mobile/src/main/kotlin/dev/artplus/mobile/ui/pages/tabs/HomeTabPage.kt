@@ -108,6 +108,7 @@ internal fun MainActivity.HomeTabPage(
     val previewSessionState by mainViewModel.previewSession.collectAsState()
     val batchConfigState by mainViewModel.batchPreviewConfig.collectAsState()
     val paramsState by mainViewModel.params.collectAsState()
+    val gptSettingsState by mainViewModel.gptRmbgSettings.collectAsState()
 
 PagerShellPage(
                     title = "ArtPlus",
@@ -545,8 +546,8 @@ val __act3 = LocalContext.current
                 rmbgCandidateFailureMode = previewSessionState.rmbgCandidateFailureMode,
                 lastRmbgCandidateError = previewSessionState.lastRmbgCandidateError,
                 rmbgCandidateStatusText = previewSessionState.rmbgCandidateStatusText,
-                gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
-                gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
+                gptBaseUrl = gptSettingsState.gptBaseUrl,
+                gptApiKey = gptSettingsState.gptApiKey,
                 hasRmbgComponent = findRmbgComponent(filesDir) != null,
                 loadCandidateAssets = { candidate, mode ->
                     withContext(previewWorkerDispatcher) {

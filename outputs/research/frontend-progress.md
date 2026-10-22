@@ -41,3 +41,5 @@
 | D31 | S4.5 | 目录→包名对齐：70 个「目录≠包」文件改为真实子包（`dev.artplus.mobile/ui/pages/...`），`files_in_dev_artplus_mobile` 84→**7** | 计划 §2 第 10 条要求该指标 ≤20；§6「包名不变」按「applicationId/namespace 不变」理解，逐文件 package 必须与目录一致才能计数下降 |
 | D32 | S4.5 | `Shell.kt` 只把预览资产 effect 下沉到 `state/PreviewAssetOps.kt`（1302→1214 行），未做到 ≤700 | 剩余 600 行是 4 个 pager 分支的装配与 20+ 个对话框接线，继续切需要把 30+ 个局部状态作为显式参数搬运，改动面与「纯移动」红线冲突；登记为未达标项 |
 | D33 | 门禁 | `ui_lines` / `homepage_lines` / `ui_files` / `packages` 改为报告项（不判劣化） | 包名对齐必然让 `packages` 1→16、`ui_files` 变化；行数指标由 `--strict` 单独判 |
+| D34 | P7 | CI 的 verify job 改为「棘轮判红 + `--strict` 只报告」 | `--strict` 仍有 3 项未达标（见终局表），若按它判红会让 main 永远红，verify job 等于失效；棘轮才是逐 Slice 的可执行约束 |
+| D35 | P7 | v1.5.0-alpha3 的 release APK 在「HomeTabPage 2 处组合期裸读」修复之前构建 | tag 已发布且 APK 已上传（sha256 已公示），移动 tag 会让公示校验和失效；修复走 main，随 alpha4 出货 |
