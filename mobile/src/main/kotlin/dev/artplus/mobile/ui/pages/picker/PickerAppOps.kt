@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.picker
 
 import android.Manifest
 import android.content.ContentResolver
@@ -8,6 +8,45 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import java.io.File
+import dev.artplus.mobile.DEFAULT_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.DEFAULT_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.DEFAULT_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.MAX_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.MAX_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.MAX_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.MIN_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.MIN_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.MIN_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_CATEGORY
+import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_TAB
+import dev.artplus.mobile.PREF_AUTO_CONFIRM_REFRESH
+import dev.artplus.mobile.PREF_AUTO_CONFIRM_ROOT_WRITE
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_COLUMNS
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_DESKTOP_BG
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.PREF_CUSTOM_WALLPAPER_PATH
+import dev.artplus.mobile.PREF_GENERATED_FILTER
+import dev.artplus.mobile.PREF_HAS_COMPLETED_ONBOARDING
+import dev.artplus.mobile.PREF_OUTPUT_TREE_URI
+import dev.artplus.mobile.PREF_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.PREF_PREVIEW_DESKTOP_BACKGROUND
+import dev.artplus.mobile.PREF_PREVIEW_DIR_PATH
+import dev.artplus.mobile.PREF_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.PREF_PREVIEW_PACKAGE_NAME
+import dev.artplus.mobile.PREF_PREVIEW_STRIP_ENABLED
+import dev.artplus.mobile.PREF_QUERY_TEXT
+import dev.artplus.mobile.PREF_SELECTED_PACKAGE_NAME
+import dev.artplus.mobile.PREF_SHOW_SYSTEM_APPS
+import dev.artplus.mobile.PREF_SKIP_ROOT_WRITE_CONFIRM
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.data.AppLoadResult
+import dev.artplus.mobile.ui.cards.AdvancedSettingsCategory
+import dev.artplus.mobile.ui.cards.AdvancedSettingsTab
+import dev.artplus.mobile.ui.cards.GeneratedFilter
+import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
+import dev.artplus.mobile.ui.cards.PreviewSelections
 
 /**
  * Slice 2.5：应用与权限编排 + UI 存取（原 MainActivity 残留本体原样搬迁）。

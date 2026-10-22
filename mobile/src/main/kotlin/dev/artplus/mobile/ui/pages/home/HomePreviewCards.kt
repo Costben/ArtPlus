@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.home
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +31,29 @@ import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.MAX_FOREGROUND_SUBJECT_PERCENT
+import dev.artplus.mobile.MAX_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.MAX_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.MIN_FOREGROUND_SUBJECT_PERCENT
+import dev.artplus.mobile.MIN_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.MIN_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.imaging.CustomImageKind
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.candidateForChoice
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.PreviewAssets
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.ui.cards.AiIconLoadingPreview
+import dev.artplus.mobile.ui.cards.NumberParameterControl
+import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.components.LayerDebugTile
+import dev.artplus.mobile.ui.components.LibrarySettingRow
+import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.SectionDivider
+import dev.artplus.mobile.ui.components.SettingsIconKind
 /**
  * Slice 2.2：主页预览卡片（原 MainActivity 残留本体原样搬迁）。
  * Composable 只收 state + onEvent；Activity 状态经参数/回调注入，行为与 UI 100% 等价。

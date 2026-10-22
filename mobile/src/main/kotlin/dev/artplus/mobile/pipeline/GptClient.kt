@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.pipeline
 
 import android.content.ContentResolver
 import android.graphics.Bitmap
@@ -16,6 +16,17 @@ import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.GPT_CONNECT_TIMEOUT_MS
+import dev.artplus.mobile.GPT_IMAGE_MODEL
+import dev.artplus.mobile.GPT_IMAGE_QUALITY
+import dev.artplus.mobile.GPT_IMAGE_SIZE
+import dev.artplus.mobile.GPT_READ_TIMEOUT_MS
+import dev.artplus.mobile.GPT_RESPONSE_MODEL
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.imaging.CustomImageKind
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.solidBitmap
 
 /**
  * GPT 图像管线客户端（P4 拆分）：Responses/Images 双模式 + HTTP + 自定义图编解码 + 提示词。

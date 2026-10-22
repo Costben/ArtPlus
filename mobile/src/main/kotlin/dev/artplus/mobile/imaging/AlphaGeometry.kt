@@ -1,9 +1,22 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import kotlin.math.abs
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.AUTO_EDGE_TOUCH_COUNT_LIMIT
+import dev.artplus.mobile.AUTO_EDGE_TOUCH_MARGIN_PX
+import dev.artplus.mobile.CORNER_MASK_BACKGROUND_DISTANCE
+import dev.artplus.mobile.CORNER_MASK_OPAQUE_ALPHA
+import dev.artplus.mobile.CORNER_MASK_SUBJECT_ALPHA
+import dev.artplus.mobile.CORNER_MASK_SUBJECT_BACKGROUND_DISTANCE
+import dev.artplus.mobile.CORNER_MASK_WHITE_EDGE_ALPHA
+import dev.artplus.mobile.CORNER_MASK_WHITE_THRESHOLD
+import dev.artplus.mobile.CORNER_MASK_ZONE_SIZE
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.MONO_EDGE_ALPHA_REPAIR_THRESHOLD
+import dev.artplus.mobile.MONO_EDGE_REPAIR_RADIUS
+import dev.artplus.mobile.NORMALIZE_ALPHA_BOUNDS_THRESHOLD
 
 /**
  * Alpha 几何：包围盒 / 质心 / 覆盖率 / 邻域判定 / 角落残留判定。

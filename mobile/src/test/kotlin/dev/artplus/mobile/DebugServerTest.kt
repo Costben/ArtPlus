@@ -4,6 +4,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.json.JSONObject
+import dev.artplus.mobile.system.headerLines
+import dev.artplus.mobile.system.jsonToParamMap
+import dev.artplus.mobile.system.parseQuery
+import dev.artplus.mobile.system.urlDecode
 
 /**
  * P4 system 守卫：Debug 服务器纯 helper（query 解析/头切分/JSON 扁平化）

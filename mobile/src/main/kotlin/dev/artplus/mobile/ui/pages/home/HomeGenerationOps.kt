@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.home
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.layout.size
@@ -13,6 +13,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.system.RootWriteMode
+import dev.artplus.mobile.system.installWithRoot
+import dev.artplus.mobile.ui.cards.GenerationResult
+import dev.artplus.mobile.ui.cards.PreviewSelections
 /**
  * Slice 2.2：主页生成调度（原 MainActivity 残留本体原样搬迁）。
  * 只做纯移动：线程名、状态文案、读写顺序与分支一律不变。

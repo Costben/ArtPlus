@@ -4,6 +4,21 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import dev.artplus.mobile.state.MainViewModel
+import dev.artplus.mobile.state.buildAppLoadStatus
+import dev.artplus.mobile.state.generatedEmptyStatus
+import dev.artplus.mobile.state.generatedFailureStatus
+import dev.artplus.mobile.state.generatedSuccessStatus
+import dev.artplus.mobile.state.iconsFailureStatus
+import dev.artplus.mobile.state.iconsSuccessStatus
+import dev.artplus.mobile.state.shouldReloadApps
+import dev.artplus.mobile.state.onCreatePostContent
+import dev.artplus.mobile.state.onCreatePreContent
+import dev.artplus.mobile.state.onDestroyCleanup
+import dev.artplus.mobile.state.onNewIntentDebug
+import dev.artplus.mobile.state.onPausePersist
+import dev.artplus.mobile.state.onResumeRefresh
+import dev.artplus.mobile.state.refreshGeneratedPackagesAsync
 
 /**
  * Slice 3.3 应用加载与生命周期调度单测（新增，不改既有 79 项语义）：

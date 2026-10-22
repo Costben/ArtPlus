@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.tabs
 
 import android.content.ClipboardManager
 import android.content.Context
@@ -30,6 +30,29 @@ import io.github.suqi8.coui.kmp.icon.extended.Download
 import io.github.suqi8.coui.kmp.icon.extended.UploadCloud
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.TuningPreset
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.state.openBatchPreviewForPreset
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.ui.cards.ServiceConfirmRequest
+import dev.artplus.mobile.ui.components.TitleBarIconButton
+import dev.artplus.mobile.ui.pages.PagerShellPage
+import dev.artplus.mobile.ui.pages.params.paramsApplyTuningParams
+import dev.artplus.mobile.ui.pages.params.paramsResetToDefaults
+import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
+import dev.artplus.mobile.ui.pages.params.paramsUpdateBatchPreviewCount
+import dev.artplus.mobile.ui.pages.presets.PresetLibraryCard
+import dev.artplus.mobile.ui.pages.presets.PresetStatusCard
+import dev.artplus.mobile.ui.pages.presets.applyPreset
+import dev.artplus.mobile.ui.pages.presets.exportPresetsToClipboard
+import dev.artplus.mobile.ui.pages.presets.overwritePreset
+import dev.artplus.mobile.ui.pages.presets.resetToPreset
+import dev.artplus.mobile.ui.pages.settings.BatchPreviewSettingsCard
 
 /**
  * S4.x：从 HomePage 的 `when (page)` 分支原样搬出的 tab 页（纯移动，key/remember 原样保留）。
@@ -104,7 +127,6 @@ PagerShellPage(
                                         .defaultMinSize(minHeight = minContentHeight),
                                     verticalArrangement = Arrangement.spacedBy(16.dp),
                                 ) {
-                                    run {
     PresetStatusCard(
                 presets = presetsSnapshot,
                 activePresetId = presetUiState.activePresetId,
@@ -291,8 +313,6 @@ PagerShellPage(
                 )
     } },
             )
-}
-                                    run {
     PresetLibraryCard(
                 presets = presetsSnapshot,
                 activePresetId = presetUiState.activePresetId,
@@ -383,8 +403,6 @@ PagerShellPage(
                 onPreview = { mainViewModel.openBatchPreviewForPreset(preset = (it), filesDir = filesDir) },
                 onMore = { mainViewModel.updatePresetUi { v -> v.copy(presetActionMenuTarget = (it)) } },
             )
-}
-                                    run {
     BatchPreviewSettingsCard(
                 value = batchConfigState.batchPreviewCount,
                 draftText = draftBatchPreviewCountText,
@@ -399,7 +417,6 @@ PagerShellPage(
                 )
     } },
             )
-}
                                 }
                             }
                         }

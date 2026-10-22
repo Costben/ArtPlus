@@ -6,6 +6,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
+import dev.artplus.mobile.pipeline.decodeBitmap
 
 /**
  * 批量预览应用元数据。

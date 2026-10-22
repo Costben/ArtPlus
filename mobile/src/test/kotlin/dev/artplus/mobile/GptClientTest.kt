@@ -8,6 +8,16 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.json.JSONArray
 import org.json.JSONObject
+import dev.artplus.mobile.pipeline.GptPromptPreset
+import dev.artplus.mobile.pipeline.activeGptForegroundPrompt
+import dev.artplus.mobile.pipeline.buildBackgroundPrompt
+import dev.artplus.mobile.pipeline.extractImageBytes
+import dev.artplus.mobile.pipeline.findImageBytes
+import dev.artplus.mobile.pipeline.looksLikeSvg
+import dev.artplus.mobile.pipeline.normalizeImagesEditUrl
+import dev.artplus.mobile.pipeline.normalizeResponsesUrl
+import dev.artplus.mobile.pipeline.parseResponsesStream
+import dev.artplus.mobile.pipeline.validatedRemoteUrl
 
 /**
  * P4 管线守卫：GPT URL 归一化/SSE 解析/远端 URL 校验/提示词组装必须与原 Activity 内联逻辑一致。

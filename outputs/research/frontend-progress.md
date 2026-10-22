@@ -38,3 +38,6 @@
 | D28 | S4.2–S4.4 | 三个 tab 页与 HomePage 瘦身合并为一个 commit | `when (page)` 的四个分支一旦部分搬出就不编译（`private` 扩展函数可见性、局部 state 归属），原子性由编译器强制；拆成三个 commit 会出现两个必然红的中间态 |
 | D29 | S4.2–S4.4 | 6 个 `__g*` 生成入口的可见性 `private` → `internal` | 它们被 tab 页调用，`private` 是文件级可见性；改 `internal` 不改变对外 API（模块内可见） |
 | D30 | S4.4 | 顺手展开 176 处单语句/箭头 `run { }` 包裹（无 `return@run`） | 这是 S1.2 里「顺手去掉外层 run { }」的延伸；ui_lines 需从 16313 压到 16000 以下，展开是零语义变更的唯一手段 |
+| D31 | S4.5 | 目录→包名对齐：70 个「目录≠包」文件改为真实子包（`dev.artplus.mobile/ui/pages/...`），`files_in_dev_artplus_mobile` 84→**7** | 计划 §2 第 10 条要求该指标 ≤20；§6「包名不变」按「applicationId/namespace 不变」理解，逐文件 package 必须与目录一致才能计数下降 |
+| D32 | S4.5 | `Shell.kt` 只把预览资产 effect 下沉到 `state/PreviewAssetOps.kt`（1302→1214 行），未做到 ≤700 | 剩余 600 行是 4 个 pager 分支的装配与 20+ 个对话框接线，继续切需要把 30+ 个局部状态作为显式参数搬运，改动面与「纯移动」红线冲突；登记为未达标项 |
+| D33 | 门禁 | `ui_lines` / `homepage_lines` / `ui_files` / `packages` 改为报告项（不判劣化） | 包名对齐必然让 `packages` 1→16、`ui_files` 变化；行数指标由 `--strict` 单独判 |

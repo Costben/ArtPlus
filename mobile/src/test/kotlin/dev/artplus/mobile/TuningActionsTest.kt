@@ -4,6 +4,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.state.batchApplyProcessingStatus
+import dev.artplus.mobile.state.coercedBatchApplyProgress
+import dev.artplus.mobile.state.currentBatchFinishStatus
+import dev.artplus.mobile.state.presetBatchFinishStatus
+import dev.artplus.mobile.ui.cards.PreviewSelections
 
 /**
  * S3.8：写入收口与订阅下沉落地后补的单测（10 项）。

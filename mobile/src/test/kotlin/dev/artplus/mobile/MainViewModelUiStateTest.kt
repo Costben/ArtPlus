@@ -5,6 +5,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import dev.artplus.mobile.state.MainViewModel
+import dev.artplus.mobile.ui.cards.AdvancedSettingsCategory
+import dev.artplus.mobile.ui.cards.AdvancedSettingsTab
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.cards.BatchOutputMode
+import dev.artplus.mobile.ui.cards.GeneratedFilter
+import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
 
 /**
  * Slice 3.1 状态收敛守卫（新增，不改既有 MainViewModelTest 14 项语义）：

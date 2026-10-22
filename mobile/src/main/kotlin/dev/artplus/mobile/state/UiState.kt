@@ -1,6 +1,30 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.state
 
 import android.net.Uri
+import dev.artplus.mobile.BatchPreviewSampler
+import dev.artplus.mobile.DEFAULT_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.DEFAULT_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.DEFAULT_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.TuningPreset
+import dev.artplus.mobile.imaging.CustomImageKind
+import dev.artplus.mobile.imaging.RmbgInferenceReport
+import dev.artplus.mobile.pipeline.BatchPreviewResult
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.PreviewAssets
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.ui.cards.AdvancedSettingsCategory
+import dev.artplus.mobile.ui.cards.AdvancedSettingsTab
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.cards.BatchApplyProgress
+import dev.artplus.mobile.ui.cards.BatchOutputMode
+import dev.artplus.mobile.ui.cards.BatchPreviewProgress
+import dev.artplus.mobile.ui.cards.ExportProgress
+import dev.artplus.mobile.ui.cards.GeneratedFilter
+import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
+import dev.artplus.mobile.ui.cards.RootWriteConfirmRequest
+import dev.artplus.mobile.ui.cards.ServiceConfirmRequest
+import dev.artplus.mobile.ui.cards.UpdateInfo
 
 /**
  * Slice 3.1 状态收敛：非调参 UI 状态的结构化分组。

@@ -1,4 +1,12 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.params
+
+import dev.artplus.mobile.MAX_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.MAX_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.MAX_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.MIN_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.MIN_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.MIN_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
 
 /**
  * Slice 2.4：预览显示存取族（原 MainActivity 本体原样搬迁）。

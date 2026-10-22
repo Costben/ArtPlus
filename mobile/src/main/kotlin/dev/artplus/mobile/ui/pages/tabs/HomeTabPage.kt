@@ -1,5 +1,6 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.tabs
 
+import dev.artplus.mobile.R
 import android.app.WallpaperManager
 import android.content.Context
 import android.widget.Toast
@@ -29,6 +30,65 @@ import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.Refresh
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.ICON_CACHE_SIZE
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE
+import dev.artplus.mobile.ROOT_UXICONS_DIR
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.data.getCachedAppIcon
+import dev.artplus.mobile.data.markPackageGenerated
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.previewAssetsForCandidate
+import dev.artplus.mobile.pipeline.findRmbgComponent
+import dev.artplus.mobile.pipeline.preparedForDraw
+import dev.artplus.mobile.pipeline.rmbgTunedForegroundRaw
+import dev.artplus.mobile.state.launchUiFriendly
+import dev.artplus.mobile.state.loadCachedAppIconOp
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.refreshArtPlusIconsAsync
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.system.RootWriteMode
+import dev.artplus.mobile.system.artPlusPackageDir
+import dev.artplus.mobile.system.ensureNomediaAtTreeRoot
+import dev.artplus.mobile.system.exportToTree
+import dev.artplus.mobile.system.exportToTreeFast
+import dev.artplus.mobile.system.hasGeneratedPackageBaseAssets
+import dev.artplus.mobile.system.installWithRoot
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.cards.ExportProgress
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.cards.RootWriteConfirmRequest
+import dev.artplus.mobile.ui.components.TitleBarIconButton
+import dev.artplus.mobile.ui.pages.PagerShellPage
+import dev.artplus.mobile.ui.pages.home.GeneratedPreviewCard
+import dev.artplus.mobile.ui.pages.home.GenerationActionCard
+import dev.artplus.mobile.ui.pages.home.LayerDebugCard
+import dev.artplus.mobile.ui.pages.home.PreviewControlCard
+import dev.artplus.mobile.ui.pages.home.StatusCard
+import dev.artplus.mobile.ui.pages.home.applyPreviewChoiceToAll
+import dev.artplus.mobile.ui.pages.home.applyRmbgCandidateForMode
+import dev.artplus.mobile.ui.pages.home.generateGptCandidateForMode
+import dev.artplus.mobile.ui.pages.home.generateSelectedApp
+import dev.artplus.mobile.ui.pages.home.homeApplyPreviewChoice
+import dev.artplus.mobile.ui.pages.home.homeWriteSelectedWithRoot
+import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
+import dev.artplus.mobile.ui.pages.params.paramsUpdateForegroundSubjectPercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateNightSubjectLightBackgroundEnabled
+import dev.artplus.mobile.ui.pages.params.paramsUpdatePreviewCornerRadiusDp
+import dev.artplus.mobile.ui.pages.params.paramsUpdatePreviewDesktopBackground
+import dev.artplus.mobile.ui.pages.params.paramsUpdatePreviewIconSizeDp
+import dev.artplus.mobile.ui.pages.params.paramsUpdatePreviewStripEnabled
+import dev.artplus.mobile.ui.pages.picker.AppIcon
+import dev.artplus.mobile.ui.pages.picker.PermissionCard
+import dev.artplus.mobile.ui.pages.picker.pickerLoadBundledPreviewWallpaperBitmap
+import dev.artplus.mobile.ui.pages.picker.pickerLoadCustomWallpaperBitmap
+import dev.artplus.mobile.ui.pages.picker.pickerLoadPreviewWallpaperBitmap
+import dev.artplus.mobile.ui.pages.picker.pickerOpenAppPermissionSettings
+import dev.artplus.mobile.ui.pages.picker.pickerOpenUsageAccessSettings
+import dev.artplus.mobile.ui.pages.picker.pickerSystemMaterialColor
+import dev.artplus.mobile.ui.pages.picker.pickerSystemWallpaperDrawable
+import dev.artplus.mobile.ui.pages.picker.pickerToastStatus
 
 /**
  * S4.x：从 HomePage 的 `when (page)` 分支原样搬出的 tab 页（纯移动，key/remember 原样保留）。
@@ -57,12 +117,10 @@ PagerShellPage(
                             enabled = !shellState.isBusy && !previewSessionState.isRefreshingArtPlusIcons,
                             onClick = {
                                 if (mainViewModel.confirm.value.autoConfirmRefresh) {
-                                    run {
     mainViewModel.refreshArtPlusIconsAsync(
                 contentResolver = contentResolver,
                 apkPath = applicationInfo.sourceDir,
             )
-}
                                 } else {
                                     mainViewModel.updateConfirm { it -> it.copy(refreshConfirmRememberAuto = (false)) }
                                     mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (true)) }
@@ -86,8 +144,6 @@ PagerShellPage(
                     ) {
                         if (!pickerState.packageListPermissionGranted || !pickerState.usageAccessGranted) {
                             item(key = "permission") {
-                                run {
-
             // 热修复：pickerState/shellState 已提升至 HomePage 顶层，此处复用（删重复订阅）。
             // Slice 3.1: Activity侧collect读VM单源。
             PermissionCard(
@@ -108,12 +164,9 @@ PagerShellPage(
                 )
     } },
             )
-}
                             }
                         }
                         item(key = "status") {
-                            run {
-
             // 热修复：shellState 已提升至 HomePage 顶层，此处复用（删重复订阅）。
             // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
             StatusCard(
@@ -141,7 +194,6 @@ PagerShellPage(
                 )
      },
             )
-}
                         }
                         item(key = "generation_action") {
                             run {
@@ -153,7 +205,6 @@ val __act4 = LocalContext.current
                 onLocalExport = { run {
 
                 if (mainViewModel.shell.value.outputTreeUri == null) {
-                    run {
             pickerToastStatus(
                         message = ("还没有设置目录"),
                         postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -163,7 +214,7 @@ val __act4 = LocalContext.current
                             }
                         },
                     )
-        }
+        
                     mainViewModel.updatePreviewSession { it -> it.copy(exportDialogVisible = (true)) }
                     return@run
                 }
@@ -177,7 +228,6 @@ val __act4 = LocalContext.current
                     )
         } }?.takeIf { hasGeneratedPackageBaseAssets(it) }
                 if (dir == null || !hasGeneratedPackageBaseAssets(dir)) {
-                    run {
             pickerToastStatus(
                         message = ("没有可导出的图标包"),
                         postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -187,7 +237,7 @@ val __act4 = LocalContext.current
                             }
                         },
                     )
-        }
+        
                     return@run
                 }
                 if (mainViewModel.shell.value.isBusy) return@run
@@ -444,7 +494,6 @@ val __act3 = LocalContext.current
                 wallpaperKey = batchConfigState.customWallpaperPath,
                 loadWallpaper = {
                     withContext(Dispatchers.IO) {
-                        run {
         pickerLoadCustomWallpaperBitmap(
                     path = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
                     cachedPath = cachedCustomWallpaperPath,
@@ -455,7 +504,7 @@ val __act3 = LocalContext.current
                     },
                     shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
                 )
-    } ?: run {
+     ?: run {
         pickerLoadPreviewWallpaperBitmap(
                     getCached = { cachedSystemWallpaper },
                     setCached = { cachedSystemWallpaper = it },
@@ -613,7 +662,6 @@ val __act3 = LocalContext.current
                             }
                         }
                         item(key = "preview_control") {
-                            run {
 val __act2 = LocalContext.current
     PreviewControlCard(
                 tuningState = paramsState,
@@ -706,10 +754,8 @@ val __act2 = LocalContext.current
                 )
     } },
             )
-}
                         }
                         item(key = "layer_debug") {
-                            run {
     LayerDebugCard(
                 // 热修复2：调试卡渲染位经已订阅 previewSessionState 读取。
                 dirPath = previewSessionState.previewDirPath,
@@ -720,7 +766,6 @@ val __act2 = LocalContext.current
                 assets = previewSessionState.sharedPreviewAssets,
                 tuningState = paramsState,
             )
-}
                         }
                     }
                 }

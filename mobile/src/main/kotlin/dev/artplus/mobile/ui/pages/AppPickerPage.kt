@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages
 
 import android.app.AppOpsManager
 import android.content.Context
@@ -37,6 +37,58 @@ import io.github.suqi8.coui.kmp.basic.TopAppBar
 import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
+import dev.artplus.mobile.AppVisibility
+import dev.artplus.mobile.ICON_CACHE_SIZE
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.PRELOAD_ICON_COUNT
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.data.getCachedAppIcon
+import dev.artplus.mobile.data.markPackageGenerated
+import dev.artplus.mobile.data.updateGeneratedPackageCache
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.pipeline.rmbgTunedForegroundRaw
+import dev.artplus.mobile.state.addLiquidGlassToMultiSelectedGenerated
+import dev.artplus.mobile.state.applyCurrentPresetBatch
+import dev.artplus.mobile.state.executeAddLiquidGlassToMultiSelectedGenerated
+import dev.artplus.mobile.state.executeApplyCurrentBatch
+import dev.artplus.mobile.state.executeApplyPresetToSelectedApps
+import dev.artplus.mobile.state.launchUiFriendly
+import dev.artplus.mobile.state.loadCachedAppIconOp
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.refreshGeneratedPackagesAsync
+import dev.artplus.mobile.state.requestAppLoad
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.state.toggleMultiSelectedPackage
+import dev.artplus.mobile.system.applyLiquidGlassToGeneratedPackage
+import dev.artplus.mobile.system.artPlusPackageDir
+import dev.artplus.mobile.system.buildGeneratedPackageSession
+import dev.artplus.mobile.system.existingGeneratedPackageDir
+import dev.artplus.mobile.system.generateArtPlusPackage
+import dev.artplus.mobile.system.hasGeneratedPackageBaseAssets
+import dev.artplus.mobile.system.installLiquidGlassFilesWithRoot
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.cards.ServiceConfirmRequest
+import dev.artplus.mobile.ui.components.TitleBarIconButton
+import dev.artplus.mobile.ui.components.rememberLinkedTopAppBarScrollBehavior
+import dev.artplus.mobile.ui.pages.home.EmptyAppListCard
+import dev.artplus.mobile.ui.pages.home.homeSelectAppAndRestore
+import dev.artplus.mobile.ui.pages.params.paramsApplyTuningParams
+import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
+import dev.artplus.mobile.ui.pages.picker.AppIcon
+import dev.artplus.mobile.ui.pages.picker.AppMultiSelectActions
+import dev.artplus.mobile.ui.pages.picker.AppPickerControlsCard
+import dev.artplus.mobile.ui.pages.picker.AppRow
+import dev.artplus.mobile.ui.pages.picker.pickerAllFilteredSelected
+import dev.artplus.mobile.ui.pages.picker.pickerCheckQueryPermission
+import dev.artplus.mobile.ui.pages.picker.pickerHasUsageAccess
+import dev.artplus.mobile.ui.pages.picker.pickerPostStatus
+import dev.artplus.mobile.ui.pages.picker.pickerRefreshPermissionState
 
 @Composable
 internal fun MainActivity.AppPickerPage(
@@ -425,8 +477,6 @@ internal fun MainActivity.AppPickerPage(
             }
             if (filteredApps.isEmpty()) {
                 item {
-                    run {
-
             // 热修复：pickerState/shellState 已提升至 AppPickerPage 顶层，此处复用（删重复订阅）。
             // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
             EmptyAppListCard(
@@ -472,7 +522,6 @@ internal fun MainActivity.AppPickerPage(
                 )
     } },
             )
-}
                 }
             } else {
                 items(
@@ -547,7 +596,6 @@ internal fun MainActivity.AppPickerPage(
                             }),
                 onToggleMultiSelect = ({ mainViewModel.toggleMultiSelectedPackage(packageName = (entry.packageName), current = mainViewModel.picker.value.multiSelectedPackageNames) }),
                 icon = {
-                    run {
         AppIcon(
                     entry = ((entry)),
                     size = (48.dp),
@@ -561,7 +609,7 @@ internal fun MainActivity.AppPickerPage(
                     )
         } },
                 )
-    }
+    
                 },
             )
 }

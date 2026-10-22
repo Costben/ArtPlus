@@ -5,6 +5,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import dev.artplus.mobile.state.MainViewModel
+import dev.artplus.mobile.state.buildBatchApplyProgress
+import dev.artplus.mobile.state.currentBatchFinishStatus
+import dev.artplus.mobile.state.liquidGlassBatchFinishStatus
+import dev.artplus.mobile.state.presetBatchFinishStatus
+import dev.artplus.mobile.state.resolvePresetBatchPackages
+import dev.artplus.mobile.state.toggleMultiSelection
+import dev.artplus.mobile.state.openBatchPreviewForPreset
+import dev.artplus.mobile.state.toggleMultiSelectedPackage
+import dev.artplus.mobile.state.updateBatchApplyProgress
 
 /**
  * Slice 3.2 业务单测（新增，不改既有 MainViewModelTest 14 项 / MainViewModelUiStateTest 6 项语义）：

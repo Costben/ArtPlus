@@ -1,9 +1,52 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.system
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import java.io.File
+import dev.artplus.mobile.FOREGROUND_ORIGINAL_BACKUP_NAME
+import dev.artplus.mobile.GPT_SOURCE_SIZE
+import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.ROOT_SCAN_TIMEOUT_MS
+import dev.artplus.mobile.ROOT_UXICONS_DIR
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.SIZE_1X2
+import dev.artplus.mobile.SIZE_2X1
+import dev.artplus.mobile.SIZE_2X2
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.imaging.AdaptiveForegroundMode
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.imaging.OriginalForegroundCleanupMode
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.adjustColor
+import dev.artplus.mobile.imaging.applyForegroundShadow
+import dev.artplus.mobile.imaging.buildLocalCandidates
+import dev.artplus.mobile.imaging.buildLocalIconLayers
+import dev.artplus.mobile.imaging.candidateWithCustomOverrides
+import dev.artplus.mobile.imaging.centerOnCanvas
+import dev.artplus.mobile.imaging.drawDrawable
+import dev.artplus.mobile.imaging.drawLocalCandidateSourceIcon
+import dev.artplus.mobile.imaging.ensureCleanDir
+import dev.artplus.mobile.imaging.ensureFreshDir
+import dev.artplus.mobile.imaging.foregroundForSize
+import dev.artplus.mobile.imaging.liquidGlassBackgroundForSize
+import dev.artplus.mobile.imaging.monochromeForCandidate
+import dev.artplus.mobile.imaging.normalDarkForeground
+import dev.artplus.mobile.imaging.renderCandidateForegroundBase
+import dev.artplus.mobile.imaging.resizeBitmap
+import dev.artplus.mobile.imaging.savePng
+import dev.artplus.mobile.imaging.scaleMonochromeForTheme
+import dev.artplus.mobile.imaging.simpleMonochromeAlphaFromDefaultSubject
+import dev.artplus.mobile.imaging.subjectShadowBitmap
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.GptImageMode
+import dev.artplus.mobile.pipeline.GptPromptPreset
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.pipeline.generateGptLayers
+import dev.artplus.mobile.ui.cards.GenerationResult
+import dev.artplus.mobile.ui.cards.PreviewSelections
 
 /**
  * Root 安装（P4 拆分）：图标包 root 写入 + 快速备份。

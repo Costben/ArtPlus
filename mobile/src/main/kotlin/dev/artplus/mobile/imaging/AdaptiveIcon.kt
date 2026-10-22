@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
@@ -7,6 +7,25 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import kotlin.math.roundToInt
+import dev.artplus.mobile.ADAPTIVE_BACKGROUND_DETAIL_DISTANCE
+import dev.artplus.mobile.ADAPTIVE_BACKGROUND_DETAIL_MAX_RATIO
+import dev.artplus.mobile.ADAPTIVE_BACKGROUND_DETAIL_MIN_RATIO
+import dev.artplus.mobile.ADAPTIVE_CLEAN_CORNER_RATIO
+import dev.artplus.mobile.ADAPTIVE_CLEAN_SOLID_DISTANCE
+import dev.artplus.mobile.ADAPTIVE_DIRECT_DETAIL_BACKGROUND_DISTANCE
+import dev.artplus.mobile.ADAPTIVE_DIRECT_DETAIL_MIN_RATIO
+import dev.artplus.mobile.ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE
+import dev.artplus.mobile.ADAPTIVE_DIRECT_MIN_COVERAGE
+import dev.artplus.mobile.ADAPTIVE_DIRECT_MIN_LOST_COVERAGE
+import dev.artplus.mobile.ADAPTIVE_DIRECT_PLATE_BACKGROUND_DISTANCE
+import dev.artplus.mobile.ADAPTIVE_DIRECT_PLATE_MAX_SATURATION
+import dev.artplus.mobile.ADAPTIVE_DIRECT_PLATE_MIN_LUMA
+import dev.artplus.mobile.ADAPTIVE_DIRECT_PLATE_MIN_RATIO
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.LOCAL_ICON_RENDER_SCALE
+import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.MONOCHROME_MIN_COVERAGE
+import dev.artplus.mobile.SIZE_1X1
 
 /**
  * 自适应图标管线：Drawable→图层桥 + 前景优选 + 组件候选。

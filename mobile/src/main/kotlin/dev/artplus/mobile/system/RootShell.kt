@@ -1,8 +1,20 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.system
 
 import android.content.ContentResolver
 import android.provider.Settings
 import java.util.concurrent.TimeUnit
+import dev.artplus.mobile.ARTPLUS_ICON_REFRESH_TIMEOUT_MS
+import dev.artplus.mobile.COLOROS_ARTPLUS_ON
+import dev.artplus.mobile.COLOROS_DEFAULT_ICON_THEME
+import dev.artplus.mobile.COLOROS_INSPIRATION_ICON_THEME
+import dev.artplus.mobile.COLOROS_UXICON_ARTPLUS_MASK
+import dev.artplus.mobile.COLOROS_UXICON_ARTPLUS_SHIFT
+import dev.artplus.mobile.COLOROS_UXICON_THEME_MASK
+import dev.artplus.mobile.COLOROS_UXICON_THEME_SHIFT
+import dev.artplus.mobile.COLOROS_UX_ICON_CONFIG_KEY
+import dev.artplus.mobile.FALLBACK_ARTPLUS_INSPIRATION_UXICON_CONFIG
+import dev.artplus.mobile.ROOT_UXICONS_DIR
+import dev.artplus.mobile.UxIconConfigCli
 
 /**
  * Root 通道（P3 拆分）：su 命令执行 + shell 引用转义 + 图标刷新/包列表。

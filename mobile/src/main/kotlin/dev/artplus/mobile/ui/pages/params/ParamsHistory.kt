@@ -1,6 +1,8 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.params
 
 import kotlin.math.roundToInt
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.pipeline.GenerationSession
 
 /**
  * Slice 2.4：历史/应用/加载族（原 MainActivity 本体原样搬迁）。

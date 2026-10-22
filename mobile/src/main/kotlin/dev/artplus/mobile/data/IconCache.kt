@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.data
 
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable
 import android.util.LruCache
 import kotlin.math.roundToInt
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.imaging.drawDrawable
 
 /**
  * 图标缓存层（P3 拆分）：内存缓存读写 + 图标加载/预热 + 位图缩放/绘制。

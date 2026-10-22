@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.cards
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -12,6 +12,10 @@ import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.basic.TextFieldMode
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import dev.artplus.mobile.ui.components.ArtAlertDialog
+import dev.artplus.mobile.ui.components.ArtDialog
+import dev.artplus.mobile.ui.components.ArtProgressDialog
+import dev.artplus.mobile.ui.components.InlineInputField
 
 @Composable
 internal fun BatchApplyProgressDialog(progress: BatchApplyProgress) {

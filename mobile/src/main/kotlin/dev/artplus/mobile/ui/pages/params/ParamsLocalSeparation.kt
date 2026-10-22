@@ -1,6 +1,11 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.params
 
 import android.content.SharedPreferences
+import dev.artplus.mobile.PREF_LOCAL_SEPARATION_MODE
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.pipeline.GenerationSession
 
 /**
  * Slice 2.4：本地分离存取族（原 MainActivity 本体原样搬迁）。

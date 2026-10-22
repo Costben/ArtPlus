@@ -35,6 +35,71 @@ import org.json.JSONArray
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.imaging.AdaptiveForegroundMode
+import dev.artplus.mobile.imaging.CustomImageKind
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.imaging.OriginalForegroundCleanupMode
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.monochromeForCandidate
+import dev.artplus.mobile.imaging.renderCandidateForeground
+import dev.artplus.mobile.pipeline.GptImageMode
+import dev.artplus.mobile.pipeline.GptPromptPreset
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.pipeline.buildRmbgDebugCandidate
+import dev.artplus.mobile.pipeline.findRmbgComponent
+import dev.artplus.mobile.pipeline.loadCustomImageBitmap
+import dev.artplus.mobile.pipeline.rmbgTunedForegroundRaw
+import dev.artplus.mobile.state.launchUiFriendly
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.requestAppLoad
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.system.DebugServerHooks
+import dev.artplus.mobile.system.RootWriteMode
+import dev.artplus.mobile.system.backupPackageFast
+import dev.artplus.mobile.system.debugInspectPackage
+import dev.artplus.mobile.system.ensureNomediaAtTreeRoot
+import dev.artplus.mobile.system.exportToTree
+import dev.artplus.mobile.system.generateArtPlusPackage
+import dev.artplus.mobile.system.installWithRoot
+import dev.artplus.mobile.system.listRootIconPackages
+import dev.artplus.mobile.system.resolveTreeUriToFilePath
+import dev.artplus.mobile.system.runRootCommand
+import dev.artplus.mobile.system.shQuote
+import dev.artplus.mobile.system.startDebugGeneration
+import dev.artplus.mobile.system.writePackageOutputs
+import dev.artplus.mobile.ui.cards.BatchOutputMode
+import dev.artplus.mobile.ui.cards.ExportProgress
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.pages.params.paramsApplyTuningParams
+import dev.artplus.mobile.ui.pages.params.paramsInitTuningHistory
+import dev.artplus.mobile.ui.pages.params.paramsLoadGptSettings
+import dev.artplus.mobile.ui.pages.params.paramsLoadImageSettings
+import dev.artplus.mobile.ui.pages.params.paramsLoadLiquidGlassSettings
+import dev.artplus.mobile.ui.pages.params.paramsLoadLocalSeparationSettings
+import dev.artplus.mobile.ui.pages.params.paramsLoadRmbgSettings
+import dev.artplus.mobile.ui.pages.params.paramsLoadTuningParams
+import dev.artplus.mobile.ui.pages.params.paramsRmbgInferenceStatusSummary
+import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
+import dev.artplus.mobile.ui.pages.picker.pickerCheckQueryPermission
+import dev.artplus.mobile.ui.pages.picker.pickerDecodeWallpaperBounds
+import dev.artplus.mobile.ui.pages.picker.pickerGetApplicationInfoCompat
+import dev.artplus.mobile.ui.pages.picker.pickerHasUsageAccess
+import dev.artplus.mobile.ui.pages.picker.pickerImportCustomWallpaper
+import dev.artplus.mobile.ui.pages.picker.pickerIsCustomWallpaperFile
+import dev.artplus.mobile.ui.pages.picker.pickerLoadUiState
+import dev.artplus.mobile.ui.pages.picker.pickerNeedsQueryPermission
+import dev.artplus.mobile.ui.pages.picker.pickerOpenUsageAccessSettings
+import dev.artplus.mobile.ui.pages.picker.pickerPostStatus
+import dev.artplus.mobile.ui.pages.picker.pickerRefreshPermissionState
+import dev.artplus.mobile.ui.pages.picker.pickerRequestDeclaredPermissions
+import dev.artplus.mobile.ui.pages.picker.pickerRequestSpecialPermissionsOnce
+import dev.artplus.mobile.ui.pages.picker.pickerToastStatus
+import dev.artplus.mobile.ui.pages.presets.refreshPresets
+import dev.artplus.mobile.system.DebugHttpServer
 
 internal fun MainActivity.startDebugHttpServerIfNeeded() {
     val __actHooks = this
@@ -1174,7 +1239,7 @@ internal fun MainActivity.refreshPermissionState() =
         )
 
 internal fun MainActivity.loadPresetState() =
-        loadPresetState(
+        dev.artplus.mobile.ui.pages.presets.loadPresetState(
             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
             batchOutputModeKey = MainActivity.PREF_BATCH_OUTPUT_MODE,
             batchOutputModeFallbackName = BatchOutputMode.Root.name,
@@ -1307,7 +1372,7 @@ internal fun MainActivity.requestSpecialPermissionsOnce() =
         )
 
 internal fun MainActivity.handleDebugGenerateIntent(intent: Intent?) =
-        handleDebugGenerateIntent(intent, {  -> run {
+        dev.artplus.mobile.system.handleDebugGenerateIntent(intent, {  -> run {
     (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 } }, ::isDebugTokenValid, { __a0: String, __a1: Boolean, __a2: Boolean, __a3: LocalSeparationMode, __a4: RootWriteMode -> run {
     startDebugGeneration(

@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.components
 
 import android.provider.Settings
 import androidx.compose.foundation.Image

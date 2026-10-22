@@ -1,7 +1,13 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.FOREGROUND_EDGE_FEATHER_ALPHA_SCALE
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.MONO_EDGE_ALPHA_DROP_THRESHOLD
+import dev.artplus.mobile.MONO_EDGE_ALPHA_REPAIR_THRESHOLD
+import dev.artplus.mobile.MONO_EDGE_GROW_STRENGTH
 
 /**
  * 边缘收尾：透明边缘串色修复 + 可见边缘羽化。

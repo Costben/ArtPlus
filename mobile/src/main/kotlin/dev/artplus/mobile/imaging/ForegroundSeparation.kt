@@ -1,7 +1,35 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.ADAPTIVE_DIRECT_DETAIL_MAX_LUMA
+import dev.artplus.mobile.ADAPTIVE_DIRECT_DETAIL_MIN_RATIO
+import dev.artplus.mobile.ADAPTIVE_DIRECT_FULL_PLATE_COVERAGE
+import dev.artplus.mobile.ADAPTIVE_DIRECT_PLATE_MAX_SATURATION
+import dev.artplus.mobile.ADAPTIVE_DIRECT_PLATE_MIN_LUMA
+import dev.artplus.mobile.ADAPTIVE_DIRECT_PLATE_MIN_RATIO
+import dev.artplus.mobile.ADAPTIVE_SUBTRACT_TRANSPARENT_DISTANCE
+import dev.artplus.mobile.CORNER_MASK_MAX_REMOVED_RATIO
+import dev.artplus.mobile.CORNER_MASK_SEED_SIZE
+import dev.artplus.mobile.EDGE_BAND_RATIO
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.ORIGINAL_CLEANUP_ALPHA_BOUNDS_THRESHOLD
+import dev.artplus.mobile.ORIGINAL_CLEANUP_MIN_BOUNDS_RATIO
+import dev.artplus.mobile.ORIGINAL_CLEANUP_MIN_COVERAGE_DROP
+import dev.artplus.mobile.ORIGINAL_CLEANUP_MIN_REMAINING_COVERAGE
+import dev.artplus.mobile.PLAIN_ICON_BACKGROUND_ALPHA_THRESHOLD
+import dev.artplus.mobile.PLAIN_ICON_EDGE_BAND_RATIO
+import dev.artplus.mobile.PLAIN_ICON_MIN_BACKGROUND_SAMPLES
+import dev.artplus.mobile.PLATE_BORDER_COVERAGE_THRESHOLD
+import dev.artplus.mobile.PLATE_MIN_REMOVED_RATIO
+import dev.artplus.mobile.PLATE_MIN_SAFE_BOUNDS_RATIO
+import dev.artplus.mobile.PLATE_MIN_SAFE_KEEP_RATIO
+import dev.artplus.mobile.PLATE_MIN_SAFE_REMAINING_COVERAGE
+import dev.artplus.mobile.RESIDUE_BACKGROUND_MIN_SATURATION
+import dev.artplus.mobile.RESIDUE_CONNECTED_MAX_ALPHA
+import dev.artplus.mobile.RESIDUE_CONNECTED_TRANSPARENT_RADIUS
+import dev.artplus.mobile.RESIDUE_MAX_ALPHA
 
 /**
  * 前景分离：纯色背景估计/减背景/去底板/残留清理。

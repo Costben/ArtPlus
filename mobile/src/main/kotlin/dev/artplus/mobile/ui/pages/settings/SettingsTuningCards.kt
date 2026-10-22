@@ -1,9 +1,33 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import dev.artplus.mobile.MAX_BACKGROUND_SEPARATION_PERCENT
+import dev.artplus.mobile.MAX_EDGE_POLISH_PERCENT
+import dev.artplus.mobile.MAX_PLATE_REMOVAL_PERCENT
+import dev.artplus.mobile.MAX_RMBG_ALPHA_STRENGTH_PERCENT
+import dev.artplus.mobile.MAX_RMBG_EDGE_ADJUST_PERCENT
+import dev.artplus.mobile.MAX_RMBG_EDGE_FEATHER_PERCENT
+import dev.artplus.mobile.MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT
+import dev.artplus.mobile.MAX_SHADOW_REMOVAL_PERCENT
+import dev.artplus.mobile.MIN_BACKGROUND_SEPARATION_PERCENT
+import dev.artplus.mobile.MIN_EDGE_POLISH_PERCENT
+import dev.artplus.mobile.MIN_PLATE_REMOVAL_PERCENT
+import dev.artplus.mobile.MIN_RMBG_ALPHA_STRENGTH_PERCENT
+import dev.artplus.mobile.MIN_RMBG_EDGE_ADJUST_PERCENT
+import dev.artplus.mobile.MIN_RMBG_EDGE_FEATHER_PERCENT
+import dev.artplus.mobile.MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT
+import dev.artplus.mobile.MIN_SHADOW_REMOVAL_PERCENT
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.ui.cards.NumberParameterControl
+import dev.artplus.mobile.ui.cards.SegmentedControl
+import dev.artplus.mobile.ui.components.LibrarySettingRow
+import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.SectionDivider
+import dev.artplus.mobile.ui.components.SettingsIconKind
 
 /**
  * Slice 2.3：本地管线/规则/RMBG 调参卡片（原 MainActivity 本体原样搬迁）。

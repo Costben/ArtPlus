@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.system
 
 import android.content.Intent
 import android.content.SharedPreferences
@@ -23,6 +23,48 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
 import org.json.JSONObject
+import dev.artplus.mobile.DEBUG_HTTP_ABSTRACT_NAME
+import dev.artplus.mobile.DEBUG_HTTP_MAX_BODY_BYTES
+import dev.artplus.mobile.DEBUG_HTTP_MAX_HEADER_BYTES
+import dev.artplus.mobile.DEBUG_HTTP_READ_TIMEOUT_MS
+import dev.artplus.mobile.DEBUG_HTTP_TOKEN_HEADER
+import dev.artplus.mobile.DEBUG_HTTP_TOKEN_PARAM
+import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_INSTALL_ROOT
+import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_MODE
+import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_PACKAGE
+import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_ROOT_WRITE_MODE
+import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_TOKEN
+import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_USE_GPT
+import dev.artplus.mobile.LOCAL_ICON_RENDER_SCALE
+import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.data.markPackageGenerated
+import dev.artplus.mobile.imaging.AdaptiveForegroundMode
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.imaging.OriginalForegroundCleanupMode
+import dev.artplus.mobile.imaging.RmbgInferenceReport
+import dev.artplus.mobile.imaging.alphaCoverage
+import dev.artplus.mobile.imaging.bitmapStatsJson
+import dev.artplus.mobile.imaging.buildLocalCandidates
+import dev.artplus.mobile.imaging.buildLocalIconLayers
+import dev.artplus.mobile.imaging.chooseBetterAdaptiveForeground
+import dev.artplus.mobile.imaging.drawDrawable
+import dev.artplus.mobile.imaging.drawLocalCandidateSourceIcon
+import dev.artplus.mobile.imaging.ensureFreshDir
+import dev.artplus.mobile.imaging.hasAdaptiveMaskArtifact
+import dev.artplus.mobile.imaging.isUsableDirectAdaptiveForeground
+import dev.artplus.mobile.imaging.nightForeground
+import dev.artplus.mobile.imaging.resizeBitmap
+import dev.artplus.mobile.imaging.savePng
+import dev.artplus.mobile.imaging.subtractBackground
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.ui.cards.GenerationResult
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.cards.RmbgDebugCandidate
 
 /**
  * Debug 服务器（P4 拆分）：TCP + 本地抽象 socket 双通道 HTTP 服务。

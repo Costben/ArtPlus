@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.presets
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +31,12 @@ import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.basic.TextFieldMode
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.TuningPreset
+import dev.artplus.mobile.ui.cards.CompactPresetRow
+import dev.artplus.mobile.ui.cards.formatPresetDate
+import dev.artplus.mobile.ui.components.AppTagCornerRadius
+import dev.artplus.mobile.ui.components.SectionCard
 
 /**
  * Slice 2.1：预设页卡片 UI（原 MainActivity.PresetStatusCard / PresetLibraryCard 原样搬迁）。

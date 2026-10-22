@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.state
 
 import android.content.ContentResolver
 import android.content.SharedPreferences
@@ -10,6 +10,16 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.data.getCachedAppIcon
+import dev.artplus.mobile.data.loadAppIconBitmap
+import dev.artplus.mobile.data.preloadAppIcons
+import dev.artplus.mobile.data.scanRootGeneratedPackages
+import dev.artplus.mobile.data.updateGeneratedPackageCache
+import dev.artplus.mobile.system.refreshArtPlusIconsBlocking
+import dev.artplus.mobile.ui.pages.picker.pickerLoadCachedAppIcon
+import dev.artplus.mobile.data.loadApps
+import dev.artplus.mobile.loadApps
 
 /**
  * Slice 3.3：应用加载与生命周期调度下沉至 MainViewModel。

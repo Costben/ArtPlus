@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
@@ -31,6 +31,50 @@ import io.github.suqi8.coui.kmp.basic.ScrollBehavior
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.ROOT_UXICONS_DIR
+import dev.artplus.mobile.pipeline.clearInstalledRmbgComponent
+import dev.artplus.mobile.pipeline.installRmbgComponentFromUrl
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.system.backupPackageFast
+import dev.artplus.mobile.system.ensureNomediaAtTreeRoot
+import dev.artplus.mobile.system.formatTreeUriDisplay
+import dev.artplus.mobile.system.listRootIconPackages
+import dev.artplus.mobile.system.resolveTreeUriToFilePath
+import dev.artplus.mobile.system.shQuote
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.cards.ExportProgress
+import dev.artplus.mobile.ui.cards.ServiceConfirmRequest
+import dev.artplus.mobile.ui.components.ArtDialog
+import dev.artplus.mobile.ui.components.LibrarySettingRow
+import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.SectionDivider
+import dev.artplus.mobile.ui.components.SettingsIconKind
+import dev.artplus.mobile.ui.components.settingsIconForTitle
+import dev.artplus.mobile.ui.pages.params.paramsApplyTuningParams
+import dev.artplus.mobile.ui.pages.params.paramsResetToDefaults
+import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveRmbgSettings
+import dev.artplus.mobile.ui.pages.picker.pickerToastStatus
+import dev.artplus.mobile.ui.pages.settings.InputSettingsCard
+import dev.artplus.mobile.ui.pages.settings.OutputCard
+import dev.artplus.mobile.pipeline.findRmbgComponent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateRmbgModelPreset
+import dev.artplus.mobile.ui.pages.params.paramsUpdatePreviewStripEnabled
+import dev.artplus.mobile.RMBG_MODEL_PRESETS
+import dev.artplus.mobile.ui.pages.settings.RmbgComponentCard
+import dev.artplus.mobile.ui.pages.picker.pickerClearCustomWallpaper
+import dev.artplus.mobile.system.exportToTree
+import dev.artplus.mobile.ui.pages.settings.PreviewStripSettingsCard
+import dev.artplus.mobile.ui.pages.settings.WallpaperSettingsCard
+import dev.artplus.mobile.system.runRootCommand
+import dev.artplus.mobile.ui.pages.settings.GptSettingsCard
+import dev.artplus.mobile.ui.pages.params.paramsCurrentRmbgModelPreset
+import dev.artplus.mobile.CUSTOM_WALLPAPER_FILE
 
 @Composable
 internal fun MainActivity.SettingsPage(
@@ -97,11 +141,9 @@ val __act1 = LocalContext.current
                     if (inBg || (active && mainViewModel.transfer.value.backupSheetVisible.not())) {
                         mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (false)) }
                         mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (true)) }
-                        run {
-
                 backupDotJob?.cancel()
                 backupDotJob = null
-    }
+    
                     } else if (active) {
                         mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (true)) }
                     } else {
@@ -129,7 +171,6 @@ val __act1 = LocalContext.current
                 onBackupAll = { run {
 
                 if (mainViewModel.shell.value.outputTreeUri == null) {
-                    run {
             pickerToastStatus(
                         message = ("还没有设置目录"),
                         postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -139,7 +180,7 @@ val __act1 = LocalContext.current
                             }
                         },
                     )
-        }
+        
                     mainViewModel.updatePreviewSession { it -> it.copy(exportDialogVisible = (true)) }
                     return@run
                 }
@@ -148,11 +189,9 @@ val __act1 = LocalContext.current
                 if (backupJob?.isActive == true) {
                     mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (true)) }
                     mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (false)) }
-                    run {
-
                     backupDotJob?.cancel()
                     backupDotJob = null
-        }
+        
                     return@run
                 }
                 mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
@@ -166,7 +205,6 @@ val __act1 = LocalContext.current
                     currentLabel = "正在准备...",
                     isIndeterminate = true,
                 ))) }
-                run {
             pickerToastStatus(
                         message = ("正在备份..."),
                         postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -176,7 +214,7 @@ val __act1 = LocalContext.current
                             }
                         },
                     )
-        }
+        
                 backupJob?.cancel()
                 backupDotJob?.cancel()
                 backupJob = mainScope.launch(Dispatchers.IO) {
@@ -187,7 +225,6 @@ val __act1 = LocalContext.current
                             withContext(Dispatchers.Main) {
                                 mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
                                 mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
-                                run {
             pickerToastStatus(
                         message = ("没有可导出的图标包"),
                         postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -197,7 +234,7 @@ val __act1 = LocalContext.current
                             }
                         },
                     )
-        }
+        
                             }
                             return@launch
                         }
@@ -206,7 +243,6 @@ val __act1 = LocalContext.current
                             withContext(Dispatchers.Main) {
                                 mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
                                 mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
-                                run {
             pickerToastStatus(
                         message = ("还没有设置目录"),
                         postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -216,7 +252,7 @@ val __act1 = LocalContext.current
                             }
                         },
                     )
-        }
+        
                             }
                             return@launch
                         }
@@ -384,7 +420,6 @@ val __act1 = LocalContext.current
                             mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
                             mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
                             mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (false)) }
-                            run {
             pickerToastStatus(
                         message = ("备份失败: ${e.message ?: e.javaClass.simpleName}"),
                         postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -394,17 +429,15 @@ val __act1 = LocalContext.current
                             }
                         },
                     )
-        }
+        
                         }
                     } finally {
                         withContext(Dispatchers.Main) {
                             mainViewModel.updateShell { it -> it.copy(isBusy = (false)) }
                             backupJob = null
-                            run {
-
                     backupDotJob?.cancel()
                     backupDotJob = null
-        }
+        
                             if (!mainViewModel.transfer.value.backupInBackground) {
                                 mainViewModel.updateTransfer { it -> it.copy(backupProgress = (null)) }
                                 mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
@@ -419,7 +452,6 @@ val __act1 = LocalContext.current
 }
         }
         item(key = "preview_strip") {
-            run {
     PreviewStripSettingsCard(
                 enabled = previewSession.previewStripEnabled,
                 isBusy = shell.isBusy,
@@ -433,10 +465,8 @@ val __act1 = LocalContext.current
                 )
     } },
             )
-}
         }
         item(key = "wallpaper") {
-            run {
     WallpaperSettingsCard(
                 hasCustom = batchPreviewConfig.customWallpaperPath != null,
                 customInfo = batchPreviewConfig.customWallpaperInfo,
@@ -460,10 +490,8 @@ val __act1 = LocalContext.current
                 )
     } },
             )
-}
         }
         item(key = "gpt") {
-            run {
     GptSettingsCard(
                 tuningState = settingsParams,
                 isBusy = shell.isBusy,
@@ -496,7 +524,6 @@ val __act1 = LocalContext.current
                     mainViewModel.updateGptRmbgSettings { it -> it.copy(gptSettingsSaveStatus = ("")) }
                 },
             )
-}
         }
         item(key = "rmbg") {
             run {
@@ -651,7 +678,6 @@ val __act1 = LocalContext.current
                             recommended = true,
                             onClick = {
                                 mainViewModel.updatePreviewSession { it -> it.copy(resetDefaultsDialogVisible = (false)) }
-                                run {
 paramsResetToDefaults(
         confirmed = (false),
         isBusy = { mainViewModel.shell.value.isBusy },
@@ -732,7 +758,7 @@ paramsApplyTuningParams(
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (null)) }
                     },
                 )
-    }
+    
                             },
                         ),
                     )

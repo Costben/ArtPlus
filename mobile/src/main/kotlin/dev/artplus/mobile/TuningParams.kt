@@ -2,6 +2,7 @@ package dev.artplus.mobile
 
 import org.json.JSONObject
 import kotlin.math.roundToInt
+import dev.artplus.mobile.ui.cards.RmbgModelPreset
 
 /**
  * 可调参数的范围与默认值（顶层 const，MainActivity 同包直接引用）。

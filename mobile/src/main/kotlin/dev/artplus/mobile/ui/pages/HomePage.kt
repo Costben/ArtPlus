@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages
 
 import android.provider.Settings
 import androidx.compose.foundation.background
@@ -30,6 +30,12 @@ import io.github.suqi8.coui.kmp.icon.extended.GridView
 import io.github.suqi8.coui.kmp.icon.extended.Layers
 import io.github.suqi8.coui.kmp.icon.extended.Settings
 import io.github.suqi8.coui.kmp.icon.extended.Tune
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.ui.pages.tabs.HomeTabPage
+import dev.artplus.mobile.ui.pages.tabs.ParamsTabPage
+import dev.artplus.mobile.ui.pages.tabs.PresetTabPage
+import dev.artplus.mobile.ui.pages.tabs.SettingsTabPage
 
 @Composable
 internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?, launcherCount: Int, totalCount: Int, generatedCount: Int) {

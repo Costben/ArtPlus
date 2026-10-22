@@ -1,6 +1,34 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import kotlin.math.roundToInt
+import dev.artplus.mobile.EDGE_POLISH_FOREGROUND_MAX_STRENGTH
+import dev.artplus.mobile.EDGE_POLISH_FOREGROUND_MIN_STRENGTH
+import dev.artplus.mobile.EDGE_POLISH_MONO_MAX_STRENGTH
+import dev.artplus.mobile.EDGE_POLISH_MONO_MIN_STRENGTH
+import dev.artplus.mobile.LEGACY_BACKGROUND_SEPARATION_MAX
+import dev.artplus.mobile.LEGACY_BACKGROUND_SEPARATION_MIN
+import dev.artplus.mobile.LEGACY_PLATE_REMOVAL_MAX
+import dev.artplus.mobile.LEGACY_PLATE_REMOVAL_MIN
+import dev.artplus.mobile.LEGACY_SHADOW_REMOVAL_MAX
+import dev.artplus.mobile.LEGACY_SHADOW_REMOVAL_MIN
+import dev.artplus.mobile.RESIDUE_CONNECTED_DISTANCE_SCALE
+import dev.artplus.mobile.RESIDUE_CONNECTED_MAX_DISTANCE
+import dev.artplus.mobile.RESIDUE_CONNECTED_MIN_DISTANCE
+import dev.artplus.mobile.RESIDUE_DISTANCE_SCALE
+import dev.artplus.mobile.RESIDUE_MAX_DISTANCE
+import dev.artplus.mobile.RESIDUE_MIN_DISTANCE
+import dev.artplus.mobile.SHADOW_MAX_LUMINANCE_MAX
+import dev.artplus.mobile.SHADOW_MAX_LUMINANCE_MIN
+import dev.artplus.mobile.SHADOW_MAX_SATURATION_MAX
+import dev.artplus.mobile.SHADOW_MAX_SATURATION_MIN
+import dev.artplus.mobile.SHADOW_MIN_DOWN_OFFSET_MAX
+import dev.artplus.mobile.SHADOW_MIN_DOWN_OFFSET_MIN
+import dev.artplus.mobile.SHADOW_MIN_LUMA_DROP_MAX
+import dev.artplus.mobile.SHADOW_MIN_LUMA_DROP_MIN
+import dev.artplus.mobile.SHADOW_MIN_OFFSET_MAX
+import dev.artplus.mobile.SHADOW_MIN_OFFSET_MIN
+import dev.artplus.mobile.SHADOW_MIN_VISIBLE_RATIO_MAX
+import dev.artplus.mobile.SHADOW_MIN_VISIBLE_RATIO_MIN
 
 /**
  * 管线调参映射：把 1–100 的滑杆百分比映射为算法实际阈值。

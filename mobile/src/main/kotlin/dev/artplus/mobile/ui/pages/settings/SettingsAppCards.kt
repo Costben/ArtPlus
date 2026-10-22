@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.settings
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
@@ -26,6 +26,24 @@ import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import dev.artplus.mobile.MAX_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.MIN_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.pipeline.GptImageMode
+import dev.artplus.mobile.pipeline.GptPromptPreset
+import dev.artplus.mobile.ui.cards.NumberParameterControl
+import dev.artplus.mobile.ui.cards.RmbgComponent
+import dev.artplus.mobile.ui.cards.RmbgModelPreset
+import dev.artplus.mobile.ui.components.ArtDialog
+import dev.artplus.mobile.ui.components.LibraryChoiceRow
+import dev.artplus.mobile.ui.components.LibrarySettingRow
+import dev.artplus.mobile.ui.components.RmbgInstallProgressBar
+import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.SectionDivider
+import dev.artplus.mobile.ui.components.SettingsIconKind
+import dev.artplus.mobile.ui.components.SettingsInfoRow
+import dev.artplus.mobile.ui.components.SettingsTextInputRow
+import dev.artplus.mobile.ui.components.settingsIconForTitle
 
 /**
  * Slice 2.3：设置页应用/输出/AI/RMBG 卡片（原 MainActivity 本体原样搬迁）。

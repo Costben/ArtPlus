@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -10,6 +10,31 @@ import android.graphics.Color as AndroidColor
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+import dev.artplus.mobile.LIQUID_GLASS_SUBJECT_ALPHA_BODY_PERCENTILE
+import dev.artplus.mobile.LIQUID_GLASS_SUBJECT_ALPHA_NORMALIZE_PERCENTILE
+import dev.artplus.mobile.LIQUID_GLASS_SUBJECT_ALPHA_OUTLIER_CAP
+import dev.artplus.mobile.LIQUID_GLASS_SUBJECT_SOLID_ALPHA_RATIO
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.MAX_LIQUID_GLASS_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_MIST_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_OUTER_WIDTH
+import dev.artplus.mobile.MAX_LIQUID_GLASS_RADIUS
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_MIST_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_OUTER_WIDTH
+import dev.artplus.mobile.MIN_LIQUID_GLASS_RADIUS
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.ui.cards.ForegroundShadowParams
 
 /**
  * 液态玻璃纯算法管线：背景/前景分层渲染 + 主体不透明度 + 光照描边 + 几何遮罩。

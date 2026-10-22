@@ -1,6 +1,7 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.pipeline
 
 import kotlin.math.roundToInt
+import dev.artplus.mobile.RMBG_EDGE_FEATHER_MIN_ALPHA_DELTA
 
 /**
  * RMBG 推理 Runner（P4 拆分）：无状态 alpha 形态学 helper。

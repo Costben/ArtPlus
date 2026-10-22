@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.picker
 
 import android.app.AppOpsManager
 import android.content.Intent
@@ -41,6 +41,14 @@ import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import dev.artplus.mobile.GITHUB_REPO_URL
+import dev.artplus.mobile.pipeline.validatedRemoteUrl
+import dev.artplus.mobile.ui.cards.RootWriteConfirmRequest
+import dev.artplus.mobile.ui.cards.UpdateInfo
+import dev.artplus.mobile.ui.components.ArtDialog
+import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.SectionDivider
+import dev.artplus.mobile.ui.components.SettingLine
 
 /**
  * Slice 2.5：应用选择器通用弹窗/杂项（原 MainActivity 残留本体原样搬迁）。

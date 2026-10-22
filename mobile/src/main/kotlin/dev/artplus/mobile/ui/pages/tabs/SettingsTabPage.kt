@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.tabs
 
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -9,6 +9,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Save
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.ui.components.TitleBarIconButton
+import dev.artplus.mobile.ui.pages.PagerShellPage
+import dev.artplus.mobile.ui.pages.SettingsPage
+import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveRmbgSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveSettingsPage
 
 /**
  * S4.x：从 HomePage 的 `when (page)` 分支原样搬出的 tab 页（纯移动，key/remember 原样保留）。

@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +32,15 @@ import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.extended.Layers
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.ui.cards.AdvancedCategoryTabs
+import dev.artplus.mobile.ui.cards.AdvancedSettingsCategory
+import dev.artplus.mobile.ui.cards.AdvancedSettingsTab
+import dev.artplus.mobile.ui.cards.SegmentedControl
+import dev.artplus.mobile.ui.components.BrandMark
+import dev.artplus.mobile.ui.components.CompactActionButton
+import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.StatusDot
 /**
  * Slice 2.2：主页状态卡片（原 MainActivity 残留本体原样搬迁）。
  * Composable 只收 state + onEvent；Activity 状态经参数/回调注入，行为与 UI 100% 等价。

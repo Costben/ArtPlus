@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages
 
 import android.content.pm.ApplicationInfo
 import android.os.Build
@@ -52,6 +52,27 @@ import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import dev.artplus.mobile.GITHUB_LICENSE_URL
+import dev.artplus.mobile.GITHUB_REPO_URL
+import dev.artplus.mobile.GPL_LICENSE_ASSET_PATH
+import dev.artplus.mobile.GPL_LICENSE_FALLBACK_TEXT
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.components.ArtDialog
+import dev.artplus.mobile.ui.components.LibrarySettingRow
+import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.SectionDivider
+import dev.artplus.mobile.ui.components.SettingsIconKind
+import dev.artplus.mobile.ui.components.TitleBarIconButton
+import dev.artplus.mobile.ui.components.rememberLinkedTopAppBarScrollBehavior
+import dev.artplus.mobile.ui.pages.picker.pickerCheckForUpdate
+import dev.artplus.mobile.ui.pages.picker.pickerCurrentVersionName
+import dev.artplus.mobile.ui.pages.picker.pickerFetchUpdateBody
+import dev.artplus.mobile.ui.pages.picker.pickerOpenExternalLink
+import dev.artplus.mobile.ui.pages.picker.pickerResolveUpdateUrl
+import dev.artplus.mobile.ui.pages.picker.pickerToastStatus
+import dev.artplus.mobile.R
 
 @Composable
 internal fun MainActivity.AboutPage(pageBackground: Color) {

@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.state
 
 import android.graphics.drawable.Drawable
 import androidx.lifecycle.viewModelScope
@@ -6,6 +6,33 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.BatchPreviewItemData
+import dev.artplus.mobile.BatchPreviewSampler
+import dev.artplus.mobile.BatchPreviewStore
+import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.TuningPreset
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.imaging.AdaptiveForegroundMode
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.imaging.OriginalForegroundCleanupMode
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.buildLocalCandidates
+import dev.artplus.mobile.imaging.buildLocalIconLayers
+import dev.artplus.mobile.imaging.drawLocalCandidateSourceIcon
+import dev.artplus.mobile.pipeline.BatchPreviewItem
+import dev.artplus.mobile.pipeline.BatchPreviewResult
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.PreviewAssets
+import dev.artplus.mobile.pipeline.loadBatchPreviewSnapshot
+import dev.artplus.mobile.pipeline.preparedForDraw
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.cards.BatchApplyProgress
+import dev.artplus.mobile.ui.cards.BatchPreviewProgress
+import dev.artplus.mobile.ui.cards.GenerationResult
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.PresetStore
 
 /**
  * Slice 3.2：预设业务操作与批量应用调度下沉至 MainViewModel。

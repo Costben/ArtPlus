@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.picker
 
 import android.app.WallpaperManager
 import android.content.res.Resources
@@ -13,6 +13,9 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.data.drawDrawableCover
+import dev.artplus.mobile.data.sampleBitmapShortEdge
 
 /**
  * Slice 2.5：应用选择器图标/壁纸 IO（原 MainActivity 残留本体原样搬迁）。

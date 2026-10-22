@@ -1,7 +1,10 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.CHROMA_KEY_CANDIDATES
+import dev.artplus.mobile.CHROMA_OPAQUE_THRESHOLD
+import dev.artplus.mobile.CHROMA_TRANSPARENT_THRESHOLD
 
 /**
  * 绿幕抠像：按键色选择 + 背景剔除。

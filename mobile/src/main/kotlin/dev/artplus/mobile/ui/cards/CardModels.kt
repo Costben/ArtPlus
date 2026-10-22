@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.cards
 
 import android.content.SharedPreferences
 import android.graphics.Bitmap
@@ -6,6 +6,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import java.io.File
+import dev.artplus.mobile.PREF_PREVIEW_SELECTION_MONOCHROME_DARK
+import dev.artplus.mobile.PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT
+import dev.artplus.mobile.PREF_PREVIEW_SELECTION_NORMAL_DARK
+import dev.artplus.mobile.PREF_PREVIEW_SELECTION_NORMAL_LIGHT
+import dev.artplus.mobile.imaging.CandidateBuildResult
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.RmbgInferenceReport
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.system.RootWriteMode
 
 internal data class UpdateInfo(
     val latestVersion: String,

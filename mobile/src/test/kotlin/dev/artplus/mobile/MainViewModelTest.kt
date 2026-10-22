@@ -7,6 +7,9 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import dev.artplus.mobile.state.MainViewModel
+import dev.artplus.mobile.state.RenamePresetOutcome
+import dev.artplus.mobile.state.SavePresetOutcome
 
 /**
  * P2 地基守卫：MainViewModel 的历史栈语义必须与原 Activity 内联逻辑一致

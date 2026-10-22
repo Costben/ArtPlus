@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,6 +16,8 @@ import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.basic.TextFieldMode
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.ui.components.SectionCard
 
 /**
  * Slice 2.3：JSON 调参编辑器（原 MainActivity 本体原样搬迁）。

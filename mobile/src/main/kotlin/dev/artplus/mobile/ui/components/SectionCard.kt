@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.components
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.CardDefaults
 import io.github.suqi8.coui.kmp.basic.HorizontalDivider
+import dev.artplus.mobile.SECTION_CARD_VERTICAL_PADDING_DP
 
 /**
  * 设置/功能卡片：COUI Card 自带 17dp 圆角裁切，行内按压反馈由 COUI 指示器提供。

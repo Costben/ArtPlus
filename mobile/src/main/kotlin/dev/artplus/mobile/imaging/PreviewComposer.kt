@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -6,6 +6,20 @@ import android.graphics.Paint
 import android.graphics.Color as AndroidColor
 import org.json.JSONObject
 import kotlin.math.roundToInt
+import dev.artplus.mobile.FOREGROUND_SHADOW_MAX_ALPHA
+import dev.artplus.mobile.FOREGROUND_SHADOW_MAX_BLUR
+import dev.artplus.mobile.FOREGROUND_SHADOW_MAX_OFFSET_X
+import dev.artplus.mobile.FOREGROUND_SHADOW_MAX_OFFSET_Y
+import dev.artplus.mobile.FOREGROUND_SHADOW_MAX_SPREAD
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.MAX_FOREGROUND_SHADOW_LEVEL
+import dev.artplus.mobile.MIN_FOREGROUND_SHADOW_LEVEL
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.PreviewAssets
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.ui.cards.ForegroundShadowParams
+import dev.artplus.mobile.ui.cards.PreviewSelections
 
 /**
  * 候选图提取 / 单色计算 / 预览合成管线：候选选择 + 前景渲染 + 阴影 + 单色 + 预览资源装配。

@@ -1,7 +1,59 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.NIGHT_APP_WHITE
+import dev.artplus.mobile.NIGHT_BACKGROUND_COLORED_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_BACKGROUND_DARK_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_BACKGROUND_LIGHT_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_BACKGROUND_LIGHT_MAX_SATURATION
+import dev.artplus.mobile.NIGHT_BACKGROUND_WHITE_BLEND
+import dev.artplus.mobile.NIGHT_COLORED_BACKGROUND_COLOR_RATIO_MAX
+import dev.artplus.mobile.NIGHT_COLORED_BACKGROUND_DARK_RATIO_MAX
+import dev.artplus.mobile.NIGHT_COLORED_BACKGROUND_MIN_SATURATION
+import dev.artplus.mobile.NIGHT_COLORED_BACKGROUND_WHITE_RATIO_THRESHOLD
+import dev.artplus.mobile.NIGHT_COLOR_RATIO_MAX
+import dev.artplus.mobile.NIGHT_COLOR_SATURATION_THRESHOLD
+import dev.artplus.mobile.NIGHT_DARK_COLOR_IGNORE_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_DARK_COLOR_RATIO_MAX
+import dev.artplus.mobile.NIGHT_DARK_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_DARK_MAX_WHITE_RATIO
+import dev.artplus.mobile.NIGHT_DARK_RATIO_THRESHOLD
+import dev.artplus.mobile.NIGHT_DEFAULT_BOOST_MAX_BLEND
+import dev.artplus.mobile.NIGHT_DIRECT_WHITE_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_DIRECT_WHITE_MAX_SATURATION
+import dev.artplus.mobile.NIGHT_EDGE_COLORED_NEIGHBOR_SATURATION
+import dev.artplus.mobile.NIGHT_EDGE_CONTRAST_RADIUS
+import dev.artplus.mobile.NIGHT_EDGE_DARK_NEIGHBOR_LUMA
+import dev.artplus.mobile.NIGHT_EDGE_FEATHER_BLEND
+import dev.artplus.mobile.NIGHT_EDGE_SMOOTH_STRENGTH
+import dev.artplus.mobile.NIGHT_EDGE_WHITE_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_EDGE_WHITE_MAX_SATURATION
+import dev.artplus.mobile.NIGHT_FILL_BACKGROUND_MAX_BLEND
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_ALPHA_THRESHOLD
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_COLOR_RATIO_MAX
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_DARK_RATIO_MAX
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_LUMA_RANGE_MAX
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_MAX_SATURATION
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_MIN_PIXELS
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_RATIO_MIN
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_SATURATED_RATIO_MAX
+import dev.artplus.mobile.NIGHT_FLAT_LIGHT_SATURATED_THRESHOLD
+import dev.artplus.mobile.NIGHT_FLAT_PALE_RATIO_MIN
+import dev.artplus.mobile.NIGHT_FLAT_PALE_VERY_LIGHT_RATIO_MIN
+import dev.artplus.mobile.NIGHT_FLAT_VERY_LIGHT_RATIO_MIN
+import dev.artplus.mobile.NIGHT_SOFT_EDGE_WHITE_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_SOFT_EDGE_WHITE_MAX_SATURATION
+import dev.artplus.mobile.NIGHT_SUPPORT_MAX_LUMA
+import dev.artplus.mobile.NIGHT_SUPPORT_MAX_SATURATION
+import dev.artplus.mobile.NIGHT_SUPPORT_MIN_LUMA
+import dev.artplus.mobile.NIGHT_SUPPORT_PRESERVE_LUMA
+import dev.artplus.mobile.NIGHT_SUPPORT_PRESERVE_SATURATION
+import dev.artplus.mobile.NIGHT_VISIBLE_ALPHA_THRESHOLD
+import dev.artplus.mobile.NIGHT_WHITE_LUMA_THRESHOLD
+import dev.artplus.mobile.NIGHT_WHITE_MAX_SATURATION
+import dev.artplus.mobile.NIGHT_WHITE_RATIO_THRESHOLD
 
 /**
  * 夜间前景（night）管线：暗色主体提亮 + 白色主体重着色 + 暗背景适配。

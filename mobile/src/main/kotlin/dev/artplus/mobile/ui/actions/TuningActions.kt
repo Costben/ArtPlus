@@ -1,7 +1,25 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.actions
 
 import android.content.Context
 import androidx.compose.runtime.Stable
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.PREVIEW_OUTPUT_DEBOUNCE_MS
+import dev.artplus.mobile.PREVIEW_REBUILD_DEBOUNCE_MS
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.normalizePreviewSelections
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.rebuildLocalSession
+import dev.artplus.mobile.pipeline.rmbgTunedForegroundRaw
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.system.writePackageOutputs
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.pages.home.homeRefreshActivePreviewOutputs
+import dev.artplus.mobile.ui.pages.params.paramsSaveLiquidGlassSettings
+import dev.artplus.mobile.ui.pages.picker.pickerPostStatus
 
 /**
  * S2.2：主页「写入 / 保存 / 刷新」三件事的唯一入口。
@@ -75,7 +93,6 @@ internal fun MainActivity.buildTuningActions(): TuningActions {
                         tuning = mainViewModel.params.value,
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
-                run {
                     when ((LocalSeparationMode.Auto)) {
                                 LocalSeparationMode.Original -> PreviewChoice.Original
                                 LocalSeparationMode.Plate -> PreviewChoice.Full
@@ -85,7 +102,7 @@ internal fun MainActivity.buildTuningActions(): TuningActions {
                                 LocalSeparationMode.Auto -> ((auto))
                                 LocalSeparationMode.Full -> PreviewChoice.Full
                             }
-                }
+                
             } },
                         normalize = { session, selections -> normalizePreviewSelections(session, selections) },
                         onWrite = write,

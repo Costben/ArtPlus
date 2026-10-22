@@ -4,6 +4,17 @@ import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import dev.artplus.mobile.imaging.edgeConnectedResidueDistanceThreshold
+import dev.artplus.mobile.imaging.effectiveBackgroundSeparationDistance
+import dev.artplus.mobile.imaging.effectivePlateRemovalDistance
+import dev.artplus.mobile.imaging.effectiveShadowMaxSaturation
+import dev.artplus.mobile.imaging.effectiveShadowMinLumaDrop
+import dev.artplus.mobile.imaging.effectiveShadowMinOffset
+import dev.artplus.mobile.imaging.effectiveShadowMinVisibleRatio
+import dev.artplus.mobile.imaging.effectiveShadowRemovalAlpha
+import dev.artplus.mobile.imaging.foregroundEdgePolishStrength
+import dev.artplus.mobile.imaging.monochromeEdgePolishStrength
+import dev.artplus.mobile.imaging.residueDistanceThreshold
 
 /**
  * P1.2 拆分守卫：显式传参版本必须与原 Activity 内联公式逐值一致。

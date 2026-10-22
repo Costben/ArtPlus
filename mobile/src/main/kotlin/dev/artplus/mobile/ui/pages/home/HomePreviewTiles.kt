@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.home
 
 import android.graphics.Bitmap
 import androidx.compose.animation.core.animateFloatAsState
@@ -38,6 +38,12 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import dev.artplus.mobile.DEFAULT_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.DEFAULT_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.pipeline.PreviewAssets
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.ui.cards.AiIconLoadingPreview
+import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
 /**
  * Slice 2.2：主页预览基础 Tiles（原 MainActivity 残留本体原样搬迁）。
  * Composable 只收 state + onEvent；Activity 状态经参数/回调注入，行为与 UI 100% 等价。

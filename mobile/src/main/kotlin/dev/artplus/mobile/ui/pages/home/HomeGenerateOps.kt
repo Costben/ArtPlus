@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.home
 
 import android.app.WallpaperManager
 import android.content.Context
@@ -28,6 +28,46 @@ import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.basic.Card
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE
+import dev.artplus.mobile.PREVIEW_OUTPUT_DEBOUNCE_MS
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.data.markPackageGenerated
+import dev.artplus.mobile.data.updateGeneratedPackageCache
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.RmbgInferenceBackend
+import dev.artplus.mobile.imaging.candidateForChoice
+import dev.artplus.mobile.imaging.resizeBitmap
+import dev.artplus.mobile.pipeline.GptImageMode
+import dev.artplus.mobile.pipeline.GptPromptPreset
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.pipeline.buildRmbgCandidate
+import dev.artplus.mobile.pipeline.findRmbgComponent
+import dev.artplus.mobile.pipeline.generateGptLayers
+import dev.artplus.mobile.pipeline.rmbgTunedForegroundRaw
+import dev.artplus.mobile.state.launchUiFriendly
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.state.updateBatchApplyProgress
+import dev.artplus.mobile.system.RootWriteMode
+import dev.artplus.mobile.system.exportToTree
+import dev.artplus.mobile.system.generateArtPlusPackage
+import dev.artplus.mobile.system.installWithRoot
+import dev.artplus.mobile.system.writePackageOutputs
+import dev.artplus.mobile.ui.cards.BatchApplyProgress
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.cards.ServiceConfirmRequest
+import dev.artplus.mobile.ui.pages.picker.pickerLoadBundledPreviewWallpaperBitmap
+import dev.artplus.mobile.ui.pages.picker.pickerLoadCustomWallpaperBitmap
+import dev.artplus.mobile.ui.pages.picker.pickerLoadPreviewWallpaperBitmap
+import dev.artplus.mobile.ui.pages.picker.pickerPostStatus
+import dev.artplus.mobile.ui.pages.picker.pickerSystemMaterialColor
+import dev.artplus.mobile.ui.pages.picker.pickerSystemWallpaperDrawable
+import dev.artplus.mobile.ui.pages.picker.pickerToastStatus
+import dev.artplus.mobile.R
 
 /*
  * S4.4：从 HomePage.kt 原样搬出的预览条与 6 个生成动作入口（纯移动，逻辑零改动）。
@@ -71,7 +111,6 @@ val __act1 = LocalContext.current
                 wallpaperKey = stripBatchConfig.customWallpaperPath,
                 loadWallpaper = {
                     withContext(Dispatchers.IO) {
-                        run {
         pickerLoadCustomWallpaperBitmap(
                     path = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
                     cachedPath = cachedCustomWallpaperPath,
@@ -82,7 +121,7 @@ val __act1 = LocalContext.current
                     },
                     shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
                 )
-    } ?: run {
+     ?: run {
         pickerLoadPreviewWallpaperBitmap(
                     getCached = { cachedSystemWallpaper },
                     setCached = { cachedSystemWallpaper = it },
@@ -126,8 +165,6 @@ internal fun MainActivity.generateGptCandidate(confirmed: Boolean = false): Unit
                 return
             }
             if (!confirmed) {
-                run {
-
                 mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
                     title = ("使用 AI 生成全部"),
                     message = ("将调用云端图像接口（已累计 ${mainViewModel.presetUi.value.gptRunCount} 次）。确认继续？"),
@@ -136,18 +173,16 @@ internal fun MainActivity.generateGptCandidate(confirmed: Boolean = false): Unit
                         generateGptCandidate(confirmed = true)
                     }),
                 ))) }
-    }
+    
                 return
             }
             mainViewModel.updatePreviewSession { v -> v.copy(isGeneratingGptCandidate = (true), isGptPreviewLoading = (true)) }
-            run {
-
                 mainViewModel.updatePresetUi { it -> it.copy(gptRunCount = it.gptRunCount + (1)) }
                 getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     .edit()
                     .putInt(MainActivity.PREF_GPT_RUN_COUNT, mainViewModel.presetUi.value.gptRunCount)
                     .apply()
-    }
+    
             setStatus(("AI候选生成中: ${session.packageName}"))
             val selections = PreviewSelections.default(PreviewChoice.Gpt)
             run {
@@ -216,7 +251,6 @@ internal fun MainActivity.generateGptCandidate(confirmed: Boolean = false): Unit
                             persistUiState()
                         }
                     } catch (error: Exception) {
-                        run {
             pickerToastStatus(
                         message = ("AI候选失败: ${error.message ?: error.javaClass.simpleName}"),
                         postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -226,7 +260,7 @@ internal fun MainActivity.generateGptCandidate(confirmed: Boolean = false): Unit
                             }
                         },
                     )
-        }
+        
                     } finally {
                         runOnUiThread {
                             mainViewModel.updatePreviewSession { v -> v.copy(isGeneratingGptCandidate = (false), isGptPreviewLoading = (false)) }
@@ -338,7 +372,6 @@ internal fun MainActivity.applyPreviewChoiceToAll(choice: PreviewChoice): Unit {
                             onResize = { src, w, h -> resizeBitmap(src, w, h) },
                             onWrite = tuningActions.write,
                             defaultLocal = { auto ->
-                    run {
                         when ((LocalSeparationMode.Auto)) {
                                     LocalSeparationMode.Original -> PreviewChoice.Original
                                     LocalSeparationMode.Plate -> PreviewChoice.Full
@@ -348,7 +381,7 @@ internal fun MainActivity.applyPreviewChoiceToAll(choice: PreviewChoice): Unit {
                                     LocalSeparationMode.Auto -> ((auto))
                                     LocalSeparationMode.Full -> PreviewChoice.Full
                                 }
-                    }
+                    
                  },
                             candidateAvailable = { s, c -> candidateForChoice(s, c) },
                         )
@@ -438,8 +471,6 @@ internal fun MainActivity.generateRmbgCandidate(confirmed: Boolean = false): Uni
                 return
             }
             if (!confirmed) {
-                run {
-
                 mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
                     title = ("使用 RMBG 抠图全部"),
                     message = ("将运行本地 ONNX 模型抠图（已累计 ${mainViewModel.presetUi.value.rmbgRunCount} 次）。确认继续？"),
@@ -448,7 +479,7 @@ internal fun MainActivity.generateRmbgCandidate(confirmed: Boolean = false): Uni
                         generateRmbgCandidate(confirmed = true)
                     }),
                 ))) }
-    }
+    
                 return
             }
             if (!rmbgGenerationGate.compareAndSet(false, true)) {
@@ -456,14 +487,12 @@ internal fun MainActivity.generateRmbgCandidate(confirmed: Boolean = false): Uni
                 return
             }
             mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingRmbgCandidate = (true)) }
-            run {
-
                 mainViewModel.updatePresetUi { it -> it.copy(rmbgRunCount = it.rmbgRunCount + (1)) }
                 getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     .edit()
                     .putInt(MainActivity.PREF_RMBG_RUN_COUNT, mainViewModel.presetUi.value.rmbgRunCount)
                     .apply()
-    }
+    
             mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (null), rmbgCandidatePackageName = (session.packageName), rmbgCandidateMode = (null), rmbgCandidateStatusText = ("RMBG运行中(${RmbgInferenceBackend.Cpu.label})，请等待: 全部"), rmbgCandidateFailurePackageName = (null), rmbgCandidateFailureMode = (null)) }
             setStatus(("RMBG候选生成中(${RmbgInferenceBackend.Cpu.label}): ${session.packageName}"))
             val selections = PreviewSelections.default(PreviewChoice.Rmbg)
@@ -623,8 +652,6 @@ internal fun MainActivity.generateGptCandidateForMode(mode: PreviewMode, confirm
                 return
             }
             if (!confirmed) {
-                run {
-
                 mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
                     title = ("使用 AI 生成"),
                     message = ("将调用云端图像接口（已累计 ${mainViewModel.presetUi.value.gptRunCount} 次）。确认继续？"),
@@ -633,18 +660,16 @@ internal fun MainActivity.generateGptCandidateForMode(mode: PreviewMode, confirm
                         generateGptCandidateForMode(mode, confirmed = true)
                     }),
                 ))) }
-    }
+    
                 return
             }
             mainViewModel.updatePreviewSession { v -> v.copy(isGeneratingGptCandidate = (true), isGptPreviewLoading = (true)) }
-            run {
-
                 mainViewModel.updatePresetUi { it -> it.copy(gptRunCount = it.gptRunCount + (1)) }
                 getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     .edit()
                     .putInt(MainActivity.PREF_GPT_RUN_COUNT, mainViewModel.presetUi.value.gptRunCount)
                     .apply()
-    }
+    
             setStatus(("AI候选生成中: ${session.packageName}"))
             val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).withChoice(mode, PreviewChoice.Gpt)
             run {
@@ -712,7 +737,6 @@ internal fun MainActivity.generateGptCandidateForMode(mode: PreviewMode, confirm
                             persistUiState()
                         }
                     } catch (error: Exception) {
-                        run {
             pickerToastStatus(
                         message = ("AI候选失败: ${error.message ?: error.javaClass.simpleName}"),
                         postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -722,7 +746,7 @@ internal fun MainActivity.generateGptCandidateForMode(mode: PreviewMode, confirm
                             }
                         },
                     )
-        }
+        
                     } finally {
                         runOnUiThread {
                             mainViewModel.updatePreviewSession { v -> v.copy(isGeneratingGptCandidate = (false), isGptPreviewLoading = (false)) }
@@ -775,8 +799,6 @@ internal fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed
                 return
             }
             if (!confirmed) {
-                run {
-
                 mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
                     title = ("使用 RMBG 抠图"),
                     message = ("将运行本地 ONNX 模型抠图（已累计 ${mainViewModel.presetUi.value.rmbgRunCount} 次）。确认继续？"),
@@ -785,7 +807,7 @@ internal fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed
                         applyRmbgCandidateForMode(mode, confirmed = true)
                     }),
                 ))) }
-    }
+    
                 return
             }
             if (!rmbgGenerationGate.compareAndSet(false, true)) {
@@ -793,14 +815,12 @@ internal fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed
                 return
             }
             mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingRmbgCandidate = (true)) }
-            run {
-
                 mainViewModel.updatePresetUi { it -> it.copy(rmbgRunCount = it.rmbgRunCount + (1)) }
                 getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     .edit()
                     .putInt(MainActivity.PREF_RMBG_RUN_COUNT, mainViewModel.presetUi.value.rmbgRunCount)
                     .apply()
-    }
+    
             mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (null), rmbgCandidatePackageName = (session.packageName), rmbgCandidateMode = (mode), rmbgCandidateStatusText = ("RMBG运行中(${RmbgInferenceBackend.Cpu.label})，请等待: ${mode.label}"), rmbgCandidateFailurePackageName = (null), rmbgCandidateFailureMode = (null)) }
             setStatus(("RMBG候选生成中(${RmbgInferenceBackend.Cpu.label}): ${session.packageName}"))
             val selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark).withChoice(mode, PreviewChoice.Rmbg)
@@ -975,14 +995,12 @@ internal fun MainActivity.generateSelectedApp(installWithRoot: Boolean, useGpt: 
                         mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
                         if (gpt) {
                             mainViewModel.updatePreviewSession { it -> it.copy(isGptPreviewLoading = (true)) }
-                            run {
-
                     mainViewModel.updatePresetUi { it -> it.copy(gptRunCount = it.gptRunCount + (1)) }
                     getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         .edit()
                         .putInt(MainActivity.PREF_GPT_RUN_COUNT, mainViewModel.presetUi.value.gptRunCount)
                         .apply()
-        }
+        
                         }
                     },
                     onLaunch = { name, block -> mainViewModel.launchUiFriendly((name), (block)) },

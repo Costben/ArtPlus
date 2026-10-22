@@ -3,6 +3,9 @@ package dev.artplus.mobile
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import dev.artplus.mobile.data.loadGeneratedPackageCache
+import dev.artplus.mobile.data.markPackageGenerated
+import dev.artplus.mobile.data.updateGeneratedPackageCache
 
 /**
  * P3 数据层守卫：已生成包缓存的归一化/写回语义必须与原 Activity 内联逻辑一致。

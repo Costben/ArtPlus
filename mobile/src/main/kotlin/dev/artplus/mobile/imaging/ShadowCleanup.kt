@@ -1,7 +1,12 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.SHADOW_EDGE_ANTIALIAS_RADIUS
+import dev.artplus.mobile.SHADOW_EDGE_REPAIR_MAX_ALPHA
+import dev.artplus.mobile.SHADOW_HIGH_ALPHA_THRESHOLD
 
 /**
  * 长阴影清理：偏移阴影检测 + 连通域筛选 + 边缘修复。

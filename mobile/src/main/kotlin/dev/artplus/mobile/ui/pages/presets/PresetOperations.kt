@@ -1,10 +1,19 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.presets
 
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.SharedPreferences
 import java.io.File
 import org.json.JSONObject
+import dev.artplus.mobile.BatchPreviewStore
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.TuningPreset
+import dev.artplus.mobile.state.MainViewModel
+import dev.artplus.mobile.state.RenamePresetOutcome
+import dev.artplus.mobile.state.SavePresetOutcome
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.cards.BatchOutputMode
+import dev.artplus.mobile.PresetStore
 
 /**
  * Slice 2.1：预设业务逻辑（原 MainActivity 预设 CRUD / 导入导出 / JSON 直写原样搬迁）。

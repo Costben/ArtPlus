@@ -1,10 +1,16 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.state
 
 import androidx.lifecycle.ViewModel
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.TuningPreset
+import dev.artplus.mobile.ui.pages.presets.deletePreset
+import dev.artplus.mobile.ui.pages.presets.overwritePreset
+import dev.artplus.mobile.ui.pages.presets.renamePreset
+import dev.artplus.mobile.PresetStore
 
 /**
  * P2 ViewModel 地基：快照/历史/预设域（单源）。

@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.system
 
 import android.content.ContentResolver
 import android.net.Uri
@@ -9,6 +9,7 @@ import java.io.FileInputStream
 import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.coroutines.Job
+import dev.artplus.mobile.ui.cards.ExportProgress
 
 /**
  * SAF 导出管理（P4 拆分）：输出树写入/查找/.nomedia/路径解析/快速直拷。

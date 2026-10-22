@@ -1,6 +1,52 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.params
 
 import android.content.SharedPreferences
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_OUTER_WIDTH
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_RADIUS
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA
+import dev.artplus.mobile.DEFAULT_LIQUID_GLASS_TOP_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_MIST_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_OUTER_WIDTH
+import dev.artplus.mobile.MAX_LIQUID_GLASS_RADIUS
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_MIST_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_OUTER_WIDTH
+import dev.artplus.mobile.MIN_LIQUID_GLASS_RADIUS
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA
+import dev.artplus.mobile.PREF_LIQUID_GLASS_BACKGROUND_LEVEL_LEGACY
+import dev.artplus.mobile.PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA
+import dev.artplus.mobile.PREF_LIQUID_GLASS_BOTTOM_ALPHA
+import dev.artplus.mobile.PREF_LIQUID_GLASS_BOTTOM_BAR_BLUR_ENABLED
+import dev.artplus.mobile.PREF_LIQUID_GLASS_BOTTOM_BAR_ENABLED
+import dev.artplus.mobile.PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA
+import dev.artplus.mobile.PREF_LIQUID_GLASS_ENABLED
+import dev.artplus.mobile.PREF_LIQUID_GLASS_LAYERED_MIGRATED
+import dev.artplus.mobile.PREF_LIQUID_GLASS_OUTER_WIDTH
+import dev.artplus.mobile.PREF_LIQUID_GLASS_RADIUS
+import dev.artplus.mobile.PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH
+import dev.artplus.mobile.PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT
+import dev.artplus.mobile.PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH
+import dev.artplus.mobile.PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT
+import dev.artplus.mobile.PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA
+import dev.artplus.mobile.PREF_LIQUID_GLASS_TOP_ALPHA
+import dev.artplus.mobile.TuningParams
 
 /**
  * Slice 2.4：液态玻璃存取族（原 MainActivity 本体原样搬迁）。

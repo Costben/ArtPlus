@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.params
 
 import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
@@ -10,6 +10,12 @@ import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import dev.artplus.mobile.ANDROID_KEYSTORE
+import dev.artplus.mobile.KEYSTORE_CIPHER_TRANSFORMATION
+import dev.artplus.mobile.KEYSTORE_GCM_TAG_BITS
+import dev.artplus.mobile.KEYSTORE_GPT_KEY_ALIAS
+import dev.artplus.mobile.PREF_GPT_API_KEY
+import dev.artplus.mobile.PREF_GPT_API_KEY_ENCRYPTED
 
 /**
  * Slice 2.4：加解密/密钥纯移动（原 MainActivity 本体原样搬迁）。

@@ -34,6 +34,23 @@ import io.github.suqi8.coui.kmp.theme.ColorSchemeMode
 import io.github.suqi8.coui.kmp.theme.ThemeController
 import android.graphics.Color as AndroidColor
 import kotlinx.coroutines.Dispatchers
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.data.loadGeneratedPackageCache
+import dev.artplus.mobile.pipeline.DynamicRmbgRuntime
+import dev.artplus.mobile.pipeline.installRmbgComponent
+import dev.artplus.mobile.state.MainViewModel
+import dev.artplus.mobile.state.onCreatePostContent
+import dev.artplus.mobile.state.onCreatePreContent
+import dev.artplus.mobile.state.onDestroyCleanup
+import dev.artplus.mobile.state.onNewIntentDebug
+import dev.artplus.mobile.state.onPausePersist
+import dev.artplus.mobile.state.onResumeRefresh
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.system.ensureNomediaAtTreeRoot
+import dev.artplus.mobile.system.isDebugGenerateIntent
+import dev.artplus.mobile.ui.actions.buildTuningActions
+import dev.artplus.mobile.ui.pages.ArtPlusScreen
+import dev.artplus.mobile.system.DebugHttpServer
 
 class MainActivity : ComponentActivity() {
     internal val rmbgGenerationGate = AtomicBoolean(false)

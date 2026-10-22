@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.cards
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import dev.artplus.mobile.ui.components.CompactActionButton
 
 @Composable
 internal fun AiIconLoadingPreview(

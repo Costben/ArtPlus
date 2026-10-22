@@ -1,8 +1,7 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages
 
 import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.widget.Toast
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -51,7 +50,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import java.io.File
 import java.util.Locale
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
@@ -65,8 +63,53 @@ import io.github.suqi8.coui.kmp.basic.Scaffold
 import io.github.suqi8.coui.kmp.basic.TopAppBar
 import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.theme.COUITheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import dev.artplus.mobile.AppVisibility
+import dev.artplus.mobile.BACK_GESTURE_COMMIT_PROGRESS
+import dev.artplus.mobile.BACK_GESTURE_PAGE_TRANSLATION_RATIO
+import dev.artplus.mobile.BatchPreviewStore
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.PREF_HAS_COMPLETED_ONBOARDING
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.LocalSeparationMode
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.previewAssetsForSelections
+import dev.artplus.mobile.pipeline.rmbgTunedForegroundRaw
+import dev.artplus.mobile.state.openBatchPreviewForPreset
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.refreshArtPlusIconsAsync
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.state.startBatchPreview
+import dev.artplus.mobile.system.BackupCancelState
+import dev.artplus.mobile.system.SingleExportCancelState
+import dev.artplus.mobile.system.cancelBackup
+import dev.artplus.mobile.system.cancelSingleExport
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.cards.BackupProgressBottomSheet
+import dev.artplus.mobile.ui.cards.BatchApplyProgressDialog
+import dev.artplus.mobile.ui.cards.GeneratedFilter
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.cards.ServiceConfirmDialog
+import dev.artplus.mobile.ui.components.rememberLinkedTopAppBarScrollBehavior
+import dev.artplus.mobile.ui.pages.home.HomePreviewStrip
+import dev.artplus.mobile.ui.pages.params.paramsApplyTuningParams
+import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
+import dev.artplus.mobile.ui.pages.picker.OnboardingDialog
+import dev.artplus.mobile.ui.pages.picker.RefreshConfirmDialog
+import dev.artplus.mobile.ui.pages.picker.RootWriteConfirmDialog
+import dev.artplus.mobile.ui.pages.picker.pickerToastStatus
+import dev.artplus.mobile.ui.pages.presets.PresetPageDialogs
+import dev.artplus.mobile.ui.pages.presets.applyPreset
+import dev.artplus.mobile.ui.pages.presets.deletePreset
+import dev.artplus.mobile.ui.pages.presets.exportSinglePresetToClipboard
+import dev.artplus.mobile.ui.pages.presets.importPresetsFromText
+import dev.artplus.mobile.ui.pages.presets.overwritePreset
+import dev.artplus.mobile.ui.pages.presets.renamePreset
+import dev.artplus.mobile.ui.pages.presets.saveCurrentAsPreset
+import dev.artplus.mobile.state.PreviewEffectKey
+import dev.artplus.mobile.state.PreviewAssetsEffect
 
 @Composable
 internal fun MainActivity.ArtPlusScreen() {
@@ -135,89 +178,14 @@ internal fun MainActivity.ArtPlusScreen() {
         }
     }
 
-    LaunchedEffect(
-        previewSessionState.previewPackageName,
-        previewSessionState.previewDirPath,
-        sharedPreviewSession,
-        previewSessionState.previewVersion,
-        previewEffectKey,
-    ) {
-        val dirPath = previewSessionState.previewDirPath
-        val packageName = previewSessionState.previewPackageName
-        if (dirPath.isNullOrBlank() || packageName.isNullOrBlank()) {
-            mainViewModel.updatePreviewSession { v -> v.copy(sharedPreviewAssets = (null), isPreviewAssetsRefreshing = (false)) }
-            return@LaunchedEffect
-        }
-        mainViewModel.updatePreviewSession { it -> it.copy(isPreviewAssetsRefreshing = (true)) }
-        try {
-            delay(PREVIEW_LIVE_ASSET_DEBOUNCE_MS)
-            val diskAssets = withContext(Dispatchers.IO) {
-                run {
-    PreviewAssets(
-                recbg = BitmapFactory.decodeFile(File(((File(dirPath))), ("recbg.png")).absolutePath)?.also { it.prepareToDraw() },
-                recfg = BitmapFactory.decodeFile(File(((File(dirPath))), ("recfg.png")).absolutePath)?.also { it.prepareToDraw() },
-                recNight = BitmapFactory.decodeFile(File(((File(dirPath))), ("rec_night.png")).absolutePath)?.also { it.prepareToDraw() },
-                monochromeLight = BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome_light.png")).absolutePath)?.also { it.prepareToDraw() }
-                    ?: BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome.png")).absolutePath)?.also { it.prepareToDraw() },
-                monochromeDark = BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome_dark.png")).absolutePath)?.also { it.prepareToDraw() }
-                    ?: BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome.png")).absolutePath)?.also { it.prepareToDraw() },
-            )
-}.preparedForDraw()
-            }
-            val liveAssets = sharedPreviewSession?.let { session ->
-                try {
-                    withContext(previewWorkerDispatcher) {
-                        run {
-
-            val params = mainViewModel.params.value
-            return@run previewAssetsForSelections(
-                session = (session),
-                selections = (PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark)),
-                edgePolishPercent = params.edgePolishPercent,
-                foregroundSubjectPercent = params.foregroundSubjectPercent,
-                rmbgTunedForeground = { __a0: IconCandidate -> run {
-
-                val params = mainViewModel.params.value
-                return@run rmbgTunedForegroundRaw(
-                    candidate = __a0,
-                    rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
-                    rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
-                    rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
-                    rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
-                )
-    } },
-                liquidGlassEnabled = params.liquidGlassEnabled,
-                liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                liquidGlassRadius = params.liquidGlassRadius,
-                liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
-                foregroundShadowLevel = params.foregroundShadowLevel,
-                nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
-            )
-}.preparedForDraw()
-                    }
-                } catch (_: CancellationException) {
-                    throw CancellationException()
-                } catch (_: Throwable) {
-                    null
-                }
-            }
-            mainViewModel.updatePreviewSession { it -> it.copy(sharedPreviewAssets = (liveAssets ?: diskAssets)) }
-        } catch (_: CancellationException) {
-            throw CancellationException()
-        } catch (_: Throwable) {
-            mainViewModel.updatePreviewSession { it -> it.copy(sharedPreviewAssets = (null)) }
-        } finally {
-            mainViewModel.updatePreviewSession { it -> it.copy(isPreviewAssetsRefreshing = (false)) }
-        }
-    }
+    // S4.5：预览资产 effect 已下沉到 state/PreviewAssetOps.kt
+    PreviewAssetsEffect(
+        packageName = previewSessionState.previewPackageName,
+        dirPath = previewSessionState.previewDirPath,
+        session = sharedPreviewSession,
+        previewVersion = previewSessionState.previewVersion,
+        previewEffectKey = previewEffectKey,
+    )
 
     fun completeBackFrom(progress: Float) {
         if (isCompletingBackGesture) {
@@ -483,8 +451,6 @@ internal fun MainActivity.ArtPlusScreen() {
                 onBackground = {
                     mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
                     mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (true)) }
-                    run {
-
             backupDotJob?.cancel()
             backupDotJob = mainScope.launch {
                 while (isActive) {
@@ -492,7 +458,6 @@ internal fun MainActivity.ArtPlusScreen() {
                     mainViewModel.updateTransfer { it -> it.copy(backupBackgroundDots = (if (mainViewModel.transfer.value.backupBackgroundDots >= 3) 1 else mainViewModel.transfer.value.backupBackgroundDots + 1)) }
                 }
             }
-}
                 },
             )
         } else if (!mainViewModel.transfer.value.backupSheetVisible && mainViewModel.transfer.value.backupInBackground && mainViewModel.transfer.value.backupProgress != null) {
@@ -520,7 +485,6 @@ internal fun MainActivity.ArtPlusScreen() {
 } },
             )
         }
-        run {
     RootWriteConfirmDialog(
                 request = confirmState.pendingRootWriteConfirm,
                 rememberSkip = confirmState.rootWriteConfirmRememberSkip,
@@ -536,9 +500,6 @@ internal fun MainActivity.ArtPlusScreen() {
                     onConfirm()
                 },
             )
-}
-        run {
-
             // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
             // Phase 5：confirmState 已提升至 ArtPlusScreen 顶层，此处复用（删重复订阅）。
             RefreshConfirmDialog(
@@ -560,14 +521,12 @@ internal fun MainActivity.ArtPlusScreen() {
     }
                 },
             )
-}
         run {
     PresetPageDialogs(
                 saveDialogVisible = presetUiState.presetSaveDialogVisible,
                 saveInitialName = presetUiState.presetSaveName,
                 onSaveConfirm = { name ->
                     mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
-                    run {
         saveCurrentAsPreset(
                     rawName = (name),
                     store = presetStore,
@@ -582,13 +541,12 @@ internal fun MainActivity.ArtPlusScreen() {
                     },
                     onStatus = { setStatus((it)) },
                 )
-    }
+    
                 },
                 onSaveDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) } },
                 renameTarget = presetUiState.presetRenameTarget,
                 onRenameConfirm = { id, name ->
                     mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) }
-                    run {
         renamePreset(
                     id = (id),
                     rawName = (name),
@@ -600,7 +558,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     },
                     onStatus = { setStatus((it)) },
                 )
-    }
+    
                 },
                 onRenameDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) } },
                 actionMenuTarget = presetUiState.presetActionMenuTarget,
@@ -1130,7 +1088,6 @@ internal fun MainActivity.ArtPlusScreen() {
                 onRefreshDismiss = { mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) } },
             )
 }
-        run {
 val __act1 = LocalContext.current
 
             // 热修复：shellState 已提升至 ArtPlusScreen 顶层，此处复用（删重复订阅）。
@@ -1160,7 +1117,6 @@ val __act1 = LocalContext.current
                     chooseTreeLauncher.launch(null)
                 },
             )
-}
     }
 }
 
@@ -1248,21 +1204,4 @@ internal fun MainActivity.PagerShellPage(
  * S3.4：预览资产 effect 的字段化 key。
  * 只有这 16 个字段变化才需要重新解码 recbg/recfg/rec_night 等 PNG。
  */
-private data class PreviewEffectKey(
-    val selections: PreviewSelections,
-    val liquidGlassEnabled: Boolean,
-    val liquidGlassBackgroundMistAlpha: Int,
-    val liquidGlassTopAlpha: Int,
-    val liquidGlassBottomAlpha: Int,
-    val liquidGlassBottomDarkAlpha: Int,
-    val liquidGlassOuterWidth: Int,
-    val liquidGlassRadius: Int,
-    val liquidGlassSubjectScalePercent: Int,
-    val liquidGlassSubjectShadowAlpha: Int,
-    val liquidGlassSubjectOutlineWidth: Int,
-    val liquidGlassSubjectInnerOutlineWidth: Int,
-    val liquidGlassSubjectOpacityPercent: Int,
-    val foregroundShadowLevel: Int,
-    val monochromeThemeScale: Float,
-    val nightSubjectLightBackgroundEnabled: Boolean,
-)
+

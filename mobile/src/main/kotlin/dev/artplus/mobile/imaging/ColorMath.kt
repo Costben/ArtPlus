@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Color as AndroidColor
 import kotlin.math.roundToInt

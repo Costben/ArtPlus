@@ -1,8 +1,25 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import kotlin.math.pow
+import dev.artplus.mobile.FOREGROUND_EDGE_POLISH_RADIUS
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.MONO_ALPHA_GAMMA
+import dev.artplus.mobile.MONO_ALPHA_MAX
+import dev.artplus.mobile.MONO_ALPHA_MIN
+import dev.artplus.mobile.MONO_EDGE_ALPHA_DROP_THRESHOLD
+import dev.artplus.mobile.MONO_EDGE_ALPHA_IGNORE_THRESHOLD
+import dev.artplus.mobile.MONO_EDGE_POLISH_RADIUS
+import dev.artplus.mobile.MONO_EDGE_SHARPEN_HIGH_CUT
+import dev.artplus.mobile.MONO_EDGE_SHARPEN_LOW_CUT
+import dev.artplus.mobile.MONO_EDGE_TRIM_FEATHER_SCALE
+import dev.artplus.mobile.MONO_NATIVE_EDGE_HIGH_CUT
+import dev.artplus.mobile.MONO_NATIVE_EDGE_LOW_CUT
+import dev.artplus.mobile.MONO_NATIVE_MAX_COVERAGE_EXTRA
+import dev.artplus.mobile.MONO_NATIVE_MAX_TILE_COVERAGE
+import dev.artplus.mobile.MONO_TONAL_MIN_VISIBLE_PIXELS
+import dev.artplus.mobile.MONO_TONAL_RANGE_THRESHOLD
 
 /**
  * 单色（monochrome）管线：色调映射 alpha + 原生单色判定/清理/锐化/边缘修剪/抛光。

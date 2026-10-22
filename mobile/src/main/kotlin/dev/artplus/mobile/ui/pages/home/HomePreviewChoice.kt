@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.home
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -41,6 +41,24 @@ import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.window.WindowBottomSheet
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import com.caverock.androidsvg.SVG
+import dev.artplus.mobile.MAX_FOREGROUND_SUBJECT_PERCENT
+import dev.artplus.mobile.MIN_FOREGROUND_SUBJECT_PERCENT
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.imaging.CustomImageKind
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.candidateForChoice
+import dev.artplus.mobile.imaging.effectiveChoiceForPreviewRow
+import dev.artplus.mobile.imaging.isComposedBackgroundCombination
+import dev.artplus.mobile.pipeline.GenerationSession
+import dev.artplus.mobile.pipeline.PreviewAssets
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.pipeline.customCandidateForPreview
+import dev.artplus.mobile.ui.cards.AiIconLoadingPreview
+import dev.artplus.mobile.ui.cards.NumberParameterControl
+import dev.artplus.mobile.ui.cards.PreviewChoiceActions
+import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.components.MetricPill
 /**
  * Slice 2.2：预览来源抽屉（原 MainActivity 残留本体原样搬迁）。
  * Composable 只收 state + onEvent；Activity 状态经参数/回调注入，行为与 UI 100% 等价。

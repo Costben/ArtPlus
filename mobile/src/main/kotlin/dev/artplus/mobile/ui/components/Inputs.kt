@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

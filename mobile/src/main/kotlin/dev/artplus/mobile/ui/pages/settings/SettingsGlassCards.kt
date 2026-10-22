@@ -1,9 +1,33 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import dev.artplus.mobile.MAX_LIQUID_GLASS_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_MIST_ALPHA
+import dev.artplus.mobile.MAX_LIQUID_GLASS_OUTER_WIDTH
+import dev.artplus.mobile.MAX_LIQUID_GLASS_RADIUS
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT
+import dev.artplus.mobile.MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_MIST_ALPHA
+import dev.artplus.mobile.MIN_LIQUID_GLASS_OUTER_WIDTH
+import dev.artplus.mobile.MIN_LIQUID_GLASS_RADIUS
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT
+import dev.artplus.mobile.MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.ui.cards.NumberParameterControl
+import dev.artplus.mobile.ui.components.LibrarySettingRow
+import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.SectionDivider
+import dev.artplus.mobile.ui.components.SettingsIconKind
 
 /**
  * Slice 2.3：液态玻璃设置卡片（原 MainActivity 本体原样搬迁）。

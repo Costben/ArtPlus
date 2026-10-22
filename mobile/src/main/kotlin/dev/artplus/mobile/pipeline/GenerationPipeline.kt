@@ -1,9 +1,27 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.pipeline
 
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import java.io.File
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.BatchPreviewStore
+import dev.artplus.mobile.GPT_SOURCE_SIZE
+import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.TuningPreset
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.imaging.AdaptiveForegroundMode
+import dev.artplus.mobile.imaging.OriginalForegroundCleanupMode
+import dev.artplus.mobile.imaging.PreviewChoice
+import dev.artplus.mobile.imaging.alphaCoverage
+import dev.artplus.mobile.imaging.buildLocalCandidates
+import dev.artplus.mobile.imaging.buildLocalIconLayers
+import dev.artplus.mobile.imaging.chooseChromaKey
+import dev.artplus.mobile.imaging.drawDrawable
+import dev.artplus.mobile.imaging.drawLocalCandidateSourceIcon
+import dev.artplus.mobile.imaging.hasRealAlpha
+import dev.artplus.mobile.imaging.removeChromaKeyBackground
 
 /**
  * 生成管线（P4 拆分）：本地会话构建/重建 + GPT 图层生成 + 批量预览快照读取。

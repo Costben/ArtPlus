@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.tabs
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +16,48 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.data.AppEntry
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.ui.cards.AdvancedSettingsCategory
+import dev.artplus.mobile.ui.cards.AdvancedSettingsTab
+import dev.artplus.mobile.ui.pages.PagerShellPage
+import dev.artplus.mobile.ui.pages.home.GenerationNavCard
+import dev.artplus.mobile.ui.pages.params.paramsApplyTuningParams
+import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
+import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
+import dev.artplus.mobile.ui.pages.params.paramsUpdateBackgroundSeparationPercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateEdgePolishPercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassBackgroundMistAlpha
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassBottomAlpha
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassBottomDarkAlpha
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassEnabled
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassOuterWidth
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassRadius
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectInnerOutlineWidth
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectOpacityPercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectOutlineWidth
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectScalePercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectShadowAlpha
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassTopAlpha
+import dev.artplus.mobile.ui.pages.params.paramsUpdateLocalWorkflowToggle
+import dev.artplus.mobile.ui.pages.params.paramsUpdatePlateRemovalPercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateRmbgAlphaStrengthPercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateRmbgEdgeAdjustPercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateRmbgEdgeFeatherPercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateRmbgWeakAlphaKeepPercent
+import dev.artplus.mobile.ui.pages.params.paramsUpdateShadowRemovalPercent
+import dev.artplus.mobile.ui.pages.presets.saveJsonParamsFromText
+import dev.artplus.mobile.ui.pages.settings.JsonSettingsEditorCard
+import dev.artplus.mobile.ui.pages.settings.LiquidGlassSubjectCard
+import dev.artplus.mobile.ui.pages.settings.LiquidGlassSurfaceCard
+import dev.artplus.mobile.ui.pages.settings.LiquidGlassToggleCard
+import dev.artplus.mobile.ui.pages.settings.LocalRuleTuningCard
+import dev.artplus.mobile.ui.pages.settings.LocalWorkflowPipelineCard
+import dev.artplus.mobile.ui.pages.settings.RmbgTuningCard
 
 /**
  * S4.x：从 HomePage 的 `when (page)` 分支原样搬出的 tab 页（纯移动，key/remember 原样保留）。
@@ -54,8 +96,6 @@ PagerShellPage(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         item(key = "gen_nav") {
-                            run {
-
             val shellState by mainViewModel.shell.collectAsState()
             // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
             GenerationNavCard(
@@ -75,7 +115,6 @@ PagerShellPage(
                     persistUiState()
                 },
             )
-}
                         }
                         when (genContentShell.advancedSettingsTab) {
                             AdvancedSettingsTab.Sliders -> when (genContentShell.advancedSettingsCategory) {
@@ -418,7 +457,6 @@ PagerShellPage(
                             }
                             AdvancedSettingsTab.Json -> {
                                 item(key = "json_editor") {
-                                    run {
     JsonSettingsEditorCard(
                 currentParams = remember(paramsState) { paramsState },
                 draftText = draftJsonParamsText,
@@ -496,7 +534,6 @@ PagerShellPage(
                     setStatus(("已恢复为当前参数 JSON"))
                 },
             )
-}
                                 }
                             }
                         }

@@ -1,7 +1,36 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.AUTO_COVERAGE_CHANGE_THRESHOLD
+import dev.artplus.mobile.COMPOSED_BACKGROUND_FILL_RADIUS
+import dev.artplus.mobile.COMPOSED_BACKGROUND_SUBJECT_ALPHA_THRESHOLD
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.SIZE_1X1
+import dev.artplus.mobile.TWO_LAYER_AUTO_MAX_PLATE_COVERAGE
+import dev.artplus.mobile.TWO_LAYER_AUTO_MAX_PLATE_STD
+import dev.artplus.mobile.TWO_LAYER_AUTO_MAX_SUBJECT_TO_PLATE_RATIO
+import dev.artplus.mobile.TWO_LAYER_AUTO_MIN_PLATE_LUMA
+import dev.artplus.mobile.TWO_LAYER_BACKGROUND_FILL_RADIUS
+import dev.artplus.mobile.TWO_LAYER_DOMINANT_MAX_LUMA
+import dev.artplus.mobile.TWO_LAYER_DOMINANT_MIN_SATURATION
+import dev.artplus.mobile.TWO_LAYER_EDGE_GROW_STRENGTH
+import dev.artplus.mobile.TWO_LAYER_EDGE_SMOOTH_RADIUS
+import dev.artplus.mobile.TWO_LAYER_EDGE_SMOOTH_STRENGTH
+import dev.artplus.mobile.TWO_LAYER_MANUAL_MAX_PLATE_STD
+import dev.artplus.mobile.TWO_LAYER_MAX_PLATE_COVERAGE
+import dev.artplus.mobile.TWO_LAYER_MAX_SUBJECT_BOUNDS_TO_PLATE_RATIO
+import dev.artplus.mobile.TWO_LAYER_MAX_SUBJECT_TO_PLATE_RATIO
+import dev.artplus.mobile.TWO_LAYER_MIN_MANUAL_SUBJECT_COVERAGE
+import dev.artplus.mobile.TWO_LAYER_MIN_PLATE_COVERAGE
+import dev.artplus.mobile.TWO_LAYER_MIN_SUBJECT_COVERAGE
+import dev.artplus.mobile.TWO_LAYER_MIN_SUBJECT_FILL_RATIO
+import dev.artplus.mobile.TWO_LAYER_MIN_SUBJECT_PIXELS
+import dev.artplus.mobile.TWO_LAYER_PLATE_BACKGROUND_DISTANCE
+import dev.artplus.mobile.TWO_LAYER_SUBJECT_BACKGROUND_DISTANCE
+import dev.artplus.mobile.TWO_LAYER_SUBJECT_CLOSE_RADIUS
+import dev.artplus.mobile.TWO_LAYER_SUBJECT_PLATE_DILATE_RADIUS
 
 /**
  * 本时候选编排：原始/清理/拼合背景/二层候选的构建与自动选择。

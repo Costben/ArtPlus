@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.cards
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -57,6 +57,15 @@ import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.More
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import dev.artplus.mobile.TuningPreset
+import dev.artplus.mobile.ui.components.AppTagCornerRadius
+import dev.artplus.mobile.ui.components.CompactCardCornerRadius
+import dev.artplus.mobile.ui.components.KernelStyleArrow
+import dev.artplus.mobile.ui.components.NumberInputBox
+import dev.artplus.mobile.ui.components.SettingsIconKind
+import dev.artplus.mobile.ui.components.SettingsLineIcon
+import dev.artplus.mobile.ui.components.SteppedPercentSlider
+import dev.artplus.mobile.ui.components.settingsIconForTitle
 
 internal fun formatScale(value: Float): String =
     String.format(Locale.US, "%.2f", value)

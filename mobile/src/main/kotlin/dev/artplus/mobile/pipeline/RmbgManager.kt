@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.pipeline
 
 import android.graphics.Bitmap
 import android.net.Uri
@@ -17,6 +17,56 @@ import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import android.graphics.Color as AndroidColor
+import dev.artplus.mobile.DEFAULT_RMBG_ALPHA_STRENGTH_PERCENT
+import dev.artplus.mobile.DEFAULT_RMBG_EDGE_ADJUST_PERCENT
+import dev.artplus.mobile.DEFAULT_RMBG_INPUT_SIZE
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
+import dev.artplus.mobile.MAX_RMBG_ALPHA_STRENGTH_PERCENT
+import dev.artplus.mobile.MAX_RMBG_EDGE_ADJUST_PERCENT
+import dev.artplus.mobile.MAX_RMBG_EDGE_FEATHER_PERCENT
+import dev.artplus.mobile.MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT
+import dev.artplus.mobile.MIN_RMBG_ALPHA_STRENGTH_PERCENT
+import dev.artplus.mobile.MIN_RMBG_EDGE_ADJUST_PERCENT
+import dev.artplus.mobile.MIN_RMBG_EDGE_FEATHER_PERCENT
+import dev.artplus.mobile.MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.RMBG_COMPONENT_DIR
+import dev.artplus.mobile.RMBG_DOWNLOAD_CONNECT_TIMEOUT_MS
+import dev.artplus.mobile.RMBG_DOWNLOAD_READ_TIMEOUT_MS
+import dev.artplus.mobile.RMBG_EDGE_ADJUST_MAX_RADIUS
+import dev.artplus.mobile.RMBG_MAX_AUTO_COVERAGE
+import dev.artplus.mobile.RMBG_MAX_COMPONENT_ZIP_ENTRIES
+import dev.artplus.mobile.RMBG_MAX_COMPONENT_ZIP_UNPACK_BYTES
+import dev.artplus.mobile.RMBG_MAX_DOWNLOAD_BYTES
+import dev.artplus.mobile.RMBG_MAX_MANUAL_COVERAGE
+import dev.artplus.mobile.RMBG_MIN_AUTO_COVERAGE
+import dev.artplus.mobile.RMBG_MIN_COMPONENT_ZIP_BYTES
+import dev.artplus.mobile.RMBG_MIN_MANUAL_COVERAGE
+import dev.artplus.mobile.RMBG_MIN_MODEL_BYTES
+import dev.artplus.mobile.RMBG_MODEL_NAME
+import dev.artplus.mobile.RMBG_NORMALIZE_MEAN
+import dev.artplus.mobile.RMBG_NORMALIZE_STD
+import dev.artplus.mobile.RMBG_WEAK_ALPHA_MAX_CUT
+import dev.artplus.mobile.imaging.Bounds
+import dev.artplus.mobile.imaging.CandidateBuildResult
+import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.RmbgInferenceBackend
+import dev.artplus.mobile.imaging.RmbgInferenceReport
+import dev.artplus.mobile.imaging.estimatePlainIconBackground
+import dev.artplus.mobile.imaging.hasAutoCropRisk
+import dev.artplus.mobile.imaging.lerpDouble
+import dev.artplus.mobile.imaging.meaningfulAlphaBounds
+import dev.artplus.mobile.imaging.meaningfulAlphaCoverage
+import dev.artplus.mobile.imaging.ratioPercent
+import dev.artplus.mobile.imaging.rebuildComposedIconBackground
+import dev.artplus.mobile.imaging.repairTransparentEdgeColors
+import dev.artplus.mobile.imaging.resizeBitmap
+import dev.artplus.mobile.imaging.solidBitmap
+import dev.artplus.mobile.state.setStatus
+import dev.artplus.mobile.ui.cards.RmbgComponent
+import dev.artplus.mobile.ui.cards.RmbgDebugCandidate
+import dev.artplus.mobile.ui.cards.RmbgMaskResult
+import dev.artplus.mobile.ui.cards.RmbgModelOutput
 
 /**
  * RMBG 模型管理/下载/解压/校验/推理管线与 Mask 处理（Epic v2 Phase 1 Slice 1.3）。

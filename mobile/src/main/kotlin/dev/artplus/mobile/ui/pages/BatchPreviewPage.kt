@@ -1,4 +1,4 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages
 
 import android.app.WallpaperManager
 import androidx.compose.foundation.background
@@ -63,6 +63,32 @@ import io.github.suqi8.coui.kmp.icon.extended.Refresh
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.CHOICE_ROW_HORIZONTAL_BLEED_DP
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE
+import dev.artplus.mobile.PREVIEW_LABEL_HEIGHT_DP
+import dev.artplus.mobile.pipeline.PreviewMode
+import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.ui.cards.AppPage
+import dev.artplus.mobile.ui.cards.NumberParameterControl
+import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
+import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.TitleBarIconButton
+import dev.artplus.mobile.ui.components.rememberLinkedTopAppBarScrollBehavior
+import dev.artplus.mobile.ui.pages.home.GeneratedIconPreview
+import dev.artplus.mobile.ui.pages.home.MissingIconPreview
+import dev.artplus.mobile.ui.pages.home.PreviewBackgroundOption
+import dev.artplus.mobile.ui.pages.home.PreviewDesktopBackgroundSurface
+import dev.artplus.mobile.ui.pages.params.paramsUpdateBatchPreviewColumns
+import dev.artplus.mobile.ui.pages.params.paramsUpdateBatchPreviewCornerRadiusDp
+import dev.artplus.mobile.ui.pages.params.paramsUpdateBatchPreviewDesktopBackground
+import dev.artplus.mobile.ui.pages.params.paramsUpdateBatchPreviewIconSizeDp
+import dev.artplus.mobile.ui.pages.picker.pickerLoadBundledPreviewWallpaperBitmap
+import dev.artplus.mobile.ui.pages.picker.pickerLoadCustomWallpaperBitmap
+import dev.artplus.mobile.ui.pages.picker.pickerLoadPreviewWallpaperBitmap
+import dev.artplus.mobile.ui.pages.picker.pickerSystemMaterialColor
+import dev.artplus.mobile.ui.pages.picker.pickerSystemWallpaperDrawable
+import dev.artplus.mobile.R
 
 @Composable
 internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
@@ -172,7 +198,6 @@ val __act2 = LocalContext.current
                 wallpaperKey = batchConfig.customWallpaperPath,
                 loadWallpaper = {
                     withContext(Dispatchers.IO) {
-                        run {
         pickerLoadCustomWallpaperBitmap(
                     path = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
                     cachedPath = cachedCustomWallpaperPath,
@@ -183,7 +208,7 @@ val __act2 = LocalContext.current
                     },
                     shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
                 )
-    } ?: run {
+     ?: run {
         pickerLoadPreviewWallpaperBitmap(
                     getCached = { cachedSystemWallpaper },
                     setCached = { cachedSystemWallpaper = it },
@@ -311,7 +336,6 @@ val __act2 = LocalContext.current
                             .height(previewFrameHeight)
                             .clip(RoundedCornerShape(20.dp)),
                     ) {
-                        run {
 val __act1 = LocalContext.current
     PreviewDesktopBackgroundSurface(
                 option = (batchConfig.batchPreviewDesktopBackground),
@@ -350,7 +374,6 @@ val __act1 = LocalContext.current
                     }
                 },
             )
-}
 
                         if (result == null || result.items.isEmpty()) {
                             Box(
@@ -389,7 +412,6 @@ val __act1 = LocalContext.current
                                             modifier = Modifier.fillMaxWidth(),
                                         ) {
                                             if (item.assets.missingMessage(currentMode) == null) {
-                                                run {
     GeneratedIconPreview(
                 assets = (item.assets),
                 mode = (currentMode),
@@ -404,9 +426,7 @@ val __act1 = LocalContext.current
                 )
      },
             )
-}
                                             } else {
-                                                run {
     MissingIconPreview(
                 modifier = (Modifier.size(batchConfig.batchPreviewIconSizeDp.dp)),
                 mode = (currentMode),
@@ -421,7 +441,6 @@ val __act1 = LocalContext.current
                 )
      },
             )
-}
                                             }
                                             Text(
                                                 text = item.label,

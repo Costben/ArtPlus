@@ -1,6 +1,35 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.state
 
 import android.content.Context
+import dev.artplus.mobile.MainActivity
+import dev.artplus.mobile.PREFS_NAME
+import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_CATEGORY
+import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_TAB
+import dev.artplus.mobile.PREF_AUTO_CONFIRM_REFRESH
+import dev.artplus.mobile.PREF_AUTO_CONFIRM_ROOT_WRITE
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_COLUMNS
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_COUNT
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_DESKTOP_BG
+import dev.artplus.mobile.PREF_BATCH_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.PREF_CUSTOM_WALLPAPER_PATH
+import dev.artplus.mobile.PREF_GENERATED_FILTER
+import dev.artplus.mobile.PREF_OUTPUT_TREE_URI
+import dev.artplus.mobile.PREF_PREVIEW_CORNER_RADIUS_DP
+import dev.artplus.mobile.PREF_PREVIEW_DESKTOP_BACKGROUND
+import dev.artplus.mobile.PREF_PREVIEW_DIR_PATH
+import dev.artplus.mobile.PREF_PREVIEW_ICON_SIZE_DP
+import dev.artplus.mobile.PREF_PREVIEW_PACKAGE_NAME
+import dev.artplus.mobile.PREF_PREVIEW_SELECTION_MONOCHROME_DARK
+import dev.artplus.mobile.PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT
+import dev.artplus.mobile.PREF_PREVIEW_SELECTION_NORMAL_DARK
+import dev.artplus.mobile.PREF_PREVIEW_SELECTION_NORMAL_LIGHT
+import dev.artplus.mobile.PREF_PREVIEW_STRIP_ENABLED
+import dev.artplus.mobile.PREF_QUERY_TEXT
+import dev.artplus.mobile.PREF_SELECTED_PACKAGE_NAME
+import dev.artplus.mobile.PREF_SHOW_SYSTEM_APPS
+import dev.artplus.mobile.PREF_SKIP_ROOT_WRITE_CONFIRM
+import dev.artplus.mobile.ui.cards.PreviewSelections
 
 /**
  * S2.1：UI 状态落盘唯一实现。

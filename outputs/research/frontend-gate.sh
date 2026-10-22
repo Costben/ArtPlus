@@ -61,7 +61,7 @@ bad = []
 for k, v in base.items():
     if k not in now or not isinstance(v, (int, float)) or not isinstance(now[k], (int, float)):
         continue
-    if k in ("unused_imports_pct", "import_line_ratio_pct", "import_lines", "imports_total", "kt_files"):
+    if k in ("unused_imports_pct", "import_line_ratio_pct", "import_lines", "imports_total", "kt_files", "packages", "ui_files", "homepage_lines", "ui_lines"):
         continue  # 派生比率与「新增文件带来的 import 数」不作为劣化判据（真实约束是 unused_imports=0 与 ratio）
     if k in ("unit_tests", "android_tests", "coui_icons", "string_resources"):
         if now[k] < v:

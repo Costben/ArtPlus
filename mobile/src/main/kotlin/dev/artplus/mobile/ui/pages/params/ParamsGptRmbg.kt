@@ -1,6 +1,26 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.ui.pages.params
 
 import android.content.SharedPreferences
+import dev.artplus.mobile.DEFAULT_RMBG_COMPONENT_URL
+import dev.artplus.mobile.DEFAULT_RMBG_INPUT_SIZE
+import dev.artplus.mobile.LEGACY_DEFAULT_GPT_BASE_URL
+import dev.artplus.mobile.PREF_GPT_API_KEY
+import dev.artplus.mobile.PREF_GPT_API_KEY_ENCRYPTED
+import dev.artplus.mobile.PREF_GPT_BASE_URL
+import dev.artplus.mobile.PREF_GPT_CUSTOM_PROMPT
+import dev.artplus.mobile.PREF_GPT_MODE
+import dev.artplus.mobile.PREF_GPT_MODEL_ID
+import dev.artplus.mobile.PREF_GPT_PROMPT_PRESET
+import dev.artplus.mobile.PREF_RMBG_COMPONENT_URL
+import dev.artplus.mobile.PREF_RMBG_INPUT_SIZE
+import dev.artplus.mobile.PREF_RMBG_INPUT_SIZE_MIGRATED_TO_1024
+import dev.artplus.mobile.RMBG_MODEL_PRESETS
+import dev.artplus.mobile.RMBG_MODEL_PRESET_CUSTOM
+import dev.artplus.mobile.TuningParams
+import dev.artplus.mobile.imaging.RmbgInferenceReport
+import dev.artplus.mobile.pipeline.GptImageMode
+import dev.artplus.mobile.pipeline.GptPromptPreset
+import dev.artplus.mobile.ui.cards.RmbgModelPreset
 
 /**
  * Slice 2.4：GPT/RMBG/预设存取族（原 MainActivity 本体原样搬迁）。

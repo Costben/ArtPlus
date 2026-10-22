@@ -3,6 +3,8 @@ package dev.artplus.mobile
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import dev.artplus.mobile.pipeline.featherRmbgAlphaEdges
+import dev.artplus.mobile.pipeline.morphRmbgAlpha
 
 /**
  * P4 管线守卫：RMBG alpha 形态学 helper 必须与原 Activity 内联逻辑一致。

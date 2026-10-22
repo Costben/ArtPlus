@@ -1,10 +1,17 @@
-package dev.artplus.mobile
+package dev.artplus.mobile.data
 
 import android.content.SharedPreferences
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import java.util.Locale
+import dev.artplus.mobile.BatchSampleTarget
+import dev.artplus.mobile.PREF_GENERATED_PACKAGE_NAMES
+import dev.artplus.mobile.PREF_GENERATED_PACKAGE_NAMES_UPDATED_AT
+import dev.artplus.mobile.ROOT_UXICONS_DIR
+import dev.artplus.mobile.system.shQuote
+import dev.artplus.mobile.system.runRootCommand
+import dev.artplus.mobile.ROOT_SCAN_TIMEOUT_MS
 
 /**
  * 应用数据层（P3 拆分）：应用列表查询/排序 + 已生成包扫描/缓存。
