@@ -13,7 +13,8 @@ import kotlinx.coroutines.flow.asStateFlow
  * draft*Text 草稿态留 UI 层不进 VM。单源：同一状态不得同时存在于 Activity 与 VM，
  * Activity 侧仅留薄 wrapper 委托（标注“重构期间保留”），load/save 语义不变。
  *
- * Activity 管 live UI 域（186 个 `mutableStateOf` + `currentTuningParams()` 本 phase 不动，
+ * Activity 管 live UI 域（实测 2026-10-22：全模块 59 个 `mutableStateOf`，其中 Activity 30、ui/ 26；
+ * 原文写的「186 个」是 COUI17 迁移前的旧值，已失效）+ `currentTuningParams()` 本 phase 不动，
  * 全量重写留 P5）；交界一律用 TuningParams 快照显式同步，VM 绝不读 Activity 字段。
  * PresetStore 由调用方传入（Activity 的单实例），VM 内不持有，避免双实例分叉。
  * pipeline/effective* wrapper 删除延后到 P5（调用点仍读 UI vars）。
