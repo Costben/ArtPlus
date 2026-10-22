@@ -27,3 +27,5 @@
 | D17 | S2.2 | 刷新入口 `refresh` 保留 `(Boolean)` 形参（rebuildLocalCandidates） | 37 个调用点的原表达式就是 `{ rebuild -> ... }`，改成无参会改变语义 |
 | D18 | S2.4 | 合并 31 组相邻同 flow 写入 + 新增 `setStatus()` 收敛 145 处单字段 `statusText` 写 | 计划只给了目标值（≤120/≤150）。相邻合并到 144 后 `updateShell` 仍 222，唯一低风险出路是把「只写状态文案」的调用收成一个具名入口（语义等价，一字段 copy） |
 | D19 | S2.4 | 合并时把残留的 `it.previewVersion` 改写为 `v.previewVersion`（2 处） | 合并重命名形参后，原 `it` 指向同一 StateFlow 快照，改写等价；不改则编译失败 |
+| D20 | S3.1 | 裸读规则落地为「总量棘轮 + lint `StateFlowValueCalledInComposition` 精确拦截」两层，而非一次性全清 | `ui/` 现有 426 处裸读，其中绝大多数在事件回调里（合法）；一次性全清需要重写 400+ 个回调，风险远大于收益。精确的组合期违例由 lint 拦（当前 0） |
+| D21 | S3.5 | 调参快照改为页面顶层单次订阅（HomePage/SettingsPage/Shell 各一处），而非逐 item 提升 | 逐 item 提升要在 10 个不同 item 作用域各订阅一次，仍是多订阅；顶层一次覆盖全部读点，重组开销留给 P6 的 backdrop 治理 |
