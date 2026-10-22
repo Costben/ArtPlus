@@ -75,6 +75,7 @@ import dev.artplus.mobile.system.runRootCommand
 import dev.artplus.mobile.ui.pages.settings.GptSettingsCard
 import dev.artplus.mobile.ui.pages.params.paramsCurrentRmbgModelPreset
 import dev.artplus.mobile.CUSTOM_WALLPAPER_FILE
+import dev.artplus.mobile.ui.components.BarClearance
 
 @Composable
 internal fun MainActivity.SettingsPage(
@@ -101,7 +102,7 @@ internal fun MainActivity.SettingsPage(
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(
             top = innerPadding.calculateTopPadding() + 16.dp,
-            bottom = 88.dp,
+            bottom = BarClearance,
         ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {

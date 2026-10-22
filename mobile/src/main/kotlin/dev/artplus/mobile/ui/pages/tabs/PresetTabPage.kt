@@ -53,6 +53,7 @@ import dev.artplus.mobile.ui.pages.presets.exportPresetsToClipboard
 import dev.artplus.mobile.ui.pages.presets.overwritePreset
 import dev.artplus.mobile.ui.pages.presets.resetToPreset
 import dev.artplus.mobile.ui.pages.settings.BatchPreviewSettingsCard
+import dev.artplus.mobile.ui.components.BarClearance
 
 /**
  * S4.x：从 HomePage 的 `when (page)` 分支原样搬出的 tab 页（纯移动，key/remember 原样保留）。
@@ -108,7 +109,7 @@ PagerShellPage(
                     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                         val topPadding = innerPadding.calculateTopPadding()
                         val bottomPadding = innerPadding.calculateBottomPadding()
-                        val minContentHeight = (maxHeight - topPadding - bottomPadding - 16.dp - 88.dp + 1.dp).coerceAtLeast(0.dp)
+                        val minContentHeight = (maxHeight - topPadding - bottomPadding - 16.dp - BarClearance + 1.dp).coerceAtLeast(0.dp)
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -117,7 +118,7 @@ PagerShellPage(
                                 .padding(horizontal = 16.dp),
                             contentPadding = PaddingValues(
                                 top = innerPadding.calculateTopPadding() + 16.dp,
-                                bottom = 88.dp,
+                                bottom = BarClearance,
                             ),
                         ) {
                             item(key = "preset_cards") {

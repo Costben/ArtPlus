@@ -58,6 +58,7 @@ import dev.artplus.mobile.ui.pages.settings.LiquidGlassToggleCard
 import dev.artplus.mobile.ui.pages.settings.LocalRuleTuningCard
 import dev.artplus.mobile.ui.pages.settings.LocalWorkflowPipelineCard
 import dev.artplus.mobile.ui.pages.settings.RmbgTuningCard
+import dev.artplus.mobile.ui.components.BarClearance
 
 /**
  * S4.x：从 HomePage 的 `when (page)` 分支原样搬出的 tab 页（纯移动，key/remember 原样保留）。
@@ -91,7 +92,7 @@ PagerShellPage(
                             .padding(horizontal = 16.dp),
                         contentPadding = PaddingValues(
                             top = innerPadding.calculateTopPadding() + 16.dp,
-                            bottom = 88.dp,
+                            bottom = BarClearance,
                         ),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
