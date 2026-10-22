@@ -117,8 +117,6 @@ import io.github.suqi8.coui.kmp.blur.drawBackdrop
 import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
-import dev.artplus.mobile.glass.FloatingBottomBar
-import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -347,10 +345,12 @@ internal fun MainActivity.SettingsPage(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection)
-            .padding(innerPadding)
             .imePadding()
             .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 16.dp, bottom = 88.dp),
+        contentPadding = PaddingValues(
+            top = innerPadding.calculateTopPadding() + 16.dp,
+            bottom = 88.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item(key = "input_settings") {

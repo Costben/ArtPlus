@@ -96,6 +96,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -111,14 +113,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
 import io.github.suqi8.coui.kmp.blur.drawBackdrop
 import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
-import dev.artplus.mobile.glass.FloatingBottomBar
-import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -218,7 +219,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.core.view.WindowInsetsControllerCompat
 import com.composables.icons.lucide.BadgeCheck
 import com.composables.icons.lucide.ChevronRight
-import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Cpu
 import com.composables.icons.lucide.Download
 import com.composables.icons.lucide.EllipsisVertical
@@ -314,7 +314,9 @@ import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
 import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
 import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
@@ -339,36 +341,46 @@ internal fun MainActivity.AppPickerPage(
     // 回调内事件时读 .value 仍合法，此处只修组合期渲染读。
     val pickerState by mainViewModel.picker.collectAsState()
     val shellState by mainViewModel.shell.collectAsState()
-    val scrollBehavior = COUIScrollBehavior()
+    val scrollBehavior = rememberLinkedTopAppBarScrollBehavior()
 
+    // Backdrop for the ColorOS app bar material: the list only, never the bar itself.
+    val appBarBackdrop = rememberLayerBackdrop {
+        drawRect(pageBackground)
+        drawContent()
+    }
+    val contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+        TopAppBarDefaults.ExpandedHeight
     Scaffold(
         containerColor = pageBackground,
         topBar = {
-            TopAppBar(
-                title = "选择 APK",
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    TitleBarIconButton(
-                        icon = Lucide.ChevronLeft,
-                        contentDescription = "返回",
-                        enabled = !shellState.isBusy,
-                        dimWhenDisabled = false,
-                        onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
-                    )
-                },
-            )
+            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
+                TopAppBar(
+                    title = "选择 APK",
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        TitleBarIconButton(
+                            icon = COUIIcons.ChevronBackward,
+                            contentDescription = "返回",
+                            enabled = !shellState.isBusy,
+                            onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
+                        )
+                    },
+                    gradientGlass = true,
+                    showDivider = false,
+                )
+            }
         },
 
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .layerBackdrop(appBarBackdrop)
                 .background(pageBackground)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .padding(innerPadding)
                 .imePadding()
                 .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+            contentPadding = PaddingValues(top = contentTopInset + 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {

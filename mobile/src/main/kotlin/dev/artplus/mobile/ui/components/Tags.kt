@@ -117,8 +117,6 @@ import io.github.suqi8.coui.kmp.blur.drawBackdrop
 import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
-import dev.artplus.mobile.glass.FloatingBottomBar
-import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -315,6 +313,8 @@ import io.github.suqi8.coui.kmp.basic.TopAppBar
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.icon.extended.Back
+import io.github.suqi8.coui.kmp.icon.extended.More
 import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import io.github.suqi8.coui.kmp.theme.darkColorScheme
@@ -326,8 +326,6 @@ import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.basic.TagView
 import io.github.suqi8.coui.kmp.basic.TagViewDefaults
 import io.github.suqi8.coui.kmp.basic.TextFieldMode
-import io.github.suqi8.coui.kmp.icon.extended.Back
-import io.github.suqi8.coui.kmp.icon.extended.More
 import io.github.suqi8.coui.kmp.layout.DialogButtonBar
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.preference.ArrowPreference
@@ -350,7 +348,7 @@ internal data class AppListTag(
 internal fun AppStatusTag(tag: AppListTag) {
     TagView(
         text = tag.label,
-        cornerRadius = 4.dp,
+        cornerRadius = AppTagCornerRadius,
         colors = TagViewDefaults.tagViewColors(
             containerColor = tag.backgroundColor,
             contentColor = tag.contentColor,
@@ -444,7 +442,7 @@ internal fun LayerDebugTile(label: String, bitmap: ImageBitmap?, modifier: Modif
             modifier = Modifier
                 .fillMaxWidth()
                 .height(76.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(CompactCardCornerRadius))
                 .background(COUITheme.colorScheme.secondaryVariant),
             contentAlignment = Alignment.Center,
         ) {

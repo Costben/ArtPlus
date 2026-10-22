@@ -82,8 +82,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.overscroll
-import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -96,6 +94,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -111,14 +111,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
 import io.github.suqi8.coui.kmp.blur.drawBackdrop
 import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
-import dev.artplus.mobile.glass.FloatingBottomBar
-import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -193,7 +192,6 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -209,7 +207,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -218,7 +215,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.core.view.WindowInsetsControllerCompat
 import com.composables.icons.lucide.BadgeCheck
 import com.composables.icons.lucide.ChevronRight
-import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Cpu
 import com.composables.icons.lucide.Download
 import com.composables.icons.lucide.EllipsisVertical
@@ -234,7 +230,6 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.MessageSquareText
 import com.composables.icons.lucide.Palette
 import com.composables.icons.lucide.Radius
-import com.composables.icons.lucide.RefreshCw
 import com.composables.icons.lucide.Scale
 import com.composables.icons.lucide.Save
 import com.composables.icons.lucide.Search
@@ -315,9 +310,12 @@ import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
 import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.icon.extended.Refresh
 import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import io.github.suqi8.coui.kmp.theme.darkColorScheme
@@ -329,7 +327,7 @@ import com.caverock.androidsvg.SVG
 
 @Composable
 internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
-    val scrollBehavior = COUIScrollBehavior()
+    val scrollBehavior = rememberLinkedTopAppBarScrollBehavior()
     // 热修复2：批量预览渲染位订阅 presetUi/shell/batchPreviewConfig（StateFlow .value 裸读不触发重组，
     // 批量结果回填/桌面背景/列数/尺寸/圆角切换后 stale，亮色↔暗色点了不变）。
     // 回调内（onClick/onSave 等事件时）读 .value 仍合法，此处只修组合期渲染读。
@@ -353,31 +351,40 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
         listOf("正常亮色", "正常暗色", "单色亮色", "单色暗色")
     }
 
+    // Backdrop for the ColorOS app bar material: the page content only, never the bar itself.
+    val appBarBackdrop = rememberLayerBackdrop {
+        drawRect(pageBackground)
+        drawContent()
+    }
+    val contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+        TopAppBarDefaults.ExpandedHeight
     Scaffold(
         containerColor = pageBackground,
         topBar = {
-            TopAppBar(
-                title = preset?.name ?: "批量预览",
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    TitleBarIconButton(
-                        icon = Lucide.ChevronLeft,
-                        contentDescription = "返回",
-                        enabled = !batchShell.isBusy,
-                        dimWhenDisabled = false,
-                        onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
-                    )
-                },
-                actions = {
-                    TitleBarIconButton(
-                        icon = Lucide.RefreshCw,
-                        contentDescription = "重新生成",
-                        enabled = !batchShell.isBusy && !batchPresetUi.isGeneratingBatchPreview && preset != null,
-                        dimWhenDisabled = true,
-                        onClick = { mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (true)) } },
-                    )
-                },
-            )
+            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
+                TopAppBar(
+                    title = preset?.name ?: "批量预览",
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        TitleBarIconButton(
+                            icon = COUIIcons.ChevronBackward,
+                            contentDescription = "返回",
+                            enabled = !batchShell.isBusy,
+                            onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
+                        )
+                    },
+                    actions = {
+                        TitleBarIconButton(
+                            icon = COUIIcons.Refresh,
+                            contentDescription = "重新生成",
+                            enabled = !batchShell.isBusy && !batchPresetUi.isGeneratingBatchPreview && preset != null,
+                            onClick = { mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (true)) } },
+                        )
+                    },
+                    gradientGlass = true,
+                    showDivider = false,
+                )
+            }
         },
     ) { innerPadding ->
         // 预览框高度锁死：内容行数 + 1 行，框内无滚动可抢，所有纵向手势归页面
@@ -388,17 +395,15 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
         val previewRowHeight = batchConfig.batchPreviewIconSizeDp.dp + 6.dp + PREVIEW_LABEL_HEIGHT_DP.dp
         val previewFrameHeight = 18.dp + previewRowHeight * previewDisplayRows +
             18.dp * (previewDisplayRows - 1) + 18.dp
-        val overscrollEffect = rememberOverscrollEffect()
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .layerBackdrop(appBarBackdrop)
                 .background(pageBackground)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .overscroll(overscrollEffect)
-                .padding(innerPadding)
                 .imePadding()
-                .padding(top = 16.dp, bottom = 16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(top = contentTopInset + 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // 1. 桌面控制卡：背景一行 + 三个主页化参数行（无图标、默认展开）
@@ -799,8 +804,7 @@ val __act1 = LocalContext.current
                                             }
                                             Text(
                                                 text = item.label,
-                                                style = TextStyle(
-                                                    fontSize = 11.sp,
+                                                style = COUITheme.textStyles.footnote2.copy(
                                                     fontWeight = FontWeight.Medium,
                                                     shadow = Shadow(
                                                         color = shadowColor,

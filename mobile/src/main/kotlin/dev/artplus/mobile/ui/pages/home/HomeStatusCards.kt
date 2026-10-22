@@ -117,8 +117,6 @@ import io.github.suqi8.coui.kmp.blur.drawBackdrop
 import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
-import dev.artplus.mobile.glass.FloatingBottomBar
-import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -229,7 +227,6 @@ import com.composables.icons.lucide.FileUp
 import com.composables.icons.lucide.GlassWater
 import com.composables.icons.lucide.Grid2x2
 import com.composables.icons.lucide.KeyRound
-import com.composables.icons.lucide.Layers
 import com.composables.icons.lucide.Link
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.MessageSquareText
@@ -318,8 +315,10 @@ import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.basic.TopAppBar
 import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.icon.extended.Layers
 import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
 import io.github.suqi8.coui.kmp.window.WindowBottomSheet
 import io.github.suqi8.coui.kmp.layout.BottomSheetDefaults
@@ -450,11 +449,11 @@ internal fun EmptyAppListCard(
             subtitle = hintText,
             modifier = Modifier.fillMaxWidth(),
             illustration = {
-                Image(
-                    imageVector = Lucide.Layers,
+                Icon(
+                    imageVector = COUIIcons.Layers,
                     contentDescription = null,
                     modifier = Modifier.size(36.dp),
-                    colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
+                    tint = COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
                 )
             },
         )

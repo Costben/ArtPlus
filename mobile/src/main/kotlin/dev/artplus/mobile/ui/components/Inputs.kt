@@ -25,14 +25,12 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -41,12 +39,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.composables.icons.lucide.ChevronLeft
-import com.composables.icons.lucide.EllipsisVertical
-import com.composables.icons.lucide.Lucide
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 import io.github.suqi8.coui.kmp.basic.ButtonDefaults
@@ -56,14 +50,10 @@ import io.github.suqi8.coui.kmp.basic.Switch
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.basic.TopAppBar
-import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import io.github.suqi8.coui.kmp.basic.HighlightedIconButton
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.basic.TextFieldMode
-import io.github.suqi8.coui.kmp.icon.extended.Back
-import io.github.suqi8.coui.kmp.icon.extended.More
-import io.github.suqi8.coui.kmp.theme.LocalContentColor
 
 @Composable
 internal fun SteppedPercentSlider(
@@ -268,9 +258,8 @@ internal fun InlineInputField(
 }
 
 /**
- * 标题栏图标键：ColorOS 17 高亮圆形图标按钮。
- * COUI TopAppBar 已内置 16dp 的导航/操作图标边距，[paddingStart]/[paddingEnd] 仅为源码兼容保留，不再生效。
- * 调用方传入的 Lucide 返回箭头 / 更多图标会映射为 COUI 原生 Back / More。
+ * Top app bar icon key: COUI's ColorOS 17 [HighlightedIconButton] drawing a 24dp COUI icon.
+ * Callers pass a `COUIIcons` vector; COUI's TopAppBar already supplies the 16dp toolbar margins.
  */
 @Composable
 internal fun TitleBarIconButton(
@@ -278,34 +267,15 @@ internal fun TitleBarIconButton(
     contentDescription: String?,
     enabled: Boolean,
     onClick: () -> Unit,
-    dimWhenDisabled: Boolean = true,
-    @Suppress("UNUSED_PARAMETER") paddingStart: Dp = 0.dp,
-    @Suppress("UNUSED_PARAMETER") paddingEnd: Dp = 0.dp,
 ) {
-    val layoutDirection = LocalLayoutDirection.current
-    val isBack = icon === Lucide.ChevronLeft
-    val resolvedIcon = when {
-        isBack -> COUIIcons.Back
-        icon === Lucide.EllipsisVertical -> COUIIcons.More
-        else -> icon
-    }
     HighlightedIconButton(
         onClick = onClick,
         enabled = enabled,
     ) {
         Icon(
-            imageVector = resolvedIcon,
+            imageVector = icon,
             contentDescription = contentDescription,
-            modifier = Modifier
-                .size(if (resolvedIcon === icon) 20.dp else 24.dp)
-                .graphicsLayer {
-                    if (isBack && layoutDirection == LayoutDirection.Rtl) scaleX = -1f
-                },
-            tint = if (dimWhenDisabled && !enabled) {
-                COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.45f)
-            } else {
-                LocalContentColor.current
-            },
+            modifier = Modifier.size(24.dp),
         )
     }
 }

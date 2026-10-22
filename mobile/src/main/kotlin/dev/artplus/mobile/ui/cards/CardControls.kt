@@ -69,7 +69,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
@@ -117,8 +116,6 @@ import io.github.suqi8.coui.kmp.blur.drawBackdrop
 import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
-import dev.artplus.mobile.glass.FloatingBottomBar
-import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -163,7 +160,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
@@ -220,7 +216,6 @@ import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Cpu
 import com.composables.icons.lucide.Download
-import com.composables.icons.lucide.EllipsisVertical
 import com.composables.icons.lucide.Eraser
 import com.composables.icons.lucide.Eye
 import com.composables.icons.lucide.FileUp
@@ -293,6 +288,8 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import io.github.suqi8.coui.kmp.basic.BasicComponent
+import io.github.suqi8.coui.kmp.basic.Icon
+import io.github.suqi8.coui.kmp.basic.IconButton
 import io.github.suqi8.coui.kmp.basic.CardDefaults
 import io.github.suqi8.coui.kmp.basic.TabRowDefaults
 import io.github.suqi8.coui.kmp.basic.TabRowWithContour
@@ -321,6 +318,7 @@ import io.github.suqi8.coui.kmp.basic.TopAppBar
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.icon.extended.More
 import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import io.github.suqi8.coui.kmp.theme.darkColorScheme
@@ -517,8 +515,9 @@ internal fun CompactPresetRow(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 14.dp,
-        insideMargin = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+        cornerRadius = CompactCardCornerRadius,
+        // 3dp vertical margin keeps the 54dp card height while the icon buttons take 48dp.
+        insideMargin = PaddingValues(horizontal = 12.dp, vertical = 3.dp),
         colors = CardDefaults.defaultColors(color = containerColor),
         onClick = if (busy) null else onApply,
     ) {
@@ -559,7 +558,7 @@ internal fun CompactPresetRow(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     tags.forEach { tag ->
-                        TagView(text = tag, cornerRadius = 4.dp)
+                        TagView(text = tag, cornerRadius = AppTagCornerRadius)
                     }
                 }
 
@@ -572,33 +571,33 @@ internal fun CompactPresetRow(
                 )
             }
 
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(enabled = !busy) { onPreview() },
-                contentAlignment = Alignment.Center,
+            IconButton(
+                onClick = onPreview,
+                enabled = !busy,
+                modifier = Modifier.size(48.dp),
+                backgroundColor = Color.Transparent,
+                cornerRadius = 8.dp,
             ) {
-                Image(
+                Icon(
                     imageVector = Lucide.Eye,
                     contentDescription = "批量预览",
                     modifier = Modifier.size(16.dp),
-                    colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary),
+                    tint = COUITheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
 
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(enabled = !busy) { onMore() },
-                contentAlignment = Alignment.Center,
+            IconButton(
+                onClick = onMore,
+                enabled = !busy,
+                modifier = Modifier.size(48.dp),
+                backgroundColor = Color.Transparent,
+                cornerRadius = 8.dp,
             ) {
-                Image(
-                    imageVector = Lucide.EllipsisVertical,
+                Icon(
+                    imageVector = COUIIcons.More,
                     contentDescription = "更多操作",
                     modifier = Modifier.size(16.dp),
-                    colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary),
+                    tint = COUITheme.colorScheme.onSurfaceVariantSummary,
                 )
             }
         }

@@ -96,6 +96,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -112,13 +114,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
 import io.github.suqi8.coui.kmp.blur.drawBackdrop
 import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
-import dev.artplus.mobile.glass.FloatingBottomBar
-import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -314,6 +315,7 @@ import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
@@ -2232,7 +2234,7 @@ internal fun MainActivity.PagerShellPage(
     showPreviewStrip: Boolean = false,
     content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
 ) {
-    val pageScrollBehavior = COUIScrollBehavior()
+    val pageScrollBehavior = rememberLinkedTopAppBarScrollBehavior()
     var stripHeight by remember { mutableStateOf(0.dp) }
     val isDark = isSystemInDarkTheme()
     val targetExtra = if (showPreviewStrip) {
@@ -2243,24 +2245,43 @@ internal fun MainActivity.PagerShellPage(
         animationSpec = tween(durationMillis = 180),
         label = "previewStripExtra",
     )
+    // Backdrop for the ColorOS app bar material: the page content only, so the bar never samples
+    // its own pixels. Content scrolls under the bar through the lists' contentPadding.
+    val pageSurface = COUITheme.colorScheme.surface
+    val appBarBackdrop = rememberLayerBackdrop {
+        drawRect(pageSurface)
+        drawContent()
+    }
+    // Constant top inset (status bar + expanded bar) instead of the measured bar height: the bar
+    // shrinks while collapsing, and a moving contentPadding would drag the list under the finger.
+    val contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+        TopAppBarDefaults.ExpandedHeight
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
-                title = title,
-                scrollBehavior = pageScrollBehavior,
-                navigationIcon = navigationIcon,
-                actions = actions,
-            )
+            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
+                TopAppBar(
+                    title = title,
+                    scrollBehavior = pageScrollBehavior,
+                    navigationIcon = navigationIcon,
+                    actions = actions,
+                    gradientGlass = true,
+                    showDivider = false,
+                )
+            }
         },
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .layerBackdrop(appBarBackdrop),
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = animatedExtra),
             ) {
-                content(innerPadding, pageScrollBehavior)
+                content(PaddingValues(top = contentTopInset), pageScrollBehavior)
             }
             AnimatedVisibility(
                 visible = showPreviewStrip,

@@ -118,8 +118,6 @@ import io.github.suqi8.coui.kmp.blur.drawBackdrop
 import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
-import dev.artplus.mobile.glass.FloatingBottomBar
-import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -153,7 +151,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.drawBehind
@@ -222,29 +219,22 @@ import com.composables.icons.lucide.BadgeCheck
 import com.composables.icons.lucide.ChevronRight
 import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Cpu
-import com.composables.icons.lucide.Download
 import com.composables.icons.lucide.EllipsisVertical
 import com.composables.icons.lucide.Eraser
 import com.composables.icons.lucide.Eye
 import com.composables.icons.lucide.FileUp
 import com.composables.icons.lucide.GlassWater
-import com.composables.icons.lucide.Grid2x2
 import com.composables.icons.lucide.KeyRound
-import com.composables.icons.lucide.Layers
 import com.composables.icons.lucide.Link
 import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.MessageSquareText
 import com.composables.icons.lucide.Palette
 import com.composables.icons.lucide.Radius
-import com.composables.icons.lucide.RefreshCw
 import com.composables.icons.lucide.Scale
 import com.composables.icons.lucide.Save
 import com.composables.icons.lucide.Search
-import com.composables.icons.lucide.Settings
 import com.composables.icons.lucide.Shield
-import com.composables.icons.lucide.SlidersHorizontal
 import com.composables.icons.lucide.Sparkles
-import com.composables.icons.lucide.Upload
 import com.composables.icons.lucide.X
 import android.util.Base64
 import java.io.ByteArrayOutputStream
@@ -305,8 +295,9 @@ import io.github.suqi8.coui.kmp.basic.DropdownDefaults
 import io.github.suqi8.coui.kmp.basic.DropdownEntry
 import io.github.suqi8.coui.kmp.basic.DropdownItem
 import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
-import io.github.suqi8.coui.kmp.basic.NavigationBar
-import io.github.suqi8.coui.kmp.basic.NavigationBarItem
+import io.github.suqi8.coui.kmp.basic.Icon
+import io.github.suqi8.coui.kmp.basic.BottomFloatingNavigationBarItem
+import io.github.suqi8.coui.kmp.basic.BottomFloatingNavigationBar
 import io.github.suqi8.coui.kmp.basic.ScrollBehavior
 import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
 import io.github.suqi8.coui.kmp.basic.Scaffold
@@ -321,6 +312,13 @@ import io.github.suqi8.coui.kmp.basic.TopAppBar
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.icon.extended.Download
+import io.github.suqi8.coui.kmp.icon.extended.GridView
+import io.github.suqi8.coui.kmp.icon.extended.Layers
+import io.github.suqi8.coui.kmp.icon.extended.Refresh
+import io.github.suqi8.coui.kmp.icon.extended.Settings
+import io.github.suqi8.coui.kmp.icon.extended.Tune
+import io.github.suqi8.coui.kmp.icon.extended.UploadCloud
 import io.github.suqi8.coui.kmp.popup.WindowDropdownPopup
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import android.graphics.Color as AndroidColor
@@ -370,12 +368,11 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
             when (page) {
                 0 -> PagerShellPage(
                     title = "ArtPlus",
-                    navigationIcon = {
+                    actions = {
                         TitleBarIconButton(
-                            icon = Lucide.RefreshCw,
+                            icon = COUIIcons.Refresh,
                             contentDescription = "刷新",
                             enabled = !shellState.isBusy && !previewSessionState.isRefreshingArtPlusIcons,
-                            dimWhenDisabled = false,
                             onClick = {
                                 if (mainViewModel.confirm.value.autoConfirmRefresh) {
                                     run {
@@ -398,9 +395,11 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                             .fillMaxSize()
                             .nestedScroll(scrollBehavior.nestedScrollConnection)
                             .imePadding()
-                            .padding(innerPadding)
                             .padding(horizontal = 16.dp),
-                        contentPadding = PaddingValues(top = 16.dp, bottom = 88.dp),
+                        contentPadding = PaddingValues(
+                            top = innerPadding.calculateTopPadding() + 16.dp,
+                            bottom = 88.dp,
+                        ),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         if (!pickerState.packageListPermissionGranted || !pickerState.usageAccessGranted) {
@@ -1831,9 +1830,11 @@ val __act2 = LocalContext.current
                             .fillMaxSize()
                             .nestedScroll(scrollBehavior.nestedScrollConnection)
                             .imePadding()
-                            .padding(innerPadding)
                             .padding(horizontal = 16.dp),
-                        contentPadding = PaddingValues(top = 16.dp, bottom = 88.dp),
+                        contentPadding = PaddingValues(
+                            top = innerPadding.calculateTopPadding() + 16.dp,
+                            bottom = 88.dp,
+                        ),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         item(key = "gen_nav") {
@@ -4875,20 +4876,18 @@ val __act2 = LocalContext.current
                     actions = {
                         val presetCount = remember(presetUiState.presetListVersion) { presetStore.all().size }
                         TitleBarIconButton(
-                            icon = Lucide.Download,
+                            icon = COUIIcons.Download,
                             contentDescription = "导入预设",
                             enabled = !shellState.isBusy,
-                            dimWhenDisabled = false,
                             onClick = {
                                 mainViewModel.updatePresetUi { it -> it.copy(presetImportText = ("")) }
                                 mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (true)) }
                             },
                         )
                         TitleBarIconButton(
-                            icon = Lucide.Upload,
+                            icon = COUIIcons.UploadCloud,
                             contentDescription = "导出全部预设",
                             enabled = !shellState.isBusy && presetCount > 0,
-                            dimWhenDisabled = true,
                             onClick = { run {
     exportPresetsToClipboard(
                 store = presetStore,
@@ -4909,9 +4908,11 @@ val __act2 = LocalContext.current
                                 .fillMaxSize()
                                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                                 .imePadding()
-                                .padding(innerPadding)
                                 .padding(horizontal = 16.dp),
-                            contentPadding = PaddingValues(top = 16.dp, bottom = 88.dp),
+                            contentPadding = PaddingValues(
+                                top = innerPadding.calculateTopPadding() + 16.dp,
+                                bottom = 88.dp,
+                            ),
                         ) {
                             item(key = "preset_cards") {
                                 Column(
@@ -5716,7 +5717,6 @@ val __act2 = LocalContext.current
                             contentDescription = null,
                             // 热修复2：渲染位经已订阅 shellState 读取。
                             enabled = !shellState.isBusy,
-                            dimWhenDisabled = false,
                             onClick = { run {
     paramsSaveSettingsPage(
                 saveGpt = { run {
@@ -5803,74 +5803,30 @@ val __act2 = LocalContext.current
             }
         }
 
-        // 液态玻璃底栏（KernelSU FloatingBottomBar 1:1：vibrancy+blur4dp+lens24dp 三层玻璃+拖拽阻尼+高光镜面）
-        if (glassBar.liquidGlassBottomBarEnabled) {
-            FloatingBottomBar(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
-                    .fillMaxWidth(),
-                selectedIndex = { pagerState.targetPage },
-                onSelected = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
-                backdrop = backdrop,
-                tabsCount = 4,
-                isBlurEnabled = isBlurEnabled,
+        // ColorOS 17 floating capsule bar: COUI BottomFloatingNavigationBar over the page backdrop.
+        // The bar forwards its modifier into the capsule row, so alignment and the gesture-bar inset
+        // ride on this wrapper instead of the bar itself.
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+        ) {
+            BottomFloatingNavigationBar(
+                backdrop = if (isBlurEnabled) backdrop else null,
             ) {
                 listOf(
-                    Triple(Lucide.Grid2x2, "主页", 0),
-                    Triple(Lucide.SlidersHorizontal, "生成参数", 1),
-                    Triple(Lucide.Layers, "预设", 2),
-                    Triple(Lucide.Settings, "设置", 3),
+                    Triple(COUIIcons.GridView, "主页", 0),
+                    Triple(COUIIcons.Tune, "生成参数", 1),
+                    Triple(COUIIcons.Layers, "预设", 2),
+                    Triple(COUIIcons.Settings, "设置", 3),
                 ).forEach { (icon, label, index) ->
-                    FloatingBottomBarItem(
+                    BottomFloatingNavigationBarItem(
+                        selected = pagerState.targetPage == index,
                         onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                        modifier = Modifier.defaultMinSize(minWidth = 76.dp),
-                    ) {
-                        val selected = pagerState.targetPage == index
-                        val baseTint = if (selected) COUITheme.colorScheme.primaryVariant else COUITheme.colorScheme.onSurfaceVariantSummary
-                        val tint = if (mainViewModel.shell.value.isBusy) baseTint.copy(alpha = 0.45f) else baseTint
-                        Image(
-                            imageVector = icon,
-                            contentDescription = label,
-                            modifier = Modifier.size(20.dp),
-                            colorFilter = ColorFilter.tint(tint),
-                        )
-                        Text(
-                            text = label,
-                            style = COUITheme.textStyles.footnote1.copy(fontSize = 11.sp),
-                            color = tint,
-                            maxLines = 1,
-                            softWrap = false,
-                        )
-                    }
-                }
-            }
-        } else {
-            // 非玻璃模式：ColorOS 原生底部导航栏（底色取 bar，延伸到手势条下方）。
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(COUITheme.colorScheme.bar),
-            ) {
-                NavigationBar(modifier = Modifier.navigationBarsPadding()) {
-                    val isBusy = shellState.isBusy
-                    listOf(
-                        Triple(Lucide.Grid2x2, "主页", 0),
-                        Triple(Lucide.SlidersHorizontal, "生成参数", 1),
-                        Triple(Lucide.Layers, "预设", 2),
-                        Triple(Lucide.Settings, "设置", 3),
-                    ).forEach { (icon, label, index) ->
-                        NavigationBarItem(
-                            selected = pagerState.targetPage == index,
-                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                            icon = icon,
-                            label = label,
-                            // 生成中仅弱化显示，仍可切页（与原行为一致）。
-                            modifier = Modifier.alpha(if (isBusy) 0.45f else 1f),
-                        )
-                    }
+                        icon = icon,
+                        label = label,
+                    )
                 }
             }
         }

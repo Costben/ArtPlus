@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import dev.artplus.mobile.glass.FloatingBottomBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,25 +22,16 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.composables.icons.lucide.BadgeCheck
 import com.composables.icons.lucide.Cpu
-import com.composables.icons.lucide.Eraser
-import com.composables.icons.lucide.FileUp
 import com.composables.icons.lucide.GlassWater
-import com.composables.icons.lucide.Grid2x2
 import com.composables.icons.lucide.KeyRound
-import com.composables.icons.lucide.Layers
-import com.composables.icons.lucide.Link
 import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.MessageSquareText
 import com.composables.icons.lucide.Palette
 import com.composables.icons.lucide.Radius
-import com.composables.icons.lucide.RefreshCw
 import com.composables.icons.lucide.Scale
-import com.composables.icons.lucide.Settings
 import com.composables.icons.lucide.Shield
-import com.composables.icons.lucide.SlidersHorizontal
 import com.composables.icons.lucide.Sparkles
+import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.DropdownEntry
 import io.github.suqi8.coui.kmp.basic.Switch
@@ -49,6 +39,16 @@ import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
+import io.github.suqi8.coui.kmp.icon.extended.Clear
+import io.github.suqi8.coui.kmp.icon.extended.GridView
+import io.github.suqi8.coui.kmp.icon.extended.Import
+import io.github.suqi8.coui.kmp.icon.extended.Layers
+import io.github.suqi8.coui.kmp.icon.extended.Link
+import io.github.suqi8.coui.kmp.icon.extended.Messages
+import io.github.suqi8.coui.kmp.icon.extended.Ok
+import io.github.suqi8.coui.kmp.icon.extended.Refresh
+import io.github.suqi8.coui.kmp.icon.extended.Settings
+import io.github.suqi8.coui.kmp.icon.extended.Tune
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import io.github.suqi8.coui.kmp.basic.BasicComponent
 import io.github.suqi8.coui.kmp.basic.TextFieldMode
@@ -64,7 +64,7 @@ import io.github.suqi8.coui.kmp.window.WindowDialog
 private fun RowValueText(value: String, enabled: Boolean) {
     Text(
         text = value,
-        fontSize = COUITheme.textStyles.body2.fontSize,
+        style = COUITheme.textStyles.body2,
         // 值文本与 WindowDropdownPreference 的值一致取 onSurfaceSecondary（8A）；onSurfaceVariantActions 仅 26%/30% 透明度，暗色下对比过低。
         color = if (enabled) {
             COUITheme.colorScheme.onSurfaceSecondary
@@ -171,7 +171,7 @@ internal fun LibrarySettingRow(
     }
 }
 
-/** 标准选择行：WindowDropdownPreference 自带触觉、值文本、箭头与手指定位；窗口级弹窗保证层级在 FloatingBottomBar 之上。 */
+/** 标准选择行：WindowDropdownPreference 自带触觉、值文本、箭头与手指定位；窗口级弹窗保证层级在底栏之上。 */
 @Composable
 internal fun LibraryChoiceRow(
     title: String,
@@ -402,35 +402,45 @@ internal enum class SettingsIconKind {
 }
 
 internal fun settingsIconVector(kind: SettingsIconKind): ImageVector = when (kind) {
-    SettingsIconKind.Grid -> Lucide.Grid2x2
-    SettingsIconKind.CheckBadge -> Lucide.BadgeCheck
+    SettingsIconKind.Grid -> COUIIcons.GridView
+    SettingsIconKind.CheckBadge -> COUIIcons.Ok
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Shield -> Lucide.Shield
-    SettingsIconKind.FileUpload -> Lucide.FileUp
+    SettingsIconKind.FileUpload -> COUIIcons.Import
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Glass -> Lucide.GlassWater
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Radius -> Lucide.Radius
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Chip -> Lucide.Cpu
-    SettingsIconKind.Layers -> Lucide.Layers
+    SettingsIconKind.Layers -> COUIIcons.Layers
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Spark -> Lucide.Sparkles
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Scale -> Lucide.Scale
-    SettingsIconKind.Cutout -> Lucide.SlidersHorizontal
+    SettingsIconKind.Cutout -> COUIIcons.Tune
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Palette -> Lucide.Palette
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Plate -> Lucide.Palette
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Shadow -> Lucide.Sparkles
-    SettingsIconKind.Eraser -> Lucide.Eraser
-    SettingsIconKind.Link -> Lucide.Link
+    SettingsIconKind.Eraser -> COUIIcons.Clear
+    SettingsIconKind.Link -> COUIIcons.Link
+    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Key -> Lucide.KeyRound
-    SettingsIconKind.Prompt -> Lucide.MessageSquareText
-    SettingsIconKind.Refresh -> Lucide.RefreshCw
-    SettingsIconKind.Dot -> Lucide.Settings
+    SettingsIconKind.Prompt -> COUIIcons.Messages
+    SettingsIconKind.Refresh -> COUIIcons.Refresh
+    SettingsIconKind.Dot -> COUIIcons.Settings
 }
 
 @Composable
 internal fun SettingsLineIcon(kind: SettingsIconKind, modifier: Modifier = Modifier) {
-    Image(
+    Icon(
         imageVector = settingsIconVector(kind),
         contentDescription = null,
         modifier = modifier.size(18.dp),
-        colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurface),
+        tint = COUITheme.colorScheme.onSurface,
     )
 }
 

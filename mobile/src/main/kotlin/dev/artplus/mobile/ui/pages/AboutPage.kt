@@ -96,6 +96,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -111,14 +113,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
 import io.github.suqi8.coui.kmp.blur.drawBackdrop
 import io.github.suqi8.coui.kmp.blur.blur
 import dev.artplus.mobile.glass.lens
 import dev.artplus.mobile.glass.vibrancy
-import dev.artplus.mobile.glass.FloatingBottomBar
-import dev.artplus.mobile.glass.FloatingBottomBarItem
 import com.kyant.shapes.Capsule
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -218,7 +219,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.core.view.WindowInsetsControllerCompat
 import com.composables.icons.lucide.BadgeCheck
 import com.composables.icons.lucide.ChevronRight
-import com.composables.icons.lucide.ChevronLeft
 import com.composables.icons.lucide.Cpu
 import com.composables.icons.lucide.Download
 import com.composables.icons.lucide.EllipsisVertical
@@ -314,7 +314,9 @@ import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.basic.ArrowUpDown
@@ -329,7 +331,7 @@ import com.caverock.androidsvg.SVG
 
 @Composable
 internal fun MainActivity.AboutPage(pageBackground: Color) {
-    val scrollBehavior = COUIScrollBehavior()
+    val scrollBehavior = rememberLinkedTopAppBarScrollBehavior()
     val shell by mainViewModel.shell.collectAsState()
     val updateUi by mainViewModel.updateUi.collectAsState()
     val aboutCtx = LocalContext.current
@@ -350,32 +352,42 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
         ""
     }
 
+    // Backdrop for the ColorOS app bar material: the list only, never the bar itself.
+    val appBarBackdrop = rememberLayerBackdrop {
+        drawRect(pageBackground)
+        drawContent()
+    }
+    val contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+        TopAppBarDefaults.ExpandedHeight
     Scaffold(
         containerColor = pageBackground,
         topBar = {
-            TopAppBar(
-                title = "关于",
-                scrollBehavior = scrollBehavior,
-                navigationIcon = {
-                    TitleBarIconButton(
-                        icon = Lucide.ChevronLeft,
-                        contentDescription = "返回",
-                        enabled = !shell.isBusy,
-                        dimWhenDisabled = false,
-                        onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
-                    )
-                },
-            )
+            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
+                TopAppBar(
+                    title = "关于",
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        TitleBarIconButton(
+                            icon = COUIIcons.ChevronBackward,
+                            contentDescription = "返回",
+                            enabled = !shell.isBusy,
+                            onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
+                        )
+                    },
+                    gradientGlass = true,
+                    showDivider = false,
+                )
+            }
         },
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .layerBackdrop(appBarBackdrop)
                 .background(pageBackground)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .padding(innerPadding)
                 .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+            contentPadding = PaddingValues(top = contentTopInset + 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
@@ -521,7 +533,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                             aboutCtx.assets.open(GPL_LICENSE_ASSET_PATH).bufferedReader().readText()
                         }.getOrDefault(GPL_LICENSE_FALLBACK_TEXT)
                     },
-                    style = COUITheme.textStyles.footnote1.copy(fontSize = 11.sp),
+                    style = COUITheme.textStyles.footnote2,
                     color = COUITheme.colorScheme.onSurface,
                 )
             }

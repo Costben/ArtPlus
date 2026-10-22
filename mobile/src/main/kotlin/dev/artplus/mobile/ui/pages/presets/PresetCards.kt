@@ -25,9 +25,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.composables.icons.lucide.Layers
 import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.Search
+import io.github.suqi8.coui.kmp.basic.Icon
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.Layers
+import io.github.suqi8.coui.kmp.icon.extended.Search
 import com.composables.icons.lucide.X
 import io.github.suqi8.coui.kmp.basic.EmptyState
 import io.github.suqi8.coui.kmp.basic.TagView
@@ -101,7 +103,7 @@ internal fun PresetStatusCard(
                             // 状态标签：COUI TagView，tertiaryContainer 蓝色淡底
                             TagView(
                                 text = "已修改",
-                                cornerRadius = 4.dp,
+                                cornerRadius = AppTagCornerRadius,
                                 colors = TagViewDefaults.tagViewColors(
                                     containerColor = COUITheme.colorScheme.tertiaryContainer,
                                     contentColor = COUITheme.colorScheme.onTertiaryContainer,
@@ -280,11 +282,11 @@ internal fun PresetLibraryCard(
                         showClearButton = true,
                         singleLine = true,
                         leadingIcon = {
-                            Image(
-                                imageVector = Lucide.Search,
+                            Icon(
+                                imageVector = COUIIcons.Search,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
-                                colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary),
+                                tint = COUITheme.colorScheme.onSurfaceVariantSummary,
                             )
                         },
                     )
@@ -299,11 +301,11 @@ internal fun PresetLibraryCard(
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
                     illustration = {
-                        Image(
-                            imageVector = Lucide.Layers,
+                        Icon(
+                            imageVector = COUIIcons.Layers,
                             contentDescription = null,
                             modifier = Modifier.size(36.dp),
-                            colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f)),
+                            tint = COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
                         )
                     },
                 )

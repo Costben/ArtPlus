@@ -44,7 +44,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.composables.icons.lucide.Lucide
-import com.composables.icons.lucide.Search
+import io.github.suqi8.coui.kmp.basic.Icon
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.Search
 import com.composables.icons.lucide.X
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Checkbox
@@ -130,7 +132,7 @@ internal fun AppPickerStatusCard(
                         if (multiCount > 0) {
                             TagView(
                                 text = "多选 $multiCount",
-                                cornerRadius = 4.dp,
+                                cornerRadius = AppTagCornerRadius,
                                 colors = TagViewDefaults.tagViewColors(
                                     containerColor = COUITheme.colorScheme.tertiaryContainer,
                                     contentColor = COUITheme.colorScheme.onTertiaryContainer,
@@ -241,13 +243,13 @@ internal fun AppPickerSearchCard(
                     singleLine = true,
                     showClearButton = true,
                     leadingIcon = {
-                        Image(
-                            imageVector = Lucide.Search,
+                        Icon(
+                            imageVector = COUIIcons.Search,
                             contentDescription = null,
                             modifier = Modifier
                                 .padding(end = 8.dp)
                                 .size(16.dp),
-                            colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantSummary),
+                            tint = COUITheme.colorScheme.onSurfaceVariantSummary,
                         )
                     },
                 )
@@ -416,7 +418,7 @@ internal fun AppRow(
     }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 14.dp,
+        cornerRadius = CompactCardCornerRadius,
         insideMargin = PaddingValues(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
         colors = CardDefaults.defaultColors(color = containerBg),
         onClick = onClick,
@@ -448,7 +450,7 @@ internal fun AppRow(
                 Text(
                     text = entry.packageName,
                     modifier = Modifier.basicMarquee(),
-                    style = COUITheme.textStyles.footnote1.copy(
+                    style = COUITheme.textStyles.footnote2.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight(550),
                     ),
