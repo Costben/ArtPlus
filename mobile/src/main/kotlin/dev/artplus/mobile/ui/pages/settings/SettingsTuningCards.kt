@@ -1,11 +1,9 @@
 package dev.artplus.mobile
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 
 /**
  * Slice 2.3：本地管线/规则/RMBG 调参卡片（原 MainActivity 本体原样搬迁）。

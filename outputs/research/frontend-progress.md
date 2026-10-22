@@ -16,3 +16,7 @@
 | D6 | S0.3 | 批量结果页基线暂缺，改用预设页（含预设卡）作替代基线 | 批量结果页需真实跑一次批量生成（依赖设备侧产物），P7 验收时补拍；不阻塞结构治理 |
 | D7 | S0.4 | `verify` job 放进 `android-apk.yml` 并给 release 链加 `if` 隔离 | 计划要求「新增 job」；若只加 `pull_request` 触发器会让 PR 跑签名 release，故用 `if` 隔离 |
 | D8 | S0.4 | `frontend-audit.py` / `frontend-gate.sh` / 基线 JSON 强制入库 | CI 的 verify job 要跑审计脚本；不入库则 CI 必红 |
+| D9 | 门禁 | `--strict` 中途只报告不判红；`GATE_STRICT=1` 时才是硬门禁 | 逐 Slice 门禁按计划 §4 是「本 Slice 指标达标 + 其余不劣化」，全量 strict 是 P7 终局；否则每个中间 Slice 必红，门禁失去意义 |
+| D10 | S1.1 | 基线对比忽略 `unused_imports_pct` / `import_line_ratio_pct` 两个派生比率 | 删行会让比率机械上升，绝对量指标另有 `unused_imports` / `import_lines` 兜底 |
+| D11 | S1.3 | 审计脚本把 Kotlin 委托/操作符符号（`getValue`/`setValue` 等 30 个）视为已使用 | 它们由 `by` 与运算符语法隐式调用，正文无字面名；按旧判定删掉会编译失败（已实测） |
+| D12 | S1.3 | 审计脚本的注释剥离改为逐字符扫描（字符串内 `/*` 不再吞代码） | `SettingsPage` 的 `"$dir/*.png"` 曾把 366–650 行整段吞掉，导致 `CancellationException` 被误判未使用；修后 `hardcoded_cjk` 676→685 是「看得更准」，已重写基线 |

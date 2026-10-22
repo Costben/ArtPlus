@@ -47,10 +47,58 @@ def read(p: pathlib.Path) -> str:
     return p.read_text(encoding="utf-8", errors="replace")
 
 
+# Kotlin 委托/操作符符号：由 `by` / 运算符语法隐式使用，正文里不会出现字面名。
+OPERATOR_SYMBOLS = {
+    "getValue", "setValue", "provideDelegate", "invoke", "get", "set", "contains",
+    "iterator", "next", "hasNext", "compareTo", "rangeTo", "rangeUntil",
+    "plus", "minus", "times", "div", "rem", "unaryPlus", "unaryMinus", "not",
+    "inc", "dec", "plusAssign", "minusAssign", "timesAssign", "divAssign",
+    "remAssign", "component1", "component2", "component3", "component4", "component5",
+}
+
+
 def strip_comments(text: str) -> str:
-    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
-    text = re.sub(r"//[^\n]*", "", text)
-    return text
+    """去掉 // 与 /* */ 注释，但不误伤字符串字面量里的 `/*`（如 `"$dir/*.png"`）。
+
+    逐字符扫描：双引号内不识别注释；`/* */` 支持嵌套式配对（Kotlin 允许嵌套块注释）。
+    """
+    out: list[str] = []
+    i, n = 0, len(text)
+    in_str = False
+    while i < n:
+        c = text[i]
+        if in_str:
+            out.append(c)
+            if c == "\\" and i + 1 < n:
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if c == '"':
+                in_str = False
+            i += 1
+            continue
+        if c == '"':
+            in_str = True
+            out.append(c)
+            i += 1
+            continue
+        if c == "/" and i + 1 < n and text[i + 1] == "/":
+            while i < n and text[i] != "\n":
+                i += 1
+            continue
+        if c == "/" and i + 1 < n and text[i + 1] == "*":
+            depth, i = 1, i + 2
+            while i < n and depth:
+                if text.startswith("/*", i):
+                    depth, i = depth + 1, i + 2
+                elif text.startswith("*/", i):
+                    depth, i = depth - 1, i + 2
+                else:
+                    i += 1
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
 
 
 def kt_files(base: pathlib.Path) -> list[pathlib.Path]:
@@ -92,7 +140,7 @@ def audit() -> dict:
         for imp in imports:
             total_imports += 1
             name = imp.split(" as ")[-1].strip() if " as " in imp else imp.split(".")[-1]
-            if name == "*":
+            if name == "*" or name in OPERATOR_SYMBOLS:
                 continue
             if not re.search(r"\b" + re.escape(name) + r"\b", body):
                 unused_imports += 1

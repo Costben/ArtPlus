@@ -32,7 +32,6 @@ import com.composables.icons.lucide.Scale
 import com.composables.icons.lucide.Shield
 import com.composables.icons.lucide.Sparkles
 import io.github.suqi8.coui.kmp.basic.Icon
-import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.DropdownEntry
 import io.github.suqi8.coui.kmp.basic.Switch
 import io.github.suqi8.coui.kmp.basic.Text
