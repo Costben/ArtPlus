@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - "v*"
+    branches:
+      - main
+  pull_request:
   workflow_dispatch:
     inputs:
       version:
@@ -18,7 +21,40 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
+  # Epic v3 S0.4：PR / main 上的结构门禁。release 链（build/release）只在 tag 与手动触发时跑，
+  # 靠下面的 if 条件隔开，避免 PR 触发签名构建。
+  verify:
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android packages
+        run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+
+      - name: Unit tests
+        run: ./gradlew :mobile:testDebugUnitTest --no-daemon --console=plain
+
+      - name: Lint (baseline：只拦新增)
+        run: ./gradlew :mobile:lintDebug --no-daemon --console=plain
+
+      - name: Structure audit (strict)
+        run: python3 outputs/research/frontend-audit.py --strict
+
   build:
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.release_meta.outputs.version }}

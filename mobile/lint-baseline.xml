@@ -1,0 +1,1582 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 9.3.2" type="baseline" client="gradle" dependencies="false" name="AGP (9.3.2)" variant="all" version="9.3.2">
+
+    <issue
+        id="MissingPermission"
+        message="Missing permissions required by WallpaperManager.getDrawable: android.permission.MANAGE_EXTERNAL_STORAGE or android.permission.READ_WALLPAPER_INTERNAL"
+        errorLine1="    runCatching { manager.drawable }.getOrNull()"
+        errorLine2="                  ~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/picker/PickerIo.kt"
+            line="231"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 30 (current min is 26): `android.Manifest.permission#QUERY_ALL_PACKAGES`"
+        errorLine1="        permissions += Manifest.permission.QUERY_ALL_PACKAGES"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/picker/PickerAppOps.kt"
+            line="296"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="PrivateApi"
+        message="Accessing internal APIs via reflection is not supported and may not work on all devices or in the future"
+        errorLine1="        Class&lt;?> iActivityManagerClass = Class.forName(&quot;android.app.IActivityManager&quot;);"
+        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/dev/artplus/mobile/UxIconConfigCli.java"
+            line="18"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="SuspiciousIndentation"
+        message="Suspicious indentation: This is indented but is not continuing the previous expression (`val __actHooks = thi`...)"
+        errorLine1="        if (!run {"
+        errorLine2="        ~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/MainActivityOps.kt"
+            line="328"
+            column="9"/>
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/MainActivityOps.kt"
+            line="327"
+            column="5"
+            message="Previous statement here"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `enableOnBackInvokedCallback` is only used in API level 33 and higher (current min is 26)"
+        errorLine1="        android:enableOnBackInvokedCallback=&quot;true&quot;"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="15"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.json:json than 20240303 is available: 20260814"
+        errorLine1="    testImplementation(&quot;org.json:json:20240303&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="104"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-viewmodel-compose than 2.9.4 is available: 2.11.0"
+        errorLine1="    implementation(&quot;androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="108"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-compose than 2.9.4 is available: 2.11.0"
+        errorLine1="    implementation(&quot;androidx.lifecycle:lifecycle-runtime-compose:2.9.4&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="109"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose:compose-bom than 2026.08.00 is available: 2026.09.00"
+        errorLine1="    implementation(platform(&quot;androidx.compose:compose-bom:2026.08.00&quot;))"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="111"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="LockedOrientationActivity"
+        message="Expecting `android:screenOrientation=&quot;unspecified&quot;` or `&quot;fullSensor&quot;` for this activity so the user can use the application in any orientation and provide a great experience on Chrome OS devices"
+        errorLine1="            android:screenOrientation=&quot;portrait&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="23"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.composables:icons-lucide-android than 1.1.0 is available: 2.2.1"
+        errorLine1="    implementation(&quot;com.composables:icons-lucide-android:1.1.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="117"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.microsoft.onnxruntime:onnxruntime-android than 1.21.1 is available: 1.31.0"
+        errorLine1="    implementation(&quot;com.microsoft.onnxruntime:onnxruntime-android:1.21.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="120"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Optional Modifier parameter should have a default value of `Modifier`"
+        errorLine1="    modifier: Modifier = Modifier.size(72.dp),"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/home/HomePreviewTiles.kt"
+            line="378"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Optional Modifier parameter should have a default value of `Modifier`"
+        errorLine1="    modifier: Modifier = Modifier.size(72.dp),"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/home/HomePreviewTiles.kt"
+            line="457"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Optional Modifier parameter should have a default value of `Modifier`"
+        errorLine1="    modifier: Modifier = Modifier.size(72.dp),"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/cards/PreviewCards.kt"
+            line="327"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,"
+        errorLine2="                                                           ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="1023"
+            column="60"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,"
+        errorLine2="                                                          ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="1024"
+            column="59"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                isBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="1928"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                isBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="2060"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                isBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="2834"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                isBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="3482"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                isBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="3992"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                isBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="4125"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                isBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="4932"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                isBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="5427"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                value = mainViewModel.batchPreviewConfig.value.batchPreviewCount,"
+        errorLine2="                                                         ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="5663"
+            column="58"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                isBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                             ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="5665"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="        mainViewModel.transfer.value.batchApplyProgress?.let { progress ->"
+        errorLine2="                               ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="664"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="        if (mainViewModel.transfer.value.singleExportSheetVisible &amp;&amp; mainViewModel.transfer.value.exportProgress != null) {"
+        errorLine2="                                   ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="667"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="        if (mainViewModel.transfer.value.singleExportSheetVisible &amp;&amp; mainViewModel.transfer.value.exportProgress != null) {"
+        errorLine2="                                                                                            ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="667"
+            column="93"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="            val p = mainViewModel.transfer.value.exportProgress!!"
+        errorLine2="                                           ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="668"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="        if (mainViewModel.transfer.value.backupSheetVisible &amp;&amp; mainViewModel.transfer.value.backupProgress != null) {"
+        errorLine2="                                   ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="699"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="        if (mainViewModel.transfer.value.backupSheetVisible &amp;&amp; mainViewModel.transfer.value.backupProgress != null) {"
+        errorLine2="                                                                                      ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="699"
+            column="87"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="            val p = mainViewModel.transfer.value.backupProgress!!"
+        errorLine2="                                           ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="700"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="        } else if (!mainViewModel.transfer.value.backupSheetVisible &amp;&amp; mainViewModel.transfer.value.backupInBackground &amp;&amp; mainViewModel.transfer.value.backupProgress != null) {"
+        errorLine2="                                           ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="746"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="        } else if (!mainViewModel.transfer.value.backupSheetVisible &amp;&amp; mainViewModel.transfer.value.backupInBackground &amp;&amp; mainViewModel.transfer.value.backupProgress != null) {"
+        errorLine2="                                                                                              ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="746"
+            column="95"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="        } else if (!mainViewModel.transfer.value.backupSheetVisible &amp;&amp; mainViewModel.transfer.value.backupInBackground &amp;&amp; mainViewModel.transfer.value.backupProgress != null) {"
+        errorLine2="                                                                                                                                                 ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="746"
+            column="146"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                actionMenuBusy = mainViewModel.shell.value.isBusy,"
+        errorLine2="                                                     ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="915"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="StateFlowValueCalledInComposition"
+        message="StateFlow.value should not be called within composition"
+        errorLine1="                batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,"
+        errorLine2="                                                                     ~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="1703"
+            column="70"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Fixed screen orientations will be ignored in most cases, starting from Android 16. Android is moving toward a model where apps are expected to adapt to various orientations, display sizes, and aspect ratios."
+        errorLine1="            android:screenOrientation=&quot;portrait&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="23"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Use of this function is discouraged because resource reflection makes it harder to perform build optimizations and compile-time verification of code. It is much more efficient to retrieve resources by identifier (e.g. `R.foo.bar`) than by name (e.g. `getIdentifier(&quot;bar&quot;, &quot;foo&quot;, null)`)."
+        errorLine1="    val colorId = resources.getIdentifier(resourceName, &quot;color&quot;, &quot;android&quot;)"
+        errorLine2="                            ~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/picker/PickerCommon.kt"
+            line="236"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="ChromeOsAbiSupport"
+        message="Missing x86_64 ABI support for ChromeOS"
+        errorLine1="            abiFilters += listOf(&quot;arm64-v8a&quot;)"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="26"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="DataExtractionRules"
+        message="The attribute `android:allowBackup` is deprecated from Android 12 and higher and may be removed in future versions. Consider adding the attribute `android:dataExtractionRules` specifying an `@xml` resource which configures cloud backups and device transfers on Android 12 and higher."
+        errorLine1="        android:allowBackup=&quot;false&quot;"
+        errorLine2="                             ~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="14"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableFloatStateOf` instead of `mutableStateOf`"
+        errorLine1="    var systemBackProgress by remember { mutableStateOf(0f) }"
+        errorLine2="                                         ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="352"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Int.toDrawable` instead?"
+        errorLine1="            icon.background ?: ColorDrawable(AndroidColor.WHITE),"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AdaptiveIcon.kt"
+            line="33"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AdaptiveIcon.kt"
+            line="334"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="            val pixel = source.getPixel(x, y)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AdaptiveIcon.kt"
+            line="457"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="    val scaled = Bitmap.createScaledBitmap(source, scaledWidth, scaledHeight, true)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AlphaGeometry.kt"
+            line="79"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AlphaGeometry.kt"
+            line="81"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="            val alpha = AndroidColor.alpha(source.getPixel(x, y))"
+        errorLine2="                                           ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AlphaGeometry.kt"
+            line="104"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="            if (AndroidColor.alpha(source.getPixel(x, y)) > threshold) {"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AlphaGeometry.kt"
+            line="126"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="            if (AndroidColor.alpha(source.getPixel(x, y)) &lt; 8) {"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AlphaGeometry.kt"
+            line="147"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="            if (AndroidColor.alpha(source.getPixel(x, y)) > 8) {"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AlphaGeometry.kt"
+            line="160"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="            if (AndroidColor.alpha(source.getPixel(x, y)) > threshold) {"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AlphaGeometry.kt"
+            line="173"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="    val scaled = Bitmap.createScaledBitmap(source, scaledWidth, scaledHeight, true)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AlphaGeometry.kt"
+            line="356"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/AlphaGeometry.kt"
+            line="358"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    prefs.edit()"
+        errorLine2="    ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/data/AppRepository.kt"
+            line="143"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/BitmapOps.kt"
+            line="20"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="    Bitmap.createScaledBitmap(source, width, height, true)"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/BitmapOps.kt"
+            line="26"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/BitmapOps.kt"
+            line="29"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="    val center = bitmap.getPixel(bitmap.width / 2, bitmap.height / 2)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/BitmapOps.kt"
+            line="39"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="            val pixel = bitmap.getPixel(x, y)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/BitmapOps.kt"
+            line="57"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/BitmapOps.kt"
+            line="73"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ChromaKey.kt"
+            line="14"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="            val pixel = source.getPixel(x, y)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ChromaKey.kt"
+            line="17"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.set` instead?"
+        errorLine1="            out.setPixel(x, y, (alpha shl 24) or (pixel and 0x00ffffff))"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ChromaKey.kt"
+            line="29"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.get` instead?"
+        errorLine1="                val pixel = source.getPixel(x, y)"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ChromaKey.kt"
+            line="42"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Int.toDrawable` instead?"
+        errorLine1="            icon.background ?: ColorDrawable(AndroidColor.WHITE),"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/system/DebugServer.kt"
+            line="345"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/DrawableRender.kt"
+            line="24"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val mask = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/DrawableRender.kt"
+            line="41"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/DrawableRender.kt"
+            line="70"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/EdgeFinish.kt"
+            line="50"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/EdgeFinish.kt"
+            line="108"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/EdgeFinish.kt"
+            line="194"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/EdgeFinish.kt"
+            line="285"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ForegroundSeparation.kt"
+            line="108"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ForegroundSeparation.kt"
+            line="177"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ForegroundSeparation.kt"
+            line="260"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ForegroundSeparation.kt"
+            line="387"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ForegroundSeparation.kt"
+            line="426"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="    val recbg = Bitmap.createScaledBitmap(rawBackground, SIZE_1X1, SIZE_1X1, true)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/pipeline/GenerationPipeline.kt"
+            line="204"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="            Bitmap.createScaledBitmap(rawForeground, SIZE_1X1, SIZE_1X1, true)"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/pipeline/GenerationPipeline.kt"
+            line="207"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="                Bitmap.createScaledBitmap(keyed, SIZE_1X1, SIZE_1X1, true)"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/pipeline/GenerationPipeline.kt"
+            line="212"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val bitmap = Bitmap.createBitmap(width.roundToInt().coerceAtLeast(1), height.roundToInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/pipeline/GptClient.kt"
+            line="423"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/pipeline/GptClient.kt"
+            line="431"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="    val resized = Bitmap.createScaledBitmap(source, targetWidth, targetHeight, true)"
+        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/pipeline/GptClient.kt"
+            line="440"
+            column="19"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)"
+        errorLine2="                ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="5949"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)"
+        errorLine2="                ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="6481"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)"
+        errorLine2="                ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="6707"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)"
+        errorLine2="                ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="7023"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                    getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)"
+        errorLine2="                    ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt"
+            line="7250"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { out ->"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/home/HomePreviewCards.kt"
+            line="561"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="    return Bitmap.createScaledBitmap("
+        errorLine2="           ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/data/IconCache.kt"
+            line="61"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/data/IconCache.kt"
+            line="71"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LiquidGlassPipeline.kt"
+            line="117"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LiquidGlassPipeline.kt"
+            line="171"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="        return Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888).apply {"
+        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LiquidGlassPipeline.kt"
+            line="262"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LiquidGlassPipeline.kt"
+            line="293"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `Bitmap.scale` instead?"
+        errorLine1="    val scaled = Bitmap.createScaledBitmap(source, scaledWidth, scaledHeight, true)"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LiquidGlassPipeline.kt"
+            line="458"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LiquidGlassPipeline.kt"
+            line="459"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LiquidGlassPipeline.kt"
+            line="572"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LiquidGlassPipeline.kt"
+            line="641"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LocalCandidates.kt"
+            line="236"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LocalCandidates.kt"
+            line="570"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/LocalCandidates.kt"
+            line="600"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit()"
+        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/MainActivity.kt"
+            line="125"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                    prefs.edit().putString(MainActivity.PREF_DEBUG_TOKEN, created).apply()"
+        errorLine2="                    ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/MainActivity.kt"
+            line="243"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(MainActivity.PREF_DEBUG_TOKEN, created).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/MainActivityOps.kt"
+            line="646"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="            parseUri = { runCatching { Uri.parse(it) }.getOrNull() },"
+        errorLine2="                                       ~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/MainActivityOps.kt"
+            line="1730"
+            column="40"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)"
+        errorLine2="                ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/MainActivityOps.kt"
+            line="1918"
+            column="17"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/Monochrome.kt"
+            line="74"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/Monochrome.kt"
+            line="117"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/Monochrome.kt"
+            line="173"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/Monochrome.kt"
+            line="192"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/Monochrome.kt"
+            line="222"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/Monochrome.kt"
+            line="313"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/Monochrome.kt"
+            line="363"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/NightForeground.kt"
+            line="88"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/NightForeground.kt"
+            line="214"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            prefs.edit().remove(PREF_GPT_API_KEY).apply()"
+        errorLine2="            ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsCrypto.kt"
+            line="27"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsCrypto.kt"
+            line="34"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(PREF_GPT_BASE_URL, &quot;&quot;).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsGptRmbg.kt"
+            line="29"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    return prefs"
+        errorLine2="           ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsGptRmbg.kt"
+            line="41"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsGptRmbg.kt"
+            line="95"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    prefs"
+        errorLine2="    ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsGptRmbg.kt"
+            line="106"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    prefs.edit()"
+        errorLine2="    ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsImageTuning.kt"
+            line="163"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    prefs"
+        errorLine2="    ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsImageTuning.kt"
+            line="219"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    prefs"
+        errorLine2="    ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsImageTuning.kt"
+            line="400"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    prefs"
+        errorLine2="    ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsLiquidGlass.kt"
+            line="107"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    prefs"
+        errorLine2="    ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/params/ParamsLocalSeparation.kt"
+            line="24"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="    prefs"
+        errorLine2="    ^">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/picker/PickerAppOps.kt"
+            line="222"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="        val view = Intent(Intent.ACTION_VIEW, Uri.parse(url)).addCategory(Intent.CATEGORY_BROWSABLE)"
+        errorLine2="                                              ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/picker/PickerCommon.kt"
+            line="370"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="            prefs.edit().putString(PREF_ACTIVE_PRESET_ID, value).apply()"
+        errorLine2="            ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/PresetStore.kt"
+            line="142"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="        prefs.edit().putString(PREF_PRESETS_JSON, blob).apply()"
+        errorLine2="        ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/PresetStore.kt"
+            line="217"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val alphaMask = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/PreviewComposer.kt"
+            line="150"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/PreviewComposer.kt"
+            line="186"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/PreviewComposer.kt"
+            line="238"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/PreviewComposer.kt"
+            line="267"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/PreviewComposer.kt"
+            line="349"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/pipeline/RmbgManager.kt"
+            line="769"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/pipeline/RmbgManager.kt"
+            line="789"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX function `createBitmap` instead?"
+        errorLine1="    val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
+        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/imaging/ShadowCleanup.kt"
+            line="152"
+            column="15"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `SharedPreferences.edit` instead?"
+        errorLine1="                    getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()"
+        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt"
+            line="2201"
+            column="21"/>
+    </issue>
+
+</issues>

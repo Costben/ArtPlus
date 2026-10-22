@@ -77,6 +77,13 @@ android {
         compose = true
     }
 
+    // Epic v3 S0.4：lint 只拦「新增」。基线在 lint-baseline.xml，随本 Slice 入库。
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+        checkDependencies = false
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
