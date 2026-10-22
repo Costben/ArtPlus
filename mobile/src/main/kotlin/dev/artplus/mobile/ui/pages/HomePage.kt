@@ -75,14 +75,20 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
             beyondViewportPageCount = beyondViewportCount,
             modifier = Modifier
                 .fillMaxSize()
-                .background(pageBackground)
-                .then(if (isBlurEnabled) Modifier.layerBackdrop(backdrop) else Modifier),
+                .background(pageBackground),
         ) { page ->
+            // S6.1：只有当前页 ±1 挂 backdrop，远页不参与采样（beyondViewportCount 仍为 3，
+            // 保证滚动时页面不重建，但 4 层 backdrop 采样降为最多 3 层）。
+            val near = kotlin.math.abs(page - pagerState.currentPage) <= 1
+            Box(
+                modifier = if (isBlurEnabled && near) Modifier.layerBackdrop(backdrop) else Modifier,
+            ) {
             when (page) {
                 0 -> HomeTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
                 1 -> ParamsTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
                 2 -> PresetTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
                 3 -> SettingsTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+            }
             }
         }
 

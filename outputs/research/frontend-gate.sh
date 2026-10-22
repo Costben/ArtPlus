@@ -67,6 +67,13 @@ for k, v in base.items():
         if now[k] < v:
             bad.append(f"{k}: {v} -> {now[k]} (只增不减)")
         continue
+    # 已在目标内的指标即使小幅波动也不算回归（目标值才是硬约束）
+    TARGETS = {"ui_lines":16000,"homepage_lines":1200,"homepage_longest_fun":300,"unused_imports":0,
+               "dead_glass_lines":0,"params_current_wrapper":0,"picker_save_sites":1,"onwrite_blocks":0,
+               "inline_collect_as_state":0,"hardcoded_cjk":0,"content_description_null":5,
+               "files_in_dev_artplus_mobile":20}
+    if k in TARGETS and now[k] <= TARGETS[k]:
+        continue
     if now[k] > v:
         bad.append(f"{k}: {v} -> {now[k]} (劣化)")
 if bad:

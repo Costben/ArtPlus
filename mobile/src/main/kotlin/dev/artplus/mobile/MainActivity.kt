@@ -338,6 +338,17 @@ class MainActivity : ComponentActivity() {
         savedInstanceState.getString("draftPreviewIconSizeDpText")?.let { draftPreviewIconSizeDpText = it }
     }
 
+    /**
+     * S6.4：内存压力下释放图标缓存（原来只在进程被杀时随 GC 回收）。
+     * 只清缓存，不动任何持久化状态；缓存未命中时会按原路径重新解码。
+     */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_RUNNING_LOW) {
+            appIconCache.evictAll()
+        }
+    }
+
     override fun onDestroy() {
         // Slice 3.3：清理顺序下沉至 state/AppLoadOps.kt，super.onDestroy 留装配。
         mainViewModel.onDestroyCleanup(
