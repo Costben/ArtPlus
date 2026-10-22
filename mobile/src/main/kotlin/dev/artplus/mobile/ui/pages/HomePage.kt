@@ -32,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -86,6 +87,11 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     val glassBar by mainViewModel.glassBar.collectAsState()
     // S3.5：调参快照在页面顶层订阅一次，取代 11 处内联 `collectAsState()`（每处都是一次独立订阅 + 一次重组）。
     val paramsState by mainViewModel.params.collectAsState()
+    // S3.6：预设列表读盘移出组合期（原 3 处 `remember(version) { presetStore.all() }` 在组合里做同步 IO）。
+    var presetsSnapshot by remember { mutableStateOf<List<TuningPreset>>(emptyList()) }
+    LaunchedEffect(presetUiState.presetListVersion) {
+        presetsSnapshot = withContext(Dispatchers.IO) { presetStore.all() }
+    }
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val scope = rememberCoroutineScope()
     val isBlurEnabled = glassBar.liquidGlassBottomBarEnabled && glassBar.liquidGlassBottomBarBlurEnabled
@@ -1229,9 +1235,7 @@ val __act2 = LocalContext.current
                                 item(key = "json_editor") {
                                     run {
     JsonSettingsEditorCard(
-                currentParams = run {
-        mainViewModel.params.value
-    },
+                currentParams = remember(paramsState) { paramsState },
                 draftText = draftJsonParamsText,
                 onDraftChange = { draftJsonParamsText = it },
                 onSave = { run {
@@ -1327,7 +1331,7 @@ val __act2 = LocalContext.current
                 2 -> PagerShellPage(
                     title = "预设",
                     actions = {
-                        val presetCount = remember(presetUiState.presetListVersion) { presetStore.all().size }
+                        val presetCount = presetsSnapshot.size
                         TitleBarIconButton(
                             icon = COUIIcons.Download,
                             contentDescription = "导入预设",
@@ -1376,12 +1380,10 @@ val __act2 = LocalContext.current
                                 ) {
                                     run {
     PresetStatusCard(
-                presets = remember(presetUiState.presetListVersion) { presetStore.all() },
+                presets = presetsSnapshot,
                 activePresetId = presetUiState.activePresetId,
                 activePresetBaseParams = presetUiState.activePresetBaseParams,
-                currentParams = run {
-        mainViewModel.params.value
-    },
+                currentParams = remember(paramsState) { paramsState },
                 isBusy = shellState.isBusy,
                 onOverwrite = { run {
         overwritePreset(
@@ -1585,12 +1587,10 @@ val __act2 = LocalContext.current
 }
                                     run {
     PresetLibraryCard(
-                presets = remember(presetUiState.presetListVersion) { presetStore.all() },
+                presets = presetsSnapshot,
                 activePresetId = presetUiState.activePresetId,
                 activePresetBaseParams = presetUiState.activePresetBaseParams,
-                currentParams = run {
-        mainViewModel.params.value
-    },
+                currentParams = remember(paramsState) { paramsState },
                 searchQuery = presetUiState.presetSearchQuery,
                 onSearchChange = { mainViewModel.updatePresetUi { v -> v.copy(presetSearchQuery = (it)) } },
                 listExpanded = presetUiState.presetListExpanded,
