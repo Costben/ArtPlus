@@ -191,65 +191,6 @@ internal fun pickerLoadUiState(
     }
 }
 
-internal fun pickerSaveUiState(
-    prefs: SharedPreferences,
-    selectedPackage: String?,
-    generatedFilter: GeneratedFilter,
-    showSystemApps: Boolean,
-    queryText: String,
-    advancedCategory: AdvancedSettingsCategory,
-    advancedTab: AdvancedSettingsTab,
-    previewPackage: String?,
-    previewDir: String?,
-    previewStrip: Boolean,
-    previewNormalLight: String,
-    previewNormalDark: String,
-    previewMonochromeLight: String,
-    previewMonochromeDark: String,
-    desktopBackground: PreviewDesktopBackground,
-    iconSize: Int,
-    cornerRadius: Int,
-    batchCount: Int,
-    batchColumns: Int,
-    batchIconSize: Int,
-    batchCorner: Int,
-    batchDesktopBg: PreviewDesktopBackground,
-    customPath: String?,
-    autoRoot: Boolean,
-    autoRefresh: Boolean,
-    outputUri: Uri?,
-) {
-    prefs
-        .edit()
-        .putString(PREF_SELECTED_PACKAGE_NAME, selectedPackage)
-        .putString(PREF_GENERATED_FILTER, generatedFilter.name)
-        .putBoolean(PREF_SHOW_SYSTEM_APPS, showSystemApps)
-        .putString(PREF_QUERY_TEXT, queryText)
-        .putString(PREF_ADVANCED_SETTINGS_CATEGORY, advancedCategory.name)
-        .putString(PREF_ADVANCED_SETTINGS_TAB, advancedTab.name)
-        .putString(PREF_PREVIEW_PACKAGE_NAME, previewPackage)
-        .putString(PREF_PREVIEW_DIR_PATH, previewDir)
-        .putBoolean(PREF_PREVIEW_STRIP_ENABLED, previewStrip)
-        .putString(PREF_PREVIEW_SELECTION_NORMAL_LIGHT, PreviewSelections.fromNames(previewNormalLight, previewNormalDark, previewMonochromeLight, previewMonochromeDark).normalLight.name)
-        .putString(PREF_PREVIEW_SELECTION_NORMAL_DARK, PreviewSelections.fromNames(previewNormalLight, previewNormalDark, previewMonochromeLight, previewMonochromeDark).normalDark.name)
-        .putString(PREF_PREVIEW_SELECTION_MONOCHROME_LIGHT, PreviewSelections.fromNames(previewNormalLight, previewNormalDark, previewMonochromeLight, previewMonochromeDark).monochromeLight.name)
-        .putString(PREF_PREVIEW_SELECTION_MONOCHROME_DARK, PreviewSelections.fromNames(previewNormalLight, previewNormalDark, previewMonochromeLight, previewMonochromeDark).monochromeDark.name)
-        .putString(PREF_PREVIEW_DESKTOP_BACKGROUND, desktopBackground.name)
-        .putInt(PREF_PREVIEW_ICON_SIZE_DP, iconSize)
-        .putInt(PREF_PREVIEW_CORNER_RADIUS_DP, cornerRadius)
-        .putInt(PREF_BATCH_PREVIEW_COUNT, batchCount)
-        .putInt(PREF_BATCH_PREVIEW_COLUMNS, batchColumns)
-        .putInt(PREF_BATCH_PREVIEW_ICON_SIZE_DP, batchIconSize)
-        .putInt(PREF_BATCH_PREVIEW_CORNER_RADIUS_DP, batchCorner)
-        .putString(PREF_BATCH_PREVIEW_DESKTOP_BG, batchDesktopBg.name)
-        .apply { customPath?.let { putString(PREF_CUSTOM_WALLPAPER_PATH, it) } ?: remove(PREF_CUSTOM_WALLPAPER_PATH) }
-        .putBoolean(PREF_AUTO_CONFIRM_ROOT_WRITE, autoRoot)
-        .putBoolean(PREF_SKIP_ROOT_WRITE_CONFIRM, autoRoot)
-        .putBoolean(PREF_AUTO_CONFIRM_REFRESH, autoRefresh)
-        .putString(PREF_OUTPUT_TREE_URI, outputUri?.toString())
-        .apply()
-}
-
 internal fun pickerRefreshArtPlusIcons(
     isBusy: Boolean,
     isRefreshing: Boolean,

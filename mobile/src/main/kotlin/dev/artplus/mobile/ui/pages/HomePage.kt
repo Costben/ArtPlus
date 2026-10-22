@@ -394,34 +394,7 @@ val __act4 = LocalContext.current
                             mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (session.outDir.absolutePath)) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         }
                         }
                     },
@@ -512,34 +485,7 @@ val __act4 = LocalContext.current
                             mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (session.outDir.absolutePath)) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         }
                         }
                     },
@@ -630,34 +576,7 @@ val __act4 = LocalContext.current
                             mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (session.outDir.absolutePath)) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         }
                         }
                     },
@@ -890,34 +809,7 @@ val __act3 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -1010,34 +902,7 @@ val __act3 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -1088,34 +953,7 @@ val __act3 = LocalContext.current
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onCommitSelections = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
                     onSaveUi = { run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         } },
                     onWrite = { session, selections -> run {
             homeWriteActivePreviewOutputs(
@@ -1173,34 +1011,7 @@ val __act3 = LocalContext.current
                                 mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
                             }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -1347,34 +1158,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -1392,34 +1176,7 @@ val __act2 = LocalContext.current
                     setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewCornerRadiusDp = (it)) } },
                     setDraftText = { draftPreviewCornerRadiusDpText = it },
                     onSave = { run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         } },
                 )
     } },
@@ -1430,34 +1187,7 @@ val __act2 = LocalContext.current
                     setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewIconSizeDp = (it)) } },
                     setDraftText = { draftPreviewIconSizeDpText = it },
                     onSave = { run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         } },
                 )
     } },
@@ -1467,34 +1197,7 @@ val __act2 = LocalContext.current
                     getValue = { mainViewModel.previewSession.value.previewStripEnabled },
                     setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewStripEnabled = (it)) } },
                     onSave = { run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         } },
                     setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                 )
@@ -1505,34 +1208,7 @@ val __act2 = LocalContext.current
                     getValue = { mainViewModel.previewSession.value.previewDesktopBackground },
                     setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewDesktopBackground = (it)) } },
                     onSave = { run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         } },
                 )
     } },
@@ -1588,34 +1264,7 @@ val __act2 = LocalContext.current
                 onTabSelected = {
                     mainViewModel.updateShell { v -> v.copy(advancedSettingsTab = (it)) }
                     run {
-        pickerSaveUiState(
-                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                    selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                    generatedFilter = mainViewModel.picker.value.generatedFilter,
-                    showSystemApps = mainViewModel.picker.value.showSystemApps,
-                    queryText = mainViewModel.picker.value.queryText,
-                    advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                    advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                    previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                    previewDir = mainViewModel.previewSession.value.previewDirPath,
-                    previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                    previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                    previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                    previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                    previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                    desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                    iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                    cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                    batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                    batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                    batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                    batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                    batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                    customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                    autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                    autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                    outputUri = mainViewModel.shell.value.outputTreeUri,
-                )
+        persistUiState()
     }
                 },
                 onRequestSavePreset = {
@@ -1625,34 +1274,7 @@ val __act2 = LocalContext.current
                 onCategorySelected = {
                     mainViewModel.updateShell { v -> v.copy(advancedSettingsCategory = (it)) }
                     run {
-        pickerSaveUiState(
-                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                    selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                    generatedFilter = mainViewModel.picker.value.generatedFilter,
-                    showSystemApps = mainViewModel.picker.value.showSystemApps,
-                    queryText = mainViewModel.picker.value.queryText,
-                    advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                    advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                    previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                    previewDir = mainViewModel.previewSession.value.previewDirPath,
-                    previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                    previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                    previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                    previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                    previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                    desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                    iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                    cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                    batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                    batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                    batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                    batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                    batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                    customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                    autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                    autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                    outputUri = mainViewModel.shell.value.outputTreeUri,
-                )
+        persistUiState()
     }
                 },
             )
@@ -1753,34 +1375,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -1887,34 +1482,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -2015,34 +1583,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -2143,34 +1684,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -2271,34 +1785,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -2399,34 +1886,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -2527,34 +1987,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -2661,34 +2094,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -2789,34 +2195,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -2917,34 +2296,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -3045,34 +2397,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -3173,34 +2498,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -3307,34 +2605,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -3433,34 +2704,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -3559,34 +2803,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -3685,34 +2902,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -3816,34 +3006,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -3950,34 +3113,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -4076,34 +3212,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -4202,34 +3311,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -4328,34 +3410,7 @@ val __act2 = LocalContext.current
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -4450,34 +3505,7 @@ val __act2 = LocalContext.current
                         )
             } },
                         onSaveUi = { run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             } },
                         isBusy = { mainViewModel.shell.value.isBusy },
                         getSession = { mainViewModel.previewSession.value.activeGenerationSession },
@@ -4555,34 +3583,7 @@ val __act2 = LocalContext.current
                                 mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                                 mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                                 run {
-                    pickerSaveUiState(
-                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                                selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                                generatedFilter = mainViewModel.picker.value.generatedFilter,
-                                showSystemApps = mainViewModel.picker.value.showSystemApps,
-                                queryText = mainViewModel.picker.value.queryText,
-                                advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                                advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                                previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                                previewDir = mainViewModel.previewSession.value.previewDirPath,
-                                previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                                previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                                previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                                previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                                previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                                iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                                cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                                batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                                batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                                batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                                batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                                batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                                customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                                autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                                autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                                outputUri = mainViewModel.shell.value.outputTreeUri,
-                            )
+                    persistUiState()
                 }
                             },
                             onStatus = { run {
@@ -4766,34 +3767,7 @@ val __act2 = LocalContext.current
                         )
             } },
                         onSaveUi = { run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             } },
                         isBusy = { mainViewModel.shell.value.isBusy },
                         getSession = { mainViewModel.previewSession.value.activeGenerationSession },
@@ -4871,34 +3845,7 @@ val __act2 = LocalContext.current
                                 mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                                 mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                                 run {
-                    pickerSaveUiState(
-                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                                selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                                generatedFilter = mainViewModel.picker.value.generatedFilter,
-                                showSystemApps = mainViewModel.picker.value.showSystemApps,
-                                queryText = mainViewModel.picker.value.queryText,
-                                advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                                advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                                previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                                previewDir = mainViewModel.previewSession.value.previewDirPath,
-                                previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                                previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                                previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                                previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                                previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                                iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                                cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                                batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                                batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                                batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                                batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                                batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                                customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                                autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                                autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                                outputUri = mainViewModel.shell.value.outputTreeUri,
-                            )
+                    persistUiState()
                 }
                             },
                             onStatus = { run {
@@ -5000,34 +3947,7 @@ val __act2 = LocalContext.current
                         )
             } },
                         onSaveUi = { run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             } },
                         isBusy = { mainViewModel.shell.value.isBusy },
                         getSession = { mainViewModel.previewSession.value.activeGenerationSession },
@@ -5105,34 +4025,7 @@ val __act2 = LocalContext.current
                                 mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                                 mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                                 run {
-                    pickerSaveUiState(
-                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                                selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                                generatedFilter = mainViewModel.picker.value.generatedFilter,
-                                showSystemApps = mainViewModel.picker.value.showSystemApps,
-                                queryText = mainViewModel.picker.value.queryText,
-                                advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                                advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                                previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                                previewDir = mainViewModel.previewSession.value.previewDirPath,
-                                previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                                previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                                previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                                previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                                previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                                iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                                cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                                batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                                batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                                batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                                batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                                batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                                customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                                autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                                autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                                outputUri = mainViewModel.shell.value.outputTreeUri,
-                            )
+                    persistUiState()
                 }
                             },
                             onStatus = { run {
@@ -5240,34 +4133,7 @@ val __act2 = LocalContext.current
                         )
             } },
                         onSaveUi = { run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             } },
                         isBusy = { mainViewModel.shell.value.isBusy },
                         getSession = { mainViewModel.previewSession.value.activeGenerationSession },
@@ -5345,34 +4211,7 @@ val __act2 = LocalContext.current
                                 mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                                 mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                                 run {
-                    pickerSaveUiState(
-                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                                selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                                generatedFilter = mainViewModel.picker.value.generatedFilter,
-                                showSystemApps = mainViewModel.picker.value.showSystemApps,
-                                queryText = mainViewModel.picker.value.queryText,
-                                advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                                advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                                previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                                previewDir = mainViewModel.previewSession.value.previewDirPath,
-                                previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                                previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                                previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                                previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                                previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                                desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                                iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                                cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                                batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                                batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                                batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                                batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                                batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                                customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                                autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                                autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                                outputUri = mainViewModel.shell.value.outputTreeUri,
-                            )
+                    persistUiState()
                 }
                             },
                             onStatus = { run {
@@ -5409,34 +4248,7 @@ val __act2 = LocalContext.current
                     setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewCount = (it)) } },
                     setDraftText = { draftBatchPreviewCountText = it },
                     onSave = { run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         } },
                 )
     } },
@@ -5494,34 +4306,7 @@ val __act2 = LocalContext.current
                 )
     } },
                 saveUi = { run {
-        pickerSaveUiState(
-                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                    selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                    generatedFilter = mainViewModel.picker.value.generatedFilter,
-                    showSystemApps = mainViewModel.picker.value.showSystemApps,
-                    queryText = mainViewModel.picker.value.queryText,
-                    advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                    advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                    previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                    previewDir = mainViewModel.previewSession.value.previewDirPath,
-                    previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                    previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                    previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                    previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                    previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                    desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                    iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                    cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                    batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                    batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                    batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                    batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                    batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                    customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                    autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                    autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                    outputUri = mainViewModel.shell.value.outputTreeUri,
-                )
+        persistUiState()
     } },
                 setGptSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(gptSettingsSaveStatus = (it)) } },
                 setRmbgSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentSaveStatus = (it)) } },
@@ -5761,34 +4546,7 @@ private fun MainActivity.generateGptCandidate(confirmed: Boolean = false): Unit 
                             mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                             Toast.makeText(__actF4, msg, Toast.LENGTH_SHORT).show()
                             run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         }
                         }
                     } catch (error: Exception) {
@@ -5987,34 +4745,7 @@ private fun MainActivity.applyPreviewChoiceToAll(choice: PreviewChoice): Unit {
                                     mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (selectedResult.outDir.absolutePath)) }
                                     mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                                     run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                                 }
                                 mainViewModel.updateShell { it -> it.copy(statusText = (when {
@@ -6050,34 +4781,7 @@ private fun MainActivity.applyPreviewChoiceToAll(choice: PreviewChoice): Unit {
                     onCommitDefault = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
                     onClearChoiceMode = { mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) } },
                     onSaveUi = { run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         } },
                     onWriteClose = { session, selections -> run {
             homeWriteActivePreviewOutputs(
@@ -6135,34 +4839,7 @@ private fun MainActivity.applyPreviewChoiceToAll(choice: PreviewChoice): Unit {
                                 mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
                             }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -6334,34 +5011,7 @@ private fun MainActivity.generateRmbgCandidate(confirmed: Boolean = false): Unit
                             mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                             Toast.makeText(__actF6, msg, Toast.LENGTH_SHORT).show()
                             run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         }
                         }
                     } catch (error: Throwable) {
@@ -6518,34 +5168,7 @@ private fun MainActivity.generateGptCandidateForMode(mode: PreviewMode, confirme
                             mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                             Toast.makeText(__actF8, msg, Toast.LENGTH_SHORT).show()
                             run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         }
                         }
                     } catch (error: Exception) {
@@ -6598,34 +5221,7 @@ private fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed:
                     onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
                     onCommitSelections = { selections -> mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) } },
                     onSaveUi = { run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         } },
                     onWrite = { session, selections -> run {
             homeWriteActivePreviewOutputs(
@@ -6683,34 +5279,7 @@ private fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed:
                                 mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
                             }
                             run {
-                pickerSaveUiState(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                            generatedFilter = mainViewModel.picker.value.generatedFilter,
-                            showSystemApps = mainViewModel.picker.value.showSystemApps,
-                            queryText = mainViewModel.picker.value.queryText,
-                            advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                            advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                            previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                            previewDir = mainViewModel.previewSession.value.previewDirPath,
-                            previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                            previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                            previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                            previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                            previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                            desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                            iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                            cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                            batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                            batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                            batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                            batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                            batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                            customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                            autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                            autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                            outputUri = mainViewModel.shell.value.outputTreeUri,
-                        )
+                persistUiState()
             }
                         },
                         onStatus = { run {
@@ -6875,34 +5444,7 @@ private fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed:
                             mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
                             Toast.makeText(__actF10, msg, Toast.LENGTH_SHORT).show()
                             run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         }
                         }
                     } catch (error: Throwable) {
@@ -7051,34 +5593,7 @@ private fun MainActivity.generateSelectedApp(installWithRoot: Boolean, useGpt: B
                             mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (result.outDir.absolutePath)) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                             run {
-            pickerSaveUiState(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        selectedPackage = mainViewModel.picker.value.selectedPackageName,
-                        generatedFilter = mainViewModel.picker.value.generatedFilter,
-                        showSystemApps = mainViewModel.picker.value.showSystemApps,
-                        queryText = mainViewModel.picker.value.queryText,
-                        advancedCategory = mainViewModel.shell.value.advancedSettingsCategory,
-                        advancedTab = mainViewModel.shell.value.advancedSettingsTab,
-                        previewPackage = mainViewModel.previewSession.value.previewPackageName,
-                        previewDir = mainViewModel.previewSession.value.previewDirPath,
-                        previewStrip = mainViewModel.previewSession.value.previewStripEnabled,
-                        previewNormalLight = mainViewModel.params.value.previewNormalLight,
-                        previewNormalDark = mainViewModel.params.value.previewNormalDark,
-                        previewMonochromeLight = mainViewModel.params.value.previewMonochromeLight,
-                        previewMonochromeDark = mainViewModel.params.value.previewMonochromeDark,
-                        desktopBackground = mainViewModel.previewSession.value.previewDesktopBackground,
-                        iconSize = mainViewModel.previewSession.value.previewIconSizeDp,
-                        cornerRadius = mainViewModel.previewSession.value.previewCornerRadiusDp,
-                        batchCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
-                        batchColumns = mainViewModel.batchPreviewConfig.value.batchPreviewColumns,
-                        batchIconSize = mainViewModel.batchPreviewConfig.value.batchPreviewIconSizeDp,
-                        batchCorner = mainViewModel.batchPreviewConfig.value.batchPreviewCornerRadiusDp,
-                        batchDesktopBg = mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground,
-                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                        autoRoot = mainViewModel.confirm.value.autoConfirmRootWrite,
-                        autoRefresh = mainViewModel.confirm.value.autoConfirmRefresh,
-                        outputUri = mainViewModel.shell.value.outputTreeUri,
-                    )
+            persistUiState()
         }
                         }
                     },
