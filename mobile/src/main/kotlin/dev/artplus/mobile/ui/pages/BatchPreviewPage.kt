@@ -163,7 +163,6 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         PreviewDesktopBackground.entries.forEach { bgOption ->
-                            run {
 val __act2 = LocalContext.current
     PreviewBackgroundOption(
                 option = (bgOption),
@@ -208,13 +207,10 @@ val __act2 = LocalContext.current
                     option = (bgOption),
                     getValue = { mainViewModel.batchPreviewConfig.value.batchPreviewDesktopBackground },
                     setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewDesktopBackground = (it)) } },
-                    onSave = { run {
-            persistUiState()
-        } },
+                    onSave = { persistUiState() },
                 )
     } }),
             )
-}
                         }
                     }
 
@@ -235,9 +231,7 @@ val __act2 = LocalContext.current
                 setDraftColumnsText = { draftBatchPreviewColumnsText = it },
                 setIconSize = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewIconSizeDp = (it)) } },
                 setDraftIconSizeText = { draftBatchPreviewIconSizeDpText = it },
-                onSave = { run {
-        persistUiState()
-    } },
+                onSave = { persistUiState() },
             )
 } },
                         showIcon = false,
@@ -259,9 +253,7 @@ val __act2 = LocalContext.current
                 value = (it),
                 setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewIconSizeDp = (it)) } },
                 setDraftText = { draftBatchPreviewIconSizeDpText = it },
-                onSave = { run {
-        persistUiState()
-    } },
+                onSave = { persistUiState() },
             )
 } },
                         showIcon = false,
@@ -283,9 +275,7 @@ val __act2 = LocalContext.current
                 value = (it),
                 setValue = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(batchPreviewCornerRadiusDp = (it)) } },
                 setDraftText = { draftBatchPreviewCornerRadiusDpText = it },
-                onSave = { run {
-        persistUiState()
-    } },
+                onSave = { persistUiState() },
             )
 } },
                         showIcon = false,
@@ -405,14 +395,14 @@ val __act1 = LocalContext.current
                 mode = (currentMode),
                 modifier = (Modifier.size(batchConfig.batchPreviewIconSizeDp.dp)),
                 cornerRadiusDp = (batchConfig.batchPreviewCornerRadiusDp),
-                materialColorProvider = { __a0: String, __a1: Color -> run {
+                materialColorProvider = { __a0: String, __a1: Color ->
         pickerSystemMaterialColor(
                     resources = resources,
                     getColor = ::getColor,
                     resourceName = __a0,
                     fallback = __a1,
                 )
-    } },
+     },
             )
 }
                                             } else {
@@ -422,14 +412,14 @@ val __act1 = LocalContext.current
                 mode = (currentMode),
                 compact = (true),
                 cornerRadiusDp = (batchConfig.batchPreviewCornerRadiusDp),
-                materialColorProvider = { __a0: String, __a1: Color -> run {
+                materialColorProvider = { __a0: String, __a1: Color ->
         pickerSystemMaterialColor(
                     resources = resources,
                     getColor = ::getColor,
                     resourceName = __a0,
                     fallback = __a1,
                 )
-    } },
+     },
             )
 }
                                             }

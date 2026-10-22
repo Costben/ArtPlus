@@ -154,27 +154,13 @@ internal fun MainActivity.ArtPlusScreen() {
             val diskAssets = withContext(Dispatchers.IO) {
                 run {
     PreviewAssets(
-                recbg = run {
-        BitmapFactory.decodeFile(File(((File(dirPath))), ("recbg.png")).absolutePath)?.also { it.prepareToDraw() }
-    },
-                recfg = run {
-        BitmapFactory.decodeFile(File(((File(dirPath))), ("recfg.png")).absolutePath)?.also { it.prepareToDraw() }
-    },
-                recNight = run {
-        BitmapFactory.decodeFile(File(((File(dirPath))), ("rec_night.png")).absolutePath)?.also { it.prepareToDraw() }
-    },
-                monochromeLight = run {
-        BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome_light.png")).absolutePath)?.also { it.prepareToDraw() }
-    }
-                    ?: run {
-        BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome.png")).absolutePath)?.also { it.prepareToDraw() }
-    },
-                monochromeDark = run {
-        BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome_dark.png")).absolutePath)?.also { it.prepareToDraw() }
-    }
-                    ?: run {
-        BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome.png")).absolutePath)?.also { it.prepareToDraw() }
-    },
+                recbg = BitmapFactory.decodeFile(File(((File(dirPath))), ("recbg.png")).absolutePath)?.also { it.prepareToDraw() },
+                recfg = BitmapFactory.decodeFile(File(((File(dirPath))), ("recfg.png")).absolutePath)?.also { it.prepareToDraw() },
+                recNight = BitmapFactory.decodeFile(File(((File(dirPath))), ("rec_night.png")).absolutePath)?.also { it.prepareToDraw() },
+                monochromeLight = BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome_light.png")).absolutePath)?.also { it.prepareToDraw() }
+                    ?: BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome.png")).absolutePath)?.also { it.prepareToDraw() },
+                monochromeDark = BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome_dark.png")).absolutePath)?.also { it.prepareToDraw() }
+                    ?: BitmapFactory.decodeFile(File(((File(dirPath))), ("monochrome.png")).absolutePath)?.also { it.prepareToDraw() },
             )
 }.preparedForDraw()
             }
@@ -441,7 +427,7 @@ internal fun MainActivity.ArtPlusScreen() {
                 sheetVisible = mainViewModel.transfer.value.singleExportSheetVisible,
                 progress = mainViewModel.transfer.value.exportProgress,
             )
-            cancelSingleExport(state, { __a0: String -> run {
+            cancelSingleExport(state, { __a0: String ->
         pickerToastStatus(
                     message = __a0,
                     postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -451,7 +437,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         }
                     },
                 )
-    } })
+     })
             singleExportJob = state.singleExportJob
             mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (state.sheetVisible)) }
             mainViewModel.updateTransfer { it -> it.copy(exportProgress = (state.progress)) }
@@ -476,7 +462,7 @@ internal fun MainActivity.ArtPlusScreen() {
                 progress = mainViewModel.transfer.value.backupProgress,
                 isBusy = mainViewModel.shell.value.isBusy,
             )
-            cancelBackup(state, { __a0: String -> run {
+            cancelBackup(state, { __a0: String ->
         pickerToastStatus(
                     message = __a0,
                     postOnUi = { text -> runOnUiThread { setStatus((text)) } },
@@ -486,7 +472,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         }
                     },
                 )
-    } })
+     })
             backupJob = state.backupJob
             backupDotJob = state.backupDotJob
             mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (state.sheetVisible)) }
@@ -545,9 +531,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) }
                     if (shouldSkip) {
                         mainViewModel.updateConfirm { it -> it.copy(autoConfirmRootWrite = (true)) }
-                        run {
-        persistUiState()
-    }
+                        persistUiState()
                     }
                     onConfirm()
                 },
@@ -566,9 +550,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (false)) }
                     if (shouldAuto) {
                         mainViewModel.updateConfirm { it -> it.copy(autoConfirmRefresh = (true)) }
-                        run {
-        persistUiState()
-    }
+                        persistUiState()
                     }
                     run {
         mainViewModel.refreshArtPlusIconsAsync(
@@ -589,9 +571,7 @@ internal fun MainActivity.ArtPlusScreen() {
         saveCurrentAsPreset(
                     rawName = (name),
                     store = presetStore,
-                    current = run {
-            mainViewModel.params.value
-        },
+                    current = mainViewModel.params.value,
                     viewModel = mainViewModel,
                     onSaved = { preset, msg ->
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (preset.id)) }
@@ -632,21 +612,16 @@ internal fun MainActivity.ArtPlusScreen() {
                     isBusy = mainViewModel.shell.value.isBusy,
                     isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
                     isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
-                    before = run {
-            mainViewModel.params.value
-        },
+                    before = mainViewModel.params.value,
                     viewModel = mainViewModel,
                     onApplied = { p, merged, msg ->
-                        run {
             paramsApplyTuningParams(
                         params = (merged),
                         rebuildCandidates = (true),
                         persist = (true),
                         captureUndo = (true),
                         refreshPreview = (true),
-                        getBefore = { run {
-                mainViewModel.params.value
-            } },
+                        getBefore = { mainViewModel.params.value },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
                         setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
@@ -684,9 +659,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             getParams = { mainViewModel.params.value },
                         )
             } },
-                        onSaveLiquidGlass = { run {
-                tuningActions.save()
-            } },
+                        onSaveLiquidGlass = { tuningActions.save() },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
                             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -696,14 +669,12 @@ internal fun MainActivity.ArtPlusScreen() {
                             getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
                         )
             } },
-                        onSaveUi = { run {
-                persistUiState()
-            } },
+                        onSaveUi = { persistUiState() },
                         isBusy = { mainViewModel.shell.value.isBusy },
                         getSession = { mainViewModel.previewSession.value.activeGenerationSession },
                         onRefresh = tuningActions.refresh,
                     )
-        }
+        
                         presetStore.activePresetId = p.id
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (p.params)) }
@@ -712,16 +683,12 @@ internal fun MainActivity.ArtPlusScreen() {
                     onStatus = { setStatus((it)) },
                 )
     } },
-                onActionPreview = { run {
-        mainViewModel.openBatchPreviewForPreset(preset = (it), filesDir = filesDir)
-    } },
+                onActionPreview = { mainViewModel.openBatchPreviewForPreset(preset = (it), filesDir = filesDir) },
                 onActionOverwrite = { run {
         overwritePreset(
                     preset = (it),
                     store = presetStore,
-                    current = run {
-            mainViewModel.params.value
-        },
+                    current = mainViewModel.params.value,
                     viewModel = mainViewModel,
                     onOverwritten = { p, cur, msg ->
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
@@ -768,7 +735,7 @@ internal fun MainActivity.ArtPlusScreen() {
                 )
     } },
                 importDialogVisible = presetUiState.presetImportDialogVisible,
-                onImportConfirm = { text -> run {
+                onImportConfirm = { text ->
         importPresetsFromText(
                     text = (text),
                     store = presetStore,
@@ -779,7 +746,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         setStatus((msg))
                     },
                 )
-    } },
+     },
                 onImportDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) } },
                 batchPreviewConfirmTarget = presetUiState.presetBatchPreviewConfirmTarget,
                 onBatchPreviewConfirm = {
@@ -791,12 +758,10 @@ internal fun MainActivity.ArtPlusScreen() {
                     selfPackageName = packageName,
                     batchPreviewCount = batchConfigState.batchPreviewCount,
                     generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
-                    originalParams = run {
-            mainViewModel.params.value
-        },
+                    originalParams = mainViewModel.params.value,
                     cacheDir = cacheDir,
                     loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
-                    defaultChoiceForMode = { mode, auto -> run {
+                    defaultChoiceForMode = { mode, auto ->
             when ((mode)) {
                         LocalSeparationMode.Original -> PreviewChoice.Original
                         LocalSeparationMode.Plate -> PreviewChoice.Full
@@ -806,7 +771,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         LocalSeparationMode.Auto -> (auto)
                         LocalSeparationMode.Full -> PreviewChoice.Full
                     }
-        } },
+         },
                     composeAssets = { session, selections -> run {
 
                     val params = mainViewModel.params.value
@@ -843,16 +808,13 @@ internal fun MainActivity.ArtPlusScreen() {
                     )
         } },
                     onApplyMerged = { merged ->
-                        run {
             paramsApplyTuningParams(
                         params = (merged),
                         rebuildCandidates = (false),
                         persist = (false),
                         captureUndo = (false),
                         refreshPreview = (false),
-                        getBefore = { run {
-                mainViewModel.params.value
-            } },
+                        getBefore = { mainViewModel.params.value },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
                         setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
@@ -890,9 +852,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             getParams = { mainViewModel.params.value },
                         )
             } },
-                        onSaveLiquidGlass = { run {
-                tuningActions.save()
-            } },
+                        onSaveLiquidGlass = { tuningActions.save() },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
                             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -902,26 +862,21 @@ internal fun MainActivity.ArtPlusScreen() {
                             getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
                         )
             } },
-                        onSaveUi = { run {
-                persistUiState()
-            } },
+                        onSaveUi = { persistUiState() },
                         isBusy = { mainViewModel.shell.value.isBusy },
                         getSession = { mainViewModel.previewSession.value.activeGenerationSession },
                         onRefresh = tuningActions.refresh,
                     )
-        }
+        
                     },
                     onRestoreOriginal = { original ->
-                        run {
             paramsApplyTuningParams(
                         params = (original),
                         rebuildCandidates = (true),
                         persist = (false),
                         captureUndo = (false),
                         refreshPreview = (true),
-                        getBefore = { run {
-                mainViewModel.params.value
-            } },
+                        getBefore = { mainViewModel.params.value },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
                         setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
@@ -959,9 +914,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             getParams = { mainViewModel.params.value },
                         )
             } },
-                        onSaveLiquidGlass = { run {
-                tuningActions.save()
-            } },
+                        onSaveLiquidGlass = { tuningActions.save() },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
                             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -971,14 +924,12 @@ internal fun MainActivity.ArtPlusScreen() {
                             getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
                         )
             } },
-                        onSaveUi = { run {
-                persistUiState()
-            } },
+                        onSaveUi = { persistUiState() },
                         isBusy = { mainViewModel.shell.value.isBusy },
                         getSession = { mainViewModel.previewSession.value.activeGenerationSession },
                         onRefresh = tuningActions.refresh,
                     )
-        }
+        
                     },
                     onSaveSnapshot = { p, dataList -> BatchPreviewStore.saveSnapshot(filesDir, p, dataList) },
                 )
@@ -999,12 +950,10 @@ internal fun MainActivity.ArtPlusScreen() {
                     selfPackageName = packageName,
                     batchPreviewCount = batchConfigState.batchPreviewCount,
                     generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
-                    originalParams = run {
-            mainViewModel.params.value
-        },
+                    originalParams = mainViewModel.params.value,
                     cacheDir = cacheDir,
                     loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
-                    defaultChoiceForMode = { mode, auto -> run {
+                    defaultChoiceForMode = { mode, auto ->
             when ((mode)) {
                         LocalSeparationMode.Original -> PreviewChoice.Original
                         LocalSeparationMode.Plate -> PreviewChoice.Full
@@ -1014,7 +963,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         LocalSeparationMode.Auto -> (auto)
                         LocalSeparationMode.Full -> PreviewChoice.Full
                     }
-        } },
+         },
                     composeAssets = { session, selections -> run {
 
                     val params = mainViewModel.params.value
@@ -1051,16 +1000,13 @@ internal fun MainActivity.ArtPlusScreen() {
                     )
         } },
                     onApplyMerged = { merged ->
-                        run {
             paramsApplyTuningParams(
                         params = (merged),
                         rebuildCandidates = (false),
                         persist = (false),
                         captureUndo = (false),
                         refreshPreview = (false),
-                        getBefore = { run {
-                mainViewModel.params.value
-            } },
+                        getBefore = { mainViewModel.params.value },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
                         setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
@@ -1098,9 +1044,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             getParams = { mainViewModel.params.value },
                         )
             } },
-                        onSaveLiquidGlass = { run {
-                tuningActions.save()
-            } },
+                        onSaveLiquidGlass = { tuningActions.save() },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
                             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -1110,26 +1054,21 @@ internal fun MainActivity.ArtPlusScreen() {
                             getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
                         )
             } },
-                        onSaveUi = { run {
-                persistUiState()
-            } },
+                        onSaveUi = { persistUiState() },
                         isBusy = { mainViewModel.shell.value.isBusy },
                         getSession = { mainViewModel.previewSession.value.activeGenerationSession },
                         onRefresh = tuningActions.refresh,
                     )
-        }
+        
                     },
                     onRestoreOriginal = { original ->
-                        run {
             paramsApplyTuningParams(
                         params = (original),
                         rebuildCandidates = (true),
                         persist = (false),
                         captureUndo = (false),
                         refreshPreview = (true),
-                        getBefore = { run {
-                mainViewModel.params.value
-            } },
+                        getBefore = { mainViewModel.params.value },
                         onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                         onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
                         setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
@@ -1167,9 +1106,7 @@ internal fun MainActivity.ArtPlusScreen() {
                             getParams = { mainViewModel.params.value },
                         )
             } },
-                        onSaveLiquidGlass = { run {
-                tuningActions.save()
-            } },
+                        onSaveLiquidGlass = { tuningActions.save() },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
                             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -1179,14 +1116,12 @@ internal fun MainActivity.ArtPlusScreen() {
                             getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
                         )
             } },
-                        onSaveUi = { run {
-                persistUiState()
-            } },
+                        onSaveUi = { persistUiState() },
                         isBusy = { mainViewModel.shell.value.isBusy },
                         getSession = { mainViewModel.previewSession.value.activeGenerationSession },
                         onRefresh = tuningActions.refresh,
                     )
-        }
+        
                     },
                     onSaveSnapshot = { p, dataList -> BatchPreviewStore.saveSnapshot(filesDir, p, dataList) },
                 )

@@ -126,13 +126,13 @@ internal fun MainActivity.AppPickerPage(
                     onRefreshPermissions = { run {
             pickerRefreshPermissionState(
                         checkQueryPermission = { pickerCheckQueryPermission(packageManager, packageName) },
-                        hasUsage = {  -> run {
+                        hasUsage = {  ->
                 pickerHasUsageAccess(
                             appOps = getSystemService(AppOpsManager::class.java),
                             uid = Process.myUid(),
                             packageName = packageName,
                         )
-            } },
+             },
                         onResult = { queryGranted, usageGranted ->
                             mainViewModel.updatePicker { it -> it.copy(packageListPermissionGranted = (queryGranted)) }
                             mainViewModel.updatePicker { it -> it.copy(usageAccessGranted = (usageGranted)) }
@@ -149,28 +149,20 @@ internal fun MainActivity.AppPickerPage(
     } },
                 onToggleSystemApps = {
                     mainViewModel.updatePicker { it -> it.copy(showSystemApps = !it.showSystemApps) }
-                    run {
-        persistUiState()
-    }
+                    persistUiState()
                 },
                 onFilterSelected = {
                     mainViewModel.updatePicker { v -> v.copy(generatedFilter = (it)) }
                     mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
-                    run {
-        persistUiState()
-    }
+                    persistUiState()
                 },
                 onQueryChange = {
                     mainViewModel.updatePicker { v -> v.copy(queryText = (it)) }
-                    run {
-        persistUiState()
-    }
+                    persistUiState()
                 },
                 onClearQuery = {
                     mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
-                    run {
-        persistUiState()
-    }
+                    persistUiState()
                 },
                 multiSelectContent = { run {
 
@@ -192,17 +184,15 @@ internal fun MainActivity.AppPickerPage(
                     onAddGlass = { run {
             mainViewModel.addLiquidGlassToMultiSelectedGenerated(
                         onRequestConfirm = { title, message, confirmLabel, onConfirm ->
-                            run {
-
                         mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
                             title = (title),
                             message = (message),
                             confirmLabel = (confirmLabel),
                             onConfirm = (onConfirm),
                         ))) }
-            }
+            
                         },
-                        onExecute = { pkgs -> run {
+                        onExecute = { pkgs ->
                 mainViewModel.executeAddLiquidGlassToMultiSelectedGenerated(
                             packageNames = (pkgs),
                             selectedAtStart = mainViewModel.picker.value.selectedPackageName,
@@ -243,47 +233,39 @@ internal fun MainActivity.AppPickerPage(
                             persistMany = { combined ->
                                 updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), combined)
                             },
-                            onSaveUiState = {  -> run {
-                    persistUiState()
-                } },
+                            onSaveUiState = {  -> persistUiState() },
                         )
-            } },
+             },
                     )
         } },
                     onApplyPreset = { run {
             mainViewModel.applyCurrentPresetBatch(
                         store = presetStore,
                         onRequestConfirm = { title, message, confirmLabel, onConfirm ->
-                            run {
-
                         mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
                             title = (title),
                             message = (message),
                             confirmLabel = (confirmLabel),
                             onConfirm = (onConfirm),
                         ))) }
-            }
+            
                         },
                         onExecutePreset = { p, pkgs -> run {
                 mainViewModel.executeApplyPresetToSelectedApps(
                             preset = (p),
                             batchPackageNames = (pkgs),
-                            beforeParams = run {
-                    mainViewModel.params.value
-                },
+                            beforeParams = mainViewModel.params.value,
                             store = presetStore,
                             selectedAtStart = mainViewModel.picker.value.selectedPackageName,
                             apps = apps.toList(),
-                            onApplyPresetParams = { merged -> run {
+                            onApplyPresetParams = { merged ->
                     paramsApplyTuningParams(
                                 params = (merged),
                                 rebuildCandidates = (false),
                                 persist = (true),
                                 captureUndo = (true),
                                 refreshPreview = (true),
-                                getBefore = { run {
-                        mainViewModel.params.value
-                    } },
+                                getBefore = { mainViewModel.params.value },
                                 onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
                                 onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
                                 setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
@@ -321,9 +303,7 @@ internal fun MainActivity.AppPickerPage(
                                     getParams = { mainViewModel.params.value },
                                 )
                     } },
-                                onSaveLiquidGlass = { run {
-                        tuningActions.save()
-                    } },
+                                onSaveLiquidGlass = { tuningActions.save() },
                                 onSaveGpt = { run {
                         paramsSaveGptSettings(
                                     prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -333,14 +313,12 @@ internal fun MainActivity.AppPickerPage(
                                     getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
                                 )
                     } },
-                                onSaveUi = { run {
-                        persistUiState()
-                    } },
+                                onSaveUi = { persistUiState() },
                                 isBusy = { mainViewModel.shell.value.isBusy },
                                 getSession = { mainViewModel.previewSession.value.activeGenerationSession },
                                 onRefresh = tuningActions.refresh,
                             )
-                } },
+                 },
                             generatePackage = { app -> run {
 
                             val icon = (app).applicationInfo.loadIcon(packageManager)
@@ -355,14 +333,9 @@ internal fun MainActivity.AppPickerPage(
                                 gptModelId = mainViewModel.gptRmbgSettings.value.gptModelId,
                                 gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
                                 gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
-                                isDebug = run {
-                        (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-                    },
-                                onStatus = { __a0: String -> run {
-
-                                pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } }
-                    } },
-                                defaultChoiceForMode = { __a0: LocalSeparationMode, __a1: PreviewChoice -> run {
+                                isDebug = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0,
+                                onStatus = { __a0: String -> pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } } },
+                                defaultChoiceForMode = { __a0: LocalSeparationMode, __a1: PreviewChoice ->
                         when (__a0) {
                                     LocalSeparationMode.Original -> PreviewChoice.Original
                                     LocalSeparationMode.Plate -> PreviewChoice.Full
@@ -372,7 +345,7 @@ internal fun MainActivity.AppPickerPage(
                                     LocalSeparationMode.Auto -> __a1
                                     LocalSeparationMode.Full -> PreviewChoice.Full
                                 }
-                    } },
+                     },
                                 rmbgTunedForeground = { __a0: IconCandidate -> run {
 
                                 val params = mainViewModel.params.value
@@ -389,9 +362,7 @@ internal fun MainActivity.AppPickerPage(
                             persistGenerated = { combined ->
                                 updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), combined)
                             },
-                            onSaveUiState = {  -> run {
-                    persistUiState()
-                } },
+                            onSaveUiState = {  -> persistUiState() },
                         )
             } },
                         onExecuteCurrent = { pkgs -> run {
@@ -413,14 +384,9 @@ internal fun MainActivity.AppPickerPage(
                                 gptModelId = mainViewModel.gptRmbgSettings.value.gptModelId,
                                 gptBaseUrl = mainViewModel.gptRmbgSettings.value.gptBaseUrl,
                                 gptApiKey = mainViewModel.gptRmbgSettings.value.gptApiKey,
-                                isDebug = run {
-                        (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-                    },
-                                onStatus = { __a0: String -> run {
-
-                                pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } }
-                    } },
-                                defaultChoiceForMode = { __a0: LocalSeparationMode, __a1: PreviewChoice -> run {
+                                isDebug = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0,
+                                onStatus = { __a0: String -> pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } } },
+                                defaultChoiceForMode = { __a0: LocalSeparationMode, __a1: PreviewChoice ->
                         when (__a0) {
                                     LocalSeparationMode.Original -> PreviewChoice.Original
                                     LocalSeparationMode.Plate -> PreviewChoice.Full
@@ -430,7 +396,7 @@ internal fun MainActivity.AppPickerPage(
                                     LocalSeparationMode.Auto -> __a1
                                     LocalSeparationMode.Full -> PreviewChoice.Full
                                 }
-                    } },
+                     },
                                 rmbgTunedForeground = { __a0: IconCandidate -> run {
 
                                 val params = mainViewModel.params.value
@@ -447,9 +413,7 @@ internal fun MainActivity.AppPickerPage(
                             persistGenerated = { combined ->
                                 updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), combined)
                             },
-                            onSaveUiState = {  -> run {
-                    persistUiState()
-                } },
+                            onSaveUiState = {  -> persistUiState() },
                         )
             } },
                     )
@@ -472,9 +436,7 @@ internal fun MainActivity.AppPickerPage(
                 isBusy = shellState.isBusy,
                 onShowSystemApps = {
                     mainViewModel.updatePicker { it -> it.copy(showSystemApps = (true)) }
-                    run {
-        persistUiState()
-    }
+                    persistUiState()
                 },
                 onRefresh = { run {
         mainViewModel.requestAppLoad(
@@ -488,13 +450,13 @@ internal fun MainActivity.AppPickerPage(
                     onRefreshPermissions = { run {
             pickerRefreshPermissionState(
                         checkQueryPermission = { pickerCheckQueryPermission(packageManager, packageName) },
-                        hasUsage = {  -> run {
+                        hasUsage = {  ->
                 pickerHasUsageAccess(
                             appOps = getSystemService(AppOpsManager::class.java),
                             uid = Process.myUid(),
                             packageName = packageName,
                         )
-            } },
+             },
                         onResult = { queryGranted, usageGranted ->
                             mainViewModel.updatePicker { it -> it.copy(packageListPermissionGranted = (queryGranted)) }
                             mainViewModel.updatePicker { it -> it.copy(usageAccessGranted = (usageGranted)) }
@@ -551,9 +513,7 @@ internal fun MainActivity.AppPickerPage(
                         mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                     },
                     onStatusText = { setStatus((it)) },
-                    onSaveUi = { run {
-            persistUiState()
-        } },
+                    onSaveUi = { persistUiState() },
                     onClearRmbg = { run {
 
                     if (mainViewModel.previewSession.value.isGeneratingRmbgCandidate) {
@@ -561,10 +521,7 @@ internal fun MainActivity.AppPickerPage(
                     }
                     mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (null), rmbgCandidatePackageName = (null), rmbgCandidateMode = (null), rmbgCandidateStatusText = (""), rmbgCandidateFailurePackageName = (null), rmbgCandidateFailureMode = (null)) }
         } },
-                    onLaunch = { name, block -> run {
-
-                    mainViewModel.launchUiFriendly((name), (block))
-        } },
+                    onLaunch = { name, block -> mainViewModel.launchUiFriendly((name), (block)) },
                     onLoadDir = { run {
             existingGeneratedPackageDir(
                         packageName = ((entry).packageName),
@@ -588,9 +545,7 @@ internal fun MainActivity.AppPickerPage(
     }
                                 mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) }
                             }),
-                onToggleMultiSelect = ({ run {
-        mainViewModel.toggleMultiSelectedPackage(packageName = (entry.packageName), current = mainViewModel.picker.value.multiSelectedPackageNames)
-    } }),
+                onToggleMultiSelect = ({ mainViewModel.toggleMultiSelectedPackage(packageName = (entry.packageName), current = mainViewModel.picker.value.multiSelectedPackageNames) }),
                 icon = {
                     run {
         AppIcon(

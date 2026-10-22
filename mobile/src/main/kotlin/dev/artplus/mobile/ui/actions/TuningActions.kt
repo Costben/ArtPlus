@@ -57,7 +57,7 @@ internal fun MainActivity.buildTuningActions(): TuningActions {
                         nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
                     )
         } }
-    val refresh: (Boolean) -> Unit = { rebuild -> run {
+    val refresh: (Boolean) -> Unit = { rebuild ->
             homeRefreshActivePreviewOutputs(
                         currentSession = mainViewModel.previewSession.value.activeGenerationSession,
                         rebuildLocalCandidates = (rebuild),
@@ -72,9 +72,7 @@ internal fun MainActivity.buildTuningActions(): TuningActions {
                         setRefreshing = { mainViewModel.updatePreviewSession { v -> v.copy(isPreviewOutputRefreshing = (it)) } },
                         rebuildDebounceMs = PREVIEW_REBUILD_DEBOUNCE_MS,
                         outputDebounceMs = PREVIEW_OUTPUT_DEBOUNCE_MS,
-                        tuning = run {
-                mainViewModel.params.value
-            },
+                        tuning = mainViewModel.params.value,
                         onRebuild = { session, app, tuning -> rebuildLocalSession(session, app, packageManager, tuning) },
                         defaultLocal = { auto -> run {
                 run {
@@ -95,16 +93,11 @@ internal fun MainActivity.buildTuningActions(): TuningActions {
                             mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
                             mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                             mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
-                            run {
-                persistUiState()
-            }
+                            persistUiState()
                         },
-                        onStatus = { run {
-
-                        pickerPostStatus((it)) { runOnUiThread { setStatus((it)) } }
-            } },
+                        onStatus = { pickerPostStatus((it)) { runOnUiThread { setStatus((it)) } } },
                     )
-        } }
+         }
     return TuningActions(
         write = write,
         save = {

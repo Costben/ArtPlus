@@ -34,3 +34,7 @@
 | D24 | 门禁 | 棘轮忽略 `import_lines` / `imports_total` / `kt_files`（保留 `unused_imports` 与 `import_line_ratio_pct`） | 新增一个文件或一行 `mutableStateOf` import 就判红是假阳性；真正要守的是「未使用 import = 0」与「import 占比 < 3%」 |
 | D25 | S3.8 | 仪器化冒烟用 UI Automator 而非 compose-ui-test | `androidx.compose.ui:ui-test-junit4` 不在本地依赖缓存，离线构建拉不到；UI Automator 2.4.0 已缓存且能覆盖「启动→4 页→选择入口」 |
 | D26 | S3.8 | 冒烟测试跑法固定 `ANDROID_SERIAL=<目标机>` | 现场 adb 有 3 台设备，其中 2 台的 instrumentation 会 process crashed，联网跑会把整批判红 |
+| D27 | S4.1 | 不新建 `ui/pages/home/HomeSection.kt`，section 壳沿用既有 `SectionCard`（22 处调用） | 全仓不存在「标题 + 展开态」的重复脚手架，新建一个无调用点的抽象等于制造死代码（与本 Epic 目标相反） |
+| D28 | S4.2–S4.4 | 三个 tab 页与 HomePage 瘦身合并为一个 commit | `when (page)` 的四个分支一旦部分搬出就不编译（`private` 扩展函数可见性、局部 state 归属），原子性由编译器强制；拆成三个 commit 会出现两个必然红的中间态 |
+| D29 | S4.2–S4.4 | 6 个 `__g*` 生成入口的可见性 `private` → `internal` | 它们被 tab 页调用，`private` 是文件级可见性；改 `internal` 不改变对外 API（模块内可见） |
+| D30 | S4.4 | 顺手展开 176 处单语句/箭头 `run { }` 包裹（无 `return@run`） | 这是 S1.2 里「顺手去掉外层 run { }」的延伸；ui_lines 需从 16313 压到 16000 以下，展开是零语义变更的唯一手段 |

@@ -83,16 +83,12 @@ val __act1 = LocalContext.current
                 exportDialogVisible = previewSession.exportDialogVisible,
                 onAutoConfirmRootWriteChange = {
                     mainViewModel.updateConfirm { v -> v.copy(autoConfirmRootWrite = (it)) }
-                    run {
-        persistUiState()
-    }
+                    persistUiState()
                     setStatus((if (mainViewModel.confirm.value.autoConfirmRootWrite) "已开启自动确认写入" else "已关闭自动确认写入"))
                 },
                 onAutoConfirmRefreshChange = {
                     mainViewModel.updateConfirm { v -> v.copy(autoConfirmRefresh = (it)) }
-                    run {
-        persistUiState()
-    }
+                    persistUiState()
                     setStatus((if (mainViewModel.confirm.value.autoConfirmRefresh) "已开启自动确认刷新" else "已关闭自动确认刷新"))
                 },
                 onBackupRowClick = {
@@ -432,9 +428,7 @@ val __act1 = LocalContext.current
                     enabled = (it),
                     getValue = { mainViewModel.previewSession.value.previewStripEnabled },
                     setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewStripEnabled = (it)) } },
-                    onSave = { run {
-            persistUiState()
-        } },
+                    onSave = { persistUiState() },
                     setStatusText = { setStatus((it)) },
                 )
     } },
@@ -456,9 +450,7 @@ val __act1 = LocalContext.current
                     customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
                     fileName = CUSTOM_WALLPAPER_FILE,
                     onCleared = { setStatus((it)) },
-                    onSave = {  -> run {
-            persistUiState()
-        } },
+                    onSave = {  -> persistUiState() },
                     clearCache = {
                         cachedCustomWallpaper = null
                         cachedCustomWallpaperPath = null
@@ -509,13 +501,9 @@ val __act1 = LocalContext.current
         item(key = "rmbg") {
             run {
     RmbgComponentCard(
-                component = remember(gptRmbgSettings.rmbgComponentStatus) { run {
-        findRmbgComponent(filesDir)
-    } },
+                component = remember(gptRmbgSettings.rmbgComponentStatus) { findRmbgComponent(filesDir) },
                 rmbgRunCount = presetUi.rmbgRunCount,
-                currentPreset = run {
-        paramsCurrentRmbgModelPreset(componentUrl = gptRmbgSettings.rmbgComponentUrl)
-    },
+                currentPreset = paramsCurrentRmbgModelPreset(componentUrl = gptRmbgSettings.rmbgComponentUrl),
                 allPresets = RMBG_MODEL_PRESETS,
                 lastError = previewSession.lastRmbgCandidateError,
                 componentUrl = gptRmbgSettings.rmbgComponentUrl,
@@ -552,9 +540,7 @@ val __act1 = LocalContext.current
                     isBusy = mainViewModel.shell.value.isBusy,
                     isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
                     isInstallingRmbgComponent = mainViewModel.previewSession.value.isInstallingRmbgComponent,
-                    isDebugBuild = run {
-            (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-        },
+                    isDebugBuild = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0,
                     onSaveSettings = { run {
             paramsSaveRmbgSettings(
                         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -614,9 +600,7 @@ val __act1 = LocalContext.current
                     enabled = !shell.isBusy,
                     onCheckedChange = {
                         mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarEnabled = (it)) }
-                        run {
-    tuningActions.save()
-}
+                        tuningActions.save()
                         setStatus((if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭"))
                     },
                 )
@@ -634,9 +618,7 @@ val __act1 = LocalContext.current
                     enabled = !shell.isBusy && glassBar.liquidGlassBottomBarEnabled,
                     onCheckedChange = {
                         mainViewModel.updateGlassBar { v -> v.copy(liquidGlassBottomBarBlurEnabled = (it)) }
-                        run {
-    tuningActions.save()
-}
+                        tuningActions.save()
                         setStatus((if (mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭"))
                     },
                 )
@@ -677,15 +659,12 @@ paramsResetToDefaults(
         isGeneratingRmbg = { mainViewModel.previewSession.value.isGeneratingRmbgCandidate },
         setStatusText = { setStatus((it)) },
         onRequestConfirm = { title, message, confirmLabel, onConfirm ->
-            run {
-
         mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
             title = (title),
             message = (message),
             confirmLabel = (confirmLabel),
             onConfirm = (onConfirm),
         ))) }
-}
         },
         onApplyDefaults = { run {
 paramsApplyTuningParams(
@@ -694,9 +673,7 @@ paramsApplyTuningParams(
             persist = (true),
             captureUndo = (true),
             refreshPreview = (true),
-            getBefore = { run {
-    mainViewModel.params.value
-} },
+            getBefore = { mainViewModel.params.value },
             onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
             onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
             setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
@@ -734,9 +711,7 @@ paramsApplyTuningParams(
                 getParams = { mainViewModel.params.value },
             )
 } },
-            onSaveLiquidGlass = { run {
-    tuningActions.save()
-} },
+            onSaveLiquidGlass = { tuningActions.save() },
             onSaveGpt = { run {
     paramsSaveGptSettings(
                 prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -746,9 +721,7 @@ paramsApplyTuningParams(
                 getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
             )
 } },
-            onSaveUi = { run {
-    persistUiState()
-} },
+            onSaveUi = { persistUiState() },
             isBusy = { mainViewModel.shell.value.isBusy },
             getSession = { mainViewModel.previewSession.value.activeGenerationSession },
             onRefresh = tuningActions.refresh,
