@@ -69,10 +69,12 @@ import kotlinx.coroutines.withContext
 
 @Composable
 internal fun MainActivity.ArtPlusScreen() {
-    val tuningState = mainViewModel.params.collectAsState().value
+    val tuningState by mainViewModel.params.collectAsState()
     // Phase 5 回归修复（FAIL-4/5）：presetUi/confirm 经 collectAsState 订阅，
     // 渲染位禁止裸读 .value（裸读不触发重组，对话框显隐/消除全部假死）。
     val presetUiState by mainViewModel.presetUi.collectAsState()
+    // S3.1：批量预览配置在根部订阅一次，取代组合期裸读 `.value`。
+    val batchConfigState by mainViewModel.batchPreviewConfig.collectAsState()
     val confirmState by mainViewModel.confirm.collectAsState()
     // 热修复：picker/shell/previewSession 渲染位必须订阅（StateFlow .value 裸读不触发重组，
     // 选择器高亮/selectedApp/生成按钮全部假死，仅 magisk 初始态可见）。
@@ -763,7 +765,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     preset = (it),
                     apps = apps.toList(),
                     selfPackageName = packageName,
-                    batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                    batchPreviewCount = batchConfigState.batchPreviewCount,
                     generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
                     originalParams = run {
             mainViewModel.params.value
@@ -963,7 +965,7 @@ internal fun MainActivity.ArtPlusScreen() {
                 onCancelBatchPreview = { mainViewModel.updatePresetUi { it -> it.copy(batchPreviewCancelled = (true)) } },
                 showRefreshConfirm = presetUiState.showBatchPreviewRefreshConfirm,
                 refreshConfirmPreset = presetUiState.activeBatchPreviewPreset ?: presetUiState.batchPreviewResult?.preset,
-                batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                batchPreviewCount = batchConfigState.batchPreviewCount,
                 onRefreshConfirm = {
                     mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) }
                     run {
@@ -971,7 +973,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     preset = (it),
                     apps = apps.toList(),
                     selfPackageName = packageName,
-                    batchPreviewCount = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                    batchPreviewCount = batchConfigState.batchPreviewCount,
                     generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
                     originalParams = run {
             mainViewModel.params.value

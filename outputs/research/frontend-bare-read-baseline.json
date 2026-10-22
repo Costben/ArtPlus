@@ -1,0 +1,11 @@
+{
+  "total": 426,
+  "files": {
+    "mobile/src/main/kotlin/dev/artplus/mobile/ui/actions/TuningActions.kt": 12,
+    "mobile/src/main/kotlin/dev/artplus/mobile/ui/pages/AppPickerPage.kt": 37,
+    "mobile/src/main/kotlin/dev/artplus/mobile/ui/pages/BatchPreviewPage.kt": 3,
+    "mobile/src/main/kotlin/dev/artplus/mobile/ui/pages/HomePage.kt": 242,
+    "mobile/src/main/kotlin/dev/artplus/mobile/ui/pages/SettingsPage.kt": 39,
+    "mobile/src/main/kotlin/dev/artplus/mobile/ui/pages/Shell.kt": 93
+  }
+}

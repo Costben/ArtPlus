@@ -84,6 +84,8 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     // 底栏订阅：glassBar .value 裸读不触发重组，设置页开关翻转后底栏显隐/模糊 stale。
     // 回调内事件时读 .value 仍合法，此处只修组合期渲染读。
     val glassBar by mainViewModel.glassBar.collectAsState()
+    // S3.5：调参快照在页面顶层订阅一次，取代 11 处内联 `collectAsState()`（每处都是一次独立订阅 + 一次重组）。
+    val paramsState by mainViewModel.params.collectAsState()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val scope = rememberCoroutineScope()
     val isBlurEnabled = glassBar.liquidGlassBottomBarEnabled && glassBar.liquidGlassBottomBarBlurEnabled
@@ -334,7 +336,7 @@ val __act4 = LocalContext.current
         homeWriteSelectedWithRoot(
                     entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
                     rootWriteMode = (RootWriteMode.All),
-                    isBusy = mainViewModel.shell.value.isBusy,
+                    isBusy = shellState.isBusy,
                     activeSession = mainViewModel.previewSession.value.activeGenerationSession,
                     selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
                     autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
@@ -389,7 +391,7 @@ val __act4 = LocalContext.current
         homeWriteSelectedWithRoot(
                     entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
                     rootWriteMode = (RootWriteMode.StandardOnly),
-                    isBusy = mainViewModel.shell.value.isBusy,
+                    isBusy = shellState.isBusy,
                     activeSession = mainViewModel.previewSession.value.activeGenerationSession,
                     selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
                     autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
@@ -444,7 +446,7 @@ val __act4 = LocalContext.current
         homeWriteSelectedWithRoot(
                     entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
                     rootWriteMode = (RootWriteMode.MonochromeOnly),
-                    isBusy = mainViewModel.shell.value.isBusy,
+                    isBusy = shellState.isBusy,
                     activeSession = mainViewModel.previewSession.value.activeGenerationSession,
                     selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
                     autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
@@ -557,13 +559,13 @@ val __act3 = LocalContext.current
                 )
     } },
                 previewChoiceMode = previewSessionState.previewChoiceMode,
-                tuningState = mainViewModel.params.collectAsState().value,
+                tuningState = paramsState,
                 isBusy = shellState.isBusy,
                 isGeneratingGptCandidate = previewSessionState.isGeneratingGptCandidate,
                 isGeneratingRmbgCandidate = previewSessionState.isGeneratingRmbgCandidate,
                 draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
                 isDark = isSystemInDarkTheme(),
-                nightSubjectLightBackgroundEnabled = mainViewModel.params.collectAsState().value.nightSubjectLightBackgroundEnabled,
+                nightSubjectLightBackgroundEnabled = paramsState.nightSubjectLightBackgroundEnabled,
                 rmbgCandidatePackageName = previewSessionState.rmbgCandidatePackageName,
                 rmbgCandidateMode = previewSessionState.rmbgCandidateMode,
                 rmbgCandidateFailurePackageName = previewSessionState.rmbgCandidateFailurePackageName,
@@ -695,7 +697,7 @@ val __act3 = LocalContext.current
                             run {
 val __act2 = LocalContext.current
     PreviewControlCard(
-                tuningState = mainViewModel.params.collectAsState().value,
+                tuningState = paramsState,
                 // 热修复2：预览控制卡渲染位经已订阅状态读取（裸读 .value 不触发重组）。
                 isBusy = shellState.isBusy,
                 previewCornerRadiusDp = previewSessionState.previewCornerRadiusDp,
@@ -805,7 +807,7 @@ val __act2 = LocalContext.current
                     it.packageName == previewSessionState.previewPackageName && it.outDir.absolutePath == previewSessionState.previewDirPath
                 },
                 assets = previewSessionState.sharedPreviewAssets,
-                tuningState = mainViewModel.params.collectAsState().value,
+                tuningState = paramsState,
             )
 }
                         }
@@ -865,8 +867,8 @@ val __act2 = LocalContext.current
                                 AdvancedSettingsCategory.LiquidGlass -> {
                                     item(key = "glass_toggle") { run {
     LiquidGlassToggleCard(
-                enabled = mainViewModel.params.collectAsState().value.liquidGlassEnabled,
-                isBusy = mainViewModel.shell.value.isBusy,
+                enabled = paramsState.liquidGlassEnabled,
+                isBusy = shellState.isBusy,
                 onCheckedChange = { run {
         paramsUpdateLiquidGlassEnabled(
                     enabled = (it),
@@ -883,8 +885,8 @@ val __act2 = LocalContext.current
 } }
                                     item(key = "glass_surface") { run {
     LiquidGlassSurfaceCard(
-                tuningState = mainViewModel.params.collectAsState().value,
-                isBusy = mainViewModel.shell.value.isBusy,
+                tuningState = paramsState,
+                isBusy = shellState.isBusy,
                 draftRadiusText = draftLiquidGlassRadiusText,
                 onDraftRadiusChange = { draftLiquidGlassRadiusText = it },
                 onSaveRadius = { run {
@@ -973,8 +975,8 @@ val __act2 = LocalContext.current
 } }
                                     item(key = "glass_subject") { run {
     LiquidGlassSubjectCard(
-                tuningState = mainViewModel.params.collectAsState().value,
-                isBusy = mainViewModel.shell.value.isBusy,
+                tuningState = paramsState,
+                isBusy = shellState.isBusy,
                 draftSubjectScaleText = draftLiquidGlassSubjectScaleText,
                 onDraftSubjectScaleChange = { draftLiquidGlassSubjectScaleText = it },
                 onSaveSubjectScale = { run {
@@ -1051,8 +1053,8 @@ val __act2 = LocalContext.current
                                 AdvancedSettingsCategory.Local -> {
                                     item(key = "local_rule") { run {
     LocalRuleTuningCard(
-                tuningState = mainViewModel.params.collectAsState().value,
-                isBusy = mainViewModel.shell.value.isBusy,
+                tuningState = paramsState,
+                isBusy = shellState.isBusy,
                 draftBackgroundSeparationText = draftBackgroundSeparationText,
                 onDraftBackgroundSeparationChange = { draftBackgroundSeparationText = it },
                 onSaveBackgroundSeparation = { run {
@@ -1125,8 +1127,8 @@ val __act2 = LocalContext.current
 } }
                                     item(key = "local_pipeline") { run {
     LocalWorkflowPipelineCard(
-                tuningState = mainViewModel.params.collectAsState().value,
-                isBusy = mainViewModel.shell.value.isBusy,
+                tuningState = paramsState,
+                isBusy = shellState.isBusy,
                 onToggle = { key, enabled -> run {
         paramsUpdateLocalWorkflowToggle(
                     name = (key),
@@ -1149,8 +1151,8 @@ val __act2 = LocalContext.current
                                 AdvancedSettingsCategory.Rmbg -> {
                                     item(key = "rmbg_tuning") { run {
     RmbgTuningCard(
-                tuningState = mainViewModel.params.collectAsState().value,
-                isBusy = mainViewModel.shell.value.isBusy,
+                tuningState = paramsState,
+                isBusy = shellState.isBusy,
                 draftAlphaStrengthText = draftRmbgAlphaStrengthText,
                 onDraftAlphaStrengthChange = { draftRmbgAlphaStrengthText = it },
                 onSaveAlphaStrength = { run {
@@ -1380,7 +1382,7 @@ val __act2 = LocalContext.current
                 currentParams = run {
         mainViewModel.params.value
     },
-                isBusy = mainViewModel.shell.value.isBusy,
+                isBusy = shellState.isBusy,
                 onOverwrite = { run {
         overwritePreset(
                     preset = (it),
@@ -1405,7 +1407,7 @@ val __act2 = LocalContext.current
                 onResetToPreset = { run {
         resetToPreset(
                     preset = (it),
-                    isBusy = mainViewModel.shell.value.isBusy,
+                    isBusy = shellState.isBusy,
                     isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
                     isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
                     before = run {
@@ -1592,12 +1594,12 @@ val __act2 = LocalContext.current
                 searchQuery = presetUiState.presetSearchQuery,
                 onSearchChange = { mainViewModel.updatePresetUi { v -> v.copy(presetSearchQuery = (it)) } },
                 listExpanded = presetUiState.presetListExpanded,
-                onToggleExpanded = { mainViewModel.updatePresetUi { it -> it.copy(presetListExpanded = (!mainViewModel.presetUi.value.presetListExpanded)) } },
-                isBusy = mainViewModel.shell.value.isBusy,
+                onToggleExpanded = { mainViewModel.updatePresetUi { it -> it.copy(presetListExpanded = !it.presetListExpanded) } },
+                isBusy = shellState.isBusy,
                 onApply = { run {
         applyPreset(
                     preset = (it),
-                    isBusy = mainViewModel.shell.value.isBusy,
+                    isBusy = shellState.isBusy,
                     isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
                     isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
                     before = run {
@@ -1688,9 +1690,9 @@ val __act2 = LocalContext.current
 }
                                     run {
     BatchPreviewSettingsCard(
-                value = mainViewModel.batchPreviewConfig.value.batchPreviewCount,
+                value = batchConfigState.batchPreviewCount,
                 draftText = draftBatchPreviewCountText,
-                isBusy = mainViewModel.shell.value.isBusy,
+                isBusy = shellState.isBusy,
                 onDraftChange = { draftBatchPreviewCountText = it },
                 onSave = { run {
         paramsUpdateBatchPreviewCount(

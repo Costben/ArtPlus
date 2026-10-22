@@ -45,7 +45,8 @@ python3 "$AUDIT" --json > "$OUT/audit-now.json" || FAIL=1
 if [[ "${GATE_STRICT:-0}" == "1" ]]; then
   python3 "$AUDIT" --strict || FAIL=1
 else
-  python3 "$AUDIT" --strict >/dev/null 2>"$OUT/strict-pending.txt" \
+  python3 outputs/research/frontend-bare-read-check.py || FAIL=1
+python3 "$AUDIT" --strict >/dev/null 2>"$OUT/strict-pending.txt" \
     && echo "strict: 全绿" \
     || echo "strict 待办: $(sed 's/^STRICT FAIL: //' "$OUT/strict-pending.txt")"
 fi

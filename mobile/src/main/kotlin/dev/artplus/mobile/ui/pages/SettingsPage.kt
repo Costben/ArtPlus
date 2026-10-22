@@ -41,6 +41,7 @@ internal fun MainActivity.SettingsPage(
     generatedCount: Int,
 ) {
     val confirm by mainViewModel.confirm.collectAsState()
+    val settingsParams by mainViewModel.params.collectAsState()
     val shell by mainViewModel.shell.collectAsState()
     val previewSession by mainViewModel.previewSession.collectAsState()
     val transfer by mainViewModel.transfer.collectAsState()
@@ -472,7 +473,7 @@ val __act1 = LocalContext.current
         item(key = "gpt") {
             run {
     GptSettingsCard(
-                tuningState = mainViewModel.params.collectAsState().value,
+                tuningState = settingsParams,
                 isBusy = shell.isBusy,
                 gptModelId = gptRmbgSettings.gptModelId,
                 gptBaseUrl = gptRmbgSettings.gptBaseUrl,
