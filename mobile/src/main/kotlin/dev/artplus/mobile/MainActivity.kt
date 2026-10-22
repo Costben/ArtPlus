@@ -135,7 +135,7 @@ class MainActivity : ComponentActivity() {
     internal val chooseRmbgComponentLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) {
-                mainViewModel.updateShell { it -> it.copy(statusText = ("未选择 RMBG 组件")) }
+                setStatus(("未选择 RMBG 组件"))
                 return@registerForActivityResult
             }
             installRmbgComponent(
@@ -150,7 +150,7 @@ class MainActivity : ComponentActivity() {
                 setInstalling = { mainViewModel.updatePreviewSession { v -> v.copy(isInstallingRmbgComponent = (it)) } },
                 setStage = { mainViewModel.updatePreviewSession { v -> v.copy(rmbgInstallStage = (it)) } },
                 setProgress = { mainViewModel.updatePreviewSession { v -> v.copy(rmbgInstallProgress = (it)) } },
-                setStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                setStatus = { setStatus((it)) },
                 setComponentStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentStatus = (it)) } },
                 setLastError = { mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (it)) } },
                 runOnUi = { runOnUiThread(it) },
@@ -162,14 +162,13 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             val mode = mainViewModel.previewSession.value.pendingCustomImageMode
             val kind = mainViewModel.previewSession.value.pendingCustomImageKind
-            mainViewModel.updatePreviewSession { it -> it.copy(pendingCustomImageMode = (null)) }
-            mainViewModel.updatePreviewSession { it -> it.copy(pendingCustomImageKind = (null)) }
+            mainViewModel.updatePreviewSession { v -> v.copy(pendingCustomImageMode = (null), pendingCustomImageKind = (null)) }
             if (uri == null) {
-                mainViewModel.updateShell { it -> it.copy(statusText = ("未选择自定义图片")) }
+                setStatus(("未选择自定义图片"))
                 return@registerForActivityResult
             }
             if (mode == null || kind == null) {
-                mainViewModel.updateShell { it -> it.copy(statusText = ("自定义槽位已失效")) }
+                setStatus(("自定义槽位已失效"))
                 return@registerForActivityResult
             }
             importCustomPreviewImage(mode, kind, uri)
@@ -178,7 +177,7 @@ class MainActivity : ComponentActivity() {
     internal val chooseWallpaperLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) {
-                mainViewModel.updateShell { it -> it.copy(statusText = ("未选择壁纸")) }
+                setStatus(("未选择壁纸"))
                 return@registerForActivityResult
             }
             importCustomWallpaper(uri)

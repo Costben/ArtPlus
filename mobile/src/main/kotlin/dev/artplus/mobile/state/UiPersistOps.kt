@@ -58,3 +58,13 @@ internal fun MainActivity.persistUiState() {
         .putString(PREF_OUTPUT_TREE_URI, shell.outputTreeUri?.toString())
         .apply()
 }
+
+/**
+ * S2.4：状态栏文案写入唯一入口。
+ *
+ * 收口前：143 处 `setStatus(...)` 单字段写。
+ * 收口后：`setStatus(...)`，`updateShell` 的调用点只剩真正需要多字段合并的位置。
+ */
+internal fun MainActivity.setStatus(text: String) {
+    setStatus(text)
+}

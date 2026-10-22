@@ -55,7 +55,7 @@ internal fun MainActivity.startDebugHttpServerIfNeeded() {
             object : DebugServerHooks {
                 override fun onStatus(message: String) = run {
 
-            pickerPostStatus((message)) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+            pickerPostStatus((message)) { runOnUiThread { setStatus((it)) } }
 }
                 override fun homeHtml(): String = debugHomeHtml()
                 override fun currentParams(): JSONObject = currentDebugParamsOnMain()
@@ -236,10 +236,10 @@ internal fun MainActivity.startDebugHttpServerIfNeeded() {
     } },
                 isBusyGet = { mainViewModel.shell.value.isBusy },
                 setBusy = { mainViewModel.updateShell { v -> v.copy(isBusy = (it)) } },
-                setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                setStatusText = { setStatus((it)) },
                 onStatus = { __a0: String -> run {
 
-                pickerPostStatus(__a0) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } }
     } },
                 getAppInfo = { __a0: String -> run {
         pickerGetApplicationInfoCompat(
@@ -270,7 +270,7 @@ internal fun MainActivity.startDebugHttpServerIfNeeded() {
         },
                     onStatus = { __a0: String -> run {
 
-                    pickerPostStatus(__a0) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                    pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } }
         } },
                     defaultChoiceForMode = { __a0: LocalSeparationMode, __a1: PreviewChoice -> run {
             when (__a0) {
@@ -966,7 +966,7 @@ internal fun MainActivity.backupAllToExternal(isFromOnboarding: Boolean = false)
                                 currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
                                 isIndeterminate = false,
                             ))) }
-                            mainViewModel.updateShell { it -> it.copy(statusText = ("正在备份 ${index + 1}/${pkgs.size}: $pkgName")) }
+                            setStatus(("正在备份 ${index + 1}/${pkgs.size}: $pkgName"))
                         }
                         val ok = runCatching { backupPackageFast(pkgName, destRootFast) }.getOrDefault(false)
                         if (ok) successCount++ else failCount++
@@ -1001,7 +1001,7 @@ internal fun MainActivity.backupAllToExternal(isFromOnboarding: Boolean = false)
                                 currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
                                 isIndeterminate = false,
                             ))) }
-                            mainViewModel.updateShell { it -> it.copy(statusText = ("正在备份 ${index + 1}/${pkgs.size}: $pkgName")) }
+                            setStatus(("正在备份 ${index + 1}/${pkgs.size}: $pkgName"))
                         }
                         val stagingDir = File(stagingRoot, pkgName)
                         try {
@@ -1301,7 +1301,7 @@ internal fun MainActivity.requestSpecialPermissionsOnce() =
             openSettings = {  -> run {
     pickerOpenUsageAccessSettings(
                 start = ::startActivity,
-                onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                onError = { setStatus((it)) },
             )
 } },
         )
@@ -1340,10 +1340,10 @@ internal fun MainActivity.handleDebugGenerateIntent(intent: Intent?) =
     } },
                 isBusyGet = { mainViewModel.shell.value.isBusy },
                 setBusy = { mainViewModel.updateShell { v -> v.copy(isBusy = (it)) } },
-                setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                setStatusText = { setStatus((it)) },
                 onStatus = { __a0: String -> run {
 
-                pickerPostStatus(__a0) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } }
     } },
                 getAppInfo = { __a0: String -> run {
         pickerGetApplicationInfoCompat(
@@ -1374,7 +1374,7 @@ internal fun MainActivity.handleDebugGenerateIntent(intent: Intent?) =
         },
                     onStatus = { __a0: String -> run {
 
-                    pickerPostStatus(__a0) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                    pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } }
         } },
                     defaultChoiceForMode = { __a0: LocalSeparationMode, __a1: PreviewChoice -> run {
             when (__a0) {
@@ -1424,10 +1424,10 @@ internal fun MainActivity.handleDebugGenerateIntent(intent: Intent?) =
 internal fun MainActivity.importCustomPreviewImage(mode: PreviewMode, kind: CustomImageKind, uri: Uri) {
         val session = mainViewModel.previewSession.value.activeGenerationSession
         if (session == null) {
-            mainViewModel.updateShell { it -> it.copy(statusText = ("先生成一次预览后再导入自定义图片")) }
+            setStatus(("先生成一次预览后再导入自定义图片"))
             return
         }
-        mainViewModel.updateShell { it -> it.copy(statusText = ("导入${kind.label}: ${mode.label}")) }
+        setStatus(("导入${kind.label}: ${mode.label}"))
         run {
 
             mainViewModel.launchUiFriendly(("ArtPlusCustomImageImport"), ({
@@ -1489,7 +1489,7 @@ internal fun MainActivity.importCustomPreviewImage(mode: PreviewMode, kind: Cust
                         mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (updatedSession)) }
                         mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
                         mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = ("已导入${kind.label}: ${mode.label}")) }
+                        setStatus(("已导入${kind.label}: ${mode.label}"))
                         run {
         persistUiState()
     }
@@ -1497,7 +1497,7 @@ internal fun MainActivity.importCustomPreviewImage(mode: PreviewMode, kind: Cust
                 } catch (error: Exception) {
                     run {
 
-                pickerPostStatus(("${kind.label}导入失败: ${error.message ?: error.javaClass.simpleName}")) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                pickerPostStatus(("${kind.label}导入失败: ${error.message ?: error.javaClass.simpleName}")) { runOnUiThread { setStatus((it)) } }
     }
                 }
             }))
@@ -1508,7 +1508,7 @@ internal fun MainActivity.importCustomWallpaper(uri: Uri) =
         pickerImportCustomWallpaper(
             uri = uri,
             isBusy = mainViewModel.shell.value.isBusy,
-            onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+            onStatusText = { setStatus((it)) },
             onLaunch = { name, block -> run {
 
             mainViewModel.launchUiFriendly((name), (block))
@@ -1522,20 +1522,20 @@ internal fun MainActivity.importCustomWallpaper(uri: Uri) =
                     cachedCustomWallpaperPath = null
                     mainViewModel.updateBatchPreviewConfig { it -> it.copy(customWallpaperPath = (path)) }
                     mainViewModel.updateBatchPreviewConfig { it -> it.copy(customWallpaperInfo = (info)) }
-                    mainViewModel.updateShell { it -> it.copy(statusText = ("已导入自定义壁纸（$info），「桌面」背景优先使用此图")) }
+                    setStatus(("已导入自定义壁纸（$info），「桌面」背景优先使用此图"))
                     saveUiState()
                 }
             },
             onError = { __a0: String -> run {
 
-            pickerPostStatus(__a0) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+            pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } }
 } },
         )
 
 internal fun MainActivity.toastStatus(message: String) =
         pickerToastStatus(
             message = message,
-            postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+            postOnUi = { text -> runOnUiThread { setStatus((text)) } },
             showToast = { text ->
                 runOnUiThread {
                     Toast.makeText(this, text, Toast.LENGTH_SHORT).show()

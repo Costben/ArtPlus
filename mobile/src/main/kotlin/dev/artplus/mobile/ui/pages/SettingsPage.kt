@@ -85,14 +85,14 @@ val __act1 = LocalContext.current
                     run {
         persistUiState()
     }
-                    mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.confirm.value.autoConfirmRootWrite) "已开启自动确认写入" else "已关闭自动确认写入")) }
+                    setStatus((if (mainViewModel.confirm.value.autoConfirmRootWrite) "已开启自动确认写入" else "已关闭自动确认写入"))
                 },
                 onAutoConfirmRefreshChange = {
                     mainViewModel.updateConfirm { v -> v.copy(autoConfirmRefresh = (it)) }
                     run {
         persistUiState()
     }
-                    mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.confirm.value.autoConfirmRefresh) "已开启自动确认刷新" else "已关闭自动确认刷新")) }
+                    setStatus((if (mainViewModel.confirm.value.autoConfirmRefresh) "已开启自动确认刷新" else "已关闭自动确认刷新"))
                 },
                 onBackupRowClick = {
                     val active = backupJob?.isActive == true && mainViewModel.transfer.value.backupProgress != null
@@ -135,7 +135,7 @@ val __act1 = LocalContext.current
                     run {
             pickerToastStatus(
                         message = ("还没有设置目录"),
-                        postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                         showToast = { text ->
                             runOnUiThread {
                                 Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
@@ -172,7 +172,7 @@ val __act1 = LocalContext.current
                 run {
             pickerToastStatus(
                         message = ("正在备份..."),
-                        postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                         showToast = { text ->
                             runOnUiThread {
                                 Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
@@ -193,7 +193,7 @@ val __act1 = LocalContext.current
                                 run {
             pickerToastStatus(
                         message = ("没有可导出的图标包"),
-                        postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                         showToast = { text ->
                             runOnUiThread {
                                 Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
@@ -212,7 +212,7 @@ val __act1 = LocalContext.current
                                 run {
             pickerToastStatus(
                         message = ("还没有设置目录"),
-                        postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                         showToast = { text ->
                             runOnUiThread {
                                 Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
@@ -247,7 +247,7 @@ val __act1 = LocalContext.current
                                         currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
                                         isIndeterminate = false,
                                     ))) }
-                                    mainViewModel.updateShell { it -> it.copy(statusText = ("正在备份 ${index + 1}/${pkgs.size}: $pkgName")) }
+                                    setStatus(("正在备份 ${index + 1}/${pkgs.size}: $pkgName"))
                                 }
                                 val ok = runCatching { backupPackageFast(pkgName, destRootFast) }.getOrDefault(false)
                                 if (ok) successCount++ else failCount++
@@ -269,7 +269,7 @@ val __act1 = LocalContext.current
                                 if (failCount == 0) run {
             pickerToastStatus(
                         message = ("已备份 $successCount 个图标包"),
-                        postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                         showToast = { text ->
                             runOnUiThread {
                                 Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
@@ -280,7 +280,7 @@ val __act1 = LocalContext.current
                                 else run {
             pickerToastStatus(
                         message = ("已备份 $successCount 个，失败 $failCount 个"),
-                        postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                         showToast = { text ->
                             runOnUiThread {
                                 Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
@@ -302,7 +302,7 @@ val __act1 = LocalContext.current
                                         currentLabel = "正在备份 ${index + 1}/${pkgs.size}: $pkgName",
                                         isIndeterminate = false,
                                     ))) }
-                                    mainViewModel.updateShell { it -> it.copy(statusText = ("正在备份 ${index + 1}/${pkgs.size}: $pkgName")) }
+                                    setStatus(("正在备份 ${index + 1}/${pkgs.size}: $pkgName"))
                                 }
                                 val stagingDir = File(stagingRoot, pkgName)
                                 try {
@@ -356,7 +356,7 @@ val __act1 = LocalContext.current
                                 if (failCount == 0) run {
             pickerToastStatus(
                         message = ("已备份 $successCount 个图标包"),
-                        postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                         showToast = { text ->
                             runOnUiThread {
                                 Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
@@ -367,7 +367,7 @@ val __act1 = LocalContext.current
                                 else run {
             pickerToastStatus(
                         message = ("已备份 $successCount 个，失败 $failCount 个"),
-                        postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                         showToast = { text ->
                             runOnUiThread {
                                 Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
@@ -390,7 +390,7 @@ val __act1 = LocalContext.current
                             run {
             pickerToastStatus(
                         message = ("备份失败: ${e.message ?: e.javaClass.simpleName}"),
-                        postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                         showToast = { text ->
                             runOnUiThread {
                                 Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
@@ -434,7 +434,7 @@ val __act1 = LocalContext.current
                     onSave = { run {
             persistUiState()
         } },
-                    setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    setStatusText = { setStatus((it)) },
                 )
     } },
             )
@@ -454,7 +454,7 @@ val __act1 = LocalContext.current
                     filesDir = filesDir,
                     customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
                     fileName = CUSTOM_WALLPAPER_FILE,
-                    onCleared = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    onCleared = { setStatus((it)) },
                     onSave = {  -> run {
             persistUiState()
         } },
@@ -529,7 +529,7 @@ val __act1 = LocalContext.current
                     preset = (it),
                     setComponentUrl = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentUrl = (it)) } },
                     setSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentSaveStatus = (it)) } },
-                    setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    setStatusText = { setStatus((it)) },
                 )
     } },
                 onComponentUrlChange = {
@@ -565,7 +565,7 @@ val __act1 = LocalContext.current
                     setInstalling = { mainViewModel.updatePreviewSession { v -> v.copy(isInstallingRmbgComponent = (it)) } },
                     setStage = { mainViewModel.updatePreviewSession { v -> v.copy(rmbgInstallStage = (it)) } },
                     setProgress = { mainViewModel.updatePreviewSession { v -> v.copy(rmbgInstallProgress = (it)) } },
-                    setStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    setStatus = { setStatus((it)) },
                     setComponentStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentStatus = (it)) } },
                     setComponentSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentSaveStatus = (it)) } },
                     setLastError = { mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (it)) } },
@@ -588,20 +588,14 @@ val __act1 = LocalContext.current
                     if (mainViewModel.previewSession.value.isGeneratingRmbgCandidate) {
                         return@run
                     }
-                    mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = (null)) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidatePackageName = (null)) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateMode = (null)) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateStatusText = ("")) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (null)) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (null)) }
+                    mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (null), rmbgCandidatePackageName = (null), rmbgCandidateMode = (null), rmbgCandidateStatusText = (""), rmbgCandidateFailurePackageName = (null), rmbgCandidateFailureMode = (null)) }
         } },
                     onResult = { deleted ->
                         mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgInferenceReport = (null)) }
                         mainViewModel.updateGptRmbgSettings { it -> it.copy(rmbgComponentStatus = ("${System.currentTimeMillis()}")) }
-                        mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallStage = ("")) }
-                        mainViewModel.updatePreviewSession { it -> it.copy(rmbgInstallProgress = (null)) }
+                        mainViewModel.updatePreviewSession { v -> v.copy(rmbgInstallStage = (""), rmbgInstallProgress = (null)) }
                         mainViewModel.updateGptRmbgSettings { it -> it.copy(rmbgComponentSaveStatus = ("")) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (if (deleted) "已清除 RMBG" else "没有已安装 RMBG")) }
+                        setStatus((if (deleted) "已清除 RMBG" else "没有已安装 RMBG"))
                     },
                 )
     } },
@@ -622,7 +616,7 @@ val __act1 = LocalContext.current
                         run {
     tuningActions.save()
 }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭")) }
+                        setStatus((if (mainViewModel.glassBar.value.liquidGlassBottomBarEnabled) "悬浮底栏已开启" else "悬浮底栏已关闭"))
                     },
                 )
                 SectionDivider()
@@ -642,7 +636,7 @@ val __act1 = LocalContext.current
                         run {
     tuningActions.save()
 }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (if (mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭")) }
+                        setStatus((if (mainViewModel.glassBar.value.liquidGlassBottomBarBlurEnabled) "底栏模糊已开启" else "底栏模糊已关闭"))
                     },
                 )
             }
@@ -680,7 +674,7 @@ paramsResetToDefaults(
         isBusy = { mainViewModel.shell.value.isBusy },
         isGeneratingGpt = { mainViewModel.previewSession.value.isGeneratingGptCandidate },
         isGeneratingRmbg = { mainViewModel.previewSession.value.isGeneratingRmbgCandidate },
-        setStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+        setStatusText = { setStatus((it)) },
         onRequestConfirm = { title, message, confirmLabel, onConfirm ->
             run {
 

@@ -164,7 +164,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                                 onError = { msg ->
                                     pickerToastStatus(
                                         message = msg,
-                                        postOnUi = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                                        postOnUi = { setStatus((it)) },
                                         showToast = { Toast.makeText(aboutCtx, it, Toast.LENGTH_SHORT).show() },
                                     )
                                 },
@@ -191,20 +191,20 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                             pickerCheckForUpdate(
                                 isChecking = updateUi.isCheckingUpdate,
                                 onCheckingChange = { mainViewModel.updateUpdateUi { v -> v.copy(isCheckingUpdate = (it)) } },
-                                onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                                onStatusText = { setStatus((it)) },
                                 scope = mainScope,
                                 resolveUrl = { pickerResolveUpdateUrl(it, "检查更新", (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) },
                                 fetchLatest = ::pickerFetchUpdateBody,
                                 currentVersion = versionName,
                                 onUpdateAvailable = { info, text ->
                                     mainViewModel.updateUpdateUi { it -> it.copy(updateAvailableInfo = (info)) }
-                                    mainViewModel.updateShell { it -> it.copy(statusText = (text)) }
+                                    setStatus((text))
                                 },
                                 onUpToDate = {
                                     mainViewModel.updateUpdateUi { it -> it.copy(updateUpToDateDialogVisible = (true)) }
-                                    mainViewModel.updateShell { v -> v.copy(statusText = (it)) }
+                                    setStatus((it))
                                 },
-                                onFailed = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                                onFailed = { setStatus((it)) },
                             )
                         },
                     )
@@ -237,7 +237,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     pickerOpenExternalLink(
                         start = ::startActivity,
                         url = GITHUB_LICENSE_URL,
-                        onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                        onError = { setStatus((it)) },
                     )
                 },
             ),
@@ -281,7 +281,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                     pickerOpenExternalLink(
                         start = ::startActivity,
                         url = url,
-                        onError = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                        onError = { setStatus((it)) },
                     )
                 },
             ),

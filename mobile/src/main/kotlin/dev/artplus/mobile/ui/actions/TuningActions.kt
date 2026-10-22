@@ -101,7 +101,7 @@ internal fun MainActivity.buildTuningActions(): TuningActions {
                         },
                         onStatus = { run {
 
-                        pickerPostStatus((it)) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                        pickerPostStatus((it)) { runOnUiThread { setStatus((it)) } }
             } },
                     )
         } }

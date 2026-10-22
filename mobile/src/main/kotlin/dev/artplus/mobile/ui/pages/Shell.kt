@@ -119,8 +119,7 @@ internal fun MainActivity.ArtPlusScreen() {
         val dirPath = previewSessionState.previewDirPath
         val packageName = previewSessionState.previewPackageName
         if (dirPath.isNullOrBlank() || packageName.isNullOrBlank()) {
-            mainViewModel.updatePreviewSession { it -> it.copy(sharedPreviewAssets = (null)) }
-            mainViewModel.updatePreviewSession { it -> it.copy(isPreviewAssetsRefreshing = (false)) }
+            mainViewModel.updatePreviewSession { v -> v.copy(sharedPreviewAssets = (null), isPreviewAssetsRefreshing = (false)) }
             return@LaunchedEffect
         }
         mainViewModel.updatePreviewSession { it -> it.copy(isPreviewAssetsRefreshing = (true)) }
@@ -419,7 +418,7 @@ internal fun MainActivity.ArtPlusScreen() {
             cancelSingleExport(state, { __a0: String -> run {
         pickerToastStatus(
                     message = __a0,
-                    postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                    postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                     showToast = { text ->
                         runOnUiThread {
                             Toast.makeText(__actCancel, text, Toast.LENGTH_SHORT).show()
@@ -454,7 +453,7 @@ internal fun MainActivity.ArtPlusScreen() {
             cancelBackup(state, { __a0: String -> run {
         pickerToastStatus(
                     message = __a0,
-                    postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                    postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                     showToast = { text ->
                         runOnUiThread {
                             Toast.makeText(__actCancel, text, Toast.LENGTH_SHORT).show()
@@ -573,9 +572,9 @@ internal fun MainActivity.ArtPlusScreen() {
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (preset.params)) }
                         mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
                         mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                        setStatus((msg))
                     },
-                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    onStatus = { setStatus((it)) },
                 )
     }
                 },
@@ -591,9 +590,9 @@ internal fun MainActivity.ArtPlusScreen() {
                     viewModel = mainViewModel,
                     onRenamed = { _, msg ->
                         mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                        setStatus((msg))
                     },
-                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    onStatus = { setStatus((it)) },
                 )
     }
                 },
@@ -682,9 +681,9 @@ internal fun MainActivity.ArtPlusScreen() {
                         presetStore.activePresetId = p.id
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (p.params)) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                        setStatus((msg))
                     },
-                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    onStatus = { setStatus((it)) },
                 )
     } },
                 onActionPreview = { run {
@@ -702,9 +701,9 @@ internal fun MainActivity.ArtPlusScreen() {
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (cur)) }
                         mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                        setStatus((msg))
                     },
-                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    onStatus = { setStatus((it)) },
                 )
     } },
                 onActionRename = { mainViewModel.updatePresetUi { v -> v.copy(presetRenameTarget = (it)) } },
@@ -713,7 +712,7 @@ internal fun MainActivity.ArtPlusScreen() {
                     preset = (it),
                     store = presetStore,
                     clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
-                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    onStatus = { setStatus((it)) },
                 )
     } },
                 onActionDelete = { mainViewModel.updatePresetUi { v -> v.copy(presetDeleteConfirmTarget = (it)) } },
@@ -739,7 +738,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (null)) }
                     },
                     onBumpVersion = { mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) } },
-                    onStatus = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    onStatus = { setStatus((it)) },
                 )
     } },
                 importDialogVisible = presetUiState.presetImportDialogVisible,
@@ -751,7 +750,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) }
                         mainViewModel.updatePresetUi { it -> it.copy(presetImportText = ("")) }
                         mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
-                        mainViewModel.updateShell { it -> it.copy(statusText = (msg)) }
+                        setStatus((msg))
                     },
                 )
     } },
@@ -1186,7 +1185,7 @@ val __act1 = LocalContext.current
                     run {
         pickerToastStatus(
                     message = ("已跳过，可在设置-导出引导中重新进入"),
-                    postOnUi = { text -> runOnUiThread { mainViewModel.updateShell { it -> it.copy(statusText = (text)) } } },
+                    postOnUi = { text -> runOnUiThread { setStatus((text)) } },
                     showToast = { text ->
                         runOnUiThread {
                             Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()

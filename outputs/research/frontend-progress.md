@@ -25,3 +25,5 @@
 | D15 | S2.1 | 新增 `state/UiPersistOps.kt` 使 `kt_files` / `files_in_dev_artplus_mobile` 77→78，随即重写基线 | 收口必须新增一个实现文件；该指标由 S4.5 的目录→包名对齐一次性压到 ≤20，此处不做局部妥协 |
 | D16 | S2.2 | `TuningActions` 由 Activity 的 `by lazy` 持有（而非 HomePage 里 `remember`） | 调用点分布在 HomePage/SettingsPage/AppPickerPage/Shell/MainActivityOps 五个文件的多个 composable 里；`remember` 只能覆盖单个组合作用域，会退化成 5 份实例。「构造一次」的语义用 Activity 级 lazy 更严格 |
 | D17 | S2.2 | 刷新入口 `refresh` 保留 `(Boolean)` 形参（rebuildLocalCandidates） | 37 个调用点的原表达式就是 `{ rebuild -> ... }`，改成无参会改变语义 |
+| D18 | S2.4 | 合并 31 组相邻同 flow 写入 + 新增 `setStatus()` 收敛 145 处单字段 `statusText` 写 | 计划只给了目标值（≤120/≤150）。相邻合并到 144 后 `updateShell` 仍 222，唯一低风险出路是把「只写状态文案」的调用收成一个具名入口（语义等价，一字段 copy） |
+| D19 | S2.4 | 合并时把残留的 `it.previewVersion` 改写为 `v.previewVersion`（2 处） | 合并重命名形参后，原 `it` 指向同一 StateFlow 快照，改写等价；不改则编译失败 |

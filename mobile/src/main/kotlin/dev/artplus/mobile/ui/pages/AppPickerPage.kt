@@ -360,7 +360,7 @@ internal fun MainActivity.AppPickerPage(
                     },
                                 onStatus = { __a0: String -> run {
 
-                                pickerPostStatus(__a0) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                                pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } }
                     } },
                                 defaultChoiceForMode = { __a0: LocalSeparationMode, __a1: PreviewChoice -> run {
                         when (__a0) {
@@ -418,7 +418,7 @@ internal fun MainActivity.AppPickerPage(
                     },
                                 onStatus = { __a0: String -> run {
 
-                                pickerPostStatus(__a0) { runOnUiThread { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } } }
+                                pickerPostStatus(__a0) { runOnUiThread { setStatus((it)) } }
                     } },
                                 defaultChoiceForMode = { __a0: LocalSeparationMode, __a1: PreviewChoice -> run {
                         when (__a0) {
@@ -546,14 +546,11 @@ internal fun MainActivity.AppPickerPage(
                     getRevision = { generatedPreviewRestoreRevision },
                     onResetSelection = { pkg ->
                         mainViewModel.updatePicker { it -> it.copy(selectedPackageName = (pkg)) }
-                        mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (null)) }
-                        mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
-                        mainViewModel.updatePreviewSession { it -> it.copy(previewPackageName = (null)) }
-                        mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (null)) }
+                        mainViewModel.updatePreviewSession { v -> v.copy(activeGenerationSession = (null), previewChoiceMode = (null), previewPackageName = (null), previewDirPath = (null)) }
                         mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
                         mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                     },
-                    onStatusText = { mainViewModel.updateShell { v -> v.copy(statusText = (it)) } },
+                    onStatusText = { setStatus((it)) },
                     onSaveUi = { run {
             persistUiState()
         } },
@@ -562,12 +559,7 @@ internal fun MainActivity.AppPickerPage(
                     if (mainViewModel.previewSession.value.isGeneratingRmbgCandidate) {
                         return@run
                     }
-                    mainViewModel.updatePreviewSession { it -> it.copy(lastRmbgCandidateError = (null)) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidatePackageName = (null)) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateMode = (null)) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateStatusText = ("")) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailurePackageName = (null)) }
-                    mainViewModel.updatePreviewSession { it -> it.copy(rmbgCandidateFailureMode = (null)) }
+                    mainViewModel.updatePreviewSession { v -> v.copy(lastRmbgCandidateError = (null), rmbgCandidatePackageName = (null), rmbgCandidateMode = (null), rmbgCandidateStatusText = (""), rmbgCandidateFailurePackageName = (null), rmbgCandidateFailureMode = (null)) }
         } },
                     onLaunch = { name, block -> run {
 
@@ -589,9 +581,7 @@ internal fun MainActivity.AppPickerPage(
                     onCommitSession = { session, dir, e ->
                         mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
                         mainViewModel.updateLive { p -> p.copy(previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name, previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name, previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name, previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name) }
-                        mainViewModel.updatePreviewSession { it -> it.copy(previewChoiceMode = (null)) }
-                        mainViewModel.updatePreviewSession { it -> it.copy(previewPackageName = (e.packageName)) }
-                        mainViewModel.updatePreviewSession { it -> it.copy(previewDirPath = (dir.absolutePath)) }
+                        mainViewModel.updatePreviewSession { v -> v.copy(previewChoiceMode = (null), previewPackageName = (e.packageName), previewDirPath = (dir.absolutePath)) }
                         mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
                     },
                 )
