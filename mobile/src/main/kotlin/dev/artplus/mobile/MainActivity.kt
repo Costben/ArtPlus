@@ -253,6 +253,74 @@ class MainActivity : ComponentActivity() {
         return created
     }
 
+    // S3.7：配置变更（字体缩放/分屏/旋转）不丢 29 个草稿态。
+    // Activity 级 Bundle 保存，等价于把 rememberSaveable 提升到页面根。
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("draftForegroundSubjectPercentText", draftForegroundSubjectPercentText)
+        outState.putString("draftForegroundShadowLevelText", draftForegroundShadowLevelText)
+        outState.putString("draftMonochromeThemeScaleText", draftMonochromeThemeScaleText)
+        outState.putString("draftBackgroundSeparationText", draftBackgroundSeparationText)
+        outState.putString("draftPlateRemovalText", draftPlateRemovalText)
+        outState.putString("draftShadowRemovalText", draftShadowRemovalText)
+        outState.putString("draftEdgePolishText", draftEdgePolishText)
+        outState.putString("draftRmbgAlphaStrengthText", draftRmbgAlphaStrengthText)
+        outState.putString("draftRmbgEdgeFeatherText", draftRmbgEdgeFeatherText)
+        outState.putString("draftRmbgEdgeAdjustText", draftRmbgEdgeAdjustText)
+        outState.putString("draftRmbgWeakAlphaKeepText", draftRmbgWeakAlphaKeepText)
+        outState.putString("draftLiquidGlassRadiusText", draftLiquidGlassRadiusText)
+        outState.putString("draftLiquidGlassOuterWidthText", draftLiquidGlassOuterWidthText)
+        outState.putString("draftLiquidGlassTopAlphaText", draftLiquidGlassTopAlphaText)
+        outState.putString("draftLiquidGlassBottomAlphaText", draftLiquidGlassBottomAlphaText)
+        outState.putString("draftLiquidGlassBackgroundMistAlphaText", draftLiquidGlassBackgroundMistAlphaText)
+        outState.putString("draftLiquidGlassBottomDarkAlphaText", draftLiquidGlassBottomDarkAlphaText)
+        outState.putString("draftLiquidGlassSubjectScaleText", draftLiquidGlassSubjectScaleText)
+        outState.putString("draftLiquidGlassSubjectOutlineWidthText", draftLiquidGlassSubjectOutlineWidthText)
+        outState.putString("draftLiquidGlassSubjectInnerOutlineWidthText", draftLiquidGlassSubjectInnerOutlineWidthText)
+        outState.putString("draftLiquidGlassSubjectShadowAlphaText", draftLiquidGlassSubjectShadowAlphaText)
+        outState.putString("draftLiquidGlassSubjectOpacityText", draftLiquidGlassSubjectOpacityText)
+        outState.putString("draftBatchPreviewCountText", draftBatchPreviewCountText)
+        outState.putString("draftBatchPreviewColumnsText", draftBatchPreviewColumnsText)
+        outState.putString("draftBatchPreviewIconSizeDpText", draftBatchPreviewIconSizeDpText)
+        outState.putString("draftBatchPreviewCornerRadiusDpText", draftBatchPreviewCornerRadiusDpText)
+        outState.putString("draftJsonParamsText", draftJsonParamsText)
+        outState.putString("draftPreviewCornerRadiusDpText", draftPreviewCornerRadiusDpText)
+        outState.putString("draftPreviewIconSizeDpText", draftPreviewIconSizeDpText)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        savedInstanceState.getString("draftForegroundSubjectPercentText")?.let { draftForegroundSubjectPercentText = it }
+        savedInstanceState.getString("draftForegroundShadowLevelText")?.let { draftForegroundShadowLevelText = it }
+        savedInstanceState.getString("draftMonochromeThemeScaleText")?.let { draftMonochromeThemeScaleText = it }
+        savedInstanceState.getString("draftBackgroundSeparationText")?.let { draftBackgroundSeparationText = it }
+        savedInstanceState.getString("draftPlateRemovalText")?.let { draftPlateRemovalText = it }
+        savedInstanceState.getString("draftShadowRemovalText")?.let { draftShadowRemovalText = it }
+        savedInstanceState.getString("draftEdgePolishText")?.let { draftEdgePolishText = it }
+        savedInstanceState.getString("draftRmbgAlphaStrengthText")?.let { draftRmbgAlphaStrengthText = it }
+        savedInstanceState.getString("draftRmbgEdgeFeatherText")?.let { draftRmbgEdgeFeatherText = it }
+        savedInstanceState.getString("draftRmbgEdgeAdjustText")?.let { draftRmbgEdgeAdjustText = it }
+        savedInstanceState.getString("draftRmbgWeakAlphaKeepText")?.let { draftRmbgWeakAlphaKeepText = it }
+        savedInstanceState.getString("draftLiquidGlassRadiusText")?.let { draftLiquidGlassRadiusText = it }
+        savedInstanceState.getString("draftLiquidGlassOuterWidthText")?.let { draftLiquidGlassOuterWidthText = it }
+        savedInstanceState.getString("draftLiquidGlassTopAlphaText")?.let { draftLiquidGlassTopAlphaText = it }
+        savedInstanceState.getString("draftLiquidGlassBottomAlphaText")?.let { draftLiquidGlassBottomAlphaText = it }
+        savedInstanceState.getString("draftLiquidGlassBackgroundMistAlphaText")?.let { draftLiquidGlassBackgroundMistAlphaText = it }
+        savedInstanceState.getString("draftLiquidGlassBottomDarkAlphaText")?.let { draftLiquidGlassBottomDarkAlphaText = it }
+        savedInstanceState.getString("draftLiquidGlassSubjectScaleText")?.let { draftLiquidGlassSubjectScaleText = it }
+        savedInstanceState.getString("draftLiquidGlassSubjectOutlineWidthText")?.let { draftLiquidGlassSubjectOutlineWidthText = it }
+        savedInstanceState.getString("draftLiquidGlassSubjectInnerOutlineWidthText")?.let { draftLiquidGlassSubjectInnerOutlineWidthText = it }
+        savedInstanceState.getString("draftLiquidGlassSubjectShadowAlphaText")?.let { draftLiquidGlassSubjectShadowAlphaText = it }
+        savedInstanceState.getString("draftLiquidGlassSubjectOpacityText")?.let { draftLiquidGlassSubjectOpacityText = it }
+        savedInstanceState.getString("draftBatchPreviewCountText")?.let { draftBatchPreviewCountText = it }
+        savedInstanceState.getString("draftBatchPreviewColumnsText")?.let { draftBatchPreviewColumnsText = it }
+        savedInstanceState.getString("draftBatchPreviewIconSizeDpText")?.let { draftBatchPreviewIconSizeDpText = it }
+        savedInstanceState.getString("draftBatchPreviewCornerRadiusDpText")?.let { draftBatchPreviewCornerRadiusDpText = it }
+        savedInstanceState.getString("draftJsonParamsText")?.let { draftJsonParamsText = it }
+        savedInstanceState.getString("draftPreviewCornerRadiusDpText")?.let { draftPreviewCornerRadiusDpText = it }
+        savedInstanceState.getString("draftPreviewIconSizeDpText")?.let { draftPreviewIconSizeDpText = it }
+    }
+
     override fun onDestroy() {
         // Slice 3.3：清理顺序下沉至 state/AppLoadOps.kt，super.onDestroy 留装配。
         mainViewModel.onDestroyCleanup(
