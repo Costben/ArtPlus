@@ -124,6 +124,8 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
     val contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
         TopAppBarDefaults.ExpandedHeight
     Scaffold(
+        // 内容从顶栏底下滚过（顶部留白在 contentPadding 里），COUI 才会给顶栏画玻璃材质。
+        edgeToEdge = true,
         containerColor = pageBackground,
         topBar = {
             CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {

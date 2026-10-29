@@ -24,8 +24,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.BottomFloatingAccessoryNavigationBar
 import io.github.suqi8.coui.kmp.basic.BottomFloatingNavigationBarItem
+import io.github.suqi8.coui.kmp.basic.LocalEdgeToEdge
 import io.github.suqi8.coui.kmp.basic.PinnedTopAppBar
 import io.github.suqi8.coui.kmp.basic.PinnedTopAppBarDefaults
 import io.github.suqi8.coui.kmp.basic.ScrollBehavior
@@ -74,6 +76,12 @@ internal val LocalPagerShellPageIndex = compositionLocalOf { -1 }
  * 固定标题顶栏（ColorOS 17 相册式）：标题与按钮同在第一行，不折叠；材质透明度跟页面内容滚出的距离走。
  * 相册的 toolbar 用相册自己的密度绘制（这台 620dpi 的机器上是 565dpi，与底栏一致），
  * 所以整根顶栏放在 gallery 密度下。托管模式和独立模式（设置页 overlay）共用。
+ *
+ * 标题：一级页沿用相册的 32dp 大标题；带返回键的二级页（设置）按 ColorOS 设置的紧凑标题，
+ * 即 COUI 折叠态的 24dp Medium（coui_appbar_title_collapsed_text_size）。
+ *
+ * 两种模式的页面内容都铺满窗口、从顶栏底下滚过（顶部留白走 contentPadding），满足 COUI
+ * 顶栏材质的前提，所以这里放行 [LocalEdgeToEdge]；不放行时 COUI 不画材质，顶栏整块透明。
  */
 @Composable
 internal fun PagerShellTopAppBar(
@@ -83,17 +91,31 @@ internal fun PagerShellTopAppBar(
     scrollBehavior: ScrollBehavior,
     modifier: Modifier = Modifier,
 ) {
-    CompositionLocalProvider(LocalDensity provides rememberGalleryDensity()) {
+    CompositionLocalProvider(
+        LocalDensity provides rememberGalleryDensity(),
+        LocalEdgeToEdge provides true,
+    ) {
+        val titleStyle = if (navigationIcon != null) {
+            PinnedTopAppBarDefaults.titleStyle().copy(
+                fontSize = with(LocalDensity.current) { SecondaryTitleSize.toSp() },
+                fontWeight = FontWeight.Medium,
+            )
+        } else {
+            PinnedTopAppBarDefaults.titleStyle().copy(fontWeight = FontWeight.Bold)
+        }
         PinnedTopAppBar(
             title = title,
             modifier = modifier,
             scrollBehavior = scrollBehavior,
-            titleStyle = PinnedTopAppBarDefaults.titleStyle().copy(fontWeight = FontWeight.Bold),
+            titleStyle = titleStyle,
             navigationIcon = navigationIcon,
             actions = actions,
         )
     }
 }
+
+/** COUI coui_appbar_title_collapsed_text_size：dp 而非 sp，与系统设置一样不随字体缩放。 */
+private val SecondaryTitleSize = 24.dp
 
 /**
  * 页面内容起点（平台密度的 Dp）= 状态栏高度 + 顶栏高度。
