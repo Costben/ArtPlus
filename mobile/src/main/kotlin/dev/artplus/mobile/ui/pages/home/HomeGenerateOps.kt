@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.composables.icons.lucide.Cpu
 import java.lang.reflect.InvocationTargetException
 import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.basic.Card

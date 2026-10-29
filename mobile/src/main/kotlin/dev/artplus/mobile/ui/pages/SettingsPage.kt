@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.composables.icons.lucide.Link
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancel
