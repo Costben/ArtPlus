@@ -20,6 +20,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.PathNode
+import androidx.compose.ui.graphics.vector.VectorGroup
+import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -32,10 +36,12 @@ import io.github.suqi8.coui.kmp.basic.PinnedTopAppBar
 import io.github.suqi8.coui.kmp.basic.PinnedTopAppBarDefaults
 import io.github.suqi8.coui.kmp.basic.ScrollBehavior
 import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.Folder
+import io.github.suqi8.coui.kmp.icon.extended.FolderFill
 import io.github.suqi8.coui.kmp.icon.extended.GridView
-import io.github.suqi8.coui.kmp.icon.extended.Layers
 import io.github.suqi8.coui.kmp.icon.extended.Tune
 import io.github.suqi8.coui.kmp.utils.rememberGalleryDensity
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -191,17 +197,119 @@ internal fun PagerShellBottomBar(
             endAccessoryVisible = false,
         ) {
             listOf(
-                Triple(COUIIcons.GridView, "主页", 0),
-                Triple(COUIIcons.Tune, "生成参数", 1),
-                Triple(COUIIcons.Layers, "预设", 2),
-            ).forEach { (icon, label, index) ->
+                PagerShellTab(COUIIcons.GridView, GridViewFill, "主页"),
+                PagerShellTab(COUIIcons.Tune, TuneFill, "生成参数"),
+                PagerShellTab(COUIIcons.Folder, COUIIcons.FolderFill, "预设"),
+            ).forEachIndexed { index, tab ->
                 BottomFloatingNavigationBarItem(
                     selected = pagerState.targetPage == index,
                     onClick = { onSelectPage(index) },
-                    icon = icon,
-                    label = label,
+                    icon = tab.icon,
+                    selectedIcon = tab.selectedIcon,
+                    label = tab.label,
                 )
             }
         }
     }
+}
+
+/** COUI 17 底栏：未选中用线性图标，选中换成同一轮廓的面性图标。 */
+private class PagerShellTab(val icon: ImageVector, val selectedIcon: ImageVector, val label: String)
+
+// COUI 只给 Folder 配了面性版本；宫格和调节的面性版本由线性图标去掉内轮廓得到，几何与线性版完全一致。
+private val GridViewFill by lazy { COUIIcons.GridView.filledTwin() }
+private val TuneFill by lazy { COUIIcons.Tune.filledTwin() }
+
+/**
+ * COUI 的线性图标没有用描边，而是「外轮廓 + 反向绕行的内轮廓」拼出的填充：内轮廓在 NonZero 下抵消成镂空。
+ * 每条路径里与最大轮廓绕行方向相反的就是这些内轮廓，去掉后宫格成为实心方块、调节的旋钮成为实心圆。
+ */
+private fun ImageVector.filledTwin(): ImageVector =
+    ImageVector.Builder(
+        name = "$name.Fill",
+        defaultWidth = defaultWidth,
+        defaultHeight = defaultHeight,
+        viewportWidth = viewportWidth,
+        viewportHeight = viewportHeight,
+        tintColor = tintColor,
+        tintBlendMode = tintBlendMode,
+        autoMirror = autoMirror,
+    ).apply { addFilled(root) }.build()
+
+private fun ImageVector.Builder.addFilled(group: VectorGroup) {
+    group.forEach { node ->
+        when (node) {
+            is VectorGroup -> {
+                addGroup(
+                    name = node.name,
+                    rotate = node.rotation,
+                    pivotX = node.pivotX,
+                    pivotY = node.pivotY,
+                    scaleX = node.scaleX,
+                    scaleY = node.scaleY,
+                    translationX = node.translationX,
+                    translationY = node.translationY,
+                    clipPathData = node.clipPathData,
+                )
+                addFilled(node)
+                clearGroup()
+            }
+            is VectorPath -> addPath(
+                pathData = node.pathData.withoutHoles(),
+                pathFillType = node.pathFillType,
+                name = node.name,
+                fill = node.fill,
+                fillAlpha = node.fillAlpha,
+                stroke = node.stroke,
+                strokeAlpha = node.strokeAlpha,
+                strokeLineWidth = node.strokeLineWidth,
+                strokeLineCap = node.strokeLineCap,
+                strokeLineJoin = node.strokeLineJoin,
+                strokeLineMiter = node.strokeLineMiter,
+            )
+        }
+    }
+}
+
+private fun List<PathNode>.withoutHoles(): List<PathNode> {
+    val contours = mutableListOf<MutableList<PathNode>>()
+    forEach { node ->
+        if (node is PathNode.MoveTo || contours.isEmpty()) contours += mutableListOf<PathNode>()
+        contours.last() += node
+    }
+    val areas = contours.map { it.signedArea() }
+    val outer = areas.maxByOrNull { abs(it) } ?: return this
+    return contours.filterIndexed { i, _ -> areas[i] * outer > 0f }.flatten()
+}
+
+/** 按各段终点算的鞋带面积，只用来判断绕行方向；COUI 图标只用绝对坐标指令。 */
+private fun List<PathNode>.signedArea(): Float {
+    var area = 0f
+    var startX = 0f
+    var startY = 0f
+    var x = 0f
+    var y = 0f
+    fun lineTo(nx: Float, ny: Float) {
+        area += x * ny - nx * y
+        x = nx
+        y = ny
+    }
+    forEach { node ->
+        when (node) {
+            is PathNode.MoveTo -> {
+                startX = node.x
+                startY = node.y
+                x = node.x
+                y = node.y
+            }
+            is PathNode.LineTo -> lineTo(node.x, node.y)
+            is PathNode.HorizontalTo -> lineTo(node.x, y)
+            is PathNode.VerticalTo -> lineTo(x, node.y)
+            is PathNode.QuadTo -> lineTo(node.x2, node.y2)
+            is PathNode.CurveTo -> lineTo(node.x3, node.y3)
+            else -> Unit
+        }
+    }
+    lineTo(startX, startY)
+    return area / 2f
 }
