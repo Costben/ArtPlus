@@ -1,0 +1,123 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../coui-squircle/1.2.0-6711f706-SNAPSHOT/coui-squircle-1.2.0-6711f706-SNAPSHOT.module",
+    "group": "io.github.suqi8.coui.kmp",
+    "module": "coui-squircle",
+    "version": "1.2.0-6711f706-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.6.1"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-shader",
+          "version": {
+            "requires": "1.2.0-6711f706-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "coui-squircle.aar",
+          "url": "coui-squircle-android-1.2.0-6711f706-SNAPSHOT.aar",
+          "size": 59591,
+          "sha512": "f5638df1530b58fef6588a435481b00e4ba813b4bc60a0a14b51149ab8e040c13ec8a615e94cd302b913618535af9bbe002d00fb5dbfdac9d574f1fbc7f983b2",
+          "sha256": "01ca778bce9575f2f2c85b76f0c9036d4ad0cfa1dc4b446a5154091fa8b40e69",
+          "sha1": "17c8d9bb77c33b88d086a29a5cbd7f52614eb0a8",
+          "md5": "59c4cd3f516b9d4eaf9aad88ab527a75"
+        }
+      ]
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-shader",
+          "version": {
+            "requires": "1.2.0-6711f706-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.foundation",
+          "module": "foundation",
+          "version": {
+            "requires": "1.11.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "coui-squircle.aar",
+          "url": "coui-squircle-android-1.2.0-6711f706-SNAPSHOT.aar",
+          "size": 59591,
+          "sha512": "f5638df1530b58fef6588a435481b00e4ba813b4bc60a0a14b51149ab8e040c13ec8a615e94cd302b913618535af9bbe002d00fb5dbfdac9d574f1fbc7f983b2",
+          "sha256": "01ca778bce9575f2f2c85b76f0c9036d4ad0cfa1dc4b446a5154091fa8b40e69",
+          "sha1": "17c8d9bb77c33b88d086a29a5cbd7f52614eb0a8",
+          "md5": "59c4cd3f516b9d4eaf9aad88ab527a75"
+        }
+      ]
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "files": [
+        {
+          "name": "coui-squircle-android-1.2.0-6711f706-SNAPSHOT-sources.jar",
+          "url": "coui-squircle-android-1.2.0-6711f706-SNAPSHOT-sources.jar",
+          "size": 41867,
+          "sha512": "c197da79be7d73a47f14fe93cf40c7fc649f2d12e15a5ee71e178a3f160cd0ad9b10d7d4caeb7f940a285ac45f84c7ee17f0b86089dce58213395c7325e7e20f",
+          "sha256": "660075f4c675b6333d0ec2573a3b2fda280fbf781d91242feb0ceab293ce7352",
+          "sha1": "7bd85c1e066802a643c29223b0b8ecc10489253f",
+          "md5": "f87b9f1e1cdd8267459df30c63529f8e"
+        }
+      ]
+    }
+  ]
+}
