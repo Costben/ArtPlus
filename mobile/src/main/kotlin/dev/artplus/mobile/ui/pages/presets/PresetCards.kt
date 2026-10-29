@@ -21,7 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.icon.COUIIcons
-import io.github.suqi8.coui.kmp.icon.extended.Layers
+import io.github.suqi8.coui.kmp.icon.extended.Folder
 import io.github.suqi8.coui.kmp.icon.extended.Search
 import io.github.suqi8.coui.kmp.basic.EmptyState
 import io.github.suqi8.coui.kmp.basic.TagView
@@ -300,7 +300,7 @@ internal fun PresetLibraryCard(
                         .padding(vertical = 8.dp),
                     illustration = {
                         Icon(
-                            imageVector = COUIIcons.Layers,
+                            imageVector = COUIIcons.Folder,
                             contentDescription = "暂无预设",
                             modifier = Modifier.size(36.dp),
                             tint = COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),

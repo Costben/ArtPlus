@@ -34,7 +34,6 @@ import io.github.suqi8.coui.kmp.icon.extended.GridView
 import io.github.suqi8.coui.kmp.icon.extended.Import
 import io.github.suqi8.coui.kmp.icon.extended.Layers
 import io.github.suqi8.coui.kmp.icon.extended.Link
-import io.github.suqi8.coui.kmp.icon.extended.Messages
 import io.github.suqi8.coui.kmp.icon.extended.Ok
 import io.github.suqi8.coui.kmp.icon.extended.Refresh
 import io.github.suqi8.coui.kmp.icon.extended.Settings
@@ -322,7 +321,7 @@ internal fun SettingLine(
 internal fun settingsIconForTitle(title: String): SettingsIconKind =
     when (title) {
         "目标应用" -> SettingsIconKind.Grid
-        "应用预设" -> SettingsIconKind.Layers
+        "应用预设" -> SettingsIconKind.Preset
         "应用范围" -> SettingsIconKind.Grid
         "应用列表" -> SettingsIconKind.Grid
         "显示系统应用" -> SettingsIconKind.Shield
@@ -378,6 +377,7 @@ internal enum class SettingsIconKind {
     Radius,
     Chip,
     Layers,
+    Preset,
     Spark,
     Scale,
     Cutout,
@@ -395,32 +395,23 @@ internal enum class SettingsIconKind {
 internal fun settingsIconVector(kind: SettingsIconKind): ImageVector = when (kind) {
     SettingsIconKind.Grid -> COUIIcons.GridView
     SettingsIconKind.CheckBadge -> COUIIcons.Ok
-    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Shield -> COUIIcons.Lock
     SettingsIconKind.FileUpload -> COUIIcons.Import
-    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Glass -> COUIIcons.Background
-    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Radius -> COUIIcons.Trim
-    // COUI has no equivalent, Lucide retained.
-    SettingsIconKind.Chip -> COUIIcons.Tasks
+    SettingsIconKind.Chip -> COUIIcons.Info
     SettingsIconKind.Layers -> COUIIcons.Layers
-    // COUI has no equivalent, Lucide retained.
+    SettingsIconKind.Preset -> COUIIcons.Folder
     SettingsIconKind.Spark -> COUIIcons.Tune
-    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Scale -> COUIIcons.ZoomOut
     SettingsIconKind.Cutout -> COUIIcons.Tune
-    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Palette -> COUIIcons.Theme
-    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Plate -> COUIIcons.Theme
-    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Shadow -> COUIIcons.Tune
     SettingsIconKind.Eraser -> COUIIcons.Clear
     SettingsIconKind.Link -> COUIIcons.Link
-    // COUI has no equivalent, Lucide retained.
     SettingsIconKind.Key -> COUIIcons.Lock
-    SettingsIconKind.Prompt -> COUIIcons.Messages
+    SettingsIconKind.Prompt -> COUIIcons.Notes
     SettingsIconKind.Refresh -> COUIIcons.Refresh
     SettingsIconKind.Dot -> COUIIcons.Settings
 }
