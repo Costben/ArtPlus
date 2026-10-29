@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="favicon.svg" width="96" height="96" alt="ArtPlus" />
+
 # ArtPlus 移动端
 
 <p>专为 ColorOS 设计的 ART+ 图标分层提取、算法重构与实时多态预览工具</p>

@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="favicon.svg" width="96" height="96" alt="ArtPlus" />
+
 # ArtPlus for Mobile
 
 <p>Deconstruct, rebuild, and live-preview third-party app icons in native ColorOS ART+ spec</p>
