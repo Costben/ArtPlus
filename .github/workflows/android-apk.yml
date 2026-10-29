@@ -66,8 +66,6 @@ jobs:
     outputs:
       version: ${{ steps.release_meta.outputs.version }}
       tag_name: ${{ steps.release_meta.outputs.tag_name }}
-      apk_name: ${{ steps.release_meta.outputs.apk_name }}
-      apk_path: ${{ steps.release_meta.outputs.apk_path }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -99,7 +97,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew :mobile:assembleRelease --no-daemon --stacktrace
+        run: ./gradlew :mobile:assembleRelease :enhancer:assembleRelease --no-daemon --stacktrace
 
       - name: Prepare release asset
         id: release_meta
@@ -114,22 +112,24 @@ jobs:
           version="${raw_version#v}"
           tag_name="v${version}"
           apk_name="artplus-mobile-${version}.apk"
+          enhancer_apk_name="artplus-enhancer-${version}.apk"
 
           mkdir -p release
           cp mobile/build/outputs/apk/release/mobile-release.apk "release/${apk_name}"
+          cp enhancer/build/outputs/apk/release/enhancer-release.apk "release/${enhancer_apk_name}"
 
           {
             echo "version=${version}"
             echo "tag_name=${tag_name}"
             echo "apk_name=${apk_name}"
-            echo "apk_path=release/${apk_name}"
+            echo "enhancer_apk_name=${enhancer_apk_name}"
           } >> "${GITHUB_OUTPUT}"
 
-      - name: Upload APK
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: artplus-mobile-${{ steps.release_meta.outputs.version }}
-          path: ${{ steps.release_meta.outputs.apk_path }}
+          name: artplus-release-${{ steps.release_meta.outputs.version }}
+          path: release/*.apk
 
   release:
     runs-on: ubuntu-latest
@@ -142,10 +142,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download APK
+      - name: Download APKs
         uses: actions/download-artifact@v4
         with:
-          name: artplus-mobile-${{ needs.build.outputs.version }}
+          name: artplus-release-${{ needs.build.outputs.version }}
           path: release
 
       - name: Create GitHub Release
@@ -153,14 +153,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG_NAME: ${{ needs.build.outputs.tag_name }}
           VERSION: ${{ needs.build.outputs.version }}
-          APK_NAME: ${{ needs.build.outputs.apk_name }}
         shell: bash
         run: |
-          APK_PATH="release/${APK_NAME}"
-          if [[ ! -f "${APK_PATH}" ]]; then
-            APK_PATH=$(find release -maxdepth 2 -type f -name "*.apk" | head -n 1)
-          fi
-          echo "Using APK: ${APK_PATH}"
           NOTES_CANDIDATE="docs/release-notes/${VERSION}.md"
           if [[ -f "${NOTES_CANDIDATE}" ]]; then
             cp "${NOTES_CANDIDATE}" release-notes.md
@@ -171,14 +165,13 @@ jobs:
               echo
               echo "- Built by GitHub Actions."
               echo "- Release build signed with the official ArtPlus release key."
-              echo "- APK: $(basename "${APK_PATH}")"
             } > release-notes.md
           fi
 
           if gh release view "${TAG_NAME}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-            gh release upload "${TAG_NAME}" "${APK_PATH}" --repo "${GITHUB_REPOSITORY}" --clobber
+            gh release upload "${TAG_NAME}" release/*.apk --repo "${GITHUB_REPOSITORY}" --clobber
           else
-            gh release create "${TAG_NAME}" "${APK_PATH}" \
+            gh release create "${TAG_NAME}" release/*.apk \
               --repo "${GITHUB_REPOSITORY}" \
               --target "${GITHUB_SHA}" \
               --title "ArtPlus ${VERSION}" \
