@@ -31,18 +31,6 @@ import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
 import dev.artplus.mobile.ui.pages.params.paramsUpdateBackgroundSeparationPercent
 import dev.artplus.mobile.ui.pages.params.paramsUpdateEdgePolishPercent
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassBackgroundMistAlpha
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassBottomAlpha
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassBottomDarkAlpha
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassEnabled
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassOuterWidth
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassRadius
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectInnerOutlineWidth
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectOpacityPercent
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectOutlineWidth
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectScalePercent
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassSubjectShadowAlpha
-import dev.artplus.mobile.ui.pages.params.paramsUpdateLiquidGlassTopAlpha
 import dev.artplus.mobile.ui.pages.params.paramsUpdateLocalWorkflowToggle
 import dev.artplus.mobile.ui.pages.params.paramsUpdatePlateRemovalPercent
 import dev.artplus.mobile.ui.pages.params.paramsUpdateRmbgAlphaStrengthPercent
@@ -52,9 +40,6 @@ import dev.artplus.mobile.ui.pages.params.paramsUpdateRmbgWeakAlphaKeepPercent
 import dev.artplus.mobile.ui.pages.params.paramsUpdateShadowRemovalPercent
 import dev.artplus.mobile.ui.pages.presets.saveJsonParamsFromText
 import dev.artplus.mobile.ui.pages.settings.JsonSettingsEditorCard
-import dev.artplus.mobile.ui.pages.settings.LiquidGlassSubjectCard
-import dev.artplus.mobile.ui.pages.settings.LiquidGlassSurfaceCard
-import dev.artplus.mobile.ui.pages.settings.LiquidGlassToggleCard
 import dev.artplus.mobile.ui.pages.settings.LocalRuleTuningCard
 import dev.artplus.mobile.ui.pages.settings.LocalWorkflowPipelineCard
 import dev.artplus.mobile.ui.pages.settings.RmbgTuningCard
@@ -119,168 +104,6 @@ PagerShellPage(
                         }
                         when (genContentShell.advancedSettingsTab) {
                             AdvancedSettingsTab.Sliders -> when (genContentShell.advancedSettingsCategory) {
-                                AdvancedSettingsCategory.LiquidGlass -> {
-                                    item(key = "glass_toggle") { run {
-    LiquidGlassToggleCard(
-                enabled = paramsState.liquidGlassEnabled,
-                isBusy = shellState.isBusy,
-                onCheckedChange = { run {
-        paramsUpdateLiquidGlassEnabled(
-                    enabled = (it),
-                    getParams = { mainViewModel.params.value },
-                    updateLive = mainViewModel::updateLive,
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-            )
-} }
-                                    item(key = "glass_surface") { run {
-    LiquidGlassSurfaceCard(
-                tuningState = paramsState,
-                isBusy = shellState.isBusy,
-                draftRadiusText = draftLiquidGlassRadiusText,
-                onDraftRadiusChange = { draftLiquidGlassRadiusText = it },
-                onSaveRadius = { run {
-        paramsUpdateLiquidGlassRadius(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassRadiusText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                draftOuterWidthText = draftLiquidGlassOuterWidthText,
-                onDraftOuterWidthChange = { draftLiquidGlassOuterWidthText = it },
-                onSaveOuterWidth = { run {
-        paramsUpdateLiquidGlassOuterWidth(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassOuterWidthText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                draftTopAlphaText = draftLiquidGlassTopAlphaText,
-                onDraftTopAlphaChange = { draftLiquidGlassTopAlphaText = it },
-                onSaveTopAlpha = { run {
-        paramsUpdateLiquidGlassTopAlpha(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassTopAlphaText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                draftBottomAlphaText = draftLiquidGlassBottomAlphaText,
-                onDraftBottomAlphaChange = { draftLiquidGlassBottomAlphaText = it },
-                onSaveBottomAlpha = { run {
-        paramsUpdateLiquidGlassBottomAlpha(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassBottomAlphaText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                draftBackgroundMistAlphaText = draftLiquidGlassBackgroundMistAlphaText,
-                onDraftBackgroundMistAlphaChange = { draftLiquidGlassBackgroundMistAlphaText = it },
-                onSaveBackgroundMistAlpha = { run {
-        paramsUpdateLiquidGlassBackgroundMistAlpha(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                draftBottomDarkAlphaText = draftLiquidGlassBottomDarkAlphaText,
-                onDraftBottomDarkAlphaChange = { draftLiquidGlassBottomDarkAlphaText = it },
-                onSaveBottomDarkAlpha = { run {
-        paramsUpdateLiquidGlassBottomDarkAlpha(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassBottomDarkAlphaText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-            )
-} }
-                                    item(key = "glass_subject") { run {
-    LiquidGlassSubjectCard(
-                tuningState = paramsState,
-                isBusy = shellState.isBusy,
-                draftSubjectScaleText = draftLiquidGlassSubjectScaleText,
-                onDraftSubjectScaleChange = { draftLiquidGlassSubjectScaleText = it },
-                onSaveSubjectScale = { run {
-        paramsUpdateLiquidGlassSubjectScalePercent(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassSubjectScaleText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                draftSubjectOutlineWidthText = draftLiquidGlassSubjectOutlineWidthText,
-                onDraftSubjectOutlineWidthChange = { draftLiquidGlassSubjectOutlineWidthText = it },
-                onSaveSubjectOutlineWidth = { run {
-        paramsUpdateLiquidGlassSubjectOutlineWidth(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                draftSubjectInnerOutlineWidthText = draftLiquidGlassSubjectInnerOutlineWidthText,
-                onDraftSubjectInnerOutlineWidthChange = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                onSaveSubjectInnerOutlineWidth = { run {
-        paramsUpdateLiquidGlassSubjectInnerOutlineWidth(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                draftSubjectShadowAlphaText = draftLiquidGlassSubjectShadowAlphaText,
-                onDraftSubjectShadowAlphaChange = { draftLiquidGlassSubjectShadowAlphaText = it },
-                onSaveSubjectShadowAlpha = { run {
-        paramsUpdateLiquidGlassSubjectShadowAlpha(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                draftSubjectOpacityText = draftLiquidGlassSubjectOpacityText,
-                onDraftSubjectOpacityChange = { draftLiquidGlassSubjectOpacityText = it },
-                onSaveSubjectOpacity = { run {
-        paramsUpdateLiquidGlassSubjectOpacityPercent(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    setDraftText = { draftLiquidGlassSubjectOpacityText = it },
-                    onSave = { tuningActions.save() },
-                    setStatusText = { setStatus((it)) },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-            )
-} }
-                                }
                                 AdvancedSettingsCategory.Local -> {
                                     item(key = "local_rule") { run {
     LocalRuleTuningCard(

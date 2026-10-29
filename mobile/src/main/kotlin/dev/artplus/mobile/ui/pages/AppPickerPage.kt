@@ -50,9 +50,7 @@ import dev.artplus.mobile.imaging.IconCandidate
 import dev.artplus.mobile.imaging.LocalSeparationMode
 import dev.artplus.mobile.imaging.PreviewChoice
 import dev.artplus.mobile.pipeline.rmbgTunedForegroundRaw
-import dev.artplus.mobile.state.addLiquidGlassToMultiSelectedGenerated
 import dev.artplus.mobile.state.applyCurrentPresetBatch
-import dev.artplus.mobile.state.executeAddLiquidGlassToMultiSelectedGenerated
 import dev.artplus.mobile.state.executeApplyCurrentBatch
 import dev.artplus.mobile.state.executeApplyPresetToSelectedApps
 import dev.artplus.mobile.state.launchUiFriendly
@@ -62,13 +60,11 @@ import dev.artplus.mobile.state.refreshGeneratedPackagesAsync
 import dev.artplus.mobile.state.requestAppLoad
 import dev.artplus.mobile.state.setStatus
 import dev.artplus.mobile.state.toggleMultiSelectedPackage
-import dev.artplus.mobile.system.applyLiquidGlassToGeneratedPackage
 import dev.artplus.mobile.system.artPlusPackageDir
 import dev.artplus.mobile.system.buildGeneratedPackageSession
 import dev.artplus.mobile.system.existingGeneratedPackageDir
 import dev.artplus.mobile.system.generateArtPlusPackage
 import dev.artplus.mobile.system.hasGeneratedPackageBaseAssets
-import dev.artplus.mobile.system.installLiquidGlassFilesWithRoot
 import dev.artplus.mobile.ui.cards.AppPage
 import dev.artplus.mobile.ui.cards.PreviewSelections
 import dev.artplus.mobile.ui.cards.ServiceConfirmRequest
@@ -235,63 +231,6 @@ internal fun MainActivity.AppPickerPage(
                         })) }
                     },
                     onClear = { mainViewModel.updatePicker { it -> it.copy(multiSelectedPackageNames = (emptySet())) } },
-                    onAddGlass = { run {
-            mainViewModel.addLiquidGlassToMultiSelectedGenerated(
-                        onRequestConfirm = { title, message, confirmLabel, onConfirm ->
-                        mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
-                            title = (title),
-                            message = (message),
-                            confirmLabel = (confirmLabel),
-                            onConfirm = (onConfirm),
-                        ))) }
-            
-                        },
-                        onExecute = { pkgs ->
-                mainViewModel.executeAddLiquidGlassToMultiSelectedGenerated(
-                            packageNames = (pkgs),
-                            selectedAtStart = mainViewModel.picker.value.selectedPackageName,
-                            resolvePackageDir = { __a0: String -> run {
-                    existingGeneratedPackageDir(
-                                packageName = __a0,
-                                previewDirPath = mainViewModel.previewSession.value.previewDirPath,
-                                previewPackageName = mainViewModel.previewSession.value.previewPackageName,
-                                externalArtPlusDir = getExternalFilesDir("ArtPlus"),
-                                filesDir = filesDir,
-                                appUid = applicationInfo.uid,
-                            )
-                } },
-                            applyGlass = { __a0: File -> run {
-
-                            val params = mainViewModel.params.value
-                            applyLiquidGlassToGeneratedPackage(
-                                dir = __a0,
-                                nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
-                                liquidGlassEnabled = params.liquidGlassEnabled,
-                                liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                                liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                                liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                                liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                                liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                                liquidGlassRadius = params.liquidGlassRadius,
-                                liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                                liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                                liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                                liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                                liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
-                                foregroundShadowLevel = params.foregroundShadowLevel,
-                                monochromeThemeScale = params.monochromeThemeScale,
-                            )
-                } },
-                            installGlass = ::installLiquidGlassFilesWithRoot,
-                            buildSession = ::buildGeneratedPackageSession,
-                            persistMany = { combined ->
-                                updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), combined)
-                            },
-                            onSaveUiState = {  -> persistUiState() },
-                        )
-             },
-                    )
-        } },
                     onApplyPreset = { run {
             mainViewModel.applyCurrentPresetBatch(
                         store = presetStore,

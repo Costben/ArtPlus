@@ -325,7 +325,6 @@ internal fun AppMultiSelectActions(
     isBusy: Boolean,
     onToggleFiltered: () -> Unit,
     onClear: () -> Unit,
-    onAddGlass: () -> Unit,
     onApplyPreset: () -> Unit,
 ) {
     Row(
@@ -349,20 +348,12 @@ internal fun AppMultiSelectActions(
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        CompactActionButton(
-            text = "添加光影 $selectedCount",
-            onClick = onAddGlass,
-            enabled = !isBusy && selectedCount > 0,
-            modifier = Modifier.weight(1f),
-            height = 48.dp,
-        )
         CompactActionButton(
             text = "套用当前预设",
             onClick = onApplyPreset,
             enabled = !isBusy && selectedCount > 0,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
             height = 48.dp,
         )
     }

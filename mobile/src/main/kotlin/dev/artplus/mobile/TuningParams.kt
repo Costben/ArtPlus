@@ -499,7 +499,7 @@ data class TuningParams(
     val rmbgEdgeFeatherPercent: Int = DEFAULT_RMBG_EDGE_FEATHER_PERCENT,
     val rmbgEdgeAdjustPercent: Int = DEFAULT_RMBG_EDGE_ADJUST_PERCENT,
     val rmbgWeakAlphaKeepPercent: Int = DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-    val liquidGlassEnabled: Boolean = true,
+    val liquidGlassEnabled: Boolean = false,
     val liquidGlassRadius: Int = DEFAULT_LIQUID_GLASS_RADIUS,
     val liquidGlassOuterWidth: Int = DEFAULT_LIQUID_GLASS_OUTER_WIDTH,
     val liquidGlassTopAlpha: Int = DEFAULT_LIQUID_GLASS_TOP_ALPHA,

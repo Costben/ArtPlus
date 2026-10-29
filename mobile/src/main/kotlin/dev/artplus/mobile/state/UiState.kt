@@ -54,7 +54,7 @@ internal data class ShellState(
     val statusText: String = "加载应用列表中...",
     val isBusy: Boolean = false,
     val outputTreeUri: Uri? = null,
-    val advancedSettingsCategory: AdvancedSettingsCategory = AdvancedSettingsCategory.LiquidGlass,
+    val advancedSettingsCategory: AdvancedSettingsCategory = AdvancedSettingsCategory.Local,
     val advancedSettingsTab: AdvancedSettingsTab = AdvancedSettingsTab.Sliders,
     val onboardingVisible: Boolean = false,
 )

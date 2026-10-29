@@ -57,13 +57,12 @@ internal data class ExportProgress(
 
 
 internal enum class AdvancedSettingsCategory(val label: String) {
-    LiquidGlass("液态玻璃"),
     Local("稳定规则"),
     Rmbg("RMBG");
 
     companion object {
         fun fromName(name: String?): AdvancedSettingsCategory =
-            entries.firstOrNull { it.name == name } ?: LiquidGlass
+            entries.firstOrNull { it.name == name } ?: Local
     }
 }
 

@@ -45,7 +45,7 @@ class MainViewModelUiStateTest {
         assertEquals("加载应用列表中...", s.statusText)
         assertFalse(s.isBusy)
         assertNull(s.outputTreeUri)
-        assertEquals(AdvancedSettingsCategory.LiquidGlass, s.advancedSettingsCategory)
+        assertEquals(AdvancedSettingsCategory.Local, s.advancedSettingsCategory)
         assertEquals(AdvancedSettingsTab.Sliders, s.advancedSettingsTab)
         assertFalse(s.onboardingVisible)
     }
