@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ArtPlus 增强</string>
+    <string-array name="xposed_scope">
+        <item>com.android.launcher</item>
+        <item>com.oppo.launcher</item>
+    </string-array>
+</resources>

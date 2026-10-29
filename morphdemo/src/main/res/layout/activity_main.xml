@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tv_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="当前激活的别名图标：默认蓝色 (A)"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp" />
+
+    <Button
+        android:id="@+id/btn_switch_blue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="切换为蓝色图标 (A)"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btn_switch_red"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="动态自改图标：切换为红色图标 (B)" />
+
+</LinearLayout>

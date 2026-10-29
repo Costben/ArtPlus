@@ -45,6 +45,7 @@ platform_tools/
 # Android local files
 .gradle/
 local.properties
-mobile/build/
+build/
+**/build/
 *.jks
 *.keystore

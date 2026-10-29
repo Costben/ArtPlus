@@ -26,3 +26,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "ArtPlus"
 include(":mobile")
+// LSPosed 辅助模块：桌面液态玻璃 + 可变图标（morph）本地素材接管。见 enhancer/。
+include(":enhancer")
+// 动态改变图标的测试 App
+include(":morphdemo")

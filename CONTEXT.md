@@ -75,3 +75,16 @@ _Avoid_: 快照、回滚点
 **恢复备份**:
 把某份「写入备份」还原为当前图标资源包；还原前当前素材同样先备份。
 _Avoid_: 回滚、还原
+
+**可变图标**:
+ColorOS 桌面把图标从 1x1 放大到 1x2 / 2x1 / 2x2 并做 morph 重绘的能力（morph / fancy icon）。部分应用被系统标为支持该特性时，桌面会向系统图标引擎取图，从而绕过 `/data/oplus/uxicons/` 里的素材。
+_Avoid_: 大图标、放大图标、可变尺寸图标
+
+**图标接管**:
+`ArtPlus 增强` 模块对「可变图标」应用做的处理：把系统图标引擎的取图入口拦掉，强制桌面回到本地 morph 路径，改用 ArtPlus 写入的素材。判据是包目录里存在 `monochrome_light.png` / `monochrome_dark.png`。
+_Avoid_: 替换图标、覆盖图标
+
+**增强模块**:
+`enhancer/` 这个 LSPosed 模块（`dev.artplus.enhancer`），与 ArtPlus 主应用分开安装、单独授权作用域；负责桌面液态玻璃与图标接管，不改写任何素材文件。
+_Avoid_: 插件、辅助 App、扩展包
+
