@@ -127,8 +127,9 @@ dependencies {
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.21.1")
     // 热修复2-16KB：androidx.graphics:graphics-path 1.0.1 -> 1.1.0（16KB 对齐版本，直钉显式提升传递依赖）。
     implementation("androidx.graphics:graphics-path:1.1.0")
-    // COUI17（../coui 本地发布，见 settings.gradle.kts 的 couiRepo）。
-    val couiVersion = providers.gradleProperty("couiVersion").get()
+    // COUI17：仓库来源与对应坐标见 settings.gradle.kts。
+    val couiVersionKey = if (gradle.extra["couiVendored"] == true) "couiVendoredVersion" else "couiVersion"
+    val couiVersion = providers.gradleProperty(couiVersionKey).get()
     implementation("io.github.suqi8.coui.kmp:coui-ui:$couiVersion")
     implementation("io.github.suqi8.coui.kmp:coui-icons:$couiVersion")
     implementation("io.github.suqi8.coui.kmp:coui-blur:$couiVersion")
