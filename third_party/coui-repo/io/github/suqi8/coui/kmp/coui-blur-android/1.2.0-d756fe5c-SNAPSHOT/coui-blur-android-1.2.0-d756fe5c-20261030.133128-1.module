@@ -1,0 +1,123 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../coui-blur/1.2.0-d756fe5c-SNAPSHOT/coui-blur-1.2.0-d756fe5c-SNAPSHOT.module",
+    "group": "io.github.suqi8.coui.kmp",
+    "module": "coui-blur",
+    "version": "1.2.0-d756fe5c-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.8.2"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-shader",
+          "version": {
+            "requires": "1.2.0-d756fe5c-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "coui-blur.aar",
+          "url": "coui-blur-android-1.2.0-d756fe5c-SNAPSHOT.aar",
+          "size": 192272,
+          "sha512": "1bc7ca197125440f02eed4239f31bb3a85ee016e3a9abc77a8b0d49a24ba6bbe0eb3963147f38b44bb9b6c2afbe56692f055c59319166a268db2873d9f95b714",
+          "sha256": "b10bce8a598ff058be9fc07f505ba7d90afc7054cbb79cf59b8a0d1749baccae",
+          "sha1": "c57e042c5e4716af3a1387f6da1177089282b3b8",
+          "md5": "bedcf2ed92429b2a1b40068b4e1bf5ea"
+        }
+      ]
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-shader",
+          "version": {
+            "requires": "1.2.0-d756fe5c-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.foundation",
+          "module": "foundation",
+          "version": {
+            "requires": "1.11.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "coui-blur.aar",
+          "url": "coui-blur-android-1.2.0-d756fe5c-SNAPSHOT.aar",
+          "size": 192272,
+          "sha512": "1bc7ca197125440f02eed4239f31bb3a85ee016e3a9abc77a8b0d49a24ba6bbe0eb3963147f38b44bb9b6c2afbe56692f055c59319166a268db2873d9f95b714",
+          "sha256": "b10bce8a598ff058be9fc07f505ba7d90afc7054cbb79cf59b8a0d1749baccae",
+          "sha1": "c57e042c5e4716af3a1387f6da1177089282b3b8",
+          "md5": "bedcf2ed92429b2a1b40068b4e1bf5ea"
+        }
+      ]
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "files": [
+        {
+          "name": "coui-blur-android-1.2.0-d756fe5c-SNAPSHOT-sources.jar",
+          "url": "coui-blur-android-1.2.0-d756fe5c-SNAPSHOT-sources.jar",
+          "size": 75532,
+          "sha512": "e29614f50793b7a456d4ef1d16a02ffbe88508e4f7f255ba7d63046d963feaa7b55e6ade812cb9b8338a1bb16919c85e181a222d6e4d6fdd00e88005d63a5f6e",
+          "sha256": "0bfe1228479470e57e03bd2f5382e986849f179fdca69db700ca2d4ac6359bb4",
+          "sha1": "10770dfa96da157f747dc061e8bb68ed7b9cb5ec",
+          "md5": "30aa6bf6fb7221958c90c6bd8e65c0f8"
+        }
+      ]
+    }
+  ]
+}

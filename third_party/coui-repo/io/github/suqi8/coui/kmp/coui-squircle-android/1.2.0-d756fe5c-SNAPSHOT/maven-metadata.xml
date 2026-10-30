@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>io.github.suqi8.coui.kmp</groupId>
+  <artifactId>coui-squircle-android</artifactId>
+  <versioning>
+    <lastUpdated>20261030133128</lastUpdated>
+    <snapshot>
+      <timestamp>20261030.133128</timestamp>
+      <buildNumber>1</buildNumber>
+    </snapshot>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>aar</extension>
+        <value>1.2.0-d756fe5c-20261030.133128-1</value>
+        <updated>20261030133128</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>module</extension>
+        <value>1.2.0-d756fe5c-20261030.133128-1</value>
+        <updated>20261030133128</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>1.2.0-d756fe5c-20261030.133128-1</value>
+        <updated>20261030133128</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+  <version>1.2.0-d756fe5c-SNAPSHOT</version>
+</metadata>

@@ -1,0 +1,523 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "io.github.suqi8.coui.kmp",
+    "module": "coui-squircle",
+    "version": "1.2.0-d756fe5c-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.8.2"
+    }
+  },
+  "variants": [
+    {
+      "name": "metadataApiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "dependencies": [
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-shader",
+          "version": {
+            "requires": "1.2.0-d756fe5c-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.foundation",
+          "module": "foundation",
+          "version": {
+            "requires": "1.11.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "coui-squircle-metadata-1.2.0-d756fe5c-SNAPSHOT.jar",
+          "url": "coui-squircle-1.2.0-d756fe5c-SNAPSHOT.jar",
+          "size": 9991,
+          "sha512": "a7047210fadf27f5521a67fc46dd077f76d3ce65727b1d1d1d4f719329dda64271461415d649c1f62ba491540ac9ed3760c6d603b79b06f5ff22f9bba8ae2d88",
+          "sha256": "5348c9e6bfa48a86fe19120a9cc844a83d4c9f99f59885b2ba157a363299c4e0",
+          "sha1": "4ff0da2e1268b4c6924012fb4d646b9625dcab21",
+          "md5": "e12049f2ec03ab77cc05db7d261a2595"
+        }
+      ]
+    },
+    {
+      "name": "metadataSourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "common"
+      },
+      "files": [
+        {
+          "name": "coui-squircle-kotlin-1.2.0-d756fe5c-SNAPSHOT-sources.jar",
+          "url": "coui-squircle-1.2.0-d756fe5c-SNAPSHOT-sources.jar",
+          "size": 42579,
+          "sha512": "009f1537d0c26f903c9e72a38b42cc5593398a08253ca08ad6c3e78972f6adfba6a138eb8f0de0c1f9406cfc2fce071afefdcc7bf7e5ef4a9cbbb9cf1085e430",
+          "sha256": "46cd2de1e22d2ad5a50636e8bee0da91145211c75a321f2cb1798d6f840c4b61",
+          "sha1": "b693678df564d11deb80defc0e5af7ad85e24ced",
+          "md5": "d08efb8a9e1f92483f8ae060164d1227"
+        }
+      ]
+    },
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-android/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-android-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-android",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-android/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-android-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-android",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-android/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-android-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-android",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "desktopApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-desktop/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-desktop-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-desktop",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "desktopRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-desktop/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-desktop-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-desktop",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "desktopSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-desktop/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-desktop-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-desktop",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-iosarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-iosarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-iosarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-iosarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-iosarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-iosarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64ResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresources",
+        "org.gradle.usage": "kotlin-multiplatformresources",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-iosarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-iosarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-iosarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-iosarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-iosarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-iosarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-iossimulatorarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-iossimulatorarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-iossimulatorarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-iossimulatorarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-iossimulatorarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-iossimulatorarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64ResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresources",
+        "org.gradle.usage": "kotlin-multiplatformresources",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-iossimulatorarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-iossimulatorarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-iossimulatorarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "iosSimulatorArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "ios_simulator_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-iossimulatorarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-iossimulatorarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-iossimulatorarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-js/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-js-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-js",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-js/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-js-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-js",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-js/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-js-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-js",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "jsResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresourcesjs",
+        "org.gradle.usage": "kotlin-multiplatformresourcesjs",
+        "org.jetbrains.kotlin.js.compiler": "ir",
+        "org.jetbrains.kotlin.platform.type": "js"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-js/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-js-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-js",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64ApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-macosarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-macosarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-macosarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64SourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-macosarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-macosarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-macosarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64ResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresources",
+        "org.gradle.usage": "kotlin-multiplatformresources",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-macosarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-macosarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-macosarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "macosArm64MetadataElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-metadata",
+        "org.jetbrains.kotlin.native.target": "macos_arm64",
+        "org.jetbrains.kotlin.platform.type": "native"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-macosarm64/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-macosarm64-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-macosarm64",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-api",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-wasm-js/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-wasm-js-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-wasm-js",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-wasm-js/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-wasm-js-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-wasm-js",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.usage": "kotlin-runtime",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-wasm-js/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-wasm-js-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-wasm-js",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    },
+    {
+      "name": "wasmJsResourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "non-jvm",
+        "org.gradle.libraryelements": "kotlin-multiplatformresourcesjs",
+        "org.gradle.usage": "kotlin-multiplatformresourcesjs",
+        "org.jetbrains.kotlin.platform.type": "wasm",
+        "org.jetbrains.kotlin.wasm.target": "js"
+      },
+      "available-at": {
+        "url": "../../coui-squircle-wasm-js/1.2.0-d756fe5c-SNAPSHOT/coui-squircle-wasm-js-1.2.0-d756fe5c-SNAPSHOT.module",
+        "group": "io.github.suqi8.coui.kmp",
+        "module": "coui-squircle-wasm-js",
+        "version": "1.2.0-d756fe5c-SNAPSHOT"
+      }
+    }
+  ]
+}
