@@ -19,8 +19,8 @@ android {
         applicationId = "dev.artplus.mobile"
         minSdk = 26
         targetSdk = 37
-        versionCode = 22
-        versionName = "1.5.0-alpha9"
+        versionCode = 23
+        versionName = "1.5.0-alpha10"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
