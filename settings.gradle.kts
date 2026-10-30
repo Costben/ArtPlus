@@ -15,7 +15,7 @@ dependencyResolutionManagement {
         //   3. 仓库内 vendored 的 lean 产物（CI 走这条）：钉住的坐标 couiVendoredVersion
         val couiRepo = providers.gradleProperty("couiRepo").orNull?.let(settingsDir::resolve)
             ?: settingsDir.resolve("../coui/build/repository/local").takeIf { it.isDirectory }
-        gradle.extra["couiVendored"] = couiRepo == null
+        gradle.extra["couiVendored"] = couiRepo == null || couiRepo == settingsDir.resolve("third_party/coui-repo")
         maven(uri(couiRepo ?: settingsDir.resolve("third_party/coui-repo"))) {
             content { includeGroup("io.github.suqi8.coui.kmp") }
         }
