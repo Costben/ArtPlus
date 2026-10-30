@@ -15,8 +15,8 @@ import io.github.suqi8.coui.kmp.basic.CardDefaults
 import io.github.suqi8.coui.kmp.basic.HorizontalDivider
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
+import io.github.suqi8.coui.kmp.overlay.OverlayBottomSheet
 import io.github.suqi8.coui.kmp.theme.COUITheme
-import io.github.suqi8.coui.kmp.window.WindowBottomSheet
 import dev.artplus.mobile.TuningPreset
 import dev.artplus.mobile.ui.cards.BatchPreviewProgress
 import dev.artplus.mobile.ui.cards.PresetImportDialog
@@ -42,7 +42,7 @@ internal fun PresetActionMenuDialog(
     onDelete: (TuningPreset) -> Unit,
 ) {
     // 选项列表用 ColorOS 底部面板承载；点击外部 / 返回键 / 下拉都等价于「取消」
-    WindowBottomSheet(
+    OverlayBottomSheet(
         show = true,
         title = "预设选项：${target.name}",
         onDismissRequest = onDismiss,

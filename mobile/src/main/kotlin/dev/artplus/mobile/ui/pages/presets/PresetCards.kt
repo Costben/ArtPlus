@@ -244,25 +244,6 @@ internal fun PresetLibraryCard(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = "预设快照库 (${presets.size})",
-                    style = COUITheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
-                    color = COUITheme.colorScheme.onSurface,
-                )
-                if (presets.isNotEmpty()) {
-                    Text(
-                        text = "轻按条目套用",
-                        style = COUITheme.textStyles.footnote2,
-                        color = COUITheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-            }
-
             if (presets.size >= 8) {
                 // 搜索框：secondaryVariant 圆角底 + COUI TextField（无自带底，带清除按钮）
                 Box(

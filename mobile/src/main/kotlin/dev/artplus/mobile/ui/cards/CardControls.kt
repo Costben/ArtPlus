@@ -237,8 +237,8 @@ internal fun CompactPresetRow(
     isActive: Boolean,
     isModified: Boolean,
     onApply: () -> Unit,
-    onPreview: () -> Unit,
     onMore: () -> Unit,
+    onPreview: () -> Unit = {},
     busy: Boolean = false,
 ) {
     // 选中态用 COUI 蓝色淡底卡片（tertiaryContainer），未选中用中性 secondaryVariant
@@ -280,47 +280,31 @@ internal fun CompactPresetRow(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
+                Text(
+                    text = preset.name,
+                    style = COUITheme.textStyles.body1.copy(
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                    ),
+                    color = if (isActive) activeTextColor else COUITheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     Text(
-                        text = preset.name,
-                        style = COUITheme.textStyles.body1.copy(
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                        ),
-                        color = if (isActive) activeTextColor else COUITheme.colorScheme.onSurface,
+                        text = formatPresetDate(preset.updatedAt) + if (isActive) (if (isModified) " · 已套用 (已修改)" else " · 已套用") else "",
+                        style = COUITheme.textStyles.footnote2,
+                        color = if (isActive) activeTextColor.copy(alpha = 0.8f) else COUITheme.colorScheme.onSurfaceVariantSummary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
                     )
                     tags.forEach { tag ->
                         TagView(text = tag, cornerRadius = AppTagCornerRadius)
                     }
                 }
-
-                Text(
-                    text = formatPresetDate(preset.updatedAt) + if (isActive) (if (isModified) " · 已套用 (已修改)" else " · 已套用") else "",
-                    style = COUITheme.textStyles.footnote2,
-                    color = if (isActive) activeTextColor.copy(alpha = 0.8f) else COUITheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            IconButton(
-                onClick = onPreview,
-                enabled = !busy,
-                modifier = Modifier.size(48.dp),
-                backgroundColor = Color.Transparent,
-                cornerRadius = 8.dp,
-            ) {
-                Icon(
-                    imageVector = COUIIcons.Show,
-                    contentDescription = "批量预览",
-                    modifier = Modifier.size(16.dp),
-                    tint = COUITheme.colorScheme.onSurfaceVariantSummary,
-                )
             }
 
             IconButton(
