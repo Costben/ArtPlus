@@ -114,7 +114,7 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
         )
     }
     val tabTitles = remember {
-        listOf("正常亮色", "正常暗色", "单色亮色", "单色暗色")
+        listOf("亮色", "暗色", "单亮", "单暗")
     }
 
     // Backdrop for the ColorOS app bar material: the page content only, never the bar itself.
@@ -176,13 +176,12 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // 1. 桌面控制卡：背景一行 + 三个主页化参数行（无图标、默认展开）
-            // 卡片各自带 16dp 边距，标题再补 16dp，文字才和卡片内文对齐（共 32dp）。
-            SectionHeader("桌面外观", Modifier.padding(horizontal = 16.dp))
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
             ) {
+                SectionHeader("桌面外观")
                 SectionCard(rowsFullBleed = true) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -317,15 +316,21 @@ val __act2 = LocalContext.current
             }
 
             // 2. 4 风格切换栏（控制卡下方、预览框上方）
-            SectionHeader("预览", Modifier.padding(horizontal = 16.dp))
-            TabRowWithContour(
-                tabs = tabTitles,
-                selectedTabIndex = pagerState.currentPage,
-                onTabSelected = { index ->
-                    coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                },
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                SectionHeader("预览")
+                TabRowWithContour(
+                    tabs = tabTitles,
+                    selectedTabIndex = pagerState.currentPage,
+                    onTabSelected = { index ->
+                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
 
             // 3. 桌面展示框：高度锁死为内容行数 + 1 行，框内不滚动
             Box(

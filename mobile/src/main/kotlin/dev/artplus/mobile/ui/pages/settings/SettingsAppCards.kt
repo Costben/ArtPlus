@@ -101,7 +101,7 @@ internal fun BatchPreviewSettingsCard(
         NumberParameterControl(
             busy = isBusy,
             title = "批量预览数量",
-            summary = "预设四风格宫格预览时随机抓取的应用数量（默认 20，优先未生成图标应用）",
+            summary = "预设批量生成预览时随机抓取的应用数量（默认 20，优先未生成图标应用）",
             value = value,
             draftText = draftText,
             min = MIN_BATCH_PREVIEW_COUNT,

@@ -71,8 +71,8 @@ internal fun PresetActionMenuDialog(
                 PresetMenuDivider()
                 PresetMenuItem(
                     enabled = !isBusy,
-                    title = "批量四风格预览",
-                    summary = "随机抓取应用，四种风格宫格预览",
+                    title = "批量生成预览",
+                    summary = "随机抓取应用，批量生成预览",
                     onClick = {
                         onDismiss()
                         onPreview(target)
