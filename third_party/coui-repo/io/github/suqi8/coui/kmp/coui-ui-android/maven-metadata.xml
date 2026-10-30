@@ -3,10 +3,10 @@
   <groupId>io.github.suqi8.coui.kmp</groupId>
   <artifactId>coui-ui-android</artifactId>
   <versioning>
-    <latest>1.2.0-6711f706-SNAPSHOT</latest>
+    <latest>1.2.0-2545fe76-SNAPSHOT</latest>
     <versions>
-      <version>1.2.0-6711f706-SNAPSHOT</version>
+      <version>1.2.0-2545fe76-SNAPSHOT</version>
     </versions>
-    <lastUpdated>20261028175448</lastUpdated>
+    <lastUpdated>20261030045527</lastUpdated>
   </versioning>
 </metadata>

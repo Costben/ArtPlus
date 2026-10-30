@@ -1,0 +1,186 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "url": "../../coui-ui/1.2.0-2545fe76-SNAPSHOT/coui-ui-1.2.0-2545fe76-SNAPSHOT.module",
+    "group": "io.github.suqi8.coui.kmp",
+    "module": "coui-ui",
+    "version": "1.2.0-2545fe76-SNAPSHOT",
+    "attributes": {
+      "org.gradle.status": "integration"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.8.2"
+    }
+  },
+  "variants": [
+    {
+      "name": "androidApiElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-blur",
+          "version": {
+            "requires": "1.2.0-2545fe76-SNAPSHOT"
+          }
+        },
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-core",
+          "version": {
+            "requires": "1.2.0-2545fe76-SNAPSHOT"
+          }
+        },
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-squircle",
+          "version": {
+            "requires": "1.2.0-2545fe76-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.foundation",
+          "module": "foundation",
+          "version": {
+            "requires": "1.11.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "coui-ui.aar",
+          "url": "coui-ui-android-1.2.0-2545fe76-SNAPSHOT.aar",
+          "size": 4196868,
+          "sha512": "ae34ce36584bc74233a678e14f642920ac146b1c30fc8914ad7d9c0d9ecb237b65f908c9a612980dc57a0bcf2415c951e5cb834fff647dfdfcb9ca438ade65be",
+          "sha256": "4297fb36c1020403692a95faa4e9d839b3e1572012c0772156ef97a262b031c1",
+          "sha1": "6172ff6244d4718fe5cc021e13a7b8d68f646cc2",
+          "md5": "f2236e7bbfd273024681f1f5a1ad400f"
+        }
+      ]
+    },
+    {
+      "name": "androidRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-blur",
+          "version": {
+            "requires": "1.2.0-2545fe76-SNAPSHOT"
+          }
+        },
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-core",
+          "version": {
+            "requires": "1.2.0-2545fe76-SNAPSHOT"
+          }
+        },
+        {
+          "group": "io.github.suqi8.coui.kmp",
+          "module": "coui-squircle",
+          "version": {
+            "requires": "1.2.0-2545fe76-SNAPSHOT"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.foundation",
+          "module": "foundation",
+          "version": {
+            "requires": "1.11.1"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.10"
+          }
+        },
+        {
+          "group": "org.lsposed.hiddenapibypass",
+          "module": "hiddenapibypass",
+          "version": {
+            "requires": "6.1"
+          }
+        },
+        {
+          "group": "androidx.navigationevent",
+          "module": "navigationevent-compose",
+          "version": {
+            "requires": "1.1.2"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.material3",
+          "module": "material3-window-size-class",
+          "version": {
+            "requires": "1.9.0"
+          }
+        },
+        {
+          "group": "com.materialkolor",
+          "module": "material-color-utilities",
+          "version": {
+            "requires": "5.0.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "coui-ui.aar",
+          "url": "coui-ui-android-1.2.0-2545fe76-SNAPSHOT.aar",
+          "size": 4196868,
+          "sha512": "ae34ce36584bc74233a678e14f642920ac146b1c30fc8914ad7d9c0d9ecb237b65f908c9a612980dc57a0bcf2415c951e5cb834fff647dfdfcb9ca438ade65be",
+          "sha256": "4297fb36c1020403692a95faa4e9d839b3e1572012c0772156ef97a262b031c1",
+          "sha1": "6172ff6244d4718fe5cc021e13a7b8d68f646cc2",
+          "md5": "f2236e7bbfd273024681f1f5a1ad400f"
+        }
+      ]
+    },
+    {
+      "name": "androidSourcesElements-published",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.jvm.environment": "android",
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "files": [
+        {
+          "name": "coui-ui-android-1.2.0-2545fe76-SNAPSHOT-sources.jar",
+          "url": "coui-ui-android-1.2.0-2545fe76-SNAPSHOT-sources.jar",
+          "size": 744902,
+          "sha512": "b02ca685eced1eeeee03827f37c8d8312773b7413704a00f15ba3001380fb46523a570eac7510bfe6b1ac992a607b04e3793983fdc1003647144f9ba999b238a",
+          "sha256": "795e18b978088c6a65504c71a9971faa59a01e697d1539ae4f6e65c951758928",
+          "sha1": "e115ed9e9947c3a4ceca0ebfac98d7dda9683f1b",
+          "md5": "b3b91cf419b3f3d284dd5b2b2da427ad"
+        }
+      ]
+    }
+  ]
+}
