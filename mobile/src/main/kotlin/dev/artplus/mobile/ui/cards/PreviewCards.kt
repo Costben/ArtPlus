@@ -131,7 +131,7 @@ internal fun PreviewChoiceActions(
     ) {
         if (showApplyAll) {
             CompactActionButton(
-                text = "全部应用",
+                text = "应用",
                 onClick = onApplyAll,
                 enabled = applyEnabled,
                 modifier = Modifier.fillMaxWidth(),
