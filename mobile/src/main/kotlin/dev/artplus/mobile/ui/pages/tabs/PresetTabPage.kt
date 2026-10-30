@@ -27,7 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.Download
-import io.github.suqi8.coui.kmp.icon.extended.UploadCloud
+import io.github.suqi8.coui.kmp.icon.extended.Share
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.artplus.mobile.MainActivity
@@ -47,7 +47,6 @@ import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
 import dev.artplus.mobile.ui.pages.params.paramsUpdateBatchPreviewCount
 import dev.artplus.mobile.ui.pages.presets.PresetLibraryCard
-import dev.artplus.mobile.ui.pages.presets.PresetStatusCard
 import dev.artplus.mobile.ui.pages.presets.applyPreset
 import dev.artplus.mobile.ui.pages.presets.exportPresetsToClipboard
 import dev.artplus.mobile.ui.pages.presets.overwritePreset
@@ -92,13 +91,14 @@ PagerShellPage(
                             },
                         )
                         TitleBarIconButton(
-                            icon = COUIIcons.UploadCloud,
+                            icon = COUIIcons.Share,
                             contentDescription = "导出全部预设",
                             enabled = !shellState.isBusy && presetCount > 0,
                             onClick = { run {
     exportPresetsToClipboard(
                 store = presetStore,
                 clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
+                context = this@PresetTabPage,
                 onStatus = { setStatus((it)) },
             )
 } },
@@ -128,168 +128,6 @@ PagerShellPage(
                                         .defaultMinSize(minHeight = minContentHeight),
                                     verticalArrangement = Arrangement.spacedBy(16.dp),
                                 ) {
-    PresetStatusCard(
-                presets = presetsSnapshot,
-                activePresetId = presetUiState.activePresetId,
-                activePresetBaseParams = presetUiState.activePresetBaseParams,
-                currentParams = remember(paramsState) { paramsState },
-                isBusy = shellState.isBusy,
-                onOverwrite = { run {
-        overwritePreset(
-                    preset = (it),
-                    store = presetStore,
-                    current = mainViewModel.params.value,
-                    viewModel = mainViewModel,
-                    onOverwritten = { p, cur, msg ->
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (cur)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
-                        setStatus((msg))
-                    },
-                    onStatus = { setStatus((it)) },
-                )
-    } },
-                onRequestSavePreset = {
-                    mainViewModel.updatePresetUi { v -> v.copy(presetSaveName = (it)) }
-                    mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (true)) }
-                },
-                onResetToPreset = { run {
-        resetToPreset(
-                    preset = (it),
-                    isBusy = shellState.isBusy,
-                    isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
-                    isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
-                    before = mainViewModel.params.value,
-                    viewModel = mainViewModel,
-                    onReset = { p, merged, msg ->
-            paramsApplyTuningParams(
-                        params = (merged),
-                        rebuildCandidates = (true),
-                        persist = (true),
-                        captureUndo = (true),
-                        refreshPreview = (true),
-                        getBefore = { mainViewModel.params.value },
-                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
-                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
-                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
-                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
-                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
-                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
-                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
-                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
-                        setDraftEdgePolishText = { draftEdgePolishText = it },
-                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
-                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
-                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
-                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftJsonParamsText = { draftJsonParamsText = it },
-                        onSaveLocalSeparation = { run {
-                paramsSaveLocalSeparationSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveImageTuning = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveGpt = { run {
-                paramsSaveGptSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
-                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
-                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
-                        )
-            } },
-                        onSaveUi = { persistUiState() },
-                        isBusy = { mainViewModel.shell.value.isBusy },
-                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
-                        onRefresh = tuningActions.refresh,
-                    )
-        
-                        presetStore.activePresetId = p.id
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (p.params)) }
-                        setStatus((msg))
-                    },
-                    onStatus = { setStatus((it)) },
-                )
-    } },
-                onResetToDefaults = { run {
-        paramsResetToDefaults(
-                    confirmed = (false),
-                    isBusy = { mainViewModel.shell.value.isBusy },
-                    isGeneratingGpt = { mainViewModel.previewSession.value.isGeneratingGptCandidate },
-                    isGeneratingRmbg = { mainViewModel.previewSession.value.isGeneratingRmbgCandidate },
-                    setStatusText = { setStatus((it)) },
-                    onRequestConfirm = { title, message, confirmLabel, onConfirm ->
-                    mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
-                        title = (title),
-                        message = (message),
-                        confirmLabel = (confirmLabel),
-                        onConfirm = (onConfirm),
-                    ))) }
-        
-                    },
-                    onApplyDefaults = { run {
-            paramsApplyTuningParams(
-                        params = (it),
-                        rebuildCandidates = (true),
-                        persist = (true),
-                        captureUndo = (true),
-                        refreshPreview = (true),
-                        getBefore = { mainViewModel.params.value },
-                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
-                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
-                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
-                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
-                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
-                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
-                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
-                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
-                        setDraftEdgePolishText = { draftEdgePolishText = it },
-                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
-                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
-                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
-                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftJsonParamsText = { draftJsonParamsText = it },
-                        onSaveLocalSeparation = { run {
-                paramsSaveLocalSeparationSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveImageTuning = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveGpt = { run {
-                paramsSaveGptSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
-                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
-                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
-                        )
-            } },
-                        onSaveUi = { persistUiState() },
-                        isBusy = { mainViewModel.shell.value.isBusy },
-                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
-                        onRefresh = tuningActions.refresh,
-                    )
-        } },
-                    onClearPreset = {
-                        presetStore.activePresetId = null
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (null)) }
-                    },
-                )
-    } },
-            )
     PresetLibraryCard(
                 presets = presetsSnapshot,
                 activePresetId = presetUiState.activePresetId,
@@ -367,6 +205,7 @@ PagerShellPage(
     } },
                 onPreview = { mainViewModel.openBatchPreviewForPreset(preset = (it), filesDir = filesDir) },
                 onMore = { mainViewModel.updatePresetUi { v -> v.copy(presetActionMenuTarget = (it)) } },
+                onDelete = { mainViewModel.updatePresetUi { v -> v.copy(presetDeleteConfirmTarget = (it)) } },
             )
     BatchPreviewSettingsCard(
                 value = batchConfigState.batchPreviewCount,

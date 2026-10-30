@@ -181,9 +181,17 @@ internal fun PickerMoreBall(
             OverlayNavigationPopupMenu(
                 expanded = show,
                 entries = listOf(
-                    // 筛选设置：以统计信息作为灰色分组标题（不可选中，移除概览二字与高亮条）
+                    // 概览统计：只读预览行，文字置灰且无法选中与高光
                     DropdownEntry(
-                        title = "已生成 $generatedCount · 未生成 $ungeneratedCount · AM $amMarkedCount",
+                        items = listOf(
+                            DropdownItem(
+                                text = "已生成 $generatedCount · 未生成 $ungeneratedCount · AM $amMarkedCount",
+                                enabled = false,
+                            ),
+                        ),
+                    ),
+                    // 筛选设置：显示系统应用与只显示 AM 应用
+                    DropdownEntry(
                         items = listOf(
                             DropdownItem(
                                 text = "显示系统应用",
@@ -218,6 +226,7 @@ internal fun PickerMoreBall(
                 onDismissRequest = onDismissRequest,
                 onDismissFinished = {},
                 alignment = PopupPositionProvider.Align.BottomEnd,
+                renderInRootScaffold = false,
                 collapseOnSelection = false,
             )
         },

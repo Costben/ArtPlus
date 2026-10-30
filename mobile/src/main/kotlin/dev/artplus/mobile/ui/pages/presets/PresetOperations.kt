@@ -2,7 +2,9 @@ package dev.artplus.mobile.ui.pages.presets
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.Context
 import android.content.SharedPreferences
+import android.widget.Toast
 import java.io.File
 import org.json.JSONObject
 import dev.artplus.mobile.BatchPreviewStore
@@ -189,30 +191,38 @@ internal fun renamePreset(
 internal fun exportPresetsToClipboard(
     store: PresetStore,
     clipboard: ClipboardManager?,
+    context: Context? = null,
     onStatus: (String) -> Unit,
 ) {
     val json = store.exportJson()
     if (clipboard == null) {
         onStatus("剪贴板不可用")
+        context?.let { Toast.makeText(it, "剪贴板不可用", Toast.LENGTH_SHORT).show() }
         return
     }
     clipboard.setPrimaryClip(ClipData.newPlainText("ArtPlus预设", json))
-    onStatus("已复制 ${store.all().size} 条预设 JSON 到剪贴板")
+    val msg = "已导出 ${store.all().size} 条预设到剪贴板"
+    onStatus(msg)
+    context?.let { Toast.makeText(it, msg, Toast.LENGTH_SHORT).show() }
 }
 
 internal fun exportSinglePresetToClipboard(
     preset: TuningPreset,
     store: PresetStore,
     clipboard: ClipboardManager?,
+    context: Context? = null,
     onStatus: (String) -> Unit,
 ) {
     val json = store.exportSingleJson(preset)
     if (clipboard == null) {
         onStatus("剪贴板不可用")
+        context?.let { Toast.makeText(it, "剪贴板不可用", Toast.LENGTH_SHORT).show() }
         return
     }
     clipboard.setPrimaryClip(ClipData.newPlainText("ArtPlus预设-${preset.name}", json))
-    onStatus("已复制预设「${preset.name}」JSON 到剪贴板")
+    val msg = "已导出预设「${preset.name}」到剪贴板"
+    onStatus(msg)
+    context?.let { Toast.makeText(it, msg, Toast.LENGTH_SHORT).show() }
 }
 
 internal fun importPresetsFromText(

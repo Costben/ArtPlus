@@ -356,7 +356,10 @@ internal fun MainActivity.ArtPlusScreen() {
                                 val stateScopedApps = when (pickerState.generatedFilter) {
                                     GeneratedFilter.All -> {
                                         if (pickerState.onlyAmApps) {
-                                            scopedApps.filter { it.packageName in pickerState.generatedPackageNames && it.packageName in pickerState.artPlusModifiedPackageNames }
+                                            scopedApps.filter {
+                                                (it.packageName in pickerState.generatedPackageNames && it.packageName in pickerState.artPlusModifiedPackageNames) ||
+                                                    it.packageName !in pickerState.generatedPackageNames
+                                            }
                                         } else {
                                             scopedApps
                                         }
@@ -673,6 +676,7 @@ internal fun MainActivity.ArtPlusScreen() {
                         preset = (it),
                         store = presetStore,
                         clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
+                        context = this@ArtPlusScreen,
                         onStatus = { setStatus((it)) },
                     )
         } },
@@ -1122,39 +1126,19 @@ private fun MainActivity.PagerShellPageBody(
     showPreviewStrip: Boolean,
     content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
 ) {
-    var stripHeight by remember { mutableStateOf(0.dp) }
-    val targetExtra = if (showPreviewStrip) {
-        if (stripHeight > 0.dp) stripHeight else 84.dp
-    } else 0.dp
+    val targetExtra = if (showPreviewStrip) 84.dp else 0.dp
     val animatedExtra by animateDpAsState(
         targetValue = targetExtra,
         animationSpec = tween(durationMillis = 180),
         label = "previewStripExtra",
     )
     val contentTop = rememberShellContentTop()
-    Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = animatedExtra),
-        ) {
-            content(PaddingValues(top = contentTop), scrollBehavior)
-        }
-        AnimatedVisibility(
-            visible = showPreviewStrip,
-            enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
-                expandVertically(animationSpec = tween(durationMillis = 180)),
-            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
-                shrinkVertically(animationSpec = tween(durationMillis = 160)),
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = contentTop)
-                .zIndex(1f),
-        ) {
-            HomePreviewStrip(
-                onHeightMeasured = { h -> if (h > 0.dp) stripHeight = h },
-            )
-        }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = animatedExtra),
+    ) {
+        content(PaddingValues(top = contentTop), scrollBehavior)
     }
 }
 

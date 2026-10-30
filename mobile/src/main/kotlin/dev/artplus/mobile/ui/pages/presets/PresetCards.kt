@@ -1,6 +1,8 @@
 package dev.artplus.mobile.ui.pages.presets
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,19 +15,33 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.Delete
 import io.github.suqi8.coui.kmp.icon.extended.Folder
+import io.github.suqi8.coui.kmp.icon.extended.More
 import io.github.suqi8.coui.kmp.icon.extended.Search
+import io.github.suqi8.coui.kmp.icon.extended.Show
 import io.github.suqi8.coui.kmp.basic.EmptyState
+import io.github.suqi8.coui.kmp.basic.NotificationSwipeAction
+import io.github.suqi8.coui.kmp.basic.NotificationSwipeBox
+import io.github.suqi8.coui.kmp.basic.NotificationSwipeDefaults
+import io.github.suqi8.coui.kmp.basic.rememberNotificationSwipeState
+import io.github.suqi8.coui.kmp.core.ExperimentalCOUIApi
 import io.github.suqi8.coui.kmp.basic.TagView
 import io.github.suqi8.coui.kmp.basic.TagViewDefaults
 import io.github.suqi8.coui.kmp.basic.Text
@@ -216,6 +232,7 @@ internal fun PresetLibraryCard(
     onApply: (TuningPreset) -> Unit,
     onPreview: (TuningPreset) -> Unit,
     onMore: (TuningPreset) -> Unit,
+    onDelete: (TuningPreset) -> Unit = {},
 ) {
     val activePreset = presets.firstOrNull { it.id == activePresetId }
 
@@ -312,14 +329,15 @@ internal fun PresetLibraryCard(
             displayList.forEach { preset ->
                 val isActive = preset.id == activePresetId
                 val isModified = isActive && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: preset.params))
-                CompactPresetRow(
-                    busy = isBusy,
+                NotificationPresetCard(
                     preset = preset,
                     isActive = isActive,
                     isModified = isModified,
+                    busy = isBusy,
                     onApply = { onApply(preset) },
                     onPreview = { onPreview(preset) },
                     onMore = { onMore(preset) },
+                    onDelete = { onDelete(preset) },
                 )
             }
 
@@ -338,6 +356,118 @@ internal fun PresetLibraryCard(
                         color = COUITheme.colorScheme.primaryVariant,
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * 基于 COUI17 NotificationSwipeBox 的通知式滑动盒预设项：
+ * - 采用 COUI 原生通知卡片液态融合（MetaBallSurface）、边缘光照与弹簧手感；
+ * - 正常态为标准组件底色（surface）；
+ * - 生效态描蓝色边框（border），名称与描述均以蓝色文字高亮呈现；
+ * - 左滑拉出 2 个操作按钮：更多 (More) 在左、删除 (Delete) 在右；向右滑动或点击收回。
+ */
+@OptIn(ExperimentalCOUIApi::class)
+@Composable
+internal fun NotificationPresetCard(
+    preset: TuningPreset,
+    isActive: Boolean,
+    isModified: Boolean,
+    busy: Boolean,
+    onApply: () -> Unit,
+    onPreview: () -> Unit,
+    onMore: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val coroutineScope = rememberCoroutineScope()
+    val swipeState = rememberNotificationSwipeState()
+
+    val deleteColor = COUITheme.colorScheme.error
+    val actions = remember(onMore, onDelete, deleteColor) {
+        listOf(
+            NotificationSwipeAction(
+                icon = COUIIcons.More,
+                description = "更多",
+                onClick = onMore,
+            ),
+            NotificationSwipeAction(
+                icon = null,
+                description = "删除",
+                onClick = onDelete,
+                color = deleteColor,
+            ),
+        )
+    }
+
+    val cardShape = RoundedCornerShape(NotificationSwipeDefaults.CardCornerRadius)
+
+    NotificationSwipeBox(
+        actions = actions,
+        modifier = Modifier.fillMaxWidth(),
+        state = swipeState,
+        enabled = !busy,
+        minHeight = 0.dp,
+        containerColor = COUITheme.colorScheme.surfaceContainer,
+        actionColor = COUITheme.colorScheme.onSurface,
+        rimColor = Color.Transparent,
+        dismissOnFullSwipe = true,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (isActive) {
+                        Modifier.border(1.5.dp, COUITheme.colorScheme.primary, cardShape)
+                    } else {
+                        Modifier
+                    }
+                )
+                .clickable(enabled = !busy) {
+                    if (swipeState.isRevealed) {
+                        coroutineScope.launch { swipeState.close() }
+                    } else {
+                        onApply()
+                    }
+                }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isActive) {
+                            COUITheme.colorScheme.primary
+                        } else {
+                            Color.Transparent
+                        }
+                    ),
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                Text(
+                    text = preset.name,
+                    style = COUITheme.textStyles.body1.copy(
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                    ),
+                    color = if (isActive) COUITheme.colorScheme.primary else COUITheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Text(
+                    text = formatPresetDate(preset.updatedAt) + if (isActive) (if (isModified) " · 已套用 (已修改)" else " · 已套用") else "",
+                    style = COUITheme.textStyles.footnote2,
+                    color = if (isActive) COUITheme.colorScheme.primary.copy(alpha = 0.8f) else COUITheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
