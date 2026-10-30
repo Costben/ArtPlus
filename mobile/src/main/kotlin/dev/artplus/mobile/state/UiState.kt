@@ -49,6 +49,7 @@ internal data class PickerState(
     val usageAccessGranted: Boolean = false,
     val isScanningGeneratedPackages: Boolean = false,
     val generatedScanFailed: Boolean = false,
+    val onlyAmApps: Boolean = false,
 )
 
 internal data class ShellState(

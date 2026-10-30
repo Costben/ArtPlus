@@ -29,6 +29,7 @@ import dev.artplus.mobile.PREF_PREVIEW_STRIP_ENABLED
 import dev.artplus.mobile.PREF_QUERY_TEXT
 import dev.artplus.mobile.PREF_SELECTED_PACKAGE_NAME
 import dev.artplus.mobile.PREF_SHOW_SYSTEM_APPS
+import dev.artplus.mobile.PREF_ONLY_AM_APPS
 import dev.artplus.mobile.PREF_SKIP_ROOT_WRITE_CONFIRM
 import dev.artplus.mobile.ui.cards.PreviewSelections
 
@@ -60,6 +61,7 @@ internal fun MainActivity.persistUiState() {
         .putString(PREF_SELECTED_PACKAGE_NAME, picker.selectedPackageName)
         .putString(PREF_GENERATED_FILTER, picker.generatedFilter.name)
         .putBoolean(PREF_SHOW_SYSTEM_APPS, picker.showSystemApps)
+        .putBoolean(PREF_ONLY_AM_APPS, picker.onlyAmApps)
         .putString(PREF_QUERY_TEXT, picker.queryText)
         .putString(PREF_ADVANCED_SETTINGS_CATEGORY, shell.advancedSettingsCategory.name)
         .putString(PREF_ADVANCED_SETTINGS_TAB, shell.advancedSettingsTab.name)

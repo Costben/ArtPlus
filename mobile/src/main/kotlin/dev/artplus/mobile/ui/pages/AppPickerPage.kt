@@ -354,6 +354,7 @@ internal fun MainActivity.AppPickerPage(
                 PickerMoreBall(
                     show = showMoreMenu,
                     showSystemApps = pickerState.showSystemApps,
+                    onlyAmApps = pickerState.onlyAmApps,
                     canApplyPreset = !shellState.isBusy && pickerState.multiSelectedPackageNames.isNotEmpty(),
                     canSelectCurrent = !shellState.isBusy && filteredPackageNames.isNotEmpty(),
                     generatedCount = generatedCount,
@@ -364,6 +365,11 @@ internal fun MainActivity.AppPickerPage(
                     onToggleSystemApps = {
                         showMoreMenu = false
                         mainViewModel.updatePicker { it.copy(showSystemApps = !it.showSystemApps) }
+                        persistUiState()
+                    },
+                    onToggleOnlyAmApps = {
+                        showMoreMenu = false
+                        mainViewModel.updatePicker { it.copy(onlyAmApps = !it.onlyAmApps) }
                         persistUiState()
                     },
                     onApplyPreset = {

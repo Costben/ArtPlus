@@ -251,16 +251,59 @@ internal fun pickerCurrentVersionName(
     fallback
 }
 
-internal fun isNewerVersion(latest: String, current: String): Boolean {
-    val latestParts = latest.trim().removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
-    val currentParts = current.trim().removePrefix("v").split(".").mapNotNull { it.toIntOrNull() }
-    val len = maxOf(latestParts.size, currentParts.size)
-    for (i in 0 until len) {
-        val l = latestParts.getOrElse(i) { 0 }
-        val c = currentParts.getOrElse(i) { 0 }
-        if (l != c) return l > c
+internal data class SemVer(
+    val major: Int,
+    val minor: Int,
+    val patch: Int,
+    val preRelease: String? = null,
+) : Comparable<SemVer> {
+    val isPreRelease: Boolean get() = preRelease != null
+
+    override fun compareTo(other: SemVer): Int {
+        if (major != other.major) return major.compareTo(other.major)
+        if (minor != other.minor) return minor.compareTo(other.minor)
+        if (patch != other.patch) return patch.compareTo(other.patch)
+        // 核心版本（Major.Minor.Patch）完全相同时：
+        // 按照 SemVer 规范，正式版（无 preRelease 后缀）优先级高于预发布版（有 preRelease 后缀）
+        if (preRelease == null && other.preRelease != null) return 1
+        if (preRelease != null && other.preRelease == null) return -1
+        if (preRelease != null && other.preRelease != null) {
+            val thisTag = preRelease.filter { it.isLetter() }
+            val otherTag = other.preRelease.filter { it.isLetter() }
+            if (thisTag != otherTag) return thisTag.compareTo(otherTag)
+            val thisNum = preRelease.filter { it.isDigit() }.toIntOrNull() ?: 0
+            val otherNum = other.preRelease.filter { it.isDigit() }.toIntOrNull() ?: 0
+            return thisNum.compareTo(otherNum)
+        }
+        return 0
     }
-    return false
+
+    companion object {
+        fun parse(version: String): SemVer? {
+            val clean = version.trim().removePrefix("v").removePrefix("V")
+            if (clean.isBlank()) return null
+            val hyphenIdx = clean.indexOf('-')
+            val coreStr = if (hyphenIdx >= 0) clean.substring(0, hyphenIdx) else clean
+            val pre = if (hyphenIdx >= 0) clean.substring(hyphenIdx + 1).trim().ifBlank { null } else null
+            val parts = coreStr.split('.').mapNotNull { it.toIntOrNull() }
+            val major = parts.getOrElse(0) { 0 }
+            val minor = parts.getOrElse(1) { 0 }
+            val patch = parts.getOrElse(2) { 0 }
+            return SemVer(major, minor, patch, pre)
+        }
+    }
+}
+
+internal fun isNewerVersion(latest: String, current: String): Boolean {
+    val l = SemVer.parse(latest) ?: return false
+    val c = SemVer.parse(current) ?: return false
+
+    // 核心保护：当前为正式版时，绝不接收任何预发布版本（alpha/beta/rc）的更新提示
+    if (!c.isPreRelease && l.isPreRelease) {
+        return false
+    }
+
+    return l > c
 }
 
 internal fun pickerCheckForUpdate(

@@ -40,6 +40,7 @@ import dev.artplus.mobile.PREF_PREVIEW_STRIP_ENABLED
 import dev.artplus.mobile.PREF_QUERY_TEXT
 import dev.artplus.mobile.PREF_SELECTED_PACKAGE_NAME
 import dev.artplus.mobile.PREF_SHOW_SYSTEM_APPS
+import dev.artplus.mobile.PREF_ONLY_AM_APPS
 import dev.artplus.mobile.PREF_SKIP_ROOT_WRITE_CONFIRM
 import dev.artplus.mobile.data.AppEntry
 import dev.artplus.mobile.data.AppLoadResult
@@ -111,6 +112,7 @@ internal fun pickerLoadUiState(
     setSelectedPackage: (String?) -> Unit,
     setGeneratedFilter: (GeneratedFilter) -> Unit,
     setShowSystemApps: (Boolean) -> Unit,
+    setOnlyAmApps: (Boolean) -> Unit = {},
     setQueryText: (String) -> Unit,
     setAdvancedCategory: (AdvancedSettingsCategory) -> Unit,
     setAdvancedTab: (AdvancedSettingsTab) -> Unit,
@@ -149,6 +151,7 @@ internal fun pickerLoadUiState(
     )
     setGeneratedFilter(GeneratedFilter.fromName(prefs.getString(PREF_GENERATED_FILTER, null)))
     setShowSystemApps(prefs.getBoolean(PREF_SHOW_SYSTEM_APPS, false))
+    setOnlyAmApps(prefs.getBoolean(PREF_ONLY_AM_APPS, false))
     setQueryText(prefs.getString(PREF_QUERY_TEXT, "") ?: "")
     setAdvancedCategory(
         AdvancedSettingsCategory.fromName(

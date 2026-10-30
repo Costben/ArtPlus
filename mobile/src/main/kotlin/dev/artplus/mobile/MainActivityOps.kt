@@ -1056,6 +1056,7 @@ internal fun MainActivity.loadUiState() =
             setSelectedPackage = { mainViewModel.updatePicker { v -> v.copy(selectedPackageName = (it)) } },
             setGeneratedFilter = { mainViewModel.updatePicker { v -> v.copy(generatedFilter = (it)) } },
             setShowSystemApps = { mainViewModel.updatePicker { v -> v.copy(showSystemApps = (it)) } },
+            setOnlyAmApps = { mainViewModel.updatePicker { v -> v.copy(onlyAmApps = it) } },
             setQueryText = { mainViewModel.updatePicker { v -> v.copy(queryText = (it)) } },
             setAdvancedCategory = { mainViewModel.updateShell { v -> v.copy(advancedSettingsCategory = (it)) } },
             setAdvancedTab = { mainViewModel.updateShell { v -> v.copy(advancedSettingsTab = (it)) } },

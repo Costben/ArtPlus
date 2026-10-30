@@ -1042,6 +1042,7 @@ const val PREF_PREVIEW_DESKTOP_BACKGROUND = "preview_desktop_background"
 const val PREF_PREVIEW_ICON_SIZE_DP = "preview_icon_size_dp"
 const val PREF_PREVIEW_CORNER_RADIUS_DP = "preview_corner_radius_dp"
 const val PREF_SHOW_SYSTEM_APPS = "show_system_apps"
+const val PREF_ONLY_AM_APPS = "only_am_apps"
 const val PREF_OUTPUT_TREE_URI = "output_tree_uri"
 const val PREF_HAS_COMPLETED_ONBOARDING = "has_completed_onboarding"
 const val PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE = 480

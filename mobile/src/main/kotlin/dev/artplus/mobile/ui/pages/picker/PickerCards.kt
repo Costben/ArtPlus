@@ -158,6 +158,7 @@ internal fun PickerAppListHeader(multiCount: Int) {
 internal fun PickerMoreBall(
     show: Boolean,
     showSystemApps: Boolean,
+    onlyAmApps: Boolean,
     canApplyPreset: Boolean,
     canSelectCurrent: Boolean,
     generatedCount: Int,
@@ -166,6 +167,7 @@ internal fun PickerMoreBall(
     onShow: () -> Unit,
     onDismissRequest: () -> Unit,
     onToggleSystemApps: () -> Unit,
+    onToggleOnlyAmApps: () -> Unit,
     onApplyPreset: () -> Unit,
     onSelectCurrent: () -> Unit,
     modifier: Modifier = Modifier,
@@ -179,23 +181,21 @@ internal fun PickerMoreBall(
             OverlayNavigationPopupMenu(
                 expanded = show,
                 entries = listOf(
-                    // 概览
+                    // 筛选设置：以统计信息作为灰色分组标题（不可选中，移除概览二字与高亮条）
                     DropdownEntry(
-                        items = listOf(
-                            DropdownItem(
-                                text = "概览",
-                                summary = "已生成 $generatedCount · 未生成 $ungeneratedCount · AM $amMarkedCount",
-                            ),
-                        ),
-                    ),
-                    // 筛选设置：显示系统应用
-                    DropdownEntry(
+                        title = "已生成 $generatedCount · 未生成 $ungeneratedCount · AM $amMarkedCount",
                         items = listOf(
                             DropdownItem(
                                 text = "显示系统应用",
                                 summary = if (showSystemApps) "已包含系统应用" else "仅显示用户应用",
                                 selected = showSystemApps,
                                 onClick = onToggleSystemApps,
+                            ),
+                            DropdownItem(
+                                text = "只显示 AM 应用",
+                                summary = if (onlyAmApps) "已开启（仅显示带 AM 标记的应用）" else "已关闭（显示全部应用）",
+                                selected = onlyAmApps,
+                                onClick = onToggleOnlyAmApps,
                             ),
                         ),
                     ),

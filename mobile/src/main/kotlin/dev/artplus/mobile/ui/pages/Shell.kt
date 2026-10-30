@@ -351,11 +351,23 @@ internal fun MainActivity.ArtPlusScreen() {
                             val scopedApps = remember(apps.toList(), pickerState.showSystemApps) {
                                 apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, pickerState.showSystemApps, packageName) }
                             }
-                            val filteredApps = remember(scopedApps, pickerState.queryText, pickerState.generatedFilter, pickerState.generatedPackageNames) {
+                            val filteredApps = remember(scopedApps, pickerState.queryText, pickerState.generatedFilter, pickerState.generatedPackageNames, pickerState.artPlusModifiedPackageNames, pickerState.onlyAmApps) {
                                 val query = pickerState.queryText.trim().lowercase(Locale.ROOT)
                                 val stateScopedApps = when (pickerState.generatedFilter) {
-                                    GeneratedFilter.All -> scopedApps
-                                    GeneratedFilter.Generated -> scopedApps.filter { it.packageName in pickerState.generatedPackageNames }
+                                    GeneratedFilter.All -> {
+                                        if (pickerState.onlyAmApps) {
+                                            scopedApps.filter { it.packageName in pickerState.generatedPackageNames && it.packageName in pickerState.artPlusModifiedPackageNames }
+                                        } else {
+                                            scopedApps
+                                        }
+                                    }
+                                    GeneratedFilter.Generated -> {
+                                        if (pickerState.onlyAmApps) {
+                                            scopedApps.filter { it.packageName in pickerState.generatedPackageNames && it.packageName in pickerState.artPlusModifiedPackageNames }
+                                        } else {
+                                            scopedApps.filter { it.packageName in pickerState.generatedPackageNames }
+                                        }
+                                    }
                                     GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in pickerState.generatedPackageNames }
                                 }
                                 if (query.isEmpty()) {
