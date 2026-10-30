@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 安全区内悬浮毛玻璃托盘 (中心 54, 54, 宽 60, 高 60, rx=10) -->
+    <!-- 玻璃托盘阴影 -->
+    <path
+        android:fillColor="#33000000"
+        android:pathData="M34,26h40a10,10 0 0 1 10,10v40a10,10 0 0 1 -10,10h-40a10,10 0 0 1 -10,-10v-40a10,10 0 0 1 10,-10z" />
+    <!-- 玻璃托盘底板 -->
+    <path
+        android:fillColor="#4D2F6FED"
+        android:pathData="M34,24h40a10,10 0 0 1 10,10v40a10,10 0 0 1 -10,10h-40a10,10 0 0 1 -10,-10v-40a10,10 0 0 1 10,-10z" />
+    <!-- 玻璃托盘边缘高光描边 (Rim Light) -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M34,24h40a10,10 0 0 1 10,10v40a10,10 0 0 1 -10,10h-40a10,10 0 0 1 -10,-10v-40a10,10 0 0 1 10,-10z"
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="2.5" />
+
+    <!-- 主体：ART+ 标志符号 (亮白与光感蓝) -->
+    <!-- 上横 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37.5,34h33a1.5,1.5 0 0 1 1.5,1.5v4a1.5,1.5 0 0 1 -1.5,1.5h-33a1.5,1.5 0 0 1 -1.5,-1.5v-4a1.5,1.5 0 0 1 1.5,-1.5z" />
+    <!-- 中横 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37.5,50.5h21a1.5,1.5 0 0 1 1.5,1.5v4a1.5,1.5 0 0 1 -1.5,1.5h-21a1.5,1.5 0 0 1 -1.5,-1.5v-4a1.5,1.5 0 0 1 1.5,-1.5z" />
+    <!-- 下横 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M37.5,67h33a1.5,1.5 0 0 1 1.5,1.5v4a1.5,1.5 0 0 1 -1.5,1.5h-33a1.5,1.5 0 0 1 -1.5,-1.5v-4a1.5,1.5 0 0 1 1.5,-1.5z" />
+</vector>

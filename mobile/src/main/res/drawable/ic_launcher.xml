@@ -4,10 +4,12 @@
     android:height="48dp"
     android:viewportWidth="48"
     android:viewportHeight="48">
+    <!-- 纯色品牌蓝圆角底板 (rx=10, 专供应用内展示) -->
     <path
         android:fillColor="#2F6FED"
-        android:pathData="M6,6 L42,6 L42,42 L6,42 Z" />
+        android:pathData="M14,4h20a10,10 0 0 1 10,10v20a10,10 0 0 1 -10,10h-20a10,10 0 0 1 -10,-10v-20a10,10 0 0 1 10,-10z" />
+    <!-- 主体：纯白三横 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M15,31h18v4H15zM15,13h18v4H15zM15,22h12v4H15z" />
+        android:pathData="M16,14h16v4h-16z M16,22h11v4h-11z M16,30h16v4h-16z" />
 </vector>

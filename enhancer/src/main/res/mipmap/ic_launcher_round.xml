@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- 圆形玻璃底板 -->
+    <path
+        android:fillColor="#1A202C"
+        android:pathData="M24,4 A20,20 0 1 1 23.99,4 Z" />
+    <path
+        android:fillColor="#4D2F6FED"
+        android:pathData="M24,4 A20,20 0 1 1 23.99,4 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M24,4 A20,20 0 1 1 23.99,4 Z"
+        android:strokeColor="#CCFFFFFF"
+        android:strokeWidth="1.5" />
+    <!-- 主体：三横 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M15,30h18v3.4H15zM15,14h18v3.4H15zM15,22h11v3.4H15z" />
+</vector>

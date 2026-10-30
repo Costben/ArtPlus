@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 主体：纯白经典三横 (居中安全区，纯净无阴影杂质) -->
+    <!-- 上横：宽 36, 高 8, x=36..72, y=32..40 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,32h36v8h-36z" />
+    <!-- 中横：宽 24, 高 8, x=36..60, y=50..58 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,50h24v8h-24z" />
+    <!-- 下横：宽 36, 高 8, x=36..72, y=68..76 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,68h36v8h-36z" />
+</vector>
