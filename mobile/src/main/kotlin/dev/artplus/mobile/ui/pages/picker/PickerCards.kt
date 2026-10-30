@@ -32,20 +32,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.suqi8.coui.kmp.basic.Icon
-import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.basic.BottomFloatingAccessoryBall
 import io.github.suqi8.coui.kmp.basic.Card
-import io.github.suqi8.coui.kmp.basic.Checkbox
 import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.basic.Checkbox
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
 import io.github.suqi8.coui.kmp.basic.InputField
+import io.github.suqi8.coui.kmp.basic.PopupPositionProvider
 import io.github.suqi8.coui.kmp.basic.SearchBarDefaults
 import io.github.suqi8.coui.kmp.basic.TagView
 import io.github.suqi8.coui.kmp.basic.TagViewDefaults
 import io.github.suqi8.coui.kmp.basic.Text
-import io.github.suqi8.coui.kmp.basic.DropdownEntry
-import io.github.suqi8.coui.kmp.basic.DropdownItem
-import io.github.suqi8.coui.kmp.basic.IconButton
-import io.github.suqi8.coui.kmp.basic.PopupPositionProvider
+import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.More
 import io.github.suqi8.coui.kmp.overlay.OverlayNavigationPopupMenu
 import io.github.suqi8.coui.kmp.theme.COUITheme
@@ -56,10 +55,7 @@ import dev.artplus.mobile.ui.components.AppListTag
 import dev.artplus.mobile.ui.components.AppStatusTag
 import dev.artplus.mobile.ui.components.AppTagCornerRadius
 import dev.artplus.mobile.ui.components.CompactCardCornerRadius
-import dev.artplus.mobile.ui.components.LibrarySettingRow
-import dev.artplus.mobile.ui.components.SectionCard
 import dev.artplus.mobile.ui.components.SectionHeader
-import dev.artplus.mobile.ui.components.SettingsIconKind
 
 /**
  * Slice 2.5：应用选择器组件与行（原 MainActivity 残留本体原样搬迁）。
@@ -101,28 +97,9 @@ internal fun PickerSearchRow(
 }
 
 @Composable
-internal fun AppPickerFilterCard(
-    showSystemApps: Boolean,
-    onToggleSystemApps: () -> Unit,
-) {
-    SectionCard(rowsFullBleed = true, title = "筛选") {
-        LibrarySettingRow(
-            title = "显示系统应用",
-            summary = if (showSystemApps) "已包含系统应用，可搜索和批量选择" else "仅显示用户应用；系统应用已隐藏",
-            icon = SettingsIconKind.Shield,
-            showSwitch = true,
-            checked = showSystemApps,
-            onCheckedChange = { onToggleSystemApps() },
-        )
-    }
-}
-
-@Composable
 internal fun AppPickerControlsCard(
-    showSystemApps: Boolean,
     generatedFilter: GeneratedFilter,
     queryText: String,
-    onToggleSystemApps: () -> Unit,
     onFilterSelected: (GeneratedFilter) -> Unit,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
@@ -140,15 +117,11 @@ internal fun AppPickerControlsCard(
                 onFilterSelected(filters[index])
             },
         )
-        // 搜索自成一行，与筛选卡分开
+        // 搜索自成一行，与筛选分开
         PickerSearchRow(
             queryText = queryText,
             onQueryChange = onQueryChange,
             onClearQuery = onClearQuery,
-        )
-        AppPickerFilterCard(
-            showSystemApps = showSystemApps,
-            onToggleSystemApps = onToggleSystemApps,
         )
     }
 }
@@ -178,14 +151,13 @@ internal fun PickerAppListHeader(multiCount: Int) {
 }
 
 /**
- * 选择器右下角的悬浮球：点开是「更多」菜单（概览 / 套用当前预设 / 选择当前）。
- *
- * 菜单必须声明在球内部：COUI 拿声明处父节点（这颗 56dp 的球）的窗口矩形当锚点，卡片才会
- * 从球的上沿长出来；弹层本身由 Scaffold 的 popupHost 渲染，不会被球裁掉。
+ * 选择器右下角融合球：底栏融合球同款 MetaBall 玻璃材质、边光高光与手势形变物理。
+ * 点开是「更多」菜单（概览 / 显示系统应用 / 套用当前预设 / 选择当前）。
  */
 @Composable
 internal fun PickerMoreBall(
     show: Boolean,
+    showSystemApps: Boolean,
     canApplyPreset: Boolean,
     canSelectCurrent: Boolean,
     generatedCount: Int,
@@ -193,63 +165,63 @@ internal fun PickerMoreBall(
     amMarkedCount: Int,
     onShow: () -> Unit,
     onDismissRequest: () -> Unit,
+    onToggleSystemApps: () -> Unit,
     onApplyPreset: () -> Unit,
     onSelectCurrent: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val size = 56.dp
-    Box(Modifier.size(size)) {
-        IconButton(
-            onClick = onShow,
-            modifier = Modifier.fillMaxSize(),
-            backgroundColor = COUITheme.colorScheme.primary,
-            cornerRadius = size / 2,
-        ) {
-            Icon(
-                imageVector = COUIIcons.More,
-                contentDescription = "更多",
-                modifier = Modifier.size(24.dp),
-                tint = COUITheme.colorScheme.onPrimary,
+    BottomFloatingAccessoryBall(
+        onClick = onShow,
+        modifier = modifier,
+        icon = COUIIcons.More,
+        contentDescription = "更多",
+        menu = {
+            OverlayNavigationPopupMenu(
+                expanded = show,
+                entries = listOf(
+                    // 概览
+                    DropdownEntry(
+                        items = listOf(
+                            DropdownItem(
+                                text = "概览",
+                                summary = "已生成 $generatedCount · 未生成 $ungeneratedCount · AM $amMarkedCount",
+                            ),
+                        ),
+                    ),
+                    // 筛选设置：显示系统应用
+                    DropdownEntry(
+                        items = listOf(
+                            DropdownItem(
+                                text = "显示系统应用",
+                                summary = if (showSystemApps) "已包含系统应用" else "仅显示用户应用",
+                                selected = showSystemApps,
+                                onClick = onToggleSystemApps,
+                            ),
+                        ),
+                    ),
+                    // 批量动作
+                    DropdownEntry(
+                        items = listOf(
+                            DropdownItem(
+                                text = "套用当前预设",
+                                enabled = canApplyPreset,
+                                onClick = onApplyPreset,
+                            ),
+                            DropdownItem(
+                                text = "选择当前",
+                                enabled = canSelectCurrent,
+                                onClick = onSelectCurrent,
+                            ),
+                        ),
+                    ),
+                ),
+                onDismissRequest = onDismissRequest,
+                onDismissFinished = {},
+                alignment = PopupPositionProvider.Align.BottomEnd,
+                collapseOnSelection = false,
             )
-        }
-        OverlayNavigationPopupMenu(
-            expanded = show,
-            entries = listOf(
-                // 概览只读：enabled=false 让它既不响应点击、也不画水波纹与选中勾。
-                DropdownEntry(
-                    items = listOf(
-                        // 概览是只读信息：不给 onClick，靠 collapseOnSelection=false 让它点完不关菜单；
-                        // 也不能用 enabled=false —— 那会把标题涂成禁用灰，比下面的统计小字还浅。
-                        DropdownItem(
-                            text = "概览",
-                            summary = "已生成 $generatedCount · 未生成 $ungeneratedCount · AM $amMarkedCount",
-                        ),
-                    ),
-                ),
-                // 两个 entry 之间 COUI 自动画一条带细线的分隔带，就是「概览」下面那道下划线。
-                DropdownEntry(
-                    items = listOf(
-                        DropdownItem(
-                            text = "套用当前预设",
-                            enabled = canApplyPreset,
-                            onClick = onApplyPreset,
-                        ),
-                        DropdownItem(
-                            text = "选择当前",
-                            enabled = canSelectCurrent,
-                            onClick = onSelectCurrent,
-                        ),
-                    ),
-                ),
-            ),
-            onDismissRequest = onDismissRequest,
-            onDismissFinished = {},
-            alignment = PopupPositionProvider.Align.BottomEnd,
-            renderInRootScaffold = false,
-            // 两个动作自己写 showMoreMenu=false 关菜单，所以这里不让 COUI 代为收起：
-            // 这样点「概览」只是空点，不会把菜单关掉。
-            collapseOnSelection = false,
-        )
-    }
+        },
+    )
 }
 
 @Composable

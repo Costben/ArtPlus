@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
-import java.io.File
 import io.github.suqi8.coui.kmp.basic.Scaffold
 import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
@@ -49,7 +48,6 @@ import io.github.suqi8.coui.kmp.basic.SmallTopAppBar
 import io.github.suqi8.coui.kmp.icon.extended.Delete
 import io.github.suqi8.coui.kmp.icon.extended.Refresh
 import io.github.suqi8.coui.kmp.theme.COUITheme
-import io.github.suqi8.coui.kmp.utils.COUIPopupUtils
 import dev.artplus.mobile.ui.pages.picker.PickerAppListHeader
 import dev.artplus.mobile.ui.pages.picker.PickerMoreBall
 import dev.artplus.mobile.AppVisibility
@@ -351,31 +349,33 @@ internal fun MainActivity.AppPickerPage(
         // 内容从顶栏底下滚过（顶部留白在 contentPadding 里），COUI 才会给顶栏画玻璃材质。
         edgeToEdge = true,
         containerColor = pageBackground,
-        // 浮层要画玻璃，得在它声明处拿到页面内容录制的 backdrop。
-        popupHost = {
-            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
-                COUIPopupUtils.COUIPopupHost()
-            }
-        },
         floatingActionButton = {
-            PickerMoreBall(
-                show = showMoreMenu,
-                canApplyPreset = !shellState.isBusy && pickerState.multiSelectedPackageNames.isNotEmpty(),
-                canSelectCurrent = !shellState.isBusy && filteredPackageNames.isNotEmpty(),
-                generatedCount = generatedCount,
-                ungeneratedCount = scopedApps.size - generatedCount,
-                amMarkedCount = amMarkedCount,
-                onShow = { showMoreMenu = true },
-                onDismissRequest = { showMoreMenu = false },
-                onApplyPreset = {
-                    showMoreMenu = false
-                    applyCurrentPreset()
-                },
-                onSelectCurrent = {
-                    showMoreMenu = false
-                    selectCurrent()
-                },
-            )
+            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
+                PickerMoreBall(
+                    show = showMoreMenu,
+                    showSystemApps = pickerState.showSystemApps,
+                    canApplyPreset = !shellState.isBusy && pickerState.multiSelectedPackageNames.isNotEmpty(),
+                    canSelectCurrent = !shellState.isBusy && filteredPackageNames.isNotEmpty(),
+                    generatedCount = generatedCount,
+                    ungeneratedCount = scopedApps.size - generatedCount,
+                    amMarkedCount = amMarkedCount,
+                    onShow = { showMoreMenu = true },
+                    onDismissRequest = { showMoreMenu = false },
+                    onToggleSystemApps = {
+                        showMoreMenu = false
+                        mainViewModel.updatePicker { it.copy(showSystemApps = !it.showSystemApps) }
+                        persistUiState()
+                    },
+                    onApplyPreset = {
+                        showMoreMenu = false
+                        applyCurrentPreset()
+                    },
+                    onSelectCurrent = {
+                        showMoreMenu = false
+                        selectCurrent()
+                    },
+                )
+            }
         },
         topBar = {
             CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
@@ -445,31 +445,22 @@ internal fun MainActivity.AppPickerPage(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                run {
-    AppPickerControlsCard(
-                showSystemApps = pickerState.showSystemApps,
-                generatedFilter = pickerState.generatedFilter,
-                queryText = pickerState.queryText,
-                onToggleSystemApps = {
-                    mainViewModel.updatePicker { it -> it.copy(showSystemApps = !it.showSystemApps) }
-                    persistUiState()
-                },
-                onFilterSelected = {
-                    mainViewModel.updatePicker { v -> v.copy(generatedFilter = (it)) }
-                    mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
-                    persistUiState()
-                },
-                onQueryChange = {
-                    mainViewModel.updatePicker { v -> v.copy(queryText = (it)) }
-                    persistUiState()
-                },
-                onClearQuery = {
-                    mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
-                    persistUiState()
-                },
-                
-            )
-}
+                AppPickerControlsCard(
+                    generatedFilter = pickerState.generatedFilter,
+                    queryText = pickerState.queryText,
+                    onFilterSelected = { filter ->
+                        mainViewModel.updatePicker { it.copy(generatedFilter = filter, queryText = "") }
+                        persistUiState()
+                    },
+                    onQueryChange = { text ->
+                        mainViewModel.updatePicker { it.copy(queryText = text) }
+                        persistUiState()
+                    },
+                    onClearQuery = {
+                        mainViewModel.updatePicker { it.copy(queryText = "") }
+                        persistUiState()
+                    },
+                )
             }
             // 应用行自成一组，说明下面这一串是可比对选择的应用。
             item(key = "apps_header") {
