@@ -28,6 +28,7 @@ import io.github.suqi8.coui.kmp.icon.extended.Settings
 import io.github.suqi8.coui.kmp.icon.extended.Refresh
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import dev.artplus.mobile.CUSTOM_WALLPAPER_FILE
 import dev.artplus.mobile.ICON_CACHE_SIZE
 import dev.artplus.mobile.MainActivity
 import dev.artplus.mobile.PREFS_NAME
@@ -48,6 +49,7 @@ import dev.artplus.mobile.ui.cards.PreviewSelections
 import dev.artplus.mobile.ui.components.TitleBarIconButton
 import dev.artplus.mobile.ui.pages.PagerShellPage
 import dev.artplus.mobile.ui.pages.home.GeneratedPreviewCard
+import dev.artplus.mobile.ui.pages.home.ForegroundSubjectCard
 import dev.artplus.mobile.ui.pages.home.LayerDebugCard
 import dev.artplus.mobile.ui.pages.home.PreviewControlCard
 import dev.artplus.mobile.ui.pages.home.StatusCard
@@ -64,6 +66,7 @@ import dev.artplus.mobile.ui.pages.params.paramsUpdatePreviewIconSizeDp
 import dev.artplus.mobile.ui.pages.params.paramsUpdatePreviewStripEnabled
 import dev.artplus.mobile.ui.pages.picker.AppIcon
 import dev.artplus.mobile.ui.pages.picker.PermissionCard
+import dev.artplus.mobile.ui.pages.picker.pickerClearCustomWallpaper
 import dev.artplus.mobile.ui.pages.picker.pickerLoadBundledPreviewWallpaperBitmap
 import dev.artplus.mobile.ui.pages.picker.pickerLoadCustomWallpaperBitmap
 import dev.artplus.mobile.ui.pages.picker.pickerLoadPreviewWallpaperBitmap
@@ -359,99 +362,122 @@ val __act3 = LocalContext.current
 }
                             }
                         }
+                        sectionItem(key = "foreground_subject", title = "前景主体大小") {
+                            ForegroundSubjectCard(
+                                tuningState = paramsState,
+                                isBusy = shellState.isBusy,
+                                draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
+                                onDraftForegroundSubjectPercent = { draftForegroundSubjectPercentText = it },
+                                onSaveForegroundSubjectPercent = { run {
+                                    paramsUpdateForegroundSubjectPercent(
+                                        value = (it),
+                                        updateLive = mainViewModel::updateLive,
+                                        getParams = { mainViewModel.params.value },
+                                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                        setDraftText = { draftForegroundSubjectPercentText = it },
+                                        onRefresh = tuningActions.refresh,
+                                    )
+                                } },
+                            )
+                        }
                         sectionItem(key = "preview_control", title = "预览设置") {
-val __act2 = LocalContext.current
-    PreviewControlCard(
-                tuningState = paramsState,
-                // 热修复2：预览控制卡渲染位经已订阅状态读取（裸读 .value 不触发重组）。
-                isBusy = shellState.isBusy,
-                previewCornerRadiusDp = previewSessionState.previewCornerRadiusDp,
-                draftPreviewCornerRadiusDpText = draftPreviewCornerRadiusDpText,
-                previewIconSizeDp = previewSessionState.previewIconSizeDp,
-                draftPreviewIconSizeDpText = draftPreviewIconSizeDpText,
-                draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
-                previewStripEnabled = previewSessionState.previewStripEnabled,
-                previewDesktopBackground = previewSessionState.previewDesktopBackground,
-                wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
-                wallpaperKey = batchConfigState.customWallpaperPath,
-                loadWallpaper = {
-                    withContext(Dispatchers.IO) {
-                        run {
-        pickerLoadCustomWallpaperBitmap(
-                    path = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                    cachedPath = cachedCustomWallpaperPath,
-                    getCached = { cachedCustomWallpaper },
-                    setCached = { path, bitmap ->
-                        cachedCustomWallpaper = bitmap
-                        cachedCustomWallpaperPath = path
-                    },
-                    shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
-                )
-    } ?: run {
-        pickerLoadPreviewWallpaperBitmap(
-                    getCached = { cachedSystemWallpaper },
-                    setCached = { cachedSystemWallpaper = it },
-                    loadDrawable = { pickerSystemWallpaperDrawable(WallpaperManager.getInstance(__act2)) },
-                    shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
-                )
-    } ?: run {
-        pickerLoadBundledPreviewWallpaperBitmap(
-                    getCached = { cachedBundledWallpaper },
-                    setCached = { cachedBundledWallpaper = it },
-                    resources = resources,
-                    resId = R.drawable.preview_wallpaper,
-                    shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
-                )
-    }
-                    }
-                },
-                onDraftForegroundSubjectPercent = { draftForegroundSubjectPercentText = it },
-                onSaveForegroundSubjectPercent = { run {
-        paramsUpdateForegroundSubjectPercent(
-                    value = (it),
-                    updateLive = mainViewModel::updateLive,
-                    getParams = { mainViewModel.params.value },
-                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                    setDraftText = { draftForegroundSubjectPercentText = it },
-                    onRefresh = tuningActions.refresh,
-                )
-    } },
-                onDraftPreviewCornerRadiusDp = { draftPreviewCornerRadiusDpText = it },
-                onSavePreviewCornerRadiusDp = { run {
-        paramsUpdatePreviewCornerRadiusDp(
-                    value = (it),
-                    setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewCornerRadiusDp = (it)) } },
-                    setDraftText = { draftPreviewCornerRadiusDpText = it },
-                    onSave = { persistUiState() },
-                )
-    } },
-                onDraftPreviewIconSizeDp = { draftPreviewIconSizeDpText = it },
-                onSavePreviewIconSizeDp = { run {
-        paramsUpdatePreviewIconSizeDp(
-                    value = (it),
-                    setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewIconSizeDp = (it)) } },
-                    setDraftText = { draftPreviewIconSizeDpText = it },
-                    onSave = { persistUiState() },
-                )
-    } },
-                onPreviewStripEnabled = { run {
-        paramsUpdatePreviewStripEnabled(
-                    enabled = (it),
-                    getValue = { mainViewModel.previewSession.value.previewStripEnabled },
-                    setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewStripEnabled = (it)) } },
-                    onSave = { persistUiState() },
-                    setStatusText = { setStatus((it)) },
-                )
-    } },
-                onPreviewDesktopBackground = { run {
-        paramsUpdatePreviewDesktopBackground(
-                    option = (it),
-                    getValue = { mainViewModel.previewSession.value.previewDesktopBackground },
-                    setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewDesktopBackground = (it)) } },
-                    onSave = { persistUiState() },
-                )
-    } },
-            )
+                            val __act2 = LocalContext.current
+                            PreviewControlCard(
+                                isBusy = shellState.isBusy,
+                                previewStripEnabled = previewSessionState.previewStripEnabled,
+                                hasCustomWallpaper = batchConfigState.customWallpaperPath != null,
+                                onPreviewStripEnabled = { run {
+                                    paramsUpdatePreviewStripEnabled(
+                                        enabled = (it),
+                                        getValue = { mainViewModel.previewSession.value.previewStripEnabled },
+                                        setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewStripEnabled = (it)) } },
+                                        onSave = { persistUiState() },
+                                        setStatusText = { setStatus((it)) },
+                                    )
+                                } },
+                                onPickWallpaper = {
+                                    chooseWallpaperLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
+                                },
+                                onClearWallpaper = { run {
+                                    pickerClearCustomWallpaper(
+                                        filesDir = filesDir,
+                                        customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                                        fileName = CUSTOM_WALLPAPER_FILE,
+                                        onCleared = { setStatus((it)) },
+                                        onSave = { -> persistUiState() },
+                                        clearCache = {
+                                            cachedCustomWallpaper = null
+                                            cachedCustomWallpaperPath = null
+                                        },
+                                        setPath = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(customWallpaperPath = (it)) } },
+                                        setInfo = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(customWallpaperInfo = (it)) } },
+                                    )
+                                } },
+                                previewCornerRadiusDp = previewSessionState.previewCornerRadiusDp,
+                                draftPreviewCornerRadiusDpText = draftPreviewCornerRadiusDpText,
+                                onDraftPreviewCornerRadiusDp = { draftPreviewCornerRadiusDpText = it },
+                                onSavePreviewCornerRadiusDp = { run {
+                                    paramsUpdatePreviewCornerRadiusDp(
+                                        value = (it),
+                                        setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewCornerRadiusDp = (it)) } },
+                                        setDraftText = { draftPreviewCornerRadiusDpText = it },
+                                        onSave = { persistUiState() },
+                                    )
+                                } },
+                                previewIconSizeDp = previewSessionState.previewIconSizeDp,
+                                draftPreviewIconSizeDpText = draftPreviewIconSizeDpText,
+                                onDraftPreviewIconSizeDp = { draftPreviewIconSizeDpText = it },
+                                onSavePreviewIconSizeDp = { run {
+                                    paramsUpdatePreviewIconSizeDp(
+                                        value = (it),
+                                        setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewIconSizeDp = (it)) } },
+                                        setDraftText = { draftPreviewIconSizeDpText = it },
+                                        onSave = { persistUiState() },
+                                    )
+                                } },
+                                previewDesktopBackground = previewSessionState.previewDesktopBackground,
+                                wallpaperInitial = cachedCustomWallpaper ?: cachedSystemWallpaper ?: cachedBundledWallpaper,
+                                wallpaperKey = batchConfigState.customWallpaperPath,
+                                loadWallpaper = {
+                                    withContext(Dispatchers.IO) {
+                                        run {
+                                            pickerLoadCustomWallpaperBitmap(
+                                                path = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
+                                                cachedPath = cachedCustomWallpaperPath,
+                                                getCached = { cachedCustomWallpaper },
+                                                setCached = { path, bitmap ->
+                                                    cachedCustomWallpaper = bitmap
+                                                    cachedCustomWallpaperPath = path
+                                                },
+                                                shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+                                            )
+                                        } ?: run {
+                                            pickerLoadPreviewWallpaperBitmap(
+                                                getCached = { cachedSystemWallpaper },
+                                                setCached = { cachedSystemWallpaper = it },
+                                                loadDrawable = { pickerSystemWallpaperDrawable(WallpaperManager.getInstance(__act2)) },
+                                                shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+                                            )
+                                        } ?: run {
+                                            pickerLoadBundledPreviewWallpaperBitmap(
+                                                getCached = { cachedBundledWallpaper },
+                                                setCached = { cachedBundledWallpaper = it },
+                                                resources = resources,
+                                                resId = R.drawable.preview_wallpaper,
+                                                shortEdge = PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE,
+                                            )
+                                        }
+                                    }
+                                },
+                                onPreviewDesktopBackground = { run {
+                                    paramsUpdatePreviewDesktopBackground(
+                                        option = (it),
+                                        getValue = { mainViewModel.previewSession.value.previewDesktopBackground },
+                                        setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewDesktopBackground = (it)) } },
+                                        onSave = { persistUiState() },
+                                    )
+                                } },
+                            )
                         }
                         // 卡片自己在素材不全时什么都不画，这里同条件挡住小标题，免得只剩一个标题。
                         if (

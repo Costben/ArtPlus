@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.Icon
@@ -83,6 +84,7 @@ internal fun LibrarySettingRow(
     checked: Boolean = false,
     enabled: Boolean = true,
     showIcon: Boolean = icon != null,
+    summarySingleLine: Boolean = false,
     onCheckedChange: ((Boolean) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -121,6 +123,57 @@ internal fun LibrarySettingRow(
             onClick = rowClick,
             enabled = enabled,
         )
+        summarySingleLine && summaryText != null -> BasicComponent(
+            startAction = startAction,
+            endActions = if (hasValue || showSwitch || showArrowUpDown) {
+                {
+                    if (hasValue) RowValueText(value = value.orEmpty(), enabled = enabled)
+                    if (showSwitch) {
+                        Switch(
+                            checked = checked,
+                            onCheckedChange = null,
+                            enabled = enabled,
+                        )
+                    }
+                    if (showArrowUpDown) {
+                        Image(
+                            modifier = Modifier
+                                .padding(start = 4.dp)
+                                .size(width = 10.dp, height = 16.dp),
+                            imageVector = COUIIcons.Basic.ArrowUpDown,
+                            contentDescription = "排序",
+                            colorFilter = ColorFilter.tint(
+                                if (enabled) {
+                                    COUITheme.colorScheme.onSurfaceVariantActions
+                                } else {
+                                    COUITheme.colorScheme.disabledOnSecondaryVariant
+                                },
+                            ),
+                        )
+                    }
+                }
+            } else {
+                null
+            },
+            onClick = rowClick,
+            enabled = enabled,
+        ) {
+            Text(
+                text = title,
+                style = COUITheme.textStyles.headline1,
+                fontWeight = FontWeight.Medium,
+                color = COUITheme.colorScheme.onBackground,
+            )
+            Text(
+                text = summaryText,
+                modifier = Modifier.padding(top = 2.dp),
+                style = COUITheme.textStyles.body2,
+                color = COUITheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
         else -> BasicComponent(
             title = title,
             summary = summaryText,
@@ -281,6 +334,7 @@ internal fun SettingsInfoRow(
     summary: String?,
     value: String?,
     icon: SettingsIconKind,
+    summarySingleLine: Boolean = false,
 ) {
     LibrarySettingRow(
         title = title,
@@ -288,6 +342,7 @@ internal fun SettingsInfoRow(
         value = value,
         icon = icon,
         enabled = true,
+        summarySingleLine = summarySingleLine,
     )
 }
 

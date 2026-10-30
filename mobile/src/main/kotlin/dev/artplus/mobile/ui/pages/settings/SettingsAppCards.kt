@@ -387,8 +387,9 @@ internal fun OutputCard(
         SettingsInfoRow(
             title = "Root 目标",
             summary = "/data/oplus/uxicons/{package}",
-            value = "data",
+            value = null,
             icon = settingsIconForTitle("Root 目标"),
+            summarySingleLine = true,
         )
         SectionDivider()
         LibrarySettingRow(
@@ -523,14 +524,14 @@ internal fun InputSettingsCard(
         SectionDivider()
         SettingsInfoRow(
             title = "已生成",
-            summary = "来自本地缓存；手动刷新后才重新读取 data 路径",
+            summary = null,
             value = "$generatedCount",
             icon = settingsIconForTitle("已生成"),
         )
         SectionDivider()
         SettingsInfoRow(
             title = "AM 标记",
-            summary = "被 ArtPlus 接管的图标包，应用列表里标为 AM",
+            summary = null,
             value = "$amCount",
             icon = SettingsIconKind.CheckBadge,
         )

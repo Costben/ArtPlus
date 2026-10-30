@@ -67,17 +67,12 @@ import dev.artplus.mobile.ui.pages.settings.InputSettingsCard
 import dev.artplus.mobile.ui.pages.settings.OutputCard
 import dev.artplus.mobile.pipeline.findRmbgComponent
 import dev.artplus.mobile.ui.pages.params.paramsUpdateRmbgModelPreset
-import dev.artplus.mobile.ui.pages.params.paramsUpdatePreviewStripEnabled
 import dev.artplus.mobile.RMBG_MODEL_PRESETS
 import dev.artplus.mobile.ui.pages.settings.RmbgComponentCard
-import dev.artplus.mobile.ui.pages.picker.pickerClearCustomWallpaper
 import dev.artplus.mobile.system.exportToTree
-import dev.artplus.mobile.ui.pages.settings.PreviewStripSettingsCard
-import dev.artplus.mobile.ui.pages.settings.WallpaperSettingsCard
 import dev.artplus.mobile.system.runRootCommand
 import dev.artplus.mobile.ui.pages.settings.GptSettingsCard
 import dev.artplus.mobile.ui.pages.params.paramsCurrentRmbgModelPreset
-import dev.artplus.mobile.CUSTOM_WALLPAPER_FILE
 import dev.artplus.mobile.ui.components.BarClearance
 
 @Composable
@@ -487,46 +482,6 @@ val __act1 = LocalContext.current
     } },
             )
 }
-        }
-        item(key = "preview_strip") {
-    PreviewStripSettingsCard(
-                enabled = previewSession.previewStripEnabled,
-                isBusy = shell.isBusy,
-                onCheckedChange = { run {
-        paramsUpdatePreviewStripEnabled(
-                    enabled = (it),
-                    getValue = { mainViewModel.previewSession.value.previewStripEnabled },
-                    setValue = { mainViewModel.updatePreviewSession { v -> v.copy(previewStripEnabled = (it)) } },
-                    onSave = { persistUiState() },
-                    setStatusText = { setStatus((it)) },
-                )
-    } },
-            )
-        }
-        item(key = "wallpaper") {
-    WallpaperSettingsCard(
-                hasCustom = batchPreviewConfig.customWallpaperPath != null,
-                customInfo = batchPreviewConfig.customWallpaperInfo,
-                isBusy = shell.isBusy,
-                onPickWallpaper = {
-                    chooseWallpaperLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
-                },
-                onClearWallpaper = { run {
-        pickerClearCustomWallpaper(
-                    filesDir = filesDir,
-                    customPath = mainViewModel.batchPreviewConfig.value.customWallpaperPath,
-                    fileName = CUSTOM_WALLPAPER_FILE,
-                    onCleared = { setStatus((it)) },
-                    onSave = {  -> persistUiState() },
-                    clearCache = {
-                        cachedCustomWallpaper = null
-                        cachedCustomWallpaperPath = null
-                    },
-                    setPath = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(customWallpaperPath = (it)) } },
-                    setInfo = { mainViewModel.updateBatchPreviewConfig { v -> v.copy(customWallpaperInfo = (it)) } },
-                )
-    } },
-            )
         }
         item(key = "gpt") {
     GptSettingsCard(

@@ -5,16 +5,19 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
-import io.github.suqi8.coui.kmp.basic.ButtonDefaults
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.CardDefaults
 import io.github.suqi8.coui.kmp.basic.HorizontalDivider
+import io.github.suqi8.coui.kmp.basic.MaterialStrokeParams
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
+import io.github.suqi8.coui.kmp.layout.DialogButtonBarDefaults
 import io.github.suqi8.coui.kmp.overlay.OverlayBottomSheet
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.TuningPreset
@@ -60,7 +63,6 @@ internal fun PresetActionMenuDialog(
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "应用此预设",
-                    summary = "载入此快照的全部调参设置",
                     onClick = {
                         onDismiss()
                         onApply(target)
@@ -90,7 +92,6 @@ internal fun PresetActionMenuDialog(
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "重命名",
-                    summary = "修改该预设名称",
                     onClick = {
                         onDismiss()
                         onRename(target)
@@ -100,7 +101,6 @@ internal fun PresetActionMenuDialog(
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "复制单条 JSON",
-                    summary = "导出该预设快照到剪贴板，方便分享",
                     onClick = {
                         onDismiss()
                         onExportSingle(target)
@@ -110,7 +110,7 @@ internal fun PresetActionMenuDialog(
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "删除预设",
-                    summary = "从预设库中彻底移除",
+                    isDestructive = true,
                     onClick = {
                         onDismiss()
                         onDelete(target)
@@ -118,11 +118,21 @@ internal fun PresetActionMenuDialog(
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
+            val isDark = COUITheme.colorScheme.background.luminance() < 0.5f
             TextButton(
                 text = "取消",
                 onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 44.dp),
+                pressScaleEnabled = true,
+                cornerRadius = 22.dp,
+                minWidth = 0.dp,
+                minHeight = 44.dp,
+                colors = DialogButtonBarDefaults.buttonColors(),
+                insideMargin = DialogButtonBarDefaults.ButtonInsideMargin,
+                textStyle = COUITheme.textStyles.button,
+                edgeStroke = MaterialStrokeParams.contentCapsule5(isDark),
             )
         }
     }

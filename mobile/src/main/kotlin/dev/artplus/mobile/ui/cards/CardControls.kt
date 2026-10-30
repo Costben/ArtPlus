@@ -42,12 +42,12 @@ import androidx.compose.foundation.shape.CircleShape
 import java.util.Locale
 import kotlinx.coroutines.isActive
 import io.github.suqi8.coui.kmp.basic.BasicComponent
+import io.github.suqi8.coui.kmp.basic.BasicComponentDefaults
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.basic.IconButton
 import io.github.suqi8.coui.kmp.basic.CardDefaults
 import io.github.suqi8.coui.kmp.basic.TabRowDefaults
 import io.github.suqi8.coui.kmp.basic.TabRowWithContour
-import io.github.suqi8.coui.kmp.basic.TagView
 import io.github.suqi8.coui.kmp.basic.Button
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Text
@@ -55,7 +55,6 @@ import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.More
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.TuningPreset
-import dev.artplus.mobile.ui.components.AppTagCornerRadius
 import dev.artplus.mobile.ui.components.CompactCardCornerRadius
 import dev.artplus.mobile.ui.components.KernelStyleArrow
 import dev.artplus.mobile.ui.components.NumberInputBox
@@ -127,7 +126,7 @@ internal fun SegmentedControl(
 @Composable
 internal fun NumberParameterControl(
     title: String,
-    summary: String,
+    summary: String? = null,
     value: Int,
     draftText: String,
     min: Int,
@@ -154,7 +153,7 @@ internal fun NumberParameterControl(
                     stateDescription = if (expanded) "已展开拖动条" else "已收起拖动条"
                 },
             title = title,
-            summary = summary,
+            summary = summary?.takeIf { it.isNotBlank() },
             startAction = if (showIcon) {
                 { SettingsLineIcon(kind = icon ?: settingsIconForTitle(title)) }
             } else {
@@ -248,7 +247,6 @@ internal fun CompactPresetRow(
         COUITheme.colorScheme.secondaryVariant
     }
     val activeTextColor = COUITheme.colorScheme.onTertiaryContainer
-    val tags = remember(preset.params) { preset.featureTags() }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -290,21 +288,13 @@ internal fun CompactPresetRow(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = formatPresetDate(preset.updatedAt) + if (isActive) (if (isModified) " · 已套用 (已修改)" else " · 已套用") else "",
-                        style = COUITheme.textStyles.footnote2,
-                        color = if (isActive) activeTextColor.copy(alpha = 0.8f) else COUITheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    tags.forEach { tag ->
-                        TagView(text = tag, cornerRadius = AppTagCornerRadius)
-                    }
-                }
+                Text(
+                    text = formatPresetDate(preset.updatedAt) + if (isActive) (if (isModified) " · 已套用 (已修改)" else " · 已套用") else "",
+                    style = COUITheme.textStyles.footnote2,
+                    color = if (isActive) activeTextColor.copy(alpha = 0.8f) else COUITheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
 
             IconButton(
@@ -341,13 +331,20 @@ internal fun formatPresetDate(timestamp: Long): String {
 @Composable
 internal fun PresetMenuItem(
     title: String,
-    summary: String,
     onClick: () -> Unit,
+    summary: String? = null,
     enabled: Boolean = true,
+    isDestructive: Boolean = false,
 ) {
+    val titleColor = if (isDestructive) {
+        BasicComponentDefaults.titleColor(color = COUITheme.colorScheme.error)
+    } else {
+        BasicComponentDefaults.titleColor()
+    }
     // COUI 行：按压反馈、标题/摘要配色与禁用态均由 BasicComponent 提供
     BasicComponent(
         title = title,
+        titleColor = titleColor,
         summary = summary,
         onClick = onClick,
         enabled = enabled,

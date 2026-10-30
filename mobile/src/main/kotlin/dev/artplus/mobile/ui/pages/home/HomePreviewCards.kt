@@ -305,50 +305,91 @@ internal fun LayerDebugCard(
 }
 
 @Composable
-internal fun PreviewControlCard(
+internal fun ForegroundSubjectCard(
     tuningState: TuningParams,
     isBusy: Boolean,
+    draftForegroundSubjectPercentText: String,
+    onDraftForegroundSubjectPercent: (String) -> Unit,
+    onSaveForegroundSubjectPercent: (Int) -> Unit,
+) {
+    SectionCard(rowsFullBleed = true) {
+        NumberParameterControl(
+            busy = isBusy,
+            title = "前景主体大小",
+            summary = "控制前景主体在图标画布中的占比",
+            value = tuningState.foregroundSubjectPercent,
+            draftText = draftForegroundSubjectPercentText,
+            min = MIN_FOREGROUND_SUBJECT_PERCENT,
+            max = MAX_FOREGROUND_SUBJECT_PERCENT,
+            step = 1,
+            onDraftChange = onDraftForegroundSubjectPercent,
+            onSave = onSaveForegroundSubjectPercent,
+            icon = SettingsIconKind.Scale,
+        )
+    }
+}
+
+@Composable
+internal fun PreviewControlCard(
+    isBusy: Boolean,
+    previewStripEnabled: Boolean,
+    hasCustomWallpaper: Boolean,
+    onPreviewStripEnabled: (Boolean) -> Unit,
+    onPickWallpaper: () -> Unit,
+    onClearWallpaper: () -> Unit,
     previewCornerRadiusDp: Int,
     draftPreviewCornerRadiusDpText: String,
+    onDraftPreviewCornerRadiusDp: (String) -> Unit,
+    onSavePreviewCornerRadiusDp: (Int) -> Unit,
     previewIconSizeDp: Int,
     draftPreviewIconSizeDpText: String,
-    draftForegroundSubjectPercentText: String,
-    previewStripEnabled: Boolean,
+    onDraftPreviewIconSizeDp: (String) -> Unit,
+    onSavePreviewIconSizeDp: (Int) -> Unit,
     previewDesktopBackground: PreviewDesktopBackground,
     wallpaperInitial: Bitmap?,
     wallpaperKey: String?,
     loadWallpaper: suspend () -> Bitmap?,
-    onDraftForegroundSubjectPercent: (String) -> Unit,
-    onSaveForegroundSubjectPercent: (Int) -> Unit,
-    onDraftPreviewCornerRadiusDp: (String) -> Unit,
-    onSavePreviewCornerRadiusDp: (Int) -> Unit,
-    onDraftPreviewIconSizeDp: (String) -> Unit,
-    onSavePreviewIconSizeDp: (Int) -> Unit,
-    onPreviewStripEnabled: (Boolean) -> Unit,
     onPreviewDesktopBackground: (PreviewDesktopBackground) -> Unit,
 ) {
     SectionCard(rowsFullBleed = true) {
         Column(
             modifier = Modifier.fillMaxWidth(),
         ) {
-            NumberParameterControl(
-                busy = isBusy,
-                title = "前景主体大小",
-                summary = "控制前景主体在图标画布中的占比",
-                value = tuningState.foregroundSubjectPercent,
-                draftText = draftForegroundSubjectPercentText,
-                min = MIN_FOREGROUND_SUBJECT_PERCENT,
-                max = MAX_FOREGROUND_SUBJECT_PERCENT,
-                step = 1,
-                onDraftChange = onDraftForegroundSubjectPercent,
-                onSave = onSaveForegroundSubjectPercent,
-                icon = SettingsIconKind.Scale,
+            LibrarySettingRow(
+                title = "顶部 1×4 预览条",
+                summary = null,
+                icon = SettingsIconKind.Palette,
+                showSwitch = true,
+                checked = previewStripEnabled,
+                enabled = !isBusy,
+                onCheckedChange = onPreviewStripEnabled,
             )
+            SectionDivider()
+            LibrarySettingRow(
+                title = "设置预览桌面壁纸",
+                summary = null,
+                value = if (hasCustomWallpaper) "已设置" else null,
+                icon = SettingsIconKind.FileUpload,
+                showArrowRight = true,
+                enabled = !isBusy,
+                onClick = onPickWallpaper,
+            )
+            if (hasCustomWallpaper) {
+                SectionDivider()
+                LibrarySettingRow(
+                    title = "清除自定义壁纸",
+                    summary = null,
+                    icon = SettingsIconKind.Eraser,
+                    showArrowRight = false,
+                    enabled = !isBusy,
+                    onClick = onClearWallpaper,
+                )
+            }
             SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "预览圆角",
-                summary = "控制预览图标的圆角大小",
+                summary = null,
                 value = previewCornerRadiusDp,
                 draftText = draftPreviewCornerRadiusDpText,
                 min = MIN_PREVIEW_CORNER_RADIUS_DP,
@@ -362,7 +403,7 @@ internal fun PreviewControlCard(
             NumberParameterControl(
                 busy = isBusy,
                 title = "预览缩放",
-                summary = "预览图显示大小",
+                summary = null,
                 value = previewIconSizeDp,
                 draftText = draftPreviewIconSizeDpText,
                 min = MIN_PREVIEW_ICON_SIZE_DP,
@@ -371,16 +412,6 @@ internal fun PreviewControlCard(
                 onDraftChange = onDraftPreviewIconSizeDp,
                 onSave = onSavePreviewIconSizeDp,
                 icon = SettingsIconKind.Grid,
-            )
-            SectionDivider()
-            LibrarySettingRow(
-                title = "顶部 1×4 预览条",
-                summary = "在主页、生成参数与预设页置顶显示",
-                icon = SettingsIconKind.Palette,
-                showSwitch = true,
-                checked = previewStripEnabled,
-                enabled = !isBusy,
-                onCheckedChange = onPreviewStripEnabled,
             )
             SectionDivider()
             Row(
