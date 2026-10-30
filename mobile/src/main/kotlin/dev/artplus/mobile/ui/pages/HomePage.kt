@@ -2,7 +2,6 @@ package dev.artplus.mobile.ui.pages
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -11,16 +10,20 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import kotlinx.coroutines.delay
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
@@ -72,6 +75,43 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
     val hasRmbgComponent = remember(gptSettingsState.rmbgComponentStatus) { findRmbgComponent(filesDir) != null }
     val hasGptCredentials = gptSettingsState.gptApiKey.isNotBlank() && gptSettingsState.gptBaseUrl.isNotBlank()
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 3 })
+    var pageFade by remember { mutableStateOf<PagerShellPageFade?>(null) }
+    var tappedPage by remember { mutableStateOf<Int?>(null) }
+    var pageSwitchJob by remember { mutableStateOf<Job?>(null) }
+    val scope = rememberCoroutineScope()
+
+    val onSelectPage: (Int) -> Unit = { page: Int ->
+        val from = pagerState.currentPage
+        if (page != from) {
+            pageSwitchJob?.cancel()
+            val fade = PagerShellPageFade(from = from, to = page)
+            pageFade = fade
+            tappedPage = page
+            if (page != 0) {
+                showGenerateMenu = false
+                showWriteMenu = false
+            }
+            if (page != 1) {
+                showParamsModeMenu = false
+            }
+            pageSwitchJob = scope.launch {
+                try {
+                    // 确保翻页前所有目标页已就绪，保持离场页与入场页同时绘制
+                    snapshotFlow { pagerState.layoutInfo.beyondViewportPageCount }
+                        .first { it >= 2 }
+                    pagerState.scrollToPage(page)
+                    coroutineScope {
+                        launch { fade.fromAlpha.animateTo(0f, PageFadeOutSpec) }
+                        fade.toAlpha.animateTo(1f, PageFadeInSpec)
+                    }
+                } finally {
+                    if (pageFade === fade) pageFade = null
+                    if (tappedPage == page) tappedPage = null
+                }
+            }
+        }
+    }
+
     // 融合球的内容随页切换，离开某页时把那一页已经点开的菜单一起收起来。
     LaunchedEffect(pagerState.targetPage) {
         if (pagerState.targetPage != 0) {
@@ -82,7 +122,6 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
             showParamsModeMenu = false
         }
     }
-    val scope = rememberCoroutineScope()
     // 与 COUI demo（Coui17Root）一致：整个 pager 只录一次 barBackdrop（先铺页面底色再画内容），
     // 顶栏/底栏作为录制 Box 的兄弟节点叠在上面，不参与采样。LayerBackdrop 只有一块 graphicsLayer，
     // 挂在每个 pager 页上会被屏外邻页覆盖，底栏就会糊错页面。
@@ -91,15 +130,8 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
         drawRect(pageColor)
         drawContent()
     }
-    // 顶栏按页各一根、随页面左右移动，滚动行为由各页自己持有（见 PagerShellPage）。
+    // 顶栏按页各一根，滚动行为由各页自己持有（见 PagerShellPage）。
     val host = remember { PagerShellHost() }
-    var beyondViewportCount by remember { mutableIntStateOf(0) }
-    LaunchedEffect(Unit) {
-        delay(200)
-        beyondViewportCount = 1
-        delay(350)
-        beyondViewportCount = 3
-    }
     Box(Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -109,23 +141,41 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
         ) {
             HorizontalPager(
                 state = pagerState,
-                beyondViewportPageCount = beyondViewportCount,
+                beyondViewportPageCount = if (pageFade != null) 2 else 0,
+                userScrollEnabled = false,
                 modifier = Modifier.fillMaxSize(),
             ) { page ->
-                CompositionLocalProvider(
-                    LocalPagerShellHost provides host,
-                    LocalPagerShellPageIndex provides page,
+                val layoutDirection = LocalLayoutDirection.current
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val fade = pageFade ?: return@graphicsLayer
+                            val position = pagerState.currentPage + pagerState.currentPageOffsetFraction
+                            val direction = if (layoutDirection == LayoutDirection.Rtl) 1f else -1f
+                            translationX = direction * (page - position) * size.width
+                            alpha = when (page) {
+                                fade.from -> fade.fromAlpha.value
+                                fade.to -> fade.toAlpha.value
+                                else -> 0f
+                            }
+                        },
                 ) {
-                    when (page) {
-                        0 -> HomeTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
-                        1 -> ParamsTabPage(
-                            pageBackground = pageBackground,
-                            selectedApp = selectedApp,
-                            launcherCount = launcherCount,
-                            totalCount = totalCount,
-                            generatedCount = generatedCount,
-                        )
-                        2 -> PresetTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+                    CompositionLocalProvider(
+                        LocalPagerShellHost provides host,
+                        LocalPagerShellPageIndex provides page,
+                    ) {
+                        when (page) {
+                            0 -> HomeTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+                            1 -> ParamsTabPage(
+                                pageBackground = pageBackground,
+                                selectedApp = selectedApp,
+                                launcherCount = launcherCount,
+                                totalCount = totalCount,
+                                generatedCount = generatedCount,
+                            )
+                            2 -> PresetTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+                        }
                     }
                 }
             }
@@ -134,16 +184,16 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
         // 顶栏/底栏的玻璃材质都采样 barBackdrop（页面内容），自身不在录制范围内。
         // 弹层不在这里渲染：根部 Scaffold 的 COUIPopupHost 压在整屏之上，采样整屏快照。
         CompositionLocalProvider(LocalBackdrop provides barBackdrop) {
-            BoxWithConstraints(Modifier.fillMaxSize()) {
-                val pageWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
-                PagerShellSlidingTopBars(
+            Box(Modifier.fillMaxSize()) {
+                PagerShellFadeTopBars(
                     host = host,
                     pagerState = pagerState,
-                    pageWidthPx = pageWidthPx,
+                    pageFade = pageFade,
                 )
                 PagerShellBottomBar(
                     pagerState = pagerState,
-                    onSelectPage = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
+                    targetPage = tappedPage ?: pagerState.targetPage,
+                    onSelectPage = onSelectPage,
                     modifier = Modifier.align(Alignment.BottomCenter),
                     // 首尾两颗融合球是「同一个球换内容」：主页是生成/写入，生成参数页是生成设置/保存成预设。
                     startAccessory = { onParamsPage ->

@@ -1,6 +1,7 @@
 package dev.artplus.mobile.ui.pages
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.RowScope
@@ -25,6 +26,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathNode
 import androidx.compose.ui.graphics.vector.VectorGroup
@@ -36,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.anim.folmeSpring
 import io.github.suqi8.coui.kmp.basic.BottomFloatingAccessoryNavigationBar
 import io.github.suqi8.coui.kmp.basic.BottomFloatingAccessoryNavigationBarDefaults
 import io.github.suqi8.coui.kmp.basic.BottomFloatingNavigationBarItem
@@ -153,6 +156,58 @@ internal fun rememberShellContentTop(): Dp {
 }
 
 /**
+ * 页面切换交叉淡入淡出状态（与 COUI demo Coui17App 一致）。
+ */
+@Stable
+internal class PagerShellPageFade(val from: Int, val to: Int) {
+    val fromAlpha = Animatable(1f)
+    val toAlpha = Animatable(0f)
+}
+
+internal val PageFadeOutSpec = folmeSpring<Float>(damping = 1f, response = 0.15f, visibilityThreshold = 0.075f)
+internal val PageFadeInSpec = folmeSpring<Float>(damping = 1f, response = 0.2f, visibilityThreshold = 0.075f)
+
+/**
+ * 顶栏淡出淡入：切换时原地 crossfade，不进行左右位移。
+ */
+@Composable
+internal fun BoxScope.PagerShellFadeTopBars(
+    host: PagerShellHost,
+    pagerState: PagerState,
+    pageFade: PagerShellPageFade?,
+) {
+    val currentPage = pagerState.currentPage
+    val fade = pageFade
+    if (fade != null) {
+        for (page in listOf(fade.from, fade.to)) {
+            val spec = host.specs[page] ?: continue
+            PagerShellTopAppBar(
+                title = spec.title,
+                navigationIcon = spec.navigationIcon,
+                actions = spec.actions,
+                scrollBehavior = spec.scrollBehavior,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .graphicsLayer {
+                        alpha = if (page == fade.from) fade.fromAlpha.value else fade.toAlpha.value
+                    },
+            )
+        }
+    } else {
+        val spec = host.specs[currentPage]
+        if (spec != null) {
+            PagerShellTopAppBar(
+                title = spec.title,
+                navigationIcon = spec.navigationIcon,
+                actions = spec.actions,
+                scrollBehavior = spec.scrollBehavior,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+        }
+    }
+}
+
+/**
  * 每页各一根顶栏，横向偏移跟随 pager：第 page 页的顶栏始终压在该页内容的正上方，
  * 拖动时和内容同速左右移动。
  *
@@ -198,13 +253,14 @@ internal fun BoxScope.PagerShellSlidingTopBars(
 @Composable
 internal fun PagerShellBottomBar(
     pagerState: PagerState,
+    targetPage: Int = pagerState.targetPage,
     onSelectPage: (Int) -> Unit,
     startAccessory: @Composable (paramsPage: Boolean) -> Unit,
     endAccessory: @Composable (paramsPage: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val galleryDensity = rememberGalleryDensity()
-    val page = pagerState.targetPage
+    val page = targetPage
     // 预设页没有配件动作，让两颗球缩回胶囊里。
     val accessoriesVisible = page == 0 || page == 1
     val onParamsPage = page == 1
@@ -228,7 +284,7 @@ internal fun PagerShellBottomBar(
                 PagerShellTab(COUIIcons.Folder, COUIIcons.FolderFill, "预设"),
             ).forEachIndexed { index, tab ->
                 BottomFloatingNavigationBarItem(
-                    selected = pagerState.targetPage == index,
+                    selected = targetPage == index,
                     onClick = { onSelectPage(index) },
                     icon = tab.icon,
                     selectedIcon = tab.selectedIcon,

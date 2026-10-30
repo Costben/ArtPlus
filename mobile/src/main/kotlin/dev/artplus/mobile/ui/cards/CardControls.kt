@@ -240,19 +240,18 @@ internal fun CompactPresetRow(
     onPreview: () -> Unit = {},
     busy: Boolean = false,
 ) {
-    // 选中态用 COUI 蓝色淡底卡片（tertiaryContainer），未选中用中性 secondaryVariant
+    // 选中态用 COUI 蓝色淡底卡片（tertiaryContainer），未选中用标准卡片底色（surface）
     val containerColor = if (isActive) {
         COUITheme.colorScheme.tertiaryContainer
     } else {
-        COUITheme.colorScheme.secondaryVariant
+        COUITheme.colorScheme.surface
     }
     val activeTextColor = COUITheme.colorScheme.onTertiaryContainer
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = CompactCardCornerRadius,
-        // 3dp vertical margin keeps the 54dp card height while the icon buttons take 48dp.
-        insideMargin = PaddingValues(horizontal = 12.dp, vertical = 3.dp),
+        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         colors = CardDefaults.defaultColors(color = containerColor),
         onClick = if (busy) null else onApply,
     ) {

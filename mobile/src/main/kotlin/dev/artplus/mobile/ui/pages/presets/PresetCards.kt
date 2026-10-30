@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.Folder
@@ -37,6 +39,7 @@ import dev.artplus.mobile.ui.cards.CompactPresetRow
 import dev.artplus.mobile.ui.cards.formatPresetDate
 import dev.artplus.mobile.ui.components.AppTagCornerRadius
 import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.SectionHeader
 
 /**
  * Slice 2.1：预设页卡片 UI（原 MainActivity.PresetStatusCard / PresetLibraryCard 原样搬迁）。
@@ -239,46 +242,49 @@ internal fun PresetLibraryCard(
         }
     }
 
-    SectionCard(title = "预设列表") {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (presets.size >= 8) {
-                // 搜索框：secondaryVariant 圆角底 + COUI TextField（无自带底，带清除按钮）
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(COUITheme.colorScheme.secondaryVariant),
-                ) {
-                    TextField(
-                        value = searchQuery,
-                        onValueChange = { onSearchChange(it) },
-                        modifier = Modifier.fillMaxWidth(),
-                        backgroundMode = TextFieldMode.None,
-                        label = "搜索预设名称...",
-                        showClearButton = true,
-                        singleLine = true,
-                        leadingIcon = {
-                            Icon(
-                                imageVector = COUIIcons.Search,
-                                contentDescription = "搜索预设",
-                                modifier = Modifier.size(16.dp),
-                                tint = COUITheme.colorScheme.onSurfaceVariantSummary,
-                            )
-                        },
-                    )
-                }
-            }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        SectionHeader("预设列表")
 
-            if (presets.isEmpty()) {
+        if (presets.size >= 8) {
+            // 搜索框：surface 圆角底 + COUI TextField（无自带底，带清除按钮）
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(COUITheme.colorScheme.surface),
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { onSearchChange(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundMode = TextFieldMode.None,
+                    label = "搜索预设名称...",
+                    showClearButton = true,
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = COUIIcons.Search,
+                            contentDescription = "搜索预设",
+                            modifier = Modifier.size(16.dp),
+                            tint = COUITheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    },
+                )
+            }
+        }
+
+        if (presets.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                insideMargin = PaddingValues(vertical = 24.dp, horizontal = 16.dp),
+            ) {
                 EmptyState(
                     title = "暂无预设快照",
                     subtitle = "在「生成参数」微调好效果后，点击上方「保存为预设」即可创建",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     illustration = {
                         Icon(
                             imageVector = COUIIcons.Folder,
@@ -288,54 +294,49 @@ internal fun PresetLibraryCard(
                         )
                     },
                 )
-            } else if (filtered.isEmpty()) {
+            }
+        } else if (filtered.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "未找到包含「$searchQuery」的预设",
+                    style = COUITheme.textStyles.footnote1,
+                    color = COUITheme.colorScheme.onSurfaceVariantSummary,
+                )
+            }
+        } else {
+            displayList.forEach { preset ->
+                val isActive = preset.id == activePresetId
+                val isModified = isActive && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: preset.params))
+                CompactPresetRow(
+                    busy = isBusy,
+                    preset = preset,
+                    isActive = isActive,
+                    isModified = isModified,
+                    onApply = { onApply(preset) },
+                    onPreview = { onPreview(preset) },
+                    onMore = { onMore(preset) },
+                )
+            }
+
+            if (presets.size > 5 && searchQuery.isBlank()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onToggleExpanded() }
+                        .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "未找到包含「$searchQuery」的预设",
-                        style = COUITheme.textStyles.footnote1,
-                        color = COUITheme.colorScheme.onSurfaceVariantSummary,
+                        text = if (listExpanded) "收起 ▴" else "展开查看全部 (共 ${presets.size} 个) ▾",
+                        style = COUITheme.textStyles.footnote1.copy(fontWeight = FontWeight.Medium),
+                        color = COUITheme.colorScheme.primaryVariant,
                     )
-                }
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    displayList.forEach { preset ->
-                        val isActive = preset.id == activePresetId
-                        val isModified = isActive && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: preset.params))
-                        CompactPresetRow(
-                            busy = isBusy,
-                            preset = preset,
-                            isActive = isActive,
-                            isModified = isModified,
-                            onApply = { onApply(preset) },
-                            onPreview = { onPreview(preset) },
-                            onMore = { onMore(preset) },
-                        )
-                    }
-
-                    if (presets.size > 5 && searchQuery.isBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { onToggleExpanded() }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = if (listExpanded) "收起 ▴" else "展开查看全部 (共 ${presets.size} 个) ▾",
-                                style = COUITheme.textStyles.footnote1.copy(fontWeight = FontWeight.Medium),
-                                color = COUITheme.colorScheme.primaryVariant,
-                            )
-                        }
-                    }
                 }
             }
         }
