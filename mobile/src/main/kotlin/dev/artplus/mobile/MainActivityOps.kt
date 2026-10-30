@@ -75,7 +75,6 @@ import dev.artplus.mobile.ui.pages.params.paramsApplyTuningParams
 import dev.artplus.mobile.ui.pages.params.paramsInitTuningHistory
 import dev.artplus.mobile.ui.pages.params.paramsLoadGptSettings
 import dev.artplus.mobile.ui.pages.params.paramsLoadImageSettings
-import dev.artplus.mobile.ui.pages.params.paramsLoadLiquidGlassSettings
 import dev.artplus.mobile.ui.pages.params.paramsLoadLocalSeparationSettings
 import dev.artplus.mobile.ui.pages.params.paramsLoadRmbgSettings
 import dev.artplus.mobile.ui.pages.params.paramsLoadTuningParams
@@ -226,17 +225,6 @@ internal fun MainActivity.startDebugHttpServerIfNeeded() {
                         rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                     )
         } },
-                    liquidGlassEnabled = params.liquidGlassEnabled,
-                    liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                    liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                    liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                    liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                    liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
-                    liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                    liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                    liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                    liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                    liquidGlassRadius = params.liquidGlassRadius,
                     foregroundShadowLevel = params.foregroundShadowLevel,
                 )
     } },
@@ -421,19 +409,6 @@ internal fun MainActivity.currentDebugParamsJson(): JSONObject =
             .put("rmbg_edge_feather_percent", mainViewModel.params.value.rmbgEdgeFeatherPercent)
             .put("rmbg_edge_adjust_percent", mainViewModel.params.value.rmbgEdgeAdjustPercent)
             .put("rmbg_weak_alpha_keep_percent", mainViewModel.params.value.rmbgWeakAlphaKeepPercent)
-            .put("liquid_glass_enabled", mainViewModel.params.value.liquidGlassEnabled)
-            .put("liquid_glass_radius", mainViewModel.params.value.liquidGlassRadius)
-            .put("liquid_glass_outer_width", mainViewModel.params.value.liquidGlassOuterWidth)
-            .put("liquid_glass_top_alpha", mainViewModel.params.value.liquidGlassTopAlpha)
-            .put("liquid_glass_bottom_alpha", mainViewModel.params.value.liquidGlassBottomAlpha)
-            .put("liquid_glass_background_mist_alpha", mainViewModel.params.value.liquidGlassBackgroundMistAlpha)
-            .put("liquid_glass_bottom_dark_alpha", mainViewModel.params.value.liquidGlassBottomDarkAlpha)
-            .put("liquid_glass_subject_scale_percent", mainViewModel.params.value.liquidGlassSubjectScalePercent)
-            .put("liquid_glass_subject_outline_width", mainViewModel.params.value.liquidGlassSubjectOutlineWidth)
-            .put("liquid_glass_subject_inner_outline_width", mainViewModel.params.value.liquidGlassSubjectInnerOutlineWidth)
-            .put("liquid_glass_subject_shadow_alpha", mainViewModel.params.value.liquidGlassSubjectShadowAlpha)
-            .put("liquid_glass_subject_opacity_percent", mainViewModel.params.value.liquidGlassSubjectOpacityPercent)
-            .put("liquid_glass_param_labels", liquidGlassParamLabelsJson())
             .put("rmbg_model_installed", run {
     findRmbgComponent(filesDir)
 } != null)
@@ -518,35 +493,6 @@ internal fun MainActivity.currentDebugParamsJson(): JSONObject =
                         "rmbg_weak_alpha_keep_percent",
                         intRangeJson(MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT, MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT),
                     )
-                    .put("liquid_glass_radius", intRangeJson(MIN_LIQUID_GLASS_RADIUS, MAX_LIQUID_GLASS_RADIUS))
-                    .put("liquid_glass_outer_width", intRangeJson(MIN_LIQUID_GLASS_OUTER_WIDTH, MAX_LIQUID_GLASS_OUTER_WIDTH))
-                    .put("liquid_glass_top_alpha", intRangeJson(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA))
-                    .put("liquid_glass_bottom_alpha", intRangeJson(MIN_LIQUID_GLASS_ALPHA, MAX_LIQUID_GLASS_ALPHA))
-                    .put("liquid_glass_background_mist_alpha", intRangeJson(MIN_LIQUID_GLASS_MIST_ALPHA, MAX_LIQUID_GLASS_MIST_ALPHA))
-                    .put(
-                        "liquid_glass_bottom_dark_alpha",
-                        intRangeJson(MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA, MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA),
-                    )
-                    .put(
-                        "liquid_glass_subject_scale_percent",
-                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT, MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT),
-                    )
-                    .put(
-                        "liquid_glass_subject_outline_width",
-                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH),
-                    )
-                    .put(
-                        "liquid_glass_subject_inner_outline_width",
-                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH, MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH),
-                    )
-                    .put(
-                        "liquid_glass_subject_shadow_alpha",
-                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA, MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA),
-                    )
-                    .put(
-                        "liquid_glass_subject_opacity_percent",
-                        intRangeJson(MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT, MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT),
-                    )
                     .put(
                         "adaptive_direct_max_coverage_percent",
                         intRangeJson(MIN_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT, MAX_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT),
@@ -574,21 +520,6 @@ internal fun MainActivity.currentDebugParamsJson(): JSONObject =
 
 internal fun MainActivity.intRangeJson(min: Int, max: Int): JSONObject =
         JSONObject().put("min", min).put("max", max)
-
-internal fun MainActivity.liquidGlassParamLabelsJson(): JSONObject =
-        JSONObject()
-            .put("liquid_glass_enabled", "启用液态玻璃")
-            .put("liquid_glass_radius", "玻璃圆角")
-            .put("liquid_glass_outer_width", "外框高度")
-            .put("liquid_glass_top_alpha", "顶部强度")
-            .put("liquid_glass_bottom_alpha", "底边强度")
-            .put("liquid_glass_background_mist_alpha", "背景灰雾")
-            .put("liquid_glass_bottom_dark_alpha", "底部灰雾")
-            .put("liquid_glass_subject_scale_percent", "主体比例")
-            .put("liquid_glass_subject_outline_width", "主体外框宽度")
-            .put("liquid_glass_subject_inner_outline_width", "主体内框宽度")
-            .put("liquid_glass_subject_shadow_alpha", "主体阴影")
-            .put("liquid_glass_subject_opacity_percent", "主体透明度")
 
 internal fun MainActivity.currentDebugParamsOnMain(): JSONObject {
         var snapshot: JSONObject? = null
@@ -658,17 +589,6 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                     setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
                     setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
                     setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                    setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                    setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                    setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                    setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                    setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                    setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                    setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                    setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                    setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                    setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                    setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
                     setDraftJsonParamsText = { draftJsonParamsText = it },
                     onSaveLocalSeparation = { run {
             paramsSaveLocalSeparationSettings(
@@ -681,9 +601,6 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
                         getParams = { mainViewModel.params.value },
                     )
-        } },
-                    onSaveLiquidGlass = { run {
-            tuningActions.save()
         } },
                     onSaveGpt = { run {
             paramsSaveGptSettings(
@@ -753,17 +670,6 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                     setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
                     setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
                     setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                    setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                    setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                    setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                    setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                    setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                    setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                    setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                    setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                    setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                    setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                    setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
                     setDraftJsonParamsText = { draftJsonParamsText = it },
                     onSaveLocalSeparation = { run {
             paramsSaveLocalSeparationSettings(
@@ -776,9 +682,6 @@ internal fun MainActivity.applyDebugParams(params: Map<String, String>): JSONObj
                         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
                         getParams = { mainViewModel.params.value },
                     )
-        } },
-                    onSaveLiquidGlass = { run {
-            tuningActions.save()
         } },
                     onSaveGpt = { run {
             paramsSaveGptSettings(
@@ -860,15 +763,10 @@ internal fun MainActivity.debugHomeHtml(): String = """
           'foreground_subject_percent','foreground_shadow_level',
           'background_separation_percent','plate_removal_percent','shadow_removal_percent','edge_polish_percent',
           'rmbg_alpha_strength_percent','rmbg_edge_feather_percent','rmbg_edge_adjust_percent','rmbg_weak_alpha_keep_percent',
-          'liquid_glass_radius','liquid_glass_outer_width','liquid_glass_top_alpha','liquid_glass_bottom_alpha',
-          'liquid_glass_background_mist_alpha','liquid_glass_bottom_dark_alpha',
-          'liquid_glass_subject_scale_percent','liquid_glass_subject_outline_width',
-          'liquid_glass_subject_inner_outline_width','liquid_glass_subject_shadow_alpha','liquid_glass_subject_opacity_percent',
           'adaptive_direct_max_coverage_percent','adaptive_direct_max_coverage_increase_percent',
           'adaptive_mask_edge_coverage_percent','adaptive_mask_min_coverage_percent','adaptive_center_epsilon_percent'
         ];
         const checkboxKeys = [
-          'liquid_glass_enabled',
           'local_background_separation_enabled','local_adaptive_selection_enabled',
           'local_corner_mask_cleanup_enabled','local_alpha_edge_color_repair_enabled',
           'local_plain_background_estimation_enabled','local_original_cleanup_enabled',
@@ -883,7 +781,6 @@ internal fun MainActivity.debugHomeHtml(): String = """
         const selectSpecs = [];
         async function load(){
           const data = await fetch('/debug/params').then(r=>r.json());
-          labels = data.liquid_glass_param_labels || {};
 	          const form = document.getElementById('params');
 	          form.innerHTML = '';
 	          const select = document.createElement('select');
@@ -1162,6 +1059,7 @@ internal fun MainActivity.loadUiState() =
             setQueryText = { mainViewModel.updatePicker { v -> v.copy(queryText = (it)) } },
             setAdvancedCategory = { mainViewModel.updateShell { v -> v.copy(advancedSettingsCategory = (it)) } },
             setAdvancedTab = { mainViewModel.updateShell { v -> v.copy(advancedSettingsTab = (it)) } },
+            setAdvancedTabChosen = { mainViewModel.updateShell { v -> v.copy(advancedSettingsTabChosen = (it)) } },
             setPreviewPackage = { mainViewModel.updatePreviewSession { v -> v.copy(previewPackageName = (it)) } },
             setPreviewDir = { mainViewModel.updatePreviewSession { v -> v.copy(previewDirPath = (it)) } },
             setPreviewStrip = { mainViewModel.updatePreviewSession { v -> v.copy(previewStripEnabled = (it)) } },
@@ -1285,27 +1183,6 @@ internal fun MainActivity.loadTuningParams(): Unit =
                 setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
                 setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
                 setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-            )
-} },
-            onLoadLiquid = { run {
-    paramsLoadLiquidGlassSettings(
-                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                updateLive = mainViewModel::updateLive,
-                getParams = { mainViewModel.params.value },
-                setDraftRadiusText = { draftLiquidGlassRadiusText = it },
-                setDraftOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                setDraftTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                setDraftBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                setDraftBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                setDraftBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                setDraftSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                setDraftSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                setDraftSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                setDraftSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                setDraftSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
-                onSave = { run {
-        tuningActions.save()
-    } },
             )
 } },
             getParams = { run {
@@ -1525,18 +1402,6 @@ internal fun MainActivity.importCustomPreviewImage(mode: PreviewMode, kind: Cust
                         rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                     )
         } },
-                    liquidGlassEnabled = params.liquidGlassEnabled,
-                    liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                    liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                    liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                    liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                    liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                    liquidGlassRadius = params.liquidGlassRadius,
-                    liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                    liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                    liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                    liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                    liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
                     foregroundShadowLevel = params.foregroundShadowLevel,
                     monochromeThemeScale = params.monochromeThemeScale,
                     nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,

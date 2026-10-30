@@ -9,6 +9,7 @@ import dev.artplus.mobile.BatchSampleTarget
 import dev.artplus.mobile.PREF_GENERATED_PACKAGE_NAMES
 import dev.artplus.mobile.PREF_GENERATED_PACKAGE_NAMES_UPDATED_AT
 import dev.artplus.mobile.ROOT_UXICONS_DIR
+import dev.artplus.mobile.system.ARTPLUS_MODIFIED_MARKER
 import dev.artplus.mobile.system.shQuote
 import dev.artplus.mobile.system.runRootCommand
 import dev.artplus.mobile.ROOT_SCAN_TIMEOUT_MS
@@ -95,11 +96,20 @@ internal fun getInstalledApplications(pm: PackageManager): List<ApplicationInfo>
     }
 
 /**
- * 经 root 扫描 uxicons 目录，返回生成过图标的包名（调用 runRootCommand，抛异常由调用方处理）。
+ * uxicons 扫描结果：写过图标的包 + 带接管标记（`.artplusmodified`）的包。
  */
-internal fun scanRootGeneratedPackages(packageNames: Set<String>): Set<String> {
+internal data class RootPackageScan(
+    val generated: Set<String>,
+    val artPlusModified: Set<String>,
+)
+
+/**
+ * 经 root 扫描 uxicons 目录，返回生成过图标的包名与带接管标记的包名
+ * （调用 runRootCommand，抛异常由调用方处理）。
+ */
+internal fun scanRootPackages(packageNames: Set<String>): RootPackageScan {
     if (packageNames.isEmpty()) {
-        return emptySet()
+        return RootPackageScan(emptySet(), emptySet())
     }
     val command = """
         if [ -d ${shQuote(ROOT_UXICONS_DIR)} ]; then
@@ -107,6 +117,9 @@ internal fun scanRootGeneratedPackages(packageNames: Set<String>): Set<String> {
                 [ -n "${'$'}name" ] || continue
                 dir=${shQuote(ROOT_UXICONS_DIR)}/"${'$'}name"
                 [ -d "${'$'}dir" ] || continue
+                if [ -f "${'$'}dir/$ARTPLUS_MODIFIED_MARKER" ]; then
+                    printf 'am:%s\n' "${'$'}name"
+                fi
                 if [ -f "${'$'}dir/recbg.png" ] ||
                     [ -f "${'$'}dir/recfg.png" ] ||
                     [ -f "${'$'}dir/rec_night.png" ] ||
@@ -124,12 +137,24 @@ internal fun scanRootGeneratedPackages(packageNames: Set<String>): Set<String> {
         .sorted()
         .joinToString(separator = "\n", postfix = "\n")
     val output = runRootCommand(command, ROOT_SCAN_TIMEOUT_MS, input)
-    return output
-        .lineSequence()
+    val lines = output.lineSequence()
         .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .toList()
+    val modified = lines
+        .filter { it.startsWith(AM_SCAN_PREFIX) }
+        .map { it.removePrefix(AM_SCAN_PREFIX) }
         .filter { it in packageNames }
         .toSet()
+    val generated = lines
+        .filter { !it.startsWith(AM_SCAN_PREFIX) }
+        .filter { it in packageNames }
+        .toSet()
+    return RootPackageScan(generated = generated, artPlusModified = modified)
 }
+
+/** 扫描输出里「带接管标记」的行前缀，避免与纯包名行混淆。 */
+private const val AM_SCAN_PREFIX = "am:"
 
 /** 读已生成包缓存并归一化（去空/trim）。 */
 internal fun loadGeneratedPackageCache(prefs: SharedPreferences): Set<String> =

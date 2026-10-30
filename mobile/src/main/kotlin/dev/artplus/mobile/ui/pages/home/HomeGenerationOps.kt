@@ -57,6 +57,8 @@ internal fun homeGenerateSelected(
     onStatus: (String) -> Unit,
     onFinish: (useGpt: Boolean) -> Unit,
     onConfirmedRetry: (Boolean, Boolean, RootWriteMode) -> Unit,
+    rmbgAfterGenerate: Boolean = false,
+    onBuildRmbgOutputs: ((GenerationSession) -> GenerationSession)? = null,
 ) {
     if (entry == null) {
         onStatusText("先选择一个应用")
@@ -92,7 +94,14 @@ internal fun homeGenerateSelected(
     )
     onLaunch(if (useGpt) "ArtPlusGptGenerate" else "ArtPlusLocalGenerate") {
         try {
-            val result = onGenerate(entry, useGpt)
+            val generated = onGenerate(entry, useGpt)
+            // RMBG 档：本地管线先出一版，再立刻用 ONNX 模型把四个槽位替换成抠图版
+            val result = if (rmbgAfterGenerate && onBuildRmbgOutputs != null) {
+                onStatusText("RMBG抠图中: ${entry.packageName}")
+                generated.copy(session = onBuildRmbgOutputs(generated.session))
+            } else {
+                generated
+            }
             onPostGenerate(result, entry)
             if (installWithRoot) {
                 onInstall(result.outDir, entry.packageName, rootWriteMode)

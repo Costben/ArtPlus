@@ -57,7 +57,7 @@ internal fun PresetStatusCard(
     val activePreset = presets.firstOrNull { it.id == activePresetId }
     val isPresetModified = activePreset != null && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: activePreset.params))
 
-    SectionCard {
+    SectionCard(title = "活动预设") {
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -239,7 +239,7 @@ internal fun PresetLibraryCard(
         }
     }
 
-    SectionCard {
+    SectionCard(title = "预设列表") {
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(10.dp),

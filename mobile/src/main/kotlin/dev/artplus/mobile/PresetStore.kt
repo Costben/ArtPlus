@@ -46,11 +46,7 @@ data class TuningPreset(
     /** 提取该预设的 1~2 个关键视觉风格特征标签。 */
     fun featureTags(): List<String> {
         val tags = mutableListOf<String>()
-        if (params.liquidGlassEnabled) {
-            tags += "玻璃 ${params.liquidGlassRadius}dp"
-        } else {
-            tags += "经典"
-        }
+        tags += "经典"
         if (params.localBackgroundSeparationEnabled) {
             tags += "本地分离"
         }

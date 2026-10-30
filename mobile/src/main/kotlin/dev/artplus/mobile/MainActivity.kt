@@ -79,17 +79,6 @@ class MainActivity : ComponentActivity() {
     internal var draftRmbgEdgeFeatherText by mutableStateOf(DEFAULT_RMBG_EDGE_FEATHER_PERCENT.toString())
     internal var draftRmbgEdgeAdjustText by mutableStateOf(DEFAULT_RMBG_EDGE_ADJUST_PERCENT.toString())
     internal var draftRmbgWeakAlphaKeepText by mutableStateOf(DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT.toString())
-    internal var draftLiquidGlassRadiusText by mutableStateOf(DEFAULT_LIQUID_GLASS_RADIUS.toString())
-    internal var draftLiquidGlassOuterWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_OUTER_WIDTH.toString())
-    internal var draftLiquidGlassTopAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_TOP_ALPHA.toString())
-    internal var draftLiquidGlassBottomAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA.toString())
-    internal var draftLiquidGlassBackgroundMistAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA.toString())
-    internal var draftLiquidGlassBottomDarkAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA.toString())
-    internal var draftLiquidGlassSubjectScaleText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT.toString())
-    internal var draftLiquidGlassSubjectOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH.toString())
-    internal var draftLiquidGlassSubjectInnerOutlineWidthText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH.toString())
-    internal var draftLiquidGlassSubjectShadowAlphaText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA.toString())
-    internal var draftLiquidGlassSubjectOpacityText by mutableStateOf(DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT.toString())
     // P2 交界：历史单源已收敛进 MainViewModel（state/），Activity 不再持有 tuningHistory 栈；
     // 186 live vars 与 currentTuningParams() 不动（P5 重写），同步一律走快照显式调用。
     internal val mainViewModel: MainViewModel by lazy { ViewModelProvider(this)[MainViewModel::class.java] }
@@ -285,17 +274,6 @@ class MainActivity : ComponentActivity() {
         outState.putString("draftRmbgEdgeFeatherText", draftRmbgEdgeFeatherText)
         outState.putString("draftRmbgEdgeAdjustText", draftRmbgEdgeAdjustText)
         outState.putString("draftRmbgWeakAlphaKeepText", draftRmbgWeakAlphaKeepText)
-        outState.putString("draftLiquidGlassRadiusText", draftLiquidGlassRadiusText)
-        outState.putString("draftLiquidGlassOuterWidthText", draftLiquidGlassOuterWidthText)
-        outState.putString("draftLiquidGlassTopAlphaText", draftLiquidGlassTopAlphaText)
-        outState.putString("draftLiquidGlassBottomAlphaText", draftLiquidGlassBottomAlphaText)
-        outState.putString("draftLiquidGlassBackgroundMistAlphaText", draftLiquidGlassBackgroundMistAlphaText)
-        outState.putString("draftLiquidGlassBottomDarkAlphaText", draftLiquidGlassBottomDarkAlphaText)
-        outState.putString("draftLiquidGlassSubjectScaleText", draftLiquidGlassSubjectScaleText)
-        outState.putString("draftLiquidGlassSubjectOutlineWidthText", draftLiquidGlassSubjectOutlineWidthText)
-        outState.putString("draftLiquidGlassSubjectInnerOutlineWidthText", draftLiquidGlassSubjectInnerOutlineWidthText)
-        outState.putString("draftLiquidGlassSubjectShadowAlphaText", draftLiquidGlassSubjectShadowAlphaText)
-        outState.putString("draftLiquidGlassSubjectOpacityText", draftLiquidGlassSubjectOpacityText)
         outState.putString("draftBatchPreviewCountText", draftBatchPreviewCountText)
         outState.putString("draftBatchPreviewColumnsText", draftBatchPreviewColumnsText)
         outState.putString("draftBatchPreviewIconSizeDpText", draftBatchPreviewIconSizeDpText)
@@ -318,17 +296,6 @@ class MainActivity : ComponentActivity() {
         savedInstanceState.getString("draftRmbgEdgeFeatherText")?.let { draftRmbgEdgeFeatherText = it }
         savedInstanceState.getString("draftRmbgEdgeAdjustText")?.let { draftRmbgEdgeAdjustText = it }
         savedInstanceState.getString("draftRmbgWeakAlphaKeepText")?.let { draftRmbgWeakAlphaKeepText = it }
-        savedInstanceState.getString("draftLiquidGlassRadiusText")?.let { draftLiquidGlassRadiusText = it }
-        savedInstanceState.getString("draftLiquidGlassOuterWidthText")?.let { draftLiquidGlassOuterWidthText = it }
-        savedInstanceState.getString("draftLiquidGlassTopAlphaText")?.let { draftLiquidGlassTopAlphaText = it }
-        savedInstanceState.getString("draftLiquidGlassBottomAlphaText")?.let { draftLiquidGlassBottomAlphaText = it }
-        savedInstanceState.getString("draftLiquidGlassBackgroundMistAlphaText")?.let { draftLiquidGlassBackgroundMistAlphaText = it }
-        savedInstanceState.getString("draftLiquidGlassBottomDarkAlphaText")?.let { draftLiquidGlassBottomDarkAlphaText = it }
-        savedInstanceState.getString("draftLiquidGlassSubjectScaleText")?.let { draftLiquidGlassSubjectScaleText = it }
-        savedInstanceState.getString("draftLiquidGlassSubjectOutlineWidthText")?.let { draftLiquidGlassSubjectOutlineWidthText = it }
-        savedInstanceState.getString("draftLiquidGlassSubjectInnerOutlineWidthText")?.let { draftLiquidGlassSubjectInnerOutlineWidthText = it }
-        savedInstanceState.getString("draftLiquidGlassSubjectShadowAlphaText")?.let { draftLiquidGlassSubjectShadowAlphaText = it }
-        savedInstanceState.getString("draftLiquidGlassSubjectOpacityText")?.let { draftLiquidGlassSubjectOpacityText = it }
         savedInstanceState.getString("draftBatchPreviewCountText")?.let { draftBatchPreviewCountText = it }
         savedInstanceState.getString("draftBatchPreviewColumnsText")?.let { draftBatchPreviewColumnsText = it }
         savedInstanceState.getString("draftBatchPreviewIconSizeDpText")?.let { draftBatchPreviewIconSizeDpText = it }

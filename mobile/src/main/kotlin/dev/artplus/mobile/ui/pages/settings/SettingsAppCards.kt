@@ -61,7 +61,7 @@ internal fun WallpaperSettingsCard(
     onPickWallpaper: () -> Unit,
     onClearWallpaper: () -> Unit,
 ) {
-    SectionCard(rowsFullBleed = true) {
+    SectionCard(rowsFullBleed = true, title = "预览壁纸") {
         LibrarySettingRow(
             title = "上传自定义壁纸",
             summary = if (hasCustom) {
@@ -97,7 +97,7 @@ internal fun BatchPreviewSettingsCard(
     onDraftChange: (String) -> Unit,
     onSave: (Int) -> Unit,
 ) {
-    SectionCard(rowsFullBleed = true) {
+    SectionCard(rowsFullBleed = true, title = "批量预览") {
         NumberParameterControl(
             busy = isBusy,
             title = "批量预览数量",
@@ -129,7 +129,7 @@ internal fun GptSettingsCard(
     onGptBaseUrlChange: (String) -> Unit,
     onGptApiKeyChange: (String) -> Unit,
 ) {
-    SectionCard(rowsFullBleed = true) {
+    SectionCard(rowsFullBleed = true, title = "大模型") {
         LibraryChoiceRow(
             title = "调用方式",
             summary = "选择 AI 生图的调用方式",
@@ -250,7 +250,7 @@ internal fun RmbgComponentCard(
     onInstallFromUrl: () -> Unit,
     onClearInstalled: () -> Unit,
 ) {
-    SectionCard(rowsFullBleed = true) {
+    SectionCard(rowsFullBleed = true, title = "RMBG 组件") {
         SettingsInfoRow(
             title = "RMBG 状态",
             summary = component?.let { "ABI ${it.abi}" } ?: "未安装",
@@ -383,7 +383,7 @@ internal fun OutputCard(
     onChooseTree: () -> Unit,
     onBackupAll: () -> Unit,
 ) {
-    SectionCard(rowsFullBleed = true) {
+    SectionCard(rowsFullBleed = true, title = "输出") {
         SettingsInfoRow(
             title = "Root 目标",
             summary = "/data/oplus/uxicons/{package}",
@@ -491,7 +491,7 @@ internal fun PreviewStripSettingsCard(
     isBusy: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
-    SectionCard(rowsFullBleed = true) {
+    SectionCard(rowsFullBleed = true, title = "预览条") {
         LibrarySettingRow(
             title = "顶部 1×4 预览条",
             summary = "在主页、生成参数与预设页置顶显示，参数或 JSON 保存后自动更新",
@@ -505,8 +505,15 @@ internal fun PreviewStripSettingsCard(
 }
 
 @Composable
-internal fun InputSettingsCard(launcherCount: Int, totalCount: Int, generatedCount: Int) {
-    SectionCard(rowsFullBleed = true) {
+internal fun InputSettingsCard(
+    launcherCount: Int,
+    totalCount: Int,
+    generatedCount: Int,
+    amCount: Int,
+    restoreEnabled: Boolean,
+    onRestoreClick: () -> Unit,
+) {
+    SectionCard(rowsFullBleed = true, title = "应用范围") {
         SettingsInfoRow(
             title = "应用范围",
             summary = "启动器 $launcherCount 个 / 全部 $totalCount 个",
@@ -519,6 +526,27 @@ internal fun InputSettingsCard(launcherCount: Int, totalCount: Int, generatedCou
             summary = "来自本地缓存；手动刷新后才重新读取 data 路径",
             value = "$generatedCount",
             icon = settingsIconForTitle("已生成"),
+        )
+        SectionDivider()
+        SettingsInfoRow(
+            title = "AM 标记",
+            summary = "被 ArtPlus 接管的图标包，应用列表里标为 AM",
+            value = "$amCount",
+            icon = SettingsIconKind.CheckBadge,
+        )
+        SectionDivider()
+        LibrarySettingRow(
+            title = "一键还原 AM 图标",
+            summary = if (amCount > 0) {
+                "把 $amCount 个带 AM 标记的目录恢复成原图（没有备份的清空 ArtPlus 写入的图标），并删除标记"
+            } else {
+                "没有可还原的图标包"
+            },
+            icon = SettingsIconKind.Refresh,
+            showValue = false,
+            showArrowRight = true,
+            enabled = restoreEnabled,
+            onClick = onRestoreClick,
         )
     }
 }

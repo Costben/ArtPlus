@@ -14,7 +14,8 @@ import dev.artplus.mobile.data.AppEntry
 import dev.artplus.mobile.data.getCachedAppIcon
 import dev.artplus.mobile.data.loadAppIconBitmap
 import dev.artplus.mobile.data.preloadAppIcons
-import dev.artplus.mobile.data.scanRootGeneratedPackages
+import dev.artplus.mobile.data.markPackageGenerated
+import dev.artplus.mobile.data.scanRootPackages
 import dev.artplus.mobile.data.updateGeneratedPackageCache
 import dev.artplus.mobile.system.refreshArtPlusIconsBlocking
 import dev.artplus.mobile.ui.pages.picker.pickerLoadCachedAppIcon
@@ -28,7 +29,7 @@ import dev.artplus.mobile.loadApps
  * loadApps / refreshGeneratedPackages / refreshArtPlusIcons / loadCachedAppIcon /
  * onCreate / onDestroy / onPause / onResume / onNewIntent / startUiFriendlyThread。
  * 内联 helper 扫描结论：名单函数引用的 helper（loadGeneratedPackageCache /
- * updateGeneratedPackageCache / scanRootGeneratedPackages / loadApps /
+ * updateGeneratedPackageCache / scanRootPackages / loadApps /
  * preloadAppIcons / getCachedAppIcon / loadAppIconBitmap / pickerLoadCachedAppIcon /
  * refreshArtPlusIconsBlocking / isDebugGenerateIntent / handleDebugGenerateIntent /
  * loadGptSettings / loadTuningParams / initTuningHistory / loadRmbgSettings /
@@ -45,7 +46,7 @@ import dev.artplus.mobile.loadApps
  *   （mutableStateListOf，大量 UI 引用，P5 再收敛），经 applyEntries 回调写回。
  * - 调度一律 viewModelScope 协程（Dispatchers.IO 做后台段），替代 Activity 的
  *   Thread / runOnUiThread 直调；StateFlow 写线程安全，回调一律回 Main。
- * - 数据核只做调用：loadApps / scanRootGeneratedPackages /
+ * - 数据核只做调用：loadApps / scanRootPackages /
  *   loadGeneratedPackageCache / updateGeneratedPackageCache（data/AppRepository）、
  *   getCachedAppIcon / loadAppIconBitmap / preloadAppIcons（data/IconCache）、
  *   refreshArtPlusIconsBlocking（system/RootShell）、pickerLoadCachedAppIcon
@@ -178,12 +179,18 @@ internal fun MainViewModel.refreshGeneratedPackagesAsync(
     viewModelScope.launch {
         val packageNames = entries.map { it.packageName }.toSet()
         val result = withContext(Dispatchers.IO) {
-            runCatching { scanRootGeneratedPackages(packageNames) }
+            runCatching { scanRootPackages(packageNames) }
         }
         result
-            .onSuccess { generated ->
-                val normalized = updateGeneratedPackageCache(prefs, generated)
-                updatePicker { it.copy(generatedPackageNames = normalized, generatedScanFailed = false) }
+            .onSuccess { scan ->
+                val normalized = updateGeneratedPackageCache(prefs, scan.generated)
+                updatePicker {
+                    it.copy(
+                        generatedPackageNames = normalized,
+                        artPlusModifiedPackageNames = scan.artPlusModified,
+                        generatedScanFailed = false,
+                    )
+                }
                 updateShell { it.copy(statusText = generatedSuccessStatus(normalized.size)) }
             }
             .onFailure { error ->

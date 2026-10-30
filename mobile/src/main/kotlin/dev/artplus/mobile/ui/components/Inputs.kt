@@ -46,7 +46,6 @@ import kotlinx.coroutines.delay
 import io.github.suqi8.coui.kmp.basic.ButtonDefaults
 import io.github.suqi8.coui.kmp.basic.Slider
 import io.github.suqi8.coui.kmp.basic.SliderDefaults
-import io.github.suqi8.coui.kmp.basic.Switch
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.basic.TextField
 import io.github.suqi8.coui.kmp.theme.COUITheme
@@ -260,6 +259,8 @@ internal fun InlineInputField(
 /**
  * Top app bar icon key: COUI's ColorOS 17 [HighlightedIconButton] drawing a 24dp COUI icon.
  * Callers pass a `COUIIcons` vector; COUI's TopAppBar already supplies the 16dp toolbar margins.
+ *
+ * [tint] 默认跟随顶栏内容色；需要强调（例如多选清空用错误色）时显式传入。
  */
 @Composable
 internal fun TitleBarIconButton(
@@ -267,26 +268,27 @@ internal fun TitleBarIconButton(
     contentDescription: String?,
     enabled: Boolean,
     onClick: () -> Unit,
+    tint: Color = Color.Unspecified,
 ) {
     HighlightedIconButton(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier.couiTopAppBarActionItem(),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = Modifier.size(24.dp),
-        )
+        if (tint == Color.Unspecified) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(24.dp),
+            )
+        } else {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(24.dp),
+                tint = tint,
+            )
+        }
     }
 }
 
-@Composable
-internal fun LiquidGlassSwitch(checked: Boolean, enabled: Boolean) {
-    // 历史命名：实为普通开关，使用 COUI 原生 Switch（行自身接管点击）。
-    Switch(
-        checked = checked,
-        onCheckedChange = null,
-        enabled = enabled,
-    )
-}

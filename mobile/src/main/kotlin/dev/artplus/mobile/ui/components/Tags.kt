@@ -120,22 +120,6 @@ internal fun MetricPill(label: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun StatusDot(active: Boolean) {
-    Box(
-        modifier = Modifier
-            .size(10.dp)
-            .clip(RoundedCornerShape(999.dp))
-            .background(
-                if (active) {
-                    COUITheme.colorScheme.primaryVariant
-                } else {
-                    COUITheme.colorScheme.secondaryContainer
-                },
-            ),
-    )
-}
-
-@Composable
 internal fun LayerDebugTile(label: String, bitmap: ImageBitmap?, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,

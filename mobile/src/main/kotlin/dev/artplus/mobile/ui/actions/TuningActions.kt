@@ -1,9 +1,7 @@
 package dev.artplus.mobile.ui.actions
 
-import android.content.Context
 import androidx.compose.runtime.Stable
 import dev.artplus.mobile.MainActivity
-import dev.artplus.mobile.PREFS_NAME
 import dev.artplus.mobile.PREVIEW_OUTPUT_DEBOUNCE_MS
 import dev.artplus.mobile.PREVIEW_REBUILD_DEBOUNCE_MS
 import dev.artplus.mobile.imaging.IconCandidate
@@ -18,23 +16,21 @@ import dev.artplus.mobile.state.setStatus
 import dev.artplus.mobile.system.writePackageOutputs
 import dev.artplus.mobile.ui.cards.PreviewSelections
 import dev.artplus.mobile.ui.pages.home.homeRefreshActivePreviewOutputs
-import dev.artplus.mobile.ui.pages.params.paramsSaveLiquidGlassSettings
 import dev.artplus.mobile.ui.pages.picker.pickerPostStatus
 
 /**
  * S2.2：主页「写入 / 保存 / 刷新」三件事的唯一入口。
  *
  * 收口前：43 份 onWrite 写入块复制粘贴（每加一个调参字段要改 43 处）、
- * 29 处液态玻璃保存调用内联、37 份预览刷新块复制粘贴。
+ * 37 份预览刷新块复制粘贴。
  * 收口后：Activity 内 `tuningActions` 构造一次，调用点一律 `tuningActions.write` /
- * `tuningActions.save()` / `tuningActions.refresh`。
+ * `tuningActions.refresh`。
  *
  * 参数一律在调用时从 `mainViewModel` 现取，与收口前各调用点的读取表达式逐字一致。
  */
 @Stable
 internal class TuningActions(
     val write: (GenerationSession, PreviewSelections) -> Unit,
-    val save: () -> Unit,
     val refresh: (Boolean) -> Unit,
 )
 
@@ -58,18 +54,6 @@ internal fun MainActivity.buildTuningActions(): TuningActions {
                             rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                         )
             } },
-                        liquidGlassEnabled = params.liquidGlassEnabled,
-                        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                        liquidGlassRadius = params.liquidGlassRadius,
-                        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
                         foregroundShadowLevel = params.foregroundShadowLevel,
                         monochromeThemeScale = params.monochromeThemeScale,
                         nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
@@ -117,12 +101,6 @@ internal fun MainActivity.buildTuningActions(): TuningActions {
          }
     return TuningActions(
         write = write,
-        save = {
-            paramsSaveLiquidGlassSettings(
-                        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                        getParams = { mainViewModel.params.value },
-                    )
-        },
         refresh = refresh,
     )
 }

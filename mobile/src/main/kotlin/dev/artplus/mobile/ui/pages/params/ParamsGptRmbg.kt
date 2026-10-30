@@ -81,7 +81,6 @@ internal fun paramsSaveSettingsPage(
     saveRmbg: () -> Boolean,
     saveLocalSeparation: () -> Unit,
     saveImageTuning: () -> Unit,
-    saveLiquidGlass: () -> Unit,
     saveUi: () -> Unit,
     setGptSaveStatus: (String) -> Unit,
     setRmbgSaveStatus: (String) -> Unit,
@@ -91,7 +90,6 @@ internal fun paramsSaveSettingsPage(
     val rmbgSaved = runCatching { saveRmbg() }.getOrDefault(false)
     saveLocalSeparation()
     saveImageTuning()
-    saveLiquidGlass()
     saveUi()
     setGptSaveStatus("")
     setRmbgSaveStatus("")

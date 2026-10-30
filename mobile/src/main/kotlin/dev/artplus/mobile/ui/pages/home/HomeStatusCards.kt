@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
@@ -23,7 +21,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.EmptyState
 import io.github.suqi8.coui.kmp.utils.PressFeedbackType
-import io.github.suqi8.coui.kmp.basic.ButtonDefaults
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextButton
@@ -33,14 +30,7 @@ import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.icon.extended.Layers
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.data.AppEntry
-import dev.artplus.mobile.ui.cards.AdvancedCategoryTabs
-import dev.artplus.mobile.ui.cards.AdvancedSettingsCategory
-import dev.artplus.mobile.ui.cards.AdvancedSettingsTab
-import dev.artplus.mobile.ui.cards.SegmentedControl
 import dev.artplus.mobile.ui.components.BrandMark
-import dev.artplus.mobile.ui.components.CompactActionButton
-import dev.artplus.mobile.ui.components.SectionCard
-import dev.artplus.mobile.ui.components.StatusDot
 /**
  * Slice 2.2：主页状态卡片（原 MainActivity 残留本体原样搬迁）。
  * Composable 只收 state + onEvent；Activity 状态经参数/回调注入，行为与 UI 100% 等价。
@@ -49,16 +39,12 @@ import dev.artplus.mobile.ui.components.StatusDot
 @Composable
 internal fun StatusCard(
     selectedApp: AppEntry?,
-    launcherCount: Int,
-    totalCount: Int,
-    generatedCount: Int,
     isBusy: Boolean,
     hasApps: Boolean,
     statusText: String,
     onOpenPicker: () -> Unit,
     appIcon: @Composable (AppEntry) -> Unit,
 ) {
-    val statusLabel = if (isBusy) "运行中" else "就绪"
     val enabled = !isBusy && hasApps
 
     // COUI 可点击卡片：Tint 按压反馈由 Card 提供；不可用时不挂 onClick
@@ -82,37 +68,17 @@ internal fun StatusCard(
             }
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    StatusDot(active = isBusy)
-                    Text(
-                        text = statusLabel,
-                        style = COUITheme.textStyles.title4,
-                        color = COUITheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
                 Text(
                     text = selectedApp?.label ?: "选择一个应用开始生成",
-                    style = COUITheme.textStyles.body1,
+                    style = COUITheme.textStyles.title4,
                     color = COUITheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = selectedApp?.packageName ?: statusText,
-                    style = COUITheme.textStyles.footnote1,
-                    color = COUITheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "启动器 $launcherCount 个 / 全部 $totalCount 个 / 已生成 $generatedCount 个",
                     style = COUITheme.textStyles.footnote1,
                     color = COUITheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,
@@ -190,108 +156,5 @@ internal fun EmptyAppListCard(
                 contentDescription = "刷新应用列表"
             },
         )
-    }
-}
-
-/** 第二层级「生成设置」：顶部「滑块 / JSON」切换 + 保存成预设 + 滑块分类导航。 */
-@Composable
-internal fun GenerationNavCard(
-    isBusy: Boolean,
-    advancedSettingsTab: AdvancedSettingsTab,
-    advancedSettingsCategory: AdvancedSettingsCategory,
-    onTabSelected: (AdvancedSettingsTab) -> Unit,
-    onRequestSavePreset: () -> Unit,
-    onCategorySelected: (AdvancedSettingsCategory) -> Unit,
-) {
-    SectionCard {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            SegmentedControl(
-                enabled = !isBusy,
-                labels = AdvancedSettingsTab.entries.map { it.label },
-                selectedIndex = AdvancedSettingsTab.entries.indexOf(advancedSettingsTab).coerceAtLeast(0),
-                onSelected = { index ->
-                    onTabSelected(AdvancedSettingsTab.entries[index])
-                },
-            )
-            TextButton(
-                text = "保存成预设",
-                onClick = onRequestSavePreset,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            if (advancedSettingsTab == AdvancedSettingsTab.Sliders) {
-                AdvancedCategoryTabs(
-                    enabled = !isBusy,
-                    selected = advancedSettingsCategory,
-                    onSelected = onCategorySelected,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-internal fun GenerationActionCard(
-    selectedApp: AppEntry?,
-    isBusy: Boolean,
-    onLocalGenerate: () -> Unit,
-    onLocalExport: () -> Unit,
-    onWriteAll: () -> Unit,
-    onWriteStandard: () -> Unit,
-    onWriteMono: () -> Unit,
-) {
-    val canRun = selectedApp != null && !isBusy
-    SectionCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            TextButton(
-                text = "本地生成",
-                onClick = onLocalGenerate,
-                enabled = canRun,
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-            )
-            TextButton(
-                text = "本地导出",
-                onClick = onLocalExport,
-                enabled = !isBusy,
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-            )
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            CompactActionButton(
-                text = "写入全部",
-                onClick = onWriteAll,
-                enabled = canRun,
-                modifier = Modifier.weight(1f),
-                // 三等分行：默认 12dp 内边距会让 4 个汉字换行，收窄到 4dp 保持单行。
-                insideMargin = PaddingValues(horizontal = 4.dp),
-            )
-            CompactActionButton(
-                text = "写入标准",
-                onClick = onWriteStandard,
-                enabled = canRun,
-                modifier = Modifier.weight(1f),
-                // 三等分行：默认 12dp 内边距会让 4 个汉字换行，收窄到 4dp 保持单行。
-                insideMargin = PaddingValues(horizontal = 4.dp),
-            )
-            CompactActionButton(
-                text = "写入单色",
-                onClick = onWriteMono,
-                enabled = canRun,
-                modifier = Modifier.weight(1f),
-                // 三等分行：默认 12dp 内边距会让 4 个汉字换行，收窄到 4dp 保持单行。
-                insideMargin = PaddingValues(horizontal = 4.dp),
-            )
-        }
     }
 }

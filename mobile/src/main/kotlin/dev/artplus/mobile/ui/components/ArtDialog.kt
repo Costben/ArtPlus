@@ -17,15 +17,17 @@ import io.github.suqi8.coui.kmp.basic.TextButtonColors
 import io.github.suqi8.coui.kmp.layout.DialogButtonBar
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.theme.COUITheme
-import io.github.suqi8.coui.kmp.window.WindowDialog
+import io.github.suqi8.coui.kmp.overlay.OverlayDialog
 
-/** COUI WindowDialog 不给 content 加任何内边距，标题/摘要的水平内边距为 24dp，这里保持一致。 */
+/** COUI 对话框不给 content 加任何内边距，标题/摘要的水平内边距为 24dp，这里保持一致。 */
 private val ArtDialogContentHorizontalPadding = 24.dp
 
 /**
- * 应用统一的 ColorOS 17 对话框（封装 COUI [WindowDialog] + [DialogButtonBar]）。
+ * 应用统一的 ColorOS 17 对话框（封装 COUI [OverlayDialog] + [DialogButtonBar]）。
  *
- * 应用没有根 Scaffold / COUIPopupHost，所以只能用 Window* 变体。
+ * 用 Overlay 变体，由 `ArtPlusScreen` 根部 Scaffold 的 COUIPopupHost 渲染：那里的 `LocalBackdrop`
+ * 是整屏快照，面板是 ColorOS 17 的模糊玻璃，按钮胶囊的提亮底色和描边高光也才看得出来。
+ * Window 变体在独立窗口里拿不到页面内容，只能退回实心白底。
  * - [content] 由本函数补 24dp 水平内边距（COUI 的 content 槽本身不带内边距），
  *   无按钮时再补 24dp 底部内边距；按钮栏贯穿整个面板宽度，不吃内边距。
  * - 按钮用 [negative] / [positive] / [neutral] 传入，不要把 [DialogButtonBar] 塞进 [content]
@@ -33,8 +35,8 @@ private val ArtDialogContentHorizontalPadding = 24.dp
  *   [DialogButtonBarAction.recommended] 为实心主色按钮（每个栏最多一个）。
  *   3 个按钮时 COUI 自动竖排。
  * - [onDismissRequest]：点击外部 / 返回键触发；传 null 表示不可关闭（返回键与外部点击无效）。
- * - [show] 默认 true，调用方可继续用 `if (visible) ArtDialog(...)`（此时无退出动画）；
- *   需要退出动画时把 show 绑到状态并在 [onDismissFinished] 里清理。
+ * - [show] 默认 true，调用方可继续用 `if (visible) ArtDialog(...)`：离开组合时宿主照常播退场动画；
+ *   需要在退场结束后清理状态时把 show 绑到状态并在 [onDismissFinished] 里清理。
  * - [centered] 为 true 时居中弹出（缩放 + 淡入，即 ColorOS 居中警示框样式），否则自底部滑入。
  * - [buttonColors] 覆盖非 recommended 按钮的配色（例如停止类操作使用 error 色文字）。
  * - 内容里要读取输入法时无需额外处理，COUI 的对话框布局已处理 ime 避让。
@@ -54,7 +56,7 @@ internal fun ArtDialog(
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val hasButtons = negative != null || positive != null || neutral != null
-    WindowDialog(
+    OverlayDialog(
         show = show,
         title = title,
         summary = summary,
@@ -107,7 +109,7 @@ internal fun ArtDialog(
  * （例如「以后都自动确认」勾选行）。
  *
  * 审计建议直接包 COUI `WindowAlertDialog`，但它的确认按钮没有 enabled 参数，且 content 槽无内边距，
- * 所以这里基于 [ArtDialog]（`WindowDialog` 居中样式 + [DialogButtonBar]，与 WindowAlertDialog
+ * 所以这里基于 [ArtDialog]（`OverlayDialog` 居中样式 + [DialogButtonBar]，与 WindowAlertDialog
  * 同一套布局）实现，额外支持 [confirmEnabled]。
  * 与 WindowAlertDialog 一致：确认不会自动关闭，点击外部 / 返回键走 [onCancel]。
  */

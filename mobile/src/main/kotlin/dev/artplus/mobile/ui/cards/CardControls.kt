@@ -50,7 +50,6 @@ import io.github.suqi8.coui.kmp.basic.TabRowWithContour
 import io.github.suqi8.coui.kmp.basic.TagView
 import io.github.suqi8.coui.kmp.basic.Button
 import io.github.suqi8.coui.kmp.basic.Card
-import io.github.suqi8.coui.kmp.basic.TabRow
 import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.More
@@ -371,24 +370,3 @@ internal fun PresetMenuItem(
     )
 }
 
-@Composable
-internal fun AdvancedCategoryTabs(
-    selected: AdvancedSettingsCategory,
-    onSelected: (AdvancedSettingsCategory) -> Unit,
-    enabled: Boolean = true,
-) {
-    val categories = AdvancedSettingsCategory.entries
-    val safeSelectedIndex = categories.indexOf(selected).coerceAtLeast(0)
-    SegmentEnabledScope(enabled = enabled) {
-        // 分类导航用无轮廓的 COUI TabRow，与上方轮廓分段按钮形成层级
-        TabRow(
-            tabs = categories.map { it.label },
-            selectedTabIndex = safeSelectedIndex,
-            onTabSelected = { index ->
-                if (enabled && index != safeSelectedIndex) {
-                    onSelected(categories[index])
-                }
-            },
-        )
-    }
-}

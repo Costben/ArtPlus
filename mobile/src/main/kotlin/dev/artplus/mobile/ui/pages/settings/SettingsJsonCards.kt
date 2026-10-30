@@ -61,7 +61,7 @@ internal fun JsonSettingsEditor(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "全部调参参数（含本地工作流开关、分离/清理/RMBG/液态玻璃/自适应/各模式选型）。可视化改动会同步到这里，也可直接编辑 JSON 后保存。",
+            text = "全部调参参数（含本地工作流开关、分离/清理/RMBG/自适应/各模式选型）。可视化改动会同步到这里，也可直接编辑 JSON 后保存。",
             style = COUITheme.textStyles.footnote1,
             color = COUITheme.colorScheme.onSurfaceVariantSummary,
             maxLines = 3,

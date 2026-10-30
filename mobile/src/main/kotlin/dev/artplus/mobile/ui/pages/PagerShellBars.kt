@@ -1,11 +1,15 @@
 package dev.artplus.mobile.ui.pages
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
@@ -20,17 +24,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathNode
 import androidx.compose.ui.graphics.vector.VectorGroup
 import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.BottomFloatingAccessoryNavigationBar
+import io.github.suqi8.coui.kmp.basic.BottomFloatingAccessoryNavigationBarDefaults
 import io.github.suqi8.coui.kmp.basic.BottomFloatingNavigationBarItem
+import io.github.suqi8.coui.kmp.basic.Icon
+import io.github.suqi8.coui.kmp.basic.IconButton
 import io.github.suqi8.coui.kmp.basic.LocalEdgeToEdge
 import io.github.suqi8.coui.kmp.basic.PinnedTopAppBar
 import io.github.suqi8.coui.kmp.basic.PinnedTopAppBarDefaults
@@ -40,6 +50,7 @@ import io.github.suqi8.coui.kmp.icon.extended.Folder
 import io.github.suqi8.coui.kmp.icon.extended.FolderFill
 import io.github.suqi8.coui.kmp.icon.extended.GridView
 import io.github.suqi8.coui.kmp.icon.extended.Tune
+import io.github.suqi8.coui.kmp.theme.COUITheme
 import io.github.suqi8.coui.kmp.utils.rememberGalleryDensity
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -83,8 +94,9 @@ internal val LocalPagerShellPageIndex = compositionLocalOf { -1 }
  * 相册的 toolbar 用相册自己的密度绘制（这台 620dpi 的机器上是 565dpi，与底栏一致），
  * 所以整根顶栏放在 gallery 密度下。托管模式和独立模式（设置页 overlay）共用。
  *
- * 标题：一级页沿用相册的 32dp 大标题；带返回键的二级页（设置）按 ColorOS 设置的紧凑标题，
- * 即 COUI 折叠态的 24dp Medium（coui_appbar_title_collapsed_text_size）。
+ * 标题：没有返回键的页面（pager 里的主页、生成参数、预设）沿用相册的 32dp 大标题；带返回键的是
+ * 二级页，用 demo 里二级页的紧凑标题，即 COUI 固定小标题栏的 18dp Medium
+ * （`TextAppearance.COUI.Toolbar.SecondTitle`，与 `coui_appbar_title_collapsed_with_subtitle_text_size` 同值）。
  *
  * 两种模式的页面内容都铺满窗口、从顶栏底下滚过（顶部留白走 contentPadding），满足 COUI
  * 顶栏材质的前提，所以这里放行 [LocalEdgeToEdge]；不放行时 COUI 不画材质，顶栏整块透明。
@@ -101,13 +113,14 @@ internal fun PagerShellTopAppBar(
         LocalDensity provides rememberGalleryDensity(),
         LocalEdgeToEdge provides true,
     ) {
-        val titleStyle = if (navigationIcon != null) {
+        // 有返回键的一律是二级页；pager 里的页面都没有返回键，走大标题。
+        val titleStyle = if (navigationIcon == null) {
+            PinnedTopAppBarDefaults.titleStyle().copy(fontWeight = FontWeight.Bold)
+        } else {
             PinnedTopAppBarDefaults.titleStyle().copy(
                 fontSize = with(LocalDensity.current) { SecondaryTitleSize.toSp() },
                 fontWeight = FontWeight.Medium,
             )
-        } else {
-            PinnedTopAppBarDefaults.titleStyle().copy(fontWeight = FontWeight.Bold)
         }
         PinnedTopAppBar(
             title = title,
@@ -120,8 +133,8 @@ internal fun PagerShellTopAppBar(
     }
 }
 
-/** COUI coui_appbar_title_collapsed_text_size：dp 而非 sp，与系统设置一样不随字体缩放。 */
-private val SecondaryTitleSize = 24.dp
+/** COUI coui_appbar_title_collapsed_with_subtitle_text_size：dp 而非 sp，与系统设置一样不随字体缩放。 */
+private val SecondaryTitleSize = 18.dp
 
 /**
  * 页面内容起点（平台密度的 Dp）= 状态栏高度 + 顶栏高度。
@@ -176,25 +189,38 @@ internal fun BoxScope.PagerShellSlidingTopBars(
  * 与 demo 的 `Coui17AccessoryBar` 同款：悬浮胶囊底栏，限定在 gallery 密度下渲染。
  * 玻璃采样源取自 [io.github.suqi8.coui.kmp.blur.LocalBackdrop]，由宿主提供。
  *
- * 首尾配件都传空实现并常隐，即系统相册「创作」页的状态：配件槽的占位和胶囊偏移按「已配置」算，
- * 只配一侧会让胶囊偏离居中。PLK110 实测该状态与配件展开时是同一种半透明材质，胶囊亮度随背后内容变化。
+ * 首尾两颗融合球是「同一个球换内容」：主页是生成/写入，生成参数页是生成设置/保存成预设。
+ * 换页时球的槽位不动，只把里面的内容交叉淡入淡出（[Crossfade]），所以看起来是球原地变成了另一个。
+ * 预设页没有对应的球，整对缩回胶囊里；配件槽的占位和胶囊偏移按「已配置」算，收起时胶囊不位移。
+ *
+ * [startAccessory] / [endAccessory] 的入参为 `true` 表示当前在生成参数页。
  */
 @Composable
 internal fun PagerShellBottomBar(
     pagerState: PagerState,
     onSelectPage: (Int) -> Unit,
+    startAccessory: @Composable (paramsPage: Boolean) -> Unit,
+    endAccessory: @Composable (paramsPage: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val galleryDensity = rememberGalleryDensity()
+    val page = pagerState.targetPage
+    // 预设页没有配件动作，让两颗球缩回胶囊里。
+    val accessoriesVisible = page == 0 || page == 1
+    val onParamsPage = page == 1
     CompositionLocalProvider(LocalDensity provides galleryDensity) {
         BottomFloatingAccessoryNavigationBar(
             modifier = modifier
                 .fillMaxWidth()
                 .navigationBarsPadding(),
-            startAccessory = { },
-            endAccessory = { },
-            startAccessoryVisible = false,
-            endAccessoryVisible = false,
+            startAccessoryVisible = accessoriesVisible,
+            endAccessoryVisible = accessoriesVisible,
+            startAccessory = {
+                AccessoryCrossfade(onParamsPage) { startAccessory(it) }
+            },
+            endAccessory = {
+                AccessoryCrossfade(onParamsPage) { endAccessory(it) }
+            },
         ) {
             listOf(
                 PagerShellTab(COUIIcons.GridView, GridViewFill, "主页"),
@@ -210,6 +236,78 @@ internal fun PagerShellBottomBar(
                 )
             }
         }
+    }
+}
+
+/**
+ * 底栏配件球（融合球）：融合轮廓已经由 [BottomFloatingAccessoryNavigationBar] 画好那个 56dp 的圆，
+ * 插槽本身只负责图标。
+ *
+ * 「写入」是主操作，铺一层强调色底并换反色图标；「生成」不铺底，直接用融合轮廓的常规材质，
+ * 也就是没有强调色的那一个。
+ *
+ * [menu] 必须在这里声明（而不是在页面里）：COUI 的级联菜单拿「声明处父节点的窗口矩形」当锚点，
+ * 父节点就是这个 56dp 的球，卡片才会从球的边缘长出来。弹层内容实际由
+ * `COUIPopupHost` 在页面根部渲染，所以不会被这颗小球的尺寸裁掉。
+ */
+@Composable
+internal fun PagerShellActionBall(
+    icon: ImageVector,
+    contentDescription: String,
+    emphasized: Boolean,
+    onClick: () -> Unit,
+    menu: @Composable () -> Unit,
+) {
+    val size = BottomFloatingAccessoryNavigationBarDefaults.AccessorySize
+    Box(
+        Modifier
+            .size(size)
+            // COUI 的 IconButton 不合并图标的语义，球在无障碍树里会是个没名字的按钮；
+            // 这里把图标语义和按钮合成一个节点，TalkBack 才读得出这是什么球。
+            .semantics(mergeDescendants = true) { this.contentDescription = contentDescription },
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxSize(),
+            backgroundColor = if (emphasized) {
+                COUITheme.colorScheme.primary
+            } else {
+                Color.Transparent
+            },
+            cornerRadius = size / 2,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = if (emphasized) {
+                    COUITheme.colorScheme.onPrimary
+                } else {
+                    COUITheme.colorScheme.onSurface
+                },
+            )
+        }
+        menu()
+    }
+}
+
+/**
+ * 融合球内容的交叉淡入淡出：两颗球在主页和生成参数页共用同一个槽位，换页时球本身不动，
+ * 只把里面的内容换掉，看起来就是球原地变成了另一个。
+ *
+ * 用和配件球收放同一个 spring，两段动画才是同一种手感。
+ */
+@Composable
+private fun AccessoryCrossfade(
+    onParamsPage: Boolean,
+    content: @Composable (paramsPage: Boolean) -> Unit,
+) {
+    Crossfade(
+        targetState = onParamsPage,
+        animationSpec = BottomFloatingAccessoryNavigationBarDefaults.AlphaSpring,
+        label = "accessoryContent",
+    ) { params ->
+        content(params)
     }
 }
 

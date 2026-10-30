@@ -182,17 +182,6 @@ PagerShellPage(
                         setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
                         setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
                         setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
                         setDraftJsonParamsText = { draftJsonParamsText = it },
                         onSaveLocalSeparation = { run {
                 paramsSaveLocalSeparationSettings(
@@ -206,7 +195,6 @@ PagerShellPage(
                             getParams = { mainViewModel.params.value },
                         )
             } },
-                        onSaveLiquidGlass = { tuningActions.save() },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
                             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -267,17 +255,6 @@ PagerShellPage(
                         setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
                         setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
                         setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
                         setDraftJsonParamsText = { draftJsonParamsText = it },
                         onSaveLocalSeparation = { run {
                 paramsSaveLocalSeparationSettings(
@@ -291,7 +268,6 @@ PagerShellPage(
                             getParams = { mainViewModel.params.value },
                         )
             } },
-                        onSaveLiquidGlass = { tuningActions.save() },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
                             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -353,17 +329,6 @@ PagerShellPage(
                         setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
                         setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
                         setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
                         setDraftJsonParamsText = { draftJsonParamsText = it },
                         onSaveLocalSeparation = { run {
                 paramsSaveLocalSeparationSettings(
@@ -377,7 +342,6 @@ PagerShellPage(
                             getParams = { mainViewModel.params.value },
                         )
             } },
-                        onSaveLiquidGlass = { tuningActions.save() },
                         onSaveGpt = { run {
                 paramsSaveGptSettings(
                             prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),

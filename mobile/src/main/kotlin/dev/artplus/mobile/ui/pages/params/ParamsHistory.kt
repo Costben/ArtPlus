@@ -30,21 +30,9 @@ internal fun paramsApplyTuningParams(
     setDraftRmbgEdgeFeatherText: (String) -> Unit,
     setDraftRmbgEdgeAdjustText: (String) -> Unit,
     setDraftRmbgWeakAlphaKeepText: (String) -> Unit,
-    setDraftLiquidGlassRadiusText: (String) -> Unit,
-    setDraftLiquidGlassOuterWidthText: (String) -> Unit,
-    setDraftLiquidGlassTopAlphaText: (String) -> Unit,
-    setDraftLiquidGlassBottomAlphaText: (String) -> Unit,
-    setDraftLiquidGlassBackgroundMistAlphaText: (String) -> Unit,
-    setDraftLiquidGlassBottomDarkAlphaText: (String) -> Unit,
-    setDraftLiquidGlassSubjectScaleText: (String) -> Unit,
-    setDraftLiquidGlassSubjectOutlineWidthText: (String) -> Unit,
-    setDraftLiquidGlassSubjectInnerOutlineWidthText: (String) -> Unit,
-    setDraftLiquidGlassSubjectShadowAlphaText: (String) -> Unit,
-    setDraftLiquidGlassSubjectOpacityText: (String) -> Unit,
     setDraftJsonParamsText: (String) -> Unit,
     onSaveLocalSeparation: () -> Unit,
     onSaveImageTuning: () -> Unit,
-    onSaveLiquidGlass: () -> Unit,
     onSaveGpt: () -> Unit,
     onSaveUi: () -> Unit,
     isBusy: () -> Boolean,
@@ -69,22 +57,10 @@ internal fun paramsApplyTuningParams(
     setDraftRmbgEdgeFeatherText(params.rmbgEdgeFeatherPercent.toString())
     setDraftRmbgEdgeAdjustText(params.rmbgEdgeAdjustPercent.toString())
     setDraftRmbgWeakAlphaKeepText(params.rmbgWeakAlphaKeepPercent.toString())
-    setDraftLiquidGlassRadiusText(params.liquidGlassRadius.toString())
-    setDraftLiquidGlassOuterWidthText(params.liquidGlassOuterWidth.toString())
-    setDraftLiquidGlassTopAlphaText(params.liquidGlassTopAlpha.toString())
-    setDraftLiquidGlassBottomAlphaText(params.liquidGlassBottomAlpha.toString())
-    setDraftLiquidGlassBackgroundMistAlphaText(params.liquidGlassBackgroundMistAlpha.toString())
-    setDraftLiquidGlassBottomDarkAlphaText(params.liquidGlassBottomDarkAlpha.toString())
-    setDraftLiquidGlassSubjectScaleText(params.liquidGlassSubjectScalePercent.toString())
-    setDraftLiquidGlassSubjectOutlineWidthText(params.liquidGlassSubjectOutlineWidth.toString())
-    setDraftLiquidGlassSubjectInnerOutlineWidthText(params.liquidGlassSubjectInnerOutlineWidth.toString())
-    setDraftLiquidGlassSubjectShadowAlphaText(params.liquidGlassSubjectShadowAlpha.toString())
-    setDraftLiquidGlassSubjectOpacityText(params.liquidGlassSubjectOpacityPercent.toString())
     setDraftJsonParamsText(params.toJson().toString(4))
     if (persist) {
         onSaveLocalSeparation()
         onSaveImageTuning()
-        onSaveLiquidGlass()
         if (
             before.gptImageMode != params.gptImageMode ||
             before.gptPromptPreset != params.gptPromptPreset ||
@@ -224,12 +200,10 @@ internal fun paramsRedoTuning(
 internal fun paramsLoadTuningParams(
     onLoadLocal: () -> Unit,
     onLoadImage: () -> Unit,
-    onLoadLiquid: () -> Unit,
     getParams: () -> TuningParams,
     setDraftJsonParamsText: (String) -> Unit,
 ) {
     onLoadLocal()
     onLoadImage()
-    onLoadLiquid()
     setDraftJsonParamsText(getParams().toJson().toString(4))
 }

@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Scaffold
 import io.github.suqi8.coui.kmp.basic.Text
-import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.basic.SmallTopAppBar
 import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
@@ -60,6 +60,7 @@ import dev.artplus.mobile.ui.cards.AppPage
 import dev.artplus.mobile.ui.components.ArtDialog
 import dev.artplus.mobile.ui.components.LibrarySettingRow
 import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.sectionItem
 import dev.artplus.mobile.ui.components.SectionDivider
 import dev.artplus.mobile.ui.components.SettingsIconKind
 import dev.artplus.mobile.ui.components.TitleBarIconButton
@@ -101,14 +102,15 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
         drawContent()
     }
     val contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
-        TopAppBarDefaults.ExpandedHeight
+        TopAppBarDefaults.SmallTopAppBarCenterHeight
     Scaffold(
         // 内容从顶栏底下滚过（顶部留白在 contentPadding 里），COUI 才会给顶栏画玻璃材质。
         edgeToEdge = true,
         containerColor = pageBackground,
         topBar = {
             CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
-                TopAppBar(
+                // 带返回键的二级页：COUI 的固定小标题栏（18dp Medium），与 demo 的二级页一致。
+                SmallTopAppBar(
                     title = "关于",
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
@@ -135,7 +137,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
             contentPadding = PaddingValues(top = contentTopInset + 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item {
+            sectionItem(key = "about_app", title = "应用信息") {
                 Card {
                     Column(
                         modifier = Modifier
@@ -171,7 +173,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                 }
             }
             item {
-                SectionCard(rowsFullBleed = true) {
+                SectionCard(rowsFullBleed = true, title = "链接") {
                     LibrarySettingRow(
                         title = "GitHub 仓库",
                         summary = GITHUB_REPO_URL,

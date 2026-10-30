@@ -8,7 +8,6 @@ import kotlin.test.assertTrue
 import dev.artplus.mobile.state.MainViewModel
 import dev.artplus.mobile.state.buildBatchApplyProgress
 import dev.artplus.mobile.state.currentBatchFinishStatus
-import dev.artplus.mobile.state.liquidGlassBatchFinishStatus
 import dev.artplus.mobile.state.presetBatchFinishStatus
 import dev.artplus.mobile.state.resolvePresetBatchPackages
 import dev.artplus.mobile.state.toggleMultiSelection
@@ -92,16 +91,6 @@ class PresetBatchOpsTest {
         assertEquals("按当前调参批量完成: 2/2", currentBatchFinishStatus(2, 2, null))
         assertEquals("批量失败: e1", currentBatchFinishStatus(0, 2, "e1"))
         assertEquals("批量完成 1 个，失败 1 个：e1", currentBatchFinishStatus(1, 2, "e1"))
-    }
-
-    @Test
-    fun liquidGlassBatchFinishStatus_branches() {
-        assertEquals(
-            "已批量添加光影 2 个，未刷新，请手动点首页左上角刷新图标",
-            liquidGlassBatchFinishStatus(2, 0, null),
-        )
-        assertEquals("批量添加光影失败: e1", liquidGlassBatchFinishStatus(0, 2, "e1"))
-        assertEquals("已添加光影 1 个，失败 1 个: e1", liquidGlassBatchFinishStatus(1, 1, "e1"))
     }
 
     @Test

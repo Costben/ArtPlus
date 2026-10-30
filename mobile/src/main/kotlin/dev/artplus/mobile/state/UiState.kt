@@ -42,6 +42,8 @@ internal data class PickerState(
     val showSystemApps: Boolean = false,
     val generatedFilter: GeneratedFilter = GeneratedFilter.All,
     val generatedPackageNames: Set<String> = emptySet(),
+    /** 包目录里带 `.artplusmodified` 标记的包（ArtPlus 接管过、`Backup/` 里有原图）。 */
+    val artPlusModifiedPackageNames: Set<String> = emptySet(),
     val multiSelectedPackageNames: Set<String> = emptySet(),
     val packageListPermissionGranted: Boolean = true,
     val usageAccessGranted: Boolean = false,
@@ -56,6 +58,8 @@ internal data class ShellState(
     val outputTreeUri: Uri? = null,
     val advancedSettingsCategory: AdvancedSettingsCategory = AdvancedSettingsCategory.Local,
     val advancedSettingsTab: AdvancedSettingsTab = AdvancedSettingsTab.Sliders,
+    // 用户在参数页的左下球菜单里选过模式没有：没选过时球上是「笔」，选过之后换成当前模式的图标。
+    val advancedSettingsTabChosen: Boolean = false,
     val onboardingVisible: Boolean = false,
 )
 

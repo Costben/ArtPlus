@@ -40,12 +40,10 @@ import dev.artplus.mobile.PresetStore
  * 从 MainActivity 原样搬迁（只搬名单 12 项）：
  * startBatchPreview / openBatchPreviewForPreset / generateMemoryPreviewAssetsForApp /
  * applyPresetToSelectedApps / executeApplyPresetToSelectedApps / applyCurrentPresetBatch /
- * executeApplyCurrentBatch / updateBatchApplyProgress / addLiquidGlassToSelectedGenerated /
- * toggleMultiSelectedPackage / addLiquidGlassToMultiSelectedGenerated /
- * executeAddLiquidGlassToMultiSelectedGenerated。
+ * executeApplyCurrentBatch / updateBatchApplyProgress / toggleMultiSelectedPackage。
  * 内联 helper 扫描结论：名单函数引用的 helper（updateGeneratedPackageCache /
  * markPackageGenerated / existingGeneratedPackageDir / buildGeneratedPackageSession /
- * applyLiquidGlassToGeneratedPackage / installLiquidGlassFilesWithRoot / installWithRoot /
+ * installWithRoot /
  * exportToTree / saveUiState / status / generateArtPlusPackage / requestServiceConfirm /
  * applyTuningParams / currentTuningParams / defaultPreviewChoiceForMode /
  * previewAssetsForSelections）均为跨簇共享（名单外另有引用），唯一独占引用
@@ -58,7 +56,7 @@ import dev.artplus.mobile.PresetStore
  * - 调度一律 viewModelScope 协程（Dispatchers.Default/IO 做后台段），替代 Activity 的
  *   mainScope/Thread 直调；Activity 侧 runOnUiThread 不再需要（StateFlow 写线程安全）。
  * - Root 写入与文件 IO（BatchPreviewStore.saveSnapshot / generateArtPlusPackage /
- *   existingGeneratedPackageDir + applyLiquidGlass + installLiquidGlassFilesWithRoot /
+ *   existingGeneratedPackageDir + installWithRoot /
  *   updateGeneratedPackageCache / markPackageGenerated）只做调用点迁移：Context 绑定
  *   的部分经参数/回调由 Activity 注入，顺序与路径不变。原 execute* 内
  *   `if (false && outputUri != null)` 死分支恒不执行，迁移时省略，语义不变。
@@ -141,17 +139,6 @@ internal fun currentBatchFinishStatus(
     firstFailure == null -> "按当前调参批量完成: $successes/$total"
     successes == 0 -> "批量失败: ${firstFailure.orEmpty()}"
     else -> "批量完成 $successes 个，失败 ${total - successes} 个：${firstFailure.orEmpty()}"
-}
-
-/** 原 executeAddLiquidGlassToMultiSelectedGenerated 收尾 statusText 文案分支。 */
-internal fun liquidGlassBatchFinishStatus(
-    successes: Int,
-    failures: Int,
-    firstFailure: String?,
-): String = when {
-    failures == 0 -> "已批量添加光影 $successes 个，未刷新，请手动点首页左上角刷新图标"
-    successes == 0 -> "批量添加光影失败: ${firstFailure.orEmpty()}"
-    else -> "已添加光影 $successes 个，失败 $failures 个: ${firstFailure.orEmpty()}"
 }
 
 // ---------- ViewModel 编排（viewModelScope 调度，对外暴露回调/suspend） ----------
@@ -537,6 +524,7 @@ internal fun MainViewModel.executeApplyPresetToSelectedApps(
                 updatePicker {
                     it.copy(
                         generatedPackageNames = persisted,
+                        artPlusModifiedPackageNames = it.artPlusModifiedPackageNames + successes,
                         multiSelectedPackageNames = it.multiSelectedPackageNames - successes.toSet(),
                     )
                 }
@@ -713,6 +701,7 @@ internal fun MainViewModel.executeApplyCurrentBatch(
                 updatePicker {
                     it.copy(
                         generatedPackageNames = persisted,
+                        artPlusModifiedPackageNames = it.artPlusModifiedPackageNames + successes,
                         multiSelectedPackageNames = it.multiSelectedPackageNames - successes.toSet(),
                     )
                 }
@@ -761,184 +750,5 @@ internal fun MainViewModel.executeApplyCurrentBatch(
             }
             updateTransfer { it.copy(batchApplyProgress = null) }
         }
-    }
-}
-
-/**
- * 单选光影追加（原 addLiquidGlassToSelectedGenerated 本体下沉；viewModelScope 调度）。
- * Root 写入三段（定位/渲染/安装）经回调注入，顺序与路径不变。
- */
-internal fun MainViewModel.addLiquidGlassToSelectedGenerated(
-    apps: List<AppEntry>,
-    resolvePackageDir: (String) -> File,
-    applyGlass: (File) -> Unit,
-    installGlass: (File, String) -> Unit,
-    buildSession: (String, File) -> GenerationSession,
-    persistOne: (Set<String>, String) -> Set<String>,
-    onSaveUiState: () -> Unit,
-) {
-    val entry = apps.firstOrNull { it.packageName == picker.value.selectedPackageName }
-    if (entry == null) {
-        updateShell { it.copy(statusText = "先选择一个应用") }
-        return
-    }
-    if (shell.value.isBusy) {
-        return
-    }
-    updateShell { it.copy(isBusy = true, statusText = "正在添加光影: ${entry.packageName}") }
-    viewModelScope.launch {
-        try {
-            val built = withContext(Dispatchers.IO) {
-                val packageDir = resolvePackageDir(entry.packageName)
-                applyGlass(packageDir)
-                installGlass(packageDir, entry.packageName)
-                buildSession(entry.packageName, packageDir) to packageDir
-            }
-            val (session, packageDir) = built
-            updatePicker {
-                it.copy(generatedPackageNames = persistOne(it.generatedPackageNames, entry.packageName))
-            }
-            updatePreviewSession { it.copy(activeGenerationSession = session) }
-            updateLive { p ->
-                p.copy(
-                    previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name,
-                    previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name,
-                    previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name,
-                    previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name,
-                )
-            }
-            updatePreviewSession {
-                it.copy(
-                    previewChoiceMode = null,
-                    previewPackageName = entry.packageName,
-                    previewDirPath = packageDir.absolutePath,
-                    previewVersion = it.previewVersion + 1,
-                )
-            }
-            onSaveUiState()
-            updateShell { it.copy(statusText = "已添加光影，未刷新，请手动点首页左上角刷新图标: ${entry.packageName}") }
-        } catch (error: Exception) {
-            updateShell { it.copy(statusText = "添加光影失败: ${error.message ?: error.javaClass.simpleName}") }
-        } finally {
-            updateShell { it.copy(isBusy = false) }
-        }
-    }
-}
-
-/**
- * 多选光影追加确认（原 addLiquidGlassToMultiSelectedGenerated 本体下沉）。
- */
-internal fun MainViewModel.addLiquidGlassToMultiSelectedGenerated(
-    onRequestConfirm: (title: String, message: String, confirmLabel: String, onConfirm: () -> Unit) -> Unit,
-    onExecute: (List<String>) -> Unit,
-) {
-    val packageNames = picker.value.multiSelectedPackageNames.toList().sorted()
-    if (packageNames.isEmpty()) {
-        updateShell { it.copy(statusText = "先选择要添加光影的应用") }
-        return
-    }
-    if (shell.value.isBusy) {
-        return
-    }
-
-    onRequestConfirm(
-        "确认添加光影",
-        "将为 ${packageNames.size} 个已选项添加光影并写入 data 分区，耗时较长且会覆盖现有图标，确认继续？",
-        "确认添加",
-    ) {
-        onExecute(packageNames)
-    }
-    return
-}
-
-/**
- * 多选光影批量执行（原 executeAddLiquidGlassToMultiSelectedGenerated 本体下沉；
- * viewModelScope 调度；后台 status 直写 statusText，与原 status() 落点一致）。
- */
-internal fun MainViewModel.executeAddLiquidGlassToMultiSelectedGenerated(
-    packageNames: List<String>,
-    selectedAtStart: String?,
-    resolvePackageDir: (String) -> File,
-    applyGlass: (File) -> Unit,
-    installGlass: (File, String) -> Unit,
-    buildSession: (String, File) -> GenerationSession,
-    persistMany: (Set<String>) -> Set<String>,
-    onSaveUiState: () -> Unit,
-) {
-    if (shell.value.isBusy) {
-        return
-    }
-    updateShell { it.copy(isBusy = true, statusText = "正在批量添加光影: ${packageNames.size} 个") }
-    viewModelScope.launch {
-        val successes = mutableListOf<String>()
-        val failures = mutableListOf<String>()
-        var selectedSession: GenerationSession? = null
-        var selectedDirPath: String? = null
-
-        withContext(Dispatchers.IO) {
-            packageNames.forEachIndexed { index, packageName ->
-                updateShell { it.copy(statusText = "添加光影中 ${index + 1}/${packageNames.size}: $packageName") }
-                try {
-                    val packageDir = resolvePackageDir(packageName)
-                    applyGlass(packageDir)
-                    installGlass(packageDir, packageName)
-                    successes += packageName
-                    if (packageName == selectedAtStart) {
-                        selectedSession = buildSession(packageName, packageDir)
-                        selectedDirPath = packageDir.absolutePath
-                    }
-                } catch (error: Exception) {
-                    failures += "$packageName: ${error.message ?: error.javaClass.simpleName}"
-                }
-            }
-        }
-
-        if (successes.isNotEmpty()) {
-            val persisted = withContext(Dispatchers.IO) {
-                persistMany(picker.value.generatedPackageNames + successes)
-            }
-            updatePicker {
-                it.copy(
-                    generatedPackageNames = persisted,
-                    multiSelectedPackageNames = it.multiSelectedPackageNames - successes.toSet(),
-                )
-            }
-        }
-        if (selectedAtStart != null &&
-            picker.value.selectedPackageName == selectedAtStart &&
-            selectedSession != null &&
-            selectedDirPath != null
-        ) {
-            val session = selectedSession
-            val dirPath = selectedDirPath
-            updatePreviewSession { it.copy(activeGenerationSession = session) }
-            updateLive { p ->
-                p.copy(
-                    previewNormalLight = (PreviewSelections.default(PreviewChoice.Original)).normalLight.name,
-                    previewNormalDark = (PreviewSelections.default(PreviewChoice.Original)).normalDark.name,
-                    previewMonochromeLight = (PreviewSelections.default(PreviewChoice.Original)).monochromeLight.name,
-                    previewMonochromeDark = (PreviewSelections.default(PreviewChoice.Original)).monochromeDark.name,
-                )
-            }
-            updatePreviewSession {
-                it.copy(
-                    previewChoiceMode = null,
-                    previewPackageName = selectedAtStart,
-                    previewDirPath = dirPath,
-                    previewVersion = it.previewVersion + 1,
-                )
-            }
-            onSaveUiState()
-        }
-        updateShell {
-            it.copy(
-                statusText = liquidGlassBatchFinishStatus(
-                    successes = successes.size,
-                    failures = failures.size,
-                    firstFailure = failures.firstOrNull(),
-                ),
-            )
-        }
-        updateShell { it.copy(isBusy = false) }
     }
 }

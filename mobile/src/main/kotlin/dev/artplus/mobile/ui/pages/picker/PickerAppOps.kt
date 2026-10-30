@@ -19,6 +19,7 @@ import dev.artplus.mobile.MIN_PREVIEW_CORNER_RADIUS_DP
 import dev.artplus.mobile.MIN_PREVIEW_ICON_SIZE_DP
 import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_CATEGORY
 import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_TAB
+import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_TAB_CHOSEN
 import dev.artplus.mobile.PREF_AUTO_CONFIRM_REFRESH
 import dev.artplus.mobile.PREF_AUTO_CONFIRM_ROOT_WRITE
 import dev.artplus.mobile.PREF_BATCH_PREVIEW_COLUMNS
@@ -55,7 +56,7 @@ import dev.artplus.mobile.ui.cards.PreviewSelections
  * 只做调用，不重复定义；system/RootShell 只做调用。
  * MainActivity 留同名薄 wrapper（重构期间保留），调用点零改动。
  * 名单内联 helper 扫描结论：本簇无内联 helper（startUiFriendlyThread/isDebugBuild/
- * addLiquidGlass/applyCurrentPresetBatch 属名单外，转回调注入，不移动本体）。
+ * applyCurrentPresetBatch 属名单外，转回调注入，不移动本体）。
  * loadApps 等应用加载是 Phase 3 Slice 3.3 解耦对象，本 Slice 只做物理搬迁，协程调度不动。
  */
 
@@ -113,6 +114,7 @@ internal fun pickerLoadUiState(
     setQueryText: (String) -> Unit,
     setAdvancedCategory: (AdvancedSettingsCategory) -> Unit,
     setAdvancedTab: (AdvancedSettingsTab) -> Unit,
+    setAdvancedTabChosen: (Boolean) -> Unit,
     setPreviewPackage: (String?) -> Unit,
     setPreviewDir: (String?) -> Unit,
     setPreviewStrip: (Boolean) -> Unit,
@@ -161,6 +163,7 @@ internal fun pickerLoadUiState(
             )
         }.getOrDefault(AdvancedSettingsTab.Sliders),
     )
+    setAdvancedTabChosen(prefs.getBoolean(PREF_ADVANCED_SETTINGS_TAB_CHOSEN, false))
     setPreviewPackage(
         prefs.getString(PREF_PREVIEW_PACKAGE_NAME, null)
             ?.takeIf { it.isNotBlank() },

@@ -3,7 +3,6 @@ package dev.artplus.mobile.ui.pages.picker
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,10 +10,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,16 +34,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.icon.COUIIcons
-import io.github.suqi8.coui.kmp.icon.extended.Search
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Checkbox
 import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.basic.InputField
+import io.github.suqi8.coui.kmp.basic.SearchBarDefaults
 import io.github.suqi8.coui.kmp.basic.TagView
 import io.github.suqi8.coui.kmp.basic.TagViewDefaults
-import io.github.suqi8.coui.kmp.basic.TextField
-import io.github.suqi8.coui.kmp.basic.TextFieldMode
 import io.github.suqi8.coui.kmp.basic.Text
-import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.IconButton
+import io.github.suqi8.coui.kmp.basic.PopupPositionProvider
+import io.github.suqi8.coui.kmp.icon.extended.More
+import io.github.suqi8.coui.kmp.overlay.OverlayNavigationPopupMenu
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.data.AppEntry
 import dev.artplus.mobile.ui.cards.GeneratedFilter
@@ -54,307 +55,199 @@ import dev.artplus.mobile.ui.cards.SegmentedControl
 import dev.artplus.mobile.ui.components.AppListTag
 import dev.artplus.mobile.ui.components.AppStatusTag
 import dev.artplus.mobile.ui.components.AppTagCornerRadius
-import dev.artplus.mobile.ui.components.CompactActionButton
 import dev.artplus.mobile.ui.components.CompactCardCornerRadius
 import dev.artplus.mobile.ui.components.LibrarySettingRow
 import dev.artplus.mobile.ui.components.SectionCard
-import dev.artplus.mobile.ui.components.SectionDivider
+import dev.artplus.mobile.ui.components.SectionHeader
 import dev.artplus.mobile.ui.components.SettingsIconKind
 
 /**
  * Slice 2.5：应用选择器组件与行（原 MainActivity 残留本体原样搬迁）。
  * 只做物理搬迁+显式参数化：Composable 只收 state + onEvent；
- * 名单外动作（addLiquidGlass/applyCurrentPresetBatch）转为回调注入，不移动本体。
+ * 名单外动作（applyCurrentPresetBatch）转为回调注入，不移动本体。
  * MainActivity 留同名薄 wrapper（重构期间保留），调用点零改动。
  * 名单内联 helper 扫描结论：本簇无内联 helper（SectionCard/Tag/按钮系收敛进
  * ui/components，只做调用）。
  */
 
+/**
+ * 独立搜索行：直接用 COUI 的标准搜索胶囊（`SearchBar` 的 `InputField`），不套卡片。
+ *
+ * 这一行是就地筛选下面的列表，没有展开式结果面板，所以固定按收起态渲染、把展开回调吞掉；
+ * 收起态的胶囊不发光（见 [SearchBarDefaults.causticGlowColor] 的说明），故 `glowColor = null`。
+ */
 @Composable
-internal fun AppPickerStatusCard(
-    filteredCount: Int,
-    totalCount: Int,
-    generatedCount: Int,
-    ungeneratedCount: Int,
-    multiCount: Int,
-    isScanning: Boolean,
-    scanFailed: Boolean,
-    isBusy: Boolean,
-    hasApps: Boolean,
-    onRefreshGenerated: () -> Unit,
-    onReloadApps: () -> Unit,
+internal fun PickerSearchRow(
+    queryText: String,
+    onQueryChange: (String) -> Unit,
+    onClearQuery: () -> Unit,
 ) {
-    val statusText = buildString {
-        append("$filteredCount/$totalCount")
-        append(" · 已生成 $generatedCount")
-        append(" · 未生成 $ungeneratedCount")
-        if (isScanning) {
-            append(" · 扫描中")
-        } else if (scanFailed) {
-            append(" · 无法读取 data 路径")
-        }
-        if (multiCount > 0) {
-            append(" · 多选 $multiCount")
-        }
-    }
-    SectionCard {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (multiCount > 0) COUITheme.colorScheme.primaryVariant
-                            else COUITheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.4f),
-                        ),
-                )
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(
-                            text = "应用列表 $filteredCount/$totalCount",
-                            style = COUITheme.textStyles.title4.copy(fontWeight = FontWeight.Bold),
-                            color = COUITheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        if (multiCount > 0) {
-                            TagView(
-                                text = "多选 $multiCount",
-                                cornerRadius = AppTagCornerRadius,
-                                colors = TagViewDefaults.tagViewColors(
-                                    containerColor = COUITheme.colorScheme.tertiaryContainer,
-                                    contentColor = COUITheme.colorScheme.onTertiaryContainer,
-                                ),
-                            )
-                        }
-                    }
-                    Text(
-                        text = statusText,
-                        style = COUITheme.textStyles.footnote1,
-                        color = COUITheme.colorScheme.onSurfaceVariantSummary,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TextButton(
-                    text = "刷新生成",
-                    onClick = onRefreshGenerated,
-                    enabled = !isBusy && hasApps,
-                    modifier = Modifier.weight(1f),
-                )
-                TextButton(
-                    text = "更新列表",
-                    onClick = onReloadApps,
-                    enabled = !isBusy,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
+    InputField(
+        query = queryText,
+        onQueryChange = { text ->
+            // 清除按钮把文本置空：沿用原 onClearQuery 路径
+            if (text.isEmpty() && queryText.isNotEmpty()) onClearQuery() else onQueryChange(text)
+        },
+        onSearch = {},
+        expanded = false,
+        onExpandedChange = {},
+        modifier = Modifier.fillMaxWidth(),
+        label = "搜索应用或包名...",
+        colors = SearchBarDefaults.searchBarColors(
+            backgroundColor = COUITheme.colorScheme.secondaryVariant,
+        ),
+        glowColor = null,
+    )
 }
 
 @Composable
 internal fun AppPickerFilterCard(
     showSystemApps: Boolean,
-    generatedFilter: GeneratedFilter,
-    isBusy: Boolean,
     onToggleSystemApps: () -> Unit,
-    onFilterSelected: (GeneratedFilter) -> Unit,
 ) {
-    SectionCard(rowsFullBleed = true) {
+    SectionCard(rowsFullBleed = true, title = "筛选") {
         LibrarySettingRow(
             title = "显示系统应用",
             summary = if (showSystemApps) "已包含系统应用，可搜索和批量选择" else "仅显示用户应用；系统应用已隐藏",
             icon = SettingsIconKind.Shield,
             showSwitch = true,
             checked = showSystemApps,
-            enabled = !isBusy,
             onCheckedChange = { onToggleSystemApps() },
         )
-        SectionDivider()
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(top = 12.dp, bottom = 12.dp),
-        ) {
-            val filters = GeneratedFilter.entries
-            SegmentedControl(
-                enabled = !isBusy,
-                labels = filters.map { it.label },
-                selectedIndex = filters.indexOf(generatedFilter),
-                onSelected = { index ->
-                    onFilterSelected(filters[index])
-                },
-            )
-        }
-    }
-}
-
-@Composable
-internal fun AppPickerSearchCard(
-    queryText: String,
-    isBusy: Boolean,
-    onQueryChange: (String) -> Unit,
-    onClearQuery: () -> Unit,
-    multiSelectContent: @Composable () -> Unit,
-) {
-    SectionCard {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // 搜索条：COUI TextField（无底线模式）置于中性胶囊底板内，高度与按钮对齐 48dp
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(COUITheme.colorScheme.secondaryVariant)
-                    .padding(horizontal = 12.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
-                TextField(
-                    value = queryText,
-                    onValueChange = { text ->
-                        // 清除按钮把文本置空：沿用原 onClearQuery 路径
-                        if (text.isEmpty() && queryText.isNotEmpty()) onClearQuery() else onQueryChange(text)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundMode = TextFieldMode.None,
-                    label = "搜索应用或包名...",
-                    singleLine = true,
-                    showClearButton = true,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = COUIIcons.Search,
-                            contentDescription = "搜索",
-                            modifier = Modifier
-                                .padding(end = 8.dp)
-                                .size(16.dp),
-                            tint = COUITheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    },
-                )
-            }
-            multiSelectContent()
-        }
     }
 }
 
 @Composable
 internal fun AppPickerControlsCard(
-    filteredCount: Int,
-    totalCount: Int,
-    generatedCount: Int,
-    ungeneratedCount: Int,
-    multiCount: Int,
-    isScanning: Boolean,
-    scanFailed: Boolean,
-    isBusy: Boolean,
-    hasApps: Boolean,
     showSystemApps: Boolean,
     generatedFilter: GeneratedFilter,
     queryText: String,
-    onRefreshGenerated: () -> Unit,
-    onReloadApps: () -> Unit,
     onToggleSystemApps: () -> Unit,
     onFilterSelected: (GeneratedFilter) -> Unit,
     onQueryChange: (String) -> Unit,
     onClearQuery: () -> Unit,
-    multiSelectContent: @Composable () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        AppPickerStatusCard(
-            filteredCount = filteredCount,
-            totalCount = totalCount,
-            generatedCount = generatedCount,
-            ungeneratedCount = ungeneratedCount,
-            multiCount = multiCount,
-            isScanning = isScanning,
-            scanFailed = scanFailed,
-            isBusy = isBusy,
-            hasApps = hasApps,
-            onRefreshGenerated = onRefreshGenerated,
-            onReloadApps = onReloadApps,
+        // 全部 / 已生成 / 未生成：页面的第一个组件，独立一行，不套卡片背景
+        val filters = GeneratedFilter.entries
+        SegmentedControl(
+            labels = filters.map { it.label },
+            selectedIndex = filters.indexOf(generatedFilter),
+            onSelected = { index ->
+                onFilterSelected(filters[index])
+            },
+        )
+        // 搜索自成一行，与筛选卡分开
+        PickerSearchRow(
+            queryText = queryText,
+            onQueryChange = onQueryChange,
+            onClearQuery = onClearQuery,
         )
         AppPickerFilterCard(
             showSystemApps = showSystemApps,
-            generatedFilter = generatedFilter,
-            isBusy = isBusy,
             onToggleSystemApps = onToggleSystemApps,
-            onFilterSelected = onFilterSelected,
-        )
-        AppPickerSearchCard(
-            queryText = queryText,
-            isBusy = isBusy,
-            onQueryChange = onQueryChange,
-            onClearQuery = onClearQuery,
-            multiSelectContent = multiSelectContent,
         )
     }
 }
 
+/** 应用列表的分组标题：多选时把「多选 N」挂在标题行右端，列表头部就够看了。 */
 @Composable
-internal fun AppMultiSelectActions(
-    selectedCount: Int,
-    hasFiltered: Boolean,
-    allFilteredSelected: Boolean,
-    isBusy: Boolean,
-    onToggleFiltered: () -> Unit,
-    onClear: () -> Unit,
-    onApplyPreset: () -> Unit,
-) {
+internal fun PickerAppListHeader(multiCount: Int) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        CompactActionButton(
-            text = if (allFilteredSelected) "取消当前" else "选择当前",
-            onClick = onToggleFiltered,
-            enabled = !isBusy && hasFiltered,
+        SectionHeader(
+            text = "应用列表",
             modifier = Modifier.weight(1f),
-            height = 48.dp,
         )
-        CompactActionButton(
-            text = "清空",
-            onClick = onClear,
-            enabled = !isBusy && selectedCount > 0,
-            modifier = Modifier.weight(1f),
-            height = 48.dp,
-        )
+        if (multiCount > 0) {
+            TagView(
+                text = "多选 $multiCount",
+                cornerRadius = AppTagCornerRadius,
+                colors = TagViewDefaults.tagViewColors(
+                    containerColor = COUITheme.colorScheme.tertiaryContainer,
+                    contentColor = COUITheme.colorScheme.onTertiaryContainer,
+                ),
+            )
+        }
     }
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        CompactActionButton(
-            text = "套用当前预设",
-            onClick = onApplyPreset,
-            enabled = !isBusy && selectedCount > 0,
-            modifier = Modifier.fillMaxWidth(),
-            height = 48.dp,
+}
+
+/**
+ * 选择器右下角的悬浮球：点开是「更多」菜单（概览 / 套用当前预设 / 选择当前）。
+ *
+ * 菜单必须声明在球内部：COUI 拿声明处父节点（这颗 56dp 的球）的窗口矩形当锚点，卡片才会
+ * 从球的上沿长出来；弹层本身由 Scaffold 的 popupHost 渲染，不会被球裁掉。
+ */
+@Composable
+internal fun PickerMoreBall(
+    show: Boolean,
+    canApplyPreset: Boolean,
+    canSelectCurrent: Boolean,
+    generatedCount: Int,
+    ungeneratedCount: Int,
+    amMarkedCount: Int,
+    onShow: () -> Unit,
+    onDismissRequest: () -> Unit,
+    onApplyPreset: () -> Unit,
+    onSelectCurrent: () -> Unit,
+) {
+    val size = 56.dp
+    Box(Modifier.size(size)) {
+        IconButton(
+            onClick = onShow,
+            modifier = Modifier.fillMaxSize(),
+            backgroundColor = COUITheme.colorScheme.primary,
+            cornerRadius = size / 2,
+        ) {
+            Icon(
+                imageVector = COUIIcons.More,
+                contentDescription = "更多",
+                modifier = Modifier.size(24.dp),
+                tint = COUITheme.colorScheme.onPrimary,
+            )
+        }
+        OverlayNavigationPopupMenu(
+            expanded = show,
+            entries = listOf(
+                // 概览只读：enabled=false 让它既不响应点击、也不画水波纹与选中勾。
+                DropdownEntry(
+                    items = listOf(
+                        // 概览是只读信息：不给 onClick，靠 collapseOnSelection=false 让它点完不关菜单；
+                        // 也不能用 enabled=false —— 那会把标题涂成禁用灰，比下面的统计小字还浅。
+                        DropdownItem(
+                            text = "概览",
+                            summary = "已生成 $generatedCount · 未生成 $ungeneratedCount · AM $amMarkedCount",
+                        ),
+                    ),
+                ),
+                // 两个 entry 之间 COUI 自动画一条带细线的分隔带，就是「概览」下面那道下划线。
+                DropdownEntry(
+                    items = listOf(
+                        DropdownItem(
+                            text = "套用当前预设",
+                            enabled = canApplyPreset,
+                            onClick = onApplyPreset,
+                        ),
+                        DropdownItem(
+                            text = "选择当前",
+                            enabled = canSelectCurrent,
+                            onClick = onSelectCurrent,
+                        ),
+                    ),
+                ),
+            ),
+            onDismissRequest = onDismissRequest,
+            onDismissFinished = {},
+            alignment = PopupPositionProvider.Align.BottomEnd,
+            renderInRootScaffold = false,
+            // 两个动作自己写 showMoreMenu=false 关菜单，所以这里不让 COUI 代为收起：
+            // 这样点「概览」只是空点，不会把菜单关掉。
+            collapseOnSelection = false,
         )
     }
 }
@@ -365,6 +258,7 @@ internal fun AppRow(
     selected: Boolean,
     multiSelected: Boolean,
     generated: Boolean,
+    amMarked: Boolean,
     isBusy: Boolean,
     onClick: () -> Unit,
     onToggleMultiSelect: () -> Unit,
@@ -379,10 +273,15 @@ internal fun AppRow(
     val generatedTagFg = COUITheme.colorScheme.onSecondaryContainer
     val allTagBg = COUITheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
     val allTagFg = COUITheme.colorScheme.onSecondaryContainer
-    val tags = remember(
+    // AM 标记用实心主色，和「已生成」的中性淡染拉开层次
+    val amTagBg = COUITheme.colorScheme.primary
+    val amTagFg = COUITheme.colorScheme.onPrimary
+    // 每个元素是一行标签：「已生成」与 AM 并排，其余单独成行
+    val tagRows = remember(
         selected,
         multiSelected,
         generated,
+        amMarked,
         entry.launchable,
         selectedTagBg,
         selectedTagFg,
@@ -390,14 +289,23 @@ internal fun AppRow(
         multiSelectedTagFg,
         generatedTagBg,
         generatedTagFg,
+        amTagBg,
+        amTagFg,
         allTagBg,
         allTagFg,
     ) {
         buildList {
-            if (selected) add(AppListTag("已选", selectedTagBg, selectedTagFg))
-            if (multiSelected) add(AppListTag("多选", multiSelectedTagBg, multiSelectedTagFg))
-            if (generated) add(AppListTag("已生成", generatedTagBg, generatedTagFg))
-            if (!entry.launchable) add(AppListTag("全部", allTagBg, allTagFg))
+            if (selected) add(listOf(AppListTag("已选", selectedTagBg, selectedTagFg)))
+            if (multiSelected) add(listOf(AppListTag("多选", multiSelectedTagBg, multiSelectedTagFg)))
+            if (generated) {
+                add(
+                    listOfNotNull(
+                        if (amMarked) AppListTag("AM", amTagBg, amTagFg) else null,
+                        AppListTag("已生成", generatedTagBg, generatedTagFg),
+                    ),
+                )
+            }
+            if (!entry.launchable) add(listOf(AppListTag("全部", allTagBg, allTagFg)))
         }
     }
 
@@ -434,32 +342,39 @@ internal fun AppRow(
             ) {
                 Text(
                     text = entry.label,
-                    modifier = Modifier.basicMarquee(),
                     style = COUITheme.textStyles.body1.copy(fontWeight = FontWeight(550)),
                     color = if (selected) COUITheme.colorScheme.primaryVariant else COUITheme.colorScheme.onSurface,
                     maxLines = 1,
-                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = entry.packageName,
-                    modifier = Modifier.basicMarquee(),
                     style = COUITheme.textStyles.footnote2.copy(
                         fontSize = 12.sp,
                         fontWeight = FontWeight(550),
                     ),
                     color = COUITheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,
-                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (tags.isNotEmpty()) {
+            if (tagRows.isNotEmpty()) {
                 Column(
                     modifier = Modifier.padding(start = 8.dp),
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    tags.forEach { tag ->
-                        AppStatusTag(tag = tag)
+                    tagRows.forEach { row ->
+                        if (row.size == 1) {
+                            AppStatusTag(tag = row.first())
+                        } else {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                row.forEach { tag -> AppStatusTag(tag = tag) }
+                            }
+                        }
                     }
                 }
             }

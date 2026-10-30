@@ -32,7 +32,6 @@ import dev.artplus.mobile.PREFS_NAME
 import dev.artplus.mobile.PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE
 import dev.artplus.mobile.PREVIEW_OUTPUT_DEBOUNCE_MS
 import dev.artplus.mobile.SIZE_1X1
-import dev.artplus.mobile.data.markPackageGenerated
 import dev.artplus.mobile.data.updateGeneratedPackageCache
 import dev.artplus.mobile.imaging.IconCandidate
 import dev.artplus.mobile.imaging.LocalSeparationMode
@@ -40,6 +39,7 @@ import dev.artplus.mobile.imaging.PreviewChoice
 import dev.artplus.mobile.imaging.RmbgInferenceBackend
 import dev.artplus.mobile.imaging.candidateForChoice
 import dev.artplus.mobile.imaging.resizeBitmap
+import dev.artplus.mobile.pipeline.GenerationSession
 import dev.artplus.mobile.pipeline.GptImageMode
 import dev.artplus.mobile.pipeline.GptPromptPreset
 import dev.artplus.mobile.pipeline.PreviewMode
@@ -48,6 +48,7 @@ import dev.artplus.mobile.pipeline.findRmbgComponent
 import dev.artplus.mobile.pipeline.generateGptLayers
 import dev.artplus.mobile.pipeline.rmbgTunedForegroundRaw
 import dev.artplus.mobile.state.launchUiFriendly
+import dev.artplus.mobile.state.markPackageWritten
 import dev.artplus.mobile.state.persistUiState
 import dev.artplus.mobile.state.setStatus
 import dev.artplus.mobile.state.updateBatchApplyProgress
@@ -219,18 +220,6 @@ internal fun MainActivity.generateGptCandidate(confirmed: Boolean = false): Unit
                             rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                         )
             } },
-                        liquidGlassEnabled = params.liquidGlassEnabled,
-                        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                        liquidGlassRadius = params.liquidGlassRadius,
-                        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
                         foregroundShadowLevel = params.foregroundShadowLevel,
                         monochromeThemeScale = params.monochromeThemeScale,
                         nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
@@ -389,7 +378,8 @@ internal fun MainActivity.applyPreviewChoiceToAll(choice: PreviewChoice): Unit {
                         onFinishBatch = { successes, failures, selectedResult, atStart ->
                             runOnUiThread {
                                 if (successes.isNotEmpty()) {
-                                    mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames + successes))) }
+                                    mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (updateGeneratedPackageCache(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), it.generatedPackageNames + successes))) }
+                                    mainViewModel.updatePicker { it -> it.copy(artPlusModifiedPackageNames = (it.artPlusModifiedPackageNames + successes)) }
                                     mainViewModel.updatePicker { it -> it.copy(multiSelectedPackageNames = (mainViewModel.picker.value.multiSelectedPackageNames - successes.toSet())) }
                                 }
                                 if (selectedResult != null && mainViewModel.picker.value.selectedPackageName == atStart) {
@@ -540,18 +530,6 @@ internal fun MainActivity.generateRmbgCandidate(confirmed: Boolean = false): Uni
                             rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                         )
             } },
-                        liquidGlassEnabled = params.liquidGlassEnabled,
-                        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                        liquidGlassRadius = params.liquidGlassRadius,
-                        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
                         foregroundShadowLevel = params.foregroundShadowLevel,
                         monochromeThemeScale = params.monochromeThemeScale,
                         nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
@@ -706,18 +684,6 @@ internal fun MainActivity.generateGptCandidateForMode(mode: PreviewMode, confirm
                             rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                         )
             } },
-                        liquidGlassEnabled = params.liquidGlassEnabled,
-                        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                        liquidGlassRadius = params.liquidGlassRadius,
-                        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
                         foregroundShadowLevel = params.foregroundShadowLevel,
                         monochromeThemeScale = params.monochromeThemeScale,
                         nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
@@ -868,18 +834,6 @@ internal fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed
                             rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                         )
             } },
-                        liquidGlassEnabled = params.liquidGlassEnabled,
-                        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                        liquidGlassRadius = params.liquidGlassRadius,
-                        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
                         foregroundShadowLevel = params.foregroundShadowLevel,
                         monochromeThemeScale = params.monochromeThemeScale,
                         nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
@@ -968,7 +922,7 @@ internal fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed
     }
 }
 
-internal fun MainActivity.generateSelectedApp(installWithRoot: Boolean, useGpt: Boolean, rootWriteMode: RootWriteMode = RootWriteMode.All, confirmed: Boolean = false): Unit {
+internal fun MainActivity.generateSelectedApp(installWithRoot: Boolean, useGpt: Boolean, rootWriteMode: RootWriteMode = RootWriteMode.All, confirmed: Boolean = false, rmbgAfter: Boolean = false): Unit {
     val __actF12 = this
     return homeGenerateSelected(
                     entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
@@ -1053,7 +1007,7 @@ internal fun MainActivity.generateSelectedApp(installWithRoot: Boolean, useGpt: 
                         }
                     },
                     onInstall = { outDir, pkg, mode -> installWithRoot(outDir, pkg, mode) },
-                    onMarkGenerated = { pkg -> mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (markPackageGenerated(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames, pkg))) } },
+                    onMarkGenerated = { pkg -> mainViewModel.markPackageWritten(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), pkg) },
                     onToast = { run {
             pickerToastStatus(
                         message = (it),
@@ -1074,6 +1028,92 @@ internal fun MainActivity.generateSelectedApp(installWithRoot: Boolean, useGpt: 
                             }
                         }
                     },
-                    onConfirmedRetry = { root: Boolean, gpt: Boolean, mode: RootWriteMode -> generateSelectedApp(root, gpt, mode, confirmed = true) },
+                    onConfirmedRetry = { root: Boolean, gpt: Boolean, mode: RootWriteMode -> generateSelectedApp(root, gpt, mode, confirmed = true, rmbgAfter = rmbgAfter) },
+                    rmbgAfterGenerate = rmbgAfter,
+                    onBuildRmbgOutputs = { session ->
+                        // 抠图这一段在后台线程跑：置位让「生成预览」的四个标题挂上转动的小圆环
+                        mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingRmbgCandidate = (true)) }
+                        try {
+                            buildRmbgAndWrite(session)
+                        } finally {
+                            mainViewModel.updatePreviewSession { it -> it.copy(isGeneratingRmbgCandidate = (false)) }
+                        }
+                    },
                 )
+}
+
+/**
+ * RMBG 档的第二步：拿本地管线产出的 session 跑一次 ONNX 抠图，把四个槽位换成 Rmbg 版本后重写输出。
+ * 由 [homeGenerateSelected] 的后台线程调用；失败直接抛出，交给上层的 catch 收口。
+ */
+internal fun MainActivity.buildRmbgAndWrite(session: GenerationSession): GenerationSession {
+    val params = mainViewModel.params.value
+    val built = buildRmbgCandidate(
+        sourceIcon = resizeBitmap(session.sourceIcon, SIZE_1X1, SIZE_1X1),
+        filesDir = filesDir,
+        rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+        rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+        rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+        rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+        lock = this,
+        getRuntime = { rmbgRuntime },
+        setRuntime = { rmbgRuntime = it },
+    ) ?: error("未安装 RMBG 组件 ZIP")
+    val candidate = built.candidate ?: error("RMBG候选为空")
+    val updated = session.copy(candidates = session.candidates + (PreviewChoice.Rmbg to candidate))
+    val selections = PreviewSelections.default(PreviewChoice.Rmbg)
+    writePackageOutputs(
+        session = updated,
+        selections = selections,
+        edgePolishPercent = params.edgePolishPercent,
+        foregroundSubjectPercent = params.foregroundSubjectPercent,
+        rmbgTunedForeground = { c ->
+            rmbgTunedForegroundRaw(
+                candidate = c,
+                rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+            )
+        },
+        foregroundShadowLevel = params.foregroundShadowLevel,
+        monochromeThemeScale = params.monochromeThemeScale,
+        nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+    )
+    return updated
+}
+
+/**
+ * 「RMBG 生成」入口：本地管线先出一版，再用本地 ONNX 模型替换四个槽位（只写应用私有目录，不碰 root）。
+ * 与云端档不同，这一步不需要已有预览会话，选完应用就能跑。
+ */
+internal fun MainActivity.generateSelectedAppWithRmbg(confirmed: Boolean = false): Unit {
+    val entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName }
+    if (entry == null) {
+        setStatus(("先选择一个应用"))
+        return
+    }
+    if (findRmbgComponent(filesDir) == null) {
+        setStatus(("未安装 RMBG 组件"))
+        return
+    }
+    if (mainViewModel.shell.value.isBusy || mainViewModel.previewSession.value.isGeneratingRmbgCandidate) {
+        setStatus(("RMBG正在运行或主任务忙，请等待"))
+        return
+    }
+    if (!confirmed) {
+        mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
+            title = ("RMBG 生成"),
+            message = ("将先用本地管线生成，再运行本地 ONNX 模型抠图（已累计 ${mainViewModel.presetUi.value.rmbgRunCount} 次）。确认继续？"),
+            confirmLabel = ("继续"),
+            onConfirm = ({ generateSelectedAppWithRmbg(confirmed = true) }),
+        ))) }
+        return
+    }
+    mainViewModel.updatePresetUi { it -> it.copy(rmbgRunCount = it.rmbgRunCount + (1)) }
+    getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        .edit()
+        .putInt(MainActivity.PREF_RMBG_RUN_COUNT, mainViewModel.presetUi.value.rmbgRunCount)
+        .apply()
+    generateSelectedApp(installWithRoot = false, useGpt = false, rmbgAfter = true)
 }

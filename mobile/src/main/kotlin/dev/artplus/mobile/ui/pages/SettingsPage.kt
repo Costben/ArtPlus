@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,11 +37,14 @@ import dev.artplus.mobile.ROOT_UXICONS_DIR
 import dev.artplus.mobile.pipeline.clearInstalledRmbgComponent
 import dev.artplus.mobile.pipeline.installRmbgComponentFromUrl
 import dev.artplus.mobile.state.persistUiState
+import dev.artplus.mobile.state.refreshArtPlusModifiedPackagesAsync
+import dev.artplus.mobile.state.restoreArtPlusModifiedPackagesAsync
 import dev.artplus.mobile.state.setStatus
 import dev.artplus.mobile.system.backupPackageFast
 import dev.artplus.mobile.system.ensureNomediaAtTreeRoot
 import dev.artplus.mobile.system.formatTreeUriDisplay
 import dev.artplus.mobile.system.listRootIconPackages
+import dev.artplus.mobile.system.PRISTINE_BACKUP_DIR
 import dev.artplus.mobile.system.resolveTreeUriToFilePath
 import dev.artplus.mobile.system.shQuote
 import dev.artplus.mobile.ui.cards.AppPage
@@ -92,6 +96,11 @@ internal fun MainActivity.SettingsPage(
     val gptRmbgSettings by mainViewModel.gptRmbgSettings.collectAsState()
     val presetUi by mainViewModel.presetUi.collectAsState()
     val batchPreviewConfig by mainViewModel.batchPreviewConfig.collectAsState()
+    val pickerState by mainViewModel.picker.collectAsState()
+    // 进入设置页静默对齐 AM 标记与数量（一次 su），避免还原入口因缓存缺席而不可用
+    LaunchedEffect(Unit) {
+        mainViewModel.refreshArtPlusModifiedPackagesAsync()
+    }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -109,6 +118,35 @@ internal fun MainActivity.SettingsPage(
                 launcherCount = launcherCount,
                 totalCount = totalCount,
                 generatedCount = generatedCount,
+                amCount = pickerState.artPlusModifiedPackageNames.size,
+                restoreEnabled = !shell.isBusy && pickerState.artPlusModifiedPackageNames.isNotEmpty(),
+                onRestoreClick = { run {
+    val amCount = mainViewModel.picker.value.artPlusModifiedPackageNames.size
+    if (amCount == 0) {
+        setStatus(("没有可还原的图标包"))
+        return@run
+    }
+    mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (ServiceConfirmRequest(
+        title = ("一键还原 AM 图标"),
+        message = ("将处理 $amCount 个带 AM 标记的图标目录：有 $PRISTINE_BACKUP_DIR 的把原图放回原位并删掉备份目录，没有备份的直接清掉 ArtPlus 写入的图标，最后统一删除 AM 标记。此操作不可撤销，确认继续？"),
+        confirmLabel = ("确认还原"),
+        onConfirm = { run {
+    mainViewModel.restoreArtPlusModifiedPackagesAsync(
+        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+        onProgress = { _, _, current ->
+            setStatus((current))
+        },
+        onFinished = { result ->
+            setStatus((when {
+                result.restored.isEmpty() && result.failed.isEmpty() -> "没有可还原的图标包"
+                result.failed.isEmpty() -> "已还原 ${result.restored.size} 个图标包"
+                else -> "已还原 ${result.restored.size} 个，失败 ${result.failed.size} 个"
+            }))
+        },
+    )
+} },
+    ))) }
+} },
             )
         }
         item(key = "output") {
@@ -616,7 +654,7 @@ val __act1 = LocalContext.current
 }
         }
         item(key = "reset_defaults") {
-            SectionCard(rowsFullBleed = true) {
+            SectionCard(rowsFullBleed = true, title = "恢复") {
                 LibrarySettingRow(
                     title = "恢复默认配置",
                     summary = "恢复后可通过首页预设卡片的「还原上一步」撤销",
@@ -677,17 +715,6 @@ paramsApplyTuningParams(
             setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
             setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
             setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-            setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-            setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-            setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-            setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-            setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-            setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-            setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-            setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-            setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-            setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-            setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
             setDraftJsonParamsText = { draftJsonParamsText = it },
             onSaveLocalSeparation = { run {
     paramsSaveLocalSeparationSettings(
@@ -701,7 +728,6 @@ paramsApplyTuningParams(
                 getParams = { mainViewModel.params.value },
             )
 } },
-            onSaveLiquidGlass = { tuningActions.save() },
             onSaveGpt = { run {
     paramsSaveGptSettings(
                 prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -730,7 +756,7 @@ paramsApplyTuningParams(
             }
         }
         item(key = "about_section") {
-            SectionCard(rowsFullBleed = true) {
+            SectionCard(rowsFullBleed = true, title = "关于与引导") {
                 LibrarySettingRow(
                     title = "导出引导",
                     summary = "首次引导与全量备份入口",

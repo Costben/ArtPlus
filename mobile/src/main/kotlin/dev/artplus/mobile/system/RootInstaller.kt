@@ -21,7 +21,6 @@ import dev.artplus.mobile.imaging.LocalSeparationMode
 import dev.artplus.mobile.imaging.OriginalForegroundCleanupMode
 import dev.artplus.mobile.imaging.PreviewChoice
 import dev.artplus.mobile.imaging.adjustColor
-import dev.artplus.mobile.imaging.applyForegroundShadow
 import dev.artplus.mobile.imaging.buildLocalCandidates
 import dev.artplus.mobile.imaging.buildLocalIconLayers
 import dev.artplus.mobile.imaging.candidateWithCustomOverrides
@@ -30,8 +29,8 @@ import dev.artplus.mobile.imaging.drawDrawable
 import dev.artplus.mobile.imaging.drawLocalCandidateSourceIcon
 import dev.artplus.mobile.imaging.ensureCleanDir
 import dev.artplus.mobile.imaging.ensureFreshDir
-import dev.artplus.mobile.imaging.foregroundForSize
-import dev.artplus.mobile.imaging.liquidGlassBackgroundForSize
+import dev.artplus.mobile.imaging.iconBackgroundForSize
+import dev.artplus.mobile.imaging.iconForegroundForSize
 import dev.artplus.mobile.imaging.monochromeForCandidate
 import dev.artplus.mobile.imaging.normalDarkForeground
 import dev.artplus.mobile.imaging.renderCandidateForegroundBase
@@ -39,7 +38,6 @@ import dev.artplus.mobile.imaging.resizeBitmap
 import dev.artplus.mobile.imaging.savePng
 import dev.artplus.mobile.imaging.scaleMonochromeForTheme
 import dev.artplus.mobile.imaging.simpleMonochromeAlphaFromDefaultSubject
-import dev.artplus.mobile.imaging.subjectShadowBitmap
 import dev.artplus.mobile.pipeline.GenerationSession
 import dev.artplus.mobile.pipeline.GptImageMode
 import dev.artplus.mobile.pipeline.GptPromptPreset
@@ -60,12 +58,52 @@ import dev.artplus.mobile.ui.cards.PreviewSelections
 internal enum class RootWriteMode(val value: String, val label: String) {
     All("all", "全部"),
     StandardOnly("standard", "标准"),
-    MonochromeOnly("monochrome", "单色");
+    MonochromeOnly("monochrome", "单色"),
+    LightOnly("light", "亮色"),
+    DarkOnly("dark", "暗色"),
+    MonochromeLightOnly("monochrome_light", "单色亮色"),
+    MonochromeDarkOnly("monochrome_dark", "单色暗色");
 
     companion object {
         fun fromValue(value: String?): RootWriteMode =
             entries.firstOrNull { it.value == value || (it == StandardOnly && value == "default") } ?: All
     }
+}
+
+/** 首次接管某个包时写入的标记；存在即表示该包目录已被 ArtPlus 写过，原图备份不再重建。 */
+internal const val ARTPLUS_MODIFIED_MARKER = ".artplusmodified"
+
+/** 原图备份目录名，位于包目录内；一旦建立，里面的文件永不被覆盖。 */
+internal const val PRISTINE_BACKUP_DIR = "Backup"
+
+/**
+ * 首次写入前的原图备份命令。
+ *
+ * 包目录里还没有 [ARTPLUS_MODIFIED_MARKER] 且存在 PNG 时，把这些 PNG 原样复制进
+ * `<包名>/Backup/` 再打标记：原图通常是 ColorOS 生成的手绘图标，覆盖后无处可寻。
+ * 逐个文件先判存在再复制（不依赖 `cp -n`），保证备份目录里已有的文件永不覆盖。
+ */
+private fun pristineBackupCommand(target: String): String {
+    val marker = shQuote("$target/$ARTPLUS_MODIFIED_MARKER")
+    val backupDir = shQuote("$target/$PRISTINE_BACKUP_DIR")
+    return """
+        if [ ! -f $marker ]; then
+            if find ${shQuote(target)} -maxdepth 1 -type f -name '*.png' | grep -q .; then
+                mkdir -p $backupDir
+                chmod 0755 $backupDir
+                find ${shQuote(target)} -maxdepth 1 -type f -name '*.png' -exec sh -c '
+                    dst="${'$'}1"; shift
+                    for f do
+                        name="${'$'}{f##*/}"
+                        [ -e "${'$'}dst/${'$'}name" ] || cp -f "${'$'}f" "${'$'}dst/${'$'}name"
+                    done
+                ' sh $backupDir {} +
+                find $backupDir -maxdepth 1 -type f -name '*.png' -exec chmod 0644 {} +
+            fi
+            touch $marker
+            chmod 0644 $marker
+        fi
+    """.trimIndent()
 }
 
 internal fun installWithRoot(packageDir: File, packageName: String, mode: RootWriteMode) {
@@ -82,10 +120,28 @@ internal fun installWithRoot(packageDir: File, packageName: String, mode: RootWr
         RootWriteMode.MonochromeOnly -> """
             find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome*.png' -exec cp -f {} ${shQuote(target)}/ \;
         """.trimIndent()
+        // 细分档只覆盖对应那几套文件，不删除目标目录里其他档位的图标：
+        // 「应用亮色」不该把用户已经写好的暗色/单色一起抹掉。
+        // day/nsd/mat/peb 是亮色前景的调色衍生（ColorOS 主题取色用），跟亮色一起走。
+        RootWriteMode.LightOnly -> """
+            find ${shQuote(source)} -maxdepth 1 -type f \( -name 'recbg*.png' -o -name 'recfg*.png' -o -name 'day.png' -o -name 'nsd.png' -o -name 'mat.png' -o -name 'peb.png' \) -exec cp -f {} ${shQuote(target)}/ \;
+        """.trimIndent()
+        RootWriteMode.DarkOnly -> """
+            find ${shQuote(source)} -maxdepth 1 -type f -name 'rec_night*.png' -exec cp -f {} ${shQuote(target)}/ \;
+        """.trimIndent()
+        RootWriteMode.MonochromeLightOnly -> """
+            find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome_light*.png' -exec cp -f {} ${shQuote(target)}/ \;
+        """.trimIndent()
+        // 单色暗色 = monochrome.png（旧别名）+ monochrome_dark.png + monochrome_<尺寸>.png 的
+        // morph 变体（后三者都由单色暗色派生），排除单色亮色那份。
+        RootWriteMode.MonochromeDarkOnly -> """
+            find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome*.png' ! -name 'monochrome_light*.png' -exec cp -f {} ${shQuote(target)}/ \;
+        """.trimIndent()
     }
     val command = """
         set -e
         mkdir -p ${shQuote(target)}
+        ${pristineBackupCommand(target)}
         $copyCommand
         find ${shQuote(target)} -maxdepth 1 -type f -name '*.png' -exec chmod 0644 {} +
         restorecon -RF ${shQuote(target)} 2>/dev/null || true
@@ -110,9 +166,73 @@ internal fun backupPackageFast(pkgName: String, destRoot: String): Boolean {
 }
 
 /**
+ * 列出所有带 [ARTPLUS_MODIFIED_MARKER] 的包名；root 读不到时返回 null，
+ * 便于调用方区分「没有接管包」与「这次没读到」。
+ */
+internal fun listArtPlusModifiedPackagesOrNull(): Set<String>? {
+    val command = """
+        if [ -d ${shQuote(ROOT_UXICONS_DIR)} ]; then
+            find ${shQuote(ROOT_UXICONS_DIR)} -maxdepth 2 -type f -name ${shQuote(ARTPLUS_MODIFIED_MARKER)} 2>/dev/null | while IFS= read -r marker; do
+                dir=${'$'}{marker%/$ARTPLUS_MODIFIED_MARKER}
+                name=${'$'}{dir##*/}
+                [ -n "${'$'}name" ] || continue
+                printf '%s\n' "${'$'}name"
+            done
+        fi
+    """.trimIndent()
+    val output = try {
+        runRootCommand(command, ROOT_SCAN_TIMEOUT_MS)
+    } catch (_: Exception) {
+        return null
+    }
+    return output.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+}
+
+/** 列出所有带 [ARTPLUS_MODIFIED_MARKER] 的包名（一次 su；读不到返回空集）。 */
+internal fun listArtPlusModifiedPackages(): Set<String> = listArtPlusModifiedPackagesOrNull().orEmpty()
+
+/**
+ * 还原一个被接管的包目录，返回是否成功。
+ *
+ * 两种接管都要能退出：
+ * - 有 `Backup/`（接管前目录里就有原图）：清空除 `Backup` 外的全部内容 →
+ *   把 `Backup` 内条目移回原位 → 删除 `Backup` 与标记。
+ * - 只有标记、没有 `Backup/`（接管前目录里本来就没有 PNG，备份步骤什么都没存）：
+ *   删掉 ArtPlus 写进去的 `*.png`；非 PNG 的附属文件原地保留，因为那不是 ArtPlus 写的。
+ *
+ * 两种都删标记；目录空了顺手移除，让系统回落到默认图标。
+ */
+internal fun restorePackageFromBackup(packageName: String): Boolean {
+    val target = "$ROOT_UXICONS_DIR/$packageName"
+    val backupDir = shQuote("$target/$PRISTINE_BACKUP_DIR")
+    val command = """
+        set -e
+        [ -d ${shQuote(target)} ] || exit 3
+        cd ${shQuote(target)}
+        if [ -d $backupDir ]; then
+            find . -mindepth 1 -maxdepth 1 ! -name $PRISTINE_BACKUP_DIR -exec rm -rf {} +
+            find $PRISTINE_BACKUP_DIR -mindepth 1 -maxdepth 1 -exec mv -f {} . \;
+            rm -rf $PRISTINE_BACKUP_DIR
+        else
+            find . -mindepth 1 -maxdepth 1 -type f -name '*.png' -delete
+        fi
+        rm -f ${shQuote("$target/$ARTPLUS_MODIFIED_MARKER")}
+        find . -mindepth 1 -maxdepth 1 -type f -name '*.png' -exec chmod 0644 {} +
+        restorecon -RF ${shQuote(target)} 2>/dev/null || true
+        cd /
+        rmdir ${shQuote(target)} 2>/dev/null || true
+    """.trimIndent()
+    return try {
+        runRootCommand(command, ROOT_SCAN_TIMEOUT_MS)
+        true
+    } catch (_: Exception) {
+        false
+    }
+}
+
+/**
  * Slice 1.4 纯移动（零 Activity 状态，同包直接用，Activity 内删本体零 wrapper）：
- * hasGeneratedPackageBaseAssets / decodeGeneratedBitmap /
- * installLiquidGlassFilesWithRoot / buildGeneratedPackageSession。
+ * hasGeneratedPackageBaseAssets / decodeGeneratedBitmap / buildGeneratedPackageSession。
  * su 调用顺序、mount/写路径与权限模式未变，不新增 root 行为。
  */
 
@@ -123,46 +243,6 @@ internal fun hasGeneratedPackageBaseAssets(dir: File): Boolean =
 
 internal fun decodeGeneratedBitmap(dir: File, name: String): Bitmap? =
     BitmapFactory.decodeFile(File(dir, name).absolutePath)
-
-internal fun installLiquidGlassFilesWithRoot(packageDir: File, packageName: String) {
-    val target = "$ROOT_UXICONS_DIR/$packageName"
-    val source = packageDir.absolutePath
-    val names = listOf(
-        "recbg.png",
-        "recbg_1x2.png",
-        "recbg_2x1.png",
-        "recbg_2x2.png",
-        "recfg.png",
-        "recfg_1x2.png",
-        "recfg_2x1.png",
-        "recfg_2x2.png",
-        "rec_night.png",
-        "rec_night_1x2.png",
-        "rec_night_2x1.png",
-        "rec_night_2x2.png",
-        "monochrome_light.png",
-        "monochrome_dark.png",
-        "monochrome.png",
-        "monochrome_1x2.png",
-        "monochrome_2x1.png",
-        "monochrome_2x2.png",
-    )
-    val copyCommands = names.joinToString(separator = "\n") { name ->
-        """
-        if [ -f ${shQuote("$source/$name")} ]; then
-            cp -f ${shQuote("$source/$name")} ${shQuote("$target/$name")}
-            chmod 0644 ${shQuote("$target/$name")}
-        fi
-        """.trimIndent()
-    }
-    val command = """
-        set -e
-        mkdir -p ${shQuote(target)}
-        $copyCommands
-        restorecon -RF ${shQuote(target)} 2>/dev/null || true
-    """.trimIndent()
-    runRootCommand(command, ROOT_SCAN_TIMEOUT_MS)
-}
 
 internal fun buildGeneratedPackageSession(packageName: String, packageDir: File): GenerationSession {
     val recfg = decodeGeneratedBitmap(packageDir, FOREGROUND_ORIGINAL_BACKUP_NAME)
@@ -262,160 +342,6 @@ internal fun existingGeneratedPackageDir(
 }
 
 /**
- * Slice 1.4 imaging 依赖移动（原调 Activity wrapper 的纯算法改调顶层显式版本，
- * 同包直接用；Activity 内留原签名 wrapper 标注“重构期间保留”，调用点零改动）：
- * writeDefaultSubjectMonochromeFiles / glassBackgroundForGeneratedPackage /
- * applyLiquidGlassToGeneratedPackage。
- */
-
-internal fun writeDefaultSubjectMonochromeFiles(
-    dir: File,
-    baseRecfg: Bitmap,
-    overwriteExisting: Boolean,
-    monochromeThemeScale: Float,
-) {
-    val subject = if (baseRecfg.width == SIZE_1X1 && baseRecfg.height == SIZE_1X1) {
-        baseRecfg
-    } else {
-        resizeBitmap(baseRecfg, SIZE_1X1, SIZE_1X1)
-    }
-    val rawLight = simpleMonochromeAlphaFromDefaultSubject(subject, invertLuma = true)
-    val rawDark = simpleMonochromeAlphaFromDefaultSubject(subject, invertLuma = false)
-    val outputs = listOf(
-        "monochrome_light.png" to scaleMonochromeForTheme(rawLight, monochromeThemeScale),
-        "monochrome_dark.png" to scaleMonochromeForTheme(rawDark, monochromeThemeScale),
-        "monochrome.png" to scaleMonochromeForTheme(rawDark, monochromeThemeScale),
-        "monochrome_1x2.png" to centerOnCanvas(rawDark, SIZE_1X2[0], SIZE_1X2[1]),
-        "monochrome_2x1.png" to centerOnCanvas(rawDark, SIZE_2X1[0], SIZE_2X1[1]),
-        "monochrome_2x2.png" to centerOnCanvas(rawDark, SIZE_2X2, SIZE_2X2),
-    )
-    outputs.forEach { (name, bitmap) ->
-        val target = File(dir, name)
-        if (overwriteExisting || !target.isFile) {
-            savePng(bitmap, target)
-        }
-    }
-}
-
-internal fun glassBackgroundForGeneratedPackage(
-    dir: File,
-    name: String,
-    fallback: Bitmap,
-    width: Int,
-    height: Int,
-    liquidGlassEnabled: Boolean,
-    liquidGlassBackgroundMistAlpha: Int,
-    liquidGlassTopAlpha: Int,
-    liquidGlassBottomAlpha: Int,
-    liquidGlassBottomDarkAlpha: Int,
-    liquidGlassOuterWidth: Int,
-    liquidGlassRadius: Int,
-): Bitmap {
-    val source = decodeGeneratedBitmap(dir, name) ?: fallback
-    val resized = if (source.width == width && source.height == height) {
-        source
-    } else {
-        resizeBitmap(source, width, height)
-    }
-    return liquidGlassBackgroundForSize(
-        source = resized,
-        width = width,
-        height = height,
-        forceLiquidGlass = true,
-        liquidGlassEnabled = liquidGlassEnabled,
-        liquidGlassBackgroundMistAlpha = liquidGlassBackgroundMistAlpha,
-        liquidGlassTopAlpha = liquidGlassTopAlpha,
-        liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-        liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-        liquidGlassOuterWidth = liquidGlassOuterWidth,
-        liquidGlassRadius = liquidGlassRadius,
-    )
-}
-
-internal fun applyLiquidGlassToGeneratedPackage(
-    dir: File,
-    nightSubjectLightBackgroundEnabled: Boolean,
-    liquidGlassEnabled: Boolean,
-    liquidGlassBackgroundMistAlpha: Int,
-    liquidGlassTopAlpha: Int,
-    liquidGlassBottomAlpha: Int,
-    liquidGlassBottomDarkAlpha: Int,
-    liquidGlassOuterWidth: Int,
-    liquidGlassRadius: Int,
-    liquidGlassSubjectScalePercent: Int,
-    liquidGlassSubjectShadowAlpha: Int,
-    liquidGlassSubjectOutlineWidth: Int,
-    liquidGlassSubjectInnerOutlineWidth: Int,
-    liquidGlassSubjectOpacityPercent: Int,
-    foregroundShadowLevel: Int,
-    monochromeThemeScale: Float,
-) {
-    val baseRecbg = decodeGeneratedBitmap(dir, "recbg.png")
-        ?: error("现有图标包缺少 recbg.png")
-    val originalRecfgFile = File(dir, FOREGROUND_ORIGINAL_BACKUP_NAME)
-    val baseRecfg = decodeGeneratedBitmap(dir, FOREGROUND_ORIGINAL_BACKUP_NAME)
-        ?: decodeGeneratedBitmap(dir, "recfg.png")
-        ?: error("现有图标包缺少 recfg.png")
-    if (!originalRecfgFile.isFile) {
-        savePng(baseRecfg, originalRecfgFile)
-    }
-
-    val recbg = glassBackgroundForGeneratedPackage(dir, "recbg.png", baseRecbg, SIZE_1X1, SIZE_1X1, liquidGlassEnabled, liquidGlassBackgroundMistAlpha, liquidGlassTopAlpha, liquidGlassBottomAlpha, liquidGlassBottomDarkAlpha, liquidGlassOuterWidth, liquidGlassRadius)
-    val recbg1x2 = glassBackgroundForGeneratedPackage(dir, "recbg_1x2.png", baseRecbg, SIZE_1X2[0], SIZE_1X2[1], liquidGlassEnabled, liquidGlassBackgroundMistAlpha, liquidGlassTopAlpha, liquidGlassBottomAlpha, liquidGlassBottomDarkAlpha, liquidGlassOuterWidth, liquidGlassRadius)
-    val recbg2x1 = glassBackgroundForGeneratedPackage(dir, "recbg_2x1.png", baseRecbg, SIZE_2X1[0], SIZE_2X1[1], liquidGlassEnabled, liquidGlassBackgroundMistAlpha, liquidGlassTopAlpha, liquidGlassBottomAlpha, liquidGlassBottomDarkAlpha, liquidGlassOuterWidth, liquidGlassRadius)
-    val recbg2x2 = glassBackgroundForGeneratedPackage(dir, "recbg_2x2.png", baseRecbg, SIZE_2X2, SIZE_2X2, liquidGlassEnabled, liquidGlassBackgroundMistAlpha, liquidGlassTopAlpha, liquidGlassBottomAlpha, liquidGlassBottomDarkAlpha, liquidGlassOuterWidth, liquidGlassRadius)
-
-    savePng(recbg, File(dir, "recbg.png"))
-    savePng(recbg1x2, File(dir, "recbg_1x2.png"))
-    savePng(recbg2x1, File(dir, "recbg_2x1.png"))
-    savePng(recbg2x2, File(dir, "recbg_2x2.png"))
-
-    fun foregroundForGenerated(source: Bitmap, width: Int, height: Int): Bitmap =
-        foregroundForSize(
-            source = source,
-            width = width,
-            height = height,
-            forceLiquidGlass = true,
-            liquidGlassEnabled = liquidGlassEnabled,
-            liquidGlassSubjectScalePercent = liquidGlassSubjectScalePercent,
-            liquidGlassSubjectShadowAlpha = liquidGlassSubjectShadowAlpha,
-            liquidGlassSubjectOutlineWidth = liquidGlassSubjectOutlineWidth,
-            liquidGlassSubjectInnerOutlineWidth = liquidGlassSubjectInnerOutlineWidth,
-            liquidGlassSubjectOpacityPercent = liquidGlassSubjectOpacityPercent,
-            liquidGlassTopAlpha = liquidGlassTopAlpha,
-            liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-            liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-            liquidGlassOuterWidth = liquidGlassOuterWidth,
-            liquidGlassRadius = liquidGlassRadius,
-            applyShadow = { bitmap -> applyForegroundShadow(bitmap, foregroundShadowLevel) },
-            renderSubjectShadow = ::subjectShadowBitmap,
-        )
-
-    val outputRecfg = foregroundForGenerated(baseRecfg, SIZE_1X1, SIZE_1X1)
-    val recfg1x2Source = decodeGeneratedBitmap(dir, "recfg_1x2.png")
-        ?: centerOnCanvas(baseRecfg, SIZE_1X2[0], SIZE_1X2[1])
-    val recfg2x1Source = decodeGeneratedBitmap(dir, "recfg_2x1.png")
-        ?: centerOnCanvas(baseRecfg, SIZE_2X1[0], SIZE_2X1[1])
-    val recfg2x2Source = decodeGeneratedBitmap(dir, "recfg_2x2.png")
-        ?: centerOnCanvas(baseRecfg, SIZE_2X2, SIZE_2X2)
-    val recfg1x2 = foregroundForGenerated(recfg1x2Source, SIZE_1X2[0], SIZE_1X2[1])
-    val recfg2x1 = foregroundForGenerated(recfg2x1Source, SIZE_2X1[0], SIZE_2X1[1])
-    val recfg2x2 = foregroundForGenerated(recfg2x2Source, SIZE_2X2, SIZE_2X2)
-
-    writeDefaultSubjectMonochromeFiles(dir, baseRecfg, overwriteExisting = false, monochromeThemeScale = monochromeThemeScale)
-
-    savePng(outputRecfg, File(dir, "recfg.png"))
-    savePng(recfg1x2, File(dir, "recfg_1x2.png"))
-    savePng(recfg2x1, File(dir, "recfg_2x1.png"))
-    savePng(recfg2x2, File(dir, "recfg_2x2.png"))
-
-    savePng(normalDarkForeground(outputRecfg, recbg, nightSubjectLightBackgroundEnabled), File(dir, "rec_night.png"))
-    savePng(normalDarkForeground(recfg1x2, recbg1x2, nightSubjectLightBackgroundEnabled), File(dir, "rec_night_1x2.png"))
-    savePng(normalDarkForeground(recfg2x1, recbg2x1, nightSubjectLightBackgroundEnabled), File(dir, "rec_night_2x1.png"))
-    savePng(normalDarkForeground(recfg2x2, recbg2x2, nightSubjectLightBackgroundEnabled), File(dir, "rec_night_2x2.png"))
-}
-
-/**
  * Slice 1.4 重型移动（读 Activity 调参/Context/凭证/状态回调，改为显式收参；
  * 纯算法改调顶层显式版本，同包直接用；Activity 内留原签名 wrapper
  * 标注“重构期间保留”，调用点零改动）：
@@ -430,55 +356,15 @@ internal fun writePackageOutputs(
     edgePolishPercent: Int,
     foregroundSubjectPercent: Int,
     rmbgTunedForeground: (IconCandidate) -> Bitmap?,
-    liquidGlassEnabled: Boolean,
-    liquidGlassBackgroundMistAlpha: Int,
-    liquidGlassTopAlpha: Int,
-    liquidGlassBottomAlpha: Int,
-    liquidGlassBottomDarkAlpha: Int,
-    liquidGlassOuterWidth: Int,
-    liquidGlassRadius: Int,
-    liquidGlassSubjectScalePercent: Int,
-    liquidGlassSubjectShadowAlpha: Int,
-    liquidGlassSubjectOutlineWidth: Int,
-    liquidGlassSubjectInnerOutlineWidth: Int,
-    liquidGlassSubjectOpacityPercent: Int,
     foregroundShadowLevel: Int,
     monochromeThemeScale: Float,
     nightSubjectLightBackgroundEnabled: Boolean,
 ) {
     fun foregroundForOutputs(source: Bitmap, width: Int, height: Int): Bitmap =
-        foregroundForSize(
-            source = source,
-            width = width,
-            height = height,
-            liquidGlassEnabled = liquidGlassEnabled,
-            liquidGlassSubjectScalePercent = liquidGlassSubjectScalePercent,
-            liquidGlassSubjectShadowAlpha = liquidGlassSubjectShadowAlpha,
-            liquidGlassSubjectOutlineWidth = liquidGlassSubjectOutlineWidth,
-            liquidGlassSubjectInnerOutlineWidth = liquidGlassSubjectInnerOutlineWidth,
-            liquidGlassSubjectOpacityPercent = liquidGlassSubjectOpacityPercent,
-            liquidGlassTopAlpha = liquidGlassTopAlpha,
-            liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-            liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-            liquidGlassOuterWidth = liquidGlassOuterWidth,
-            liquidGlassRadius = liquidGlassRadius,
-            applyShadow = { bitmap -> applyForegroundShadow(bitmap, foregroundShadowLevel) },
-            renderSubjectShadow = ::subjectShadowBitmap,
-        )
+        iconForegroundForSize(source, width, height, foregroundShadowLevel)
 
     fun backgroundForOutputs(source: Bitmap, width: Int, height: Int): Bitmap =
-        liquidGlassBackgroundForSize(
-            source = source,
-            width = width,
-            height = height,
-            liquidGlassEnabled = liquidGlassEnabled,
-            liquidGlassBackgroundMistAlpha = liquidGlassBackgroundMistAlpha,
-            liquidGlassTopAlpha = liquidGlassTopAlpha,
-            liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-            liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-            liquidGlassOuterWidth = liquidGlassOuterWidth,
-            liquidGlassRadius = liquidGlassRadius,
-        )
+        iconBackgroundForSize(source, width, height)
 
     val light = candidateWithCustomOverrides(session, PreviewMode.NormalLight, selections.normalLight)
     val lightBaseRecfg = renderCandidateForegroundBase(light, edgePolishPercent, foregroundSubjectPercent, rmbgTunedForeground)
@@ -614,18 +500,6 @@ internal fun generateArtPlusPackage(
         edgePolishPercent = params.edgePolishPercent,
         foregroundSubjectPercent = params.foregroundSubjectPercent,
         rmbgTunedForeground = rmbgTunedForeground,
-        liquidGlassEnabled = params.liquidGlassEnabled,
-        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-        liquidGlassRadius = params.liquidGlassRadius,
-        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
         foregroundShadowLevel = params.foregroundShadowLevel,
         monochromeThemeScale = params.monochromeThemeScale,
         nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,

@@ -3,7 +3,6 @@ package dev.artplus.mobile.ui.pages.tabs
 import dev.artplus.mobile.R
 import android.app.WallpaperManager
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -22,9 +22,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import java.io.File
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.Settings
@@ -35,44 +32,29 @@ import dev.artplus.mobile.ICON_CACHE_SIZE
 import dev.artplus.mobile.MainActivity
 import dev.artplus.mobile.PREFS_NAME
 import dev.artplus.mobile.PREVIEW_BUNDLED_WALLPAPER_SHORT_EDGE
-import dev.artplus.mobile.ROOT_UXICONS_DIR
 import dev.artplus.mobile.data.AppEntry
 import dev.artplus.mobile.data.getCachedAppIcon
-import dev.artplus.mobile.data.markPackageGenerated
 import dev.artplus.mobile.imaging.IconCandidate
 import dev.artplus.mobile.imaging.previewAssetsForCandidate
 import dev.artplus.mobile.pipeline.findRmbgComponent
 import dev.artplus.mobile.pipeline.preparedForDraw
 import dev.artplus.mobile.pipeline.rmbgTunedForegroundRaw
-import dev.artplus.mobile.state.launchUiFriendly
 import dev.artplus.mobile.state.loadCachedAppIconOp
 import dev.artplus.mobile.state.persistUiState
 import dev.artplus.mobile.state.refreshArtPlusIconsAsync
 import dev.artplus.mobile.state.setStatus
-import dev.artplus.mobile.system.RootWriteMode
-import dev.artplus.mobile.system.artPlusPackageDir
-import dev.artplus.mobile.system.ensureNomediaAtTreeRoot
-import dev.artplus.mobile.system.exportToTree
-import dev.artplus.mobile.system.exportToTreeFast
-import dev.artplus.mobile.system.hasGeneratedPackageBaseAssets
-import dev.artplus.mobile.system.installWithRoot
 import dev.artplus.mobile.ui.cards.AppPage
-import dev.artplus.mobile.ui.cards.ExportProgress
 import dev.artplus.mobile.ui.cards.PreviewSelections
-import dev.artplus.mobile.ui.cards.RootWriteConfirmRequest
 import dev.artplus.mobile.ui.components.TitleBarIconButton
 import dev.artplus.mobile.ui.pages.PagerShellPage
 import dev.artplus.mobile.ui.pages.home.GeneratedPreviewCard
-import dev.artplus.mobile.ui.pages.home.GenerationActionCard
 import dev.artplus.mobile.ui.pages.home.LayerDebugCard
 import dev.artplus.mobile.ui.pages.home.PreviewControlCard
 import dev.artplus.mobile.ui.pages.home.StatusCard
 import dev.artplus.mobile.ui.pages.home.applyPreviewChoiceToAll
 import dev.artplus.mobile.ui.pages.home.applyRmbgCandidateForMode
 import dev.artplus.mobile.ui.pages.home.generateGptCandidateForMode
-import dev.artplus.mobile.ui.pages.home.generateSelectedApp
 import dev.artplus.mobile.ui.pages.home.homeApplyPreviewChoice
-import dev.artplus.mobile.ui.pages.home.homeWriteSelectedWithRoot
 import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
 import dev.artplus.mobile.ui.pages.params.paramsUpdateForegroundSubjectPercent
 import dev.artplus.mobile.ui.pages.params.paramsUpdateNightSubjectLightBackgroundEnabled
@@ -89,8 +71,8 @@ import dev.artplus.mobile.ui.pages.picker.pickerOpenAppPermissionSettings
 import dev.artplus.mobile.ui.pages.picker.pickerOpenUsageAccessSettings
 import dev.artplus.mobile.ui.pages.picker.pickerSystemMaterialColor
 import dev.artplus.mobile.ui.pages.picker.pickerSystemWallpaperDrawable
-import dev.artplus.mobile.ui.pages.picker.pickerToastStatus
 import dev.artplus.mobile.ui.components.BarClearance
+import dev.artplus.mobile.ui.components.sectionItem
 
 /**
  * S4.x：从 HomePage 的 `when (page)` 分支原样搬出的 tab 页（纯移动，key/remember 原样保留）。
@@ -110,7 +92,6 @@ internal fun MainActivity.HomeTabPage(
     val batchConfigState by mainViewModel.batchPreviewConfig.collectAsState()
     val paramsState by mainViewModel.params.collectAsState()
     val gptSettingsState by mainViewModel.gptRmbgSettings.collectAsState()
-
 PagerShellPage(
                     title = "ArtPlus",
                     actions = {
@@ -153,7 +134,7 @@ PagerShellPage(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
                         if (!pickerState.packageListPermissionGranted || !pickerState.usageAccessGranted) {
-                            item(key = "permission") {
+                            sectionItem(key = "permission", title = "权限") {
             // 热修复：pickerState/shellState 已提升至 HomePage 顶层，此处复用（删重复订阅）。
             // Slice 3.1: Activity侧collect读VM单源。
             PermissionCard(
@@ -176,14 +157,11 @@ PagerShellPage(
             )
                             }
                         }
-                        item(key = "status") {
+                        sectionItem(key = "status", title = "当前应用") {
             // 热修复：shellState 已提升至 HomePage 顶层，此处复用（删重复订阅）。
             // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
             StatusCard(
                 selectedApp = (selectedApp),
-                launcherCount = (launcherCount),
-                totalCount = (apps.size),
-                generatedCount = (generatedCount),
                 isBusy = shellState.isBusy,
                 hasApps = apps.isNotEmpty(),
                 statusText = shellState.statusText,
@@ -205,288 +183,10 @@ PagerShellPage(
      },
             )
                         }
-                        item(key = "generation_action") {
-                            run {
-val __act4 = LocalContext.current
-    GenerationActionCard(
-                selectedApp = (selectedApp),
-                isBusy = shellState.isBusy,
-                onLocalGenerate = { generateSelectedApp(installWithRoot = false, useGpt = false) },
-                onLocalExport = { run {
-
-                if (mainViewModel.shell.value.outputTreeUri == null) {
-            pickerToastStatus(
-                        message = ("还没有设置目录"),
-                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                        showToast = { text ->
-                            runOnUiThread {
-                                Toast.makeText(__act4, text, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-        
-                    mainViewModel.updatePreviewSession { it -> it.copy(exportDialogVisible = (true)) }
-                    return@run
-                }
-                val dir = mainViewModel.previewSession.value.activeGenerationSession?.outDir
-                    ?: mainViewModel.previewSession.value.previewDirPath?.let { File(it) }?.takeIf { it.isDirectory && hasGeneratedPackageBaseAssets(it) }
-                    ?: mainViewModel.picker.value.selectedPackageName?.let { run {
-            artPlusPackageDir(
-                        packageName = (it),
-                        externalArtPlusDir = getExternalFilesDir("ArtPlus"),
-                        filesDir = filesDir,
-                    )
-        } }?.takeIf { hasGeneratedPackageBaseAssets(it) }
-                if (dir == null || !hasGeneratedPackageBaseAssets(dir)) {
-            pickerToastStatus(
-                        message = ("没有可导出的图标包"),
-                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                        showToast = { text ->
-                            runOnUiThread {
-                                Toast.makeText(__act4, text, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-        
-                    return@run
-                }
-                if (mainViewModel.shell.value.isBusy) return@run
-                mainViewModel.updateShell { it -> it.copy(isBusy = (true)) }
-                mainViewModel.updateTransfer { it -> it.copy(exportProgress = (ExportProgress(
-                    title = "导出中",
-                    completed = 0,
-                    total = 1,
-                    currentLabel = "正在导出: ${dir.name}",
-                    isIndeterminate = true,
-                ))) }
-                mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (true)) }
-                singleExportJob?.cancel()
-                singleExportJob = mainScope.launch(Dispatchers.IO) {
-                    try {
-                        runCatching { ensureNomediaAtTreeRoot(contentResolver, mainViewModel.shell.value.outputTreeUri) }
-                        // 优先尝试文件系统直拷（su cp），速度为 SAF 的 10-20 倍，失败再回退 SAF
-                        val fastOk = runCatching { exportToTreeFast(mainViewModel.shell.value.outputTreeUri, dir) }.getOrDefault(false)
-                        if (fastOk) {
-                            withContext(Dispatchers.Main) { run {
-            pickerToastStatus(
-                        message = ("已导出到外部目录: ${dir.name}"),
-                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                        showToast = { text ->
-                            runOnUiThread {
-                                Toast.makeText(__act4, text, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-        } }
-                        } else {
-                            withContext(Dispatchers.Main) {
-                                runCatching { exportToTree(contentResolver, mainViewModel.shell.value.outputTreeUri, dir) }
-                                    .onSuccess { run {
-            pickerToastStatus(
-                        message = ("已导出到外部目录: ${dir.name}"),
-                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                        showToast = { text ->
-                            runOnUiThread {
-                                Toast.makeText(__act4, text, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-        } }
-                                    .onFailure { error ->
-            pickerToastStatus(
-                        message = ("导出失败: ${error.message ?: error.javaClass.simpleName}"),
-                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                        showToast = { text ->
-                            runOnUiThread {
-                                Toast.makeText(__act4, text, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-         }
-                            }
-                        }
-                    } catch (e: CancellationException) {
-                        withContext(Dispatchers.Main) { /* 已在 cancelSingleExport 中处理 */ }
-                        throw e
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) { run {
-            pickerToastStatus(
-                        message = ("导出失败: ${e.message ?: e.javaClass.simpleName}"),
-                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                        showToast = { text ->
-                            runOnUiThread {
-                                Toast.makeText(__act4, text, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-        } }
-                    } finally {
-                        withContext(Dispatchers.Main) {
-                            mainViewModel.updateTransfer { it -> it.copy(exportProgress = (null)) }
-                            mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (false)) }
-                            singleExportJob = null
-                            mainViewModel.updateShell { it -> it.copy(isBusy = (false)) }
-                        }
-                    }
-                }
-    } },
-                onWriteAll = { run {
-        homeWriteSelectedWithRoot(
-                    entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
-                    rootWriteMode = (RootWriteMode.All),
-                    isBusy = shellState.isBusy,
-                    activeSession = mainViewModel.previewSession.value.activeGenerationSession,
-                    selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
-                    autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
-                    targetPath = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName }?.let { "$ROOT_UXICONS_DIR/${it.packageName}" },
-                    onStatusText = { setStatus((it)) },
-                    onGenerateFallback = { generateSelectedApp(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.All)) },
-                    onBeginBusy = { msg ->
-                        mainViewModel.updateShell { it -> it.copy(isBusy = true, statusText = msg) }
-                    },
-                    onLaunch = { name, block -> mainViewModel.launchUiFriendly((name), (block)) },
-                    onWrite = tuningActions.write,
-                    onInstall = { outDir, pkg, mode -> installWithRoot(outDir, pkg, mode) },
-                    onPostWrite = { session, selections, e ->
-                        runOnUiThread {
-                            mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (markPackageGenerated(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames, e.packageName))) }
-                            mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
-                            mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                            mainViewModel.updatePreviewSession { v -> v.copy(previewPackageName = (e.packageName), previewDirPath = (session.outDir.absolutePath)) }
-                            mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
-                            persistUiState()
-                        }
-                    },
-                    onToast = { run {
-            pickerToastStatus(
-                        message = (it),
-                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                        showToast = { text ->
-                            runOnUiThread {
-                                Toast.makeText(__act4, text, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-        } },
-                    onFinish = { runOnUiThread { mainViewModel.updateShell { it -> it.copy(isBusy = (false)) } } },
-                    onRequestConfirm = { pkg, targetPath, mode, onConfirm ->
-                        mainViewModel.updateConfirm { it -> it.copy(rootWriteConfirmRememberSkip = (false)) }
-                        mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (RootWriteConfirmRequest(
-                            packageName = pkg,
-                            targetPath = targetPath,
-                            rootWriteMode = mode,
-                            onConfirm = { onConfirm() },
-                        ))) }
-                    },
-                )
-    } },
-                onWriteStandard = { run {
-        homeWriteSelectedWithRoot(
-                    entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
-                    rootWriteMode = (RootWriteMode.StandardOnly),
-                    isBusy = shellState.isBusy,
-                    activeSession = mainViewModel.previewSession.value.activeGenerationSession,
-                    selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
-                    autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
-                    targetPath = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName }?.let { "$ROOT_UXICONS_DIR/${it.packageName}" },
-                    onStatusText = { setStatus((it)) },
-                    onGenerateFallback = { generateSelectedApp(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.StandardOnly)) },
-                    onBeginBusy = { msg ->
-                        mainViewModel.updateShell { it -> it.copy(isBusy = true, statusText = msg) }
-                    },
-                    onLaunch = { name, block -> mainViewModel.launchUiFriendly((name), (block)) },
-                    onWrite = tuningActions.write,
-                    onInstall = { outDir, pkg, mode -> installWithRoot(outDir, pkg, mode) },
-                    onPostWrite = { session, selections, e ->
-                        runOnUiThread {
-                            mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (markPackageGenerated(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames, e.packageName))) }
-                            mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
-                            mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                            mainViewModel.updatePreviewSession { v -> v.copy(previewPackageName = (e.packageName), previewDirPath = (session.outDir.absolutePath)) }
-                            mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
-                            persistUiState()
-                        }
-                    },
-                    onToast = { run {
-            pickerToastStatus(
-                        message = (it),
-                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                        showToast = { text ->
-                            runOnUiThread {
-                                Toast.makeText(__act4, text, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-        } },
-                    onFinish = { runOnUiThread { mainViewModel.updateShell { it -> it.copy(isBusy = (false)) } } },
-                    onRequestConfirm = { pkg, targetPath, mode, onConfirm ->
-                        mainViewModel.updateConfirm { it -> it.copy(rootWriteConfirmRememberSkip = (false)) }
-                        mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (RootWriteConfirmRequest(
-                            packageName = pkg,
-                            targetPath = targetPath,
-                            rootWriteMode = mode,
-                            onConfirm = { onConfirm() },
-                        ))) }
-                    },
-                )
-    } },
-                onWriteMono = { run {
-        homeWriteSelectedWithRoot(
-                    entry = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName },
-                    rootWriteMode = (RootWriteMode.MonochromeOnly),
-                    isBusy = shellState.isBusy,
-                    activeSession = mainViewModel.previewSession.value.activeGenerationSession,
-                    selections = PreviewSelections.fromNames(mainViewModel.params.value.previewNormalLight, mainViewModel.params.value.previewNormalDark, mainViewModel.params.value.previewMonochromeLight, mainViewModel.params.value.previewMonochromeDark),
-                    autoConfirmRootWrite = mainViewModel.confirm.value.autoConfirmRootWrite,
-                    targetPath = apps.firstOrNull { it.packageName == mainViewModel.picker.value.selectedPackageName }?.let { "$ROOT_UXICONS_DIR/${it.packageName}" },
-                    onStatusText = { setStatus((it)) },
-                    onGenerateFallback = { generateSelectedApp(installWithRoot = true, useGpt = false, rootWriteMode = (RootWriteMode.MonochromeOnly)) },
-                    onBeginBusy = { msg ->
-                        mainViewModel.updateShell { it -> it.copy(isBusy = true, statusText = msg) }
-                    },
-                    onLaunch = { name, block -> mainViewModel.launchUiFriendly((name), (block)) },
-                    onWrite = tuningActions.write,
-                    onInstall = { outDir, pkg, mode -> installWithRoot(outDir, pkg, mode) },
-                    onPostWrite = { session, selections, e ->
-                        runOnUiThread {
-                            mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (markPackageGenerated(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames, e.packageName))) }
-                            mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }
-                            mainViewModel.updateLive { p -> p.copy(previewNormalLight = (selections).normalLight.name, previewNormalDark = (selections).normalDark.name, previewMonochromeLight = (selections).monochromeLight.name, previewMonochromeDark = (selections).monochromeDark.name) }
-                            mainViewModel.updatePreviewSession { v -> v.copy(previewPackageName = (e.packageName), previewDirPath = (session.outDir.absolutePath)) }
-                            mainViewModel.updatePreviewSession { it -> it.copy(previewVersion = it.previewVersion + (1)) }
-                            persistUiState()
-                        }
-                    },
-                    onToast = { run {
-            pickerToastStatus(
-                        message = (it),
-                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                        showToast = { text ->
-                            runOnUiThread {
-                                Toast.makeText(__act4, text, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-        } },
-                    onFinish = { runOnUiThread { mainViewModel.updateShell { it -> it.copy(isBusy = (false)) } } },
-                    onRequestConfirm = { pkg, targetPath, mode, onConfirm ->
-                        mainViewModel.updateConfirm { it -> it.copy(rootWriteConfirmRememberSkip = (false)) }
-                        mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (RootWriteConfirmRequest(
-                            packageName = pkg,
-                            targetPath = targetPath,
-                            rootWriteMode = mode,
-                            onConfirm = { onConfirm() },
-                        ))) }
-                    },
-                )
-    } },
-            )
-}
-                        }
                         // 热修复2：预览卡渲染位经已订阅 previewSessionState 读取（裸读 .value 不触发重组，
                         // 切应用后 previewDirPath/previewPackageName/sharedPreviewAssets 变化 UI 无感，四宫格 stale/消失）。
                         if (previewSessionState.previewDirPath != null && previewSessionState.previewPackageName != null) {
-                            item(key = "generated_preview") {
+                            sectionItem(key = "generated_preview", title = "生成预览") {
                                 run {
 val __act3 = LocalContext.current
     GeneratedPreviewCard(
@@ -578,18 +278,6 @@ val __act3 = LocalContext.current
                         rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                     )
         } },
-                    liquidGlassEnabled = params.liquidGlassEnabled,
-                    liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                    liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                    liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                    liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                    liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                    liquidGlassRadius = params.liquidGlassRadius,
-                    liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                    liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                    liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                    liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                    liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
                     foregroundShadowLevel = params.foregroundShadowLevel,
                     nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
                 )
@@ -671,7 +359,7 @@ val __act3 = LocalContext.current
 }
                             }
                         }
-                        item(key = "preview_control") {
+                        sectionItem(key = "preview_control", title = "预览设置") {
 val __act2 = LocalContext.current
     PreviewControlCard(
                 tuningState = paramsState,
@@ -765,7 +453,13 @@ val __act2 = LocalContext.current
     } },
             )
                         }
-                        item(key = "layer_debug") {
+                        // 卡片自己在素材不全时什么都不画，这里同条件挡住小标题，免得只剩一个标题。
+                        if (
+                            previewSessionState.previewDirPath != null &&
+                            previewSessionState.activeGenerationSession != null &&
+                            previewSessionState.sharedPreviewAssets != null
+                        ) {
+                            sectionItem(key = "layer_debug", title = "图层调试") {
     LayerDebugCard(
                 // 热修复2：调试卡渲染位经已订阅 previewSessionState 读取。
                 dirPath = previewSessionState.previewDirPath,
@@ -776,8 +470,8 @@ val __act2 = LocalContext.current
                 assets = previewSessionState.sharedPreviewAssets,
                 tuningState = paramsState,
             )
+                            }
                         }
                     }
                 }
-
 }

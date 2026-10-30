@@ -46,7 +46,7 @@ import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.preference.ArrowPreference
 import io.github.suqi8.coui.kmp.preference.SwitchPreference
 import io.github.suqi8.coui.kmp.preference.WindowDropdownPreference
-import io.github.suqi8.coui.kmp.window.WindowDialog
+import io.github.suqi8.coui.kmp.overlay.OverlayDialog
 import io.github.suqi8.coui.kmp.icon.extended.*
 
 /** 行右侧的值文本：ColorOS 右对齐次级文本。 */
@@ -234,8 +234,9 @@ internal fun SettingsTextInputRow(
             dialogVisible = true
         },
     )
-    // WindowDialog 不给内容加内边距：输入框自带 24dp 水平边距，按钮栏贴边铺满。
-    WindowDialog(
+    // 对话框不给内容加内边距：输入框自带 24dp 水平边距，按钮栏贴边铺满。
+    // Overlay 变体由根部 COUIPopupHost 渲染，面板才是采样整屏的玻璃（见 ArtDialog）。
+    OverlayDialog(
         show = dialogVisible,
         title = title,
         onDismissRequest = { dialogVisible = false },
@@ -336,7 +337,6 @@ internal fun settingsIconForTitle(title: String): SettingsIconKind =
         "模型版本" -> SettingsIconKind.Layers
         "AI image two 生成模式" -> SettingsIconKind.Spark
         "AI 提示词" -> SettingsIconKind.Prompt
-        "液态玻璃风格" -> SettingsIconKind.Glass
         "渲染方式" -> SettingsIconKind.Layers
         "圆角半径" -> SettingsIconKind.Radius
         "边缘高光宽度" -> SettingsIconKind.Glass

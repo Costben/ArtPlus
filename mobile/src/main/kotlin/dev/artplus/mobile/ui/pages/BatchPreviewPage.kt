@@ -55,7 +55,7 @@ import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Scaffold
 import io.github.suqi8.coui.kmp.basic.TabRowWithContour
 import io.github.suqi8.coui.kmp.basic.Text
-import io.github.suqi8.coui.kmp.basic.TopAppBar
+import io.github.suqi8.coui.kmp.basic.SmallTopAppBar
 import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
@@ -73,6 +73,7 @@ import dev.artplus.mobile.ui.cards.AppPage
 import dev.artplus.mobile.ui.cards.NumberParameterControl
 import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
 import dev.artplus.mobile.ui.components.SectionCard
+import dev.artplus.mobile.ui.components.SectionHeader
 import dev.artplus.mobile.ui.components.TitleBarIconButton
 import dev.artplus.mobile.ui.components.rememberLinkedTopAppBarScrollBehavior
 import dev.artplus.mobile.ui.pages.home.GeneratedIconPreview
@@ -122,14 +123,15 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
         drawContent()
     }
     val contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
-        TopAppBarDefaults.ExpandedHeight
+        TopAppBarDefaults.SmallTopAppBarCenterHeight
     Scaffold(
         // 内容从顶栏底下滚过（顶部留白在 contentPadding 里），COUI 才会给顶栏画玻璃材质。
         edgeToEdge = true,
         containerColor = pageBackground,
         topBar = {
             CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
-                TopAppBar(
+                // 带返回键的二级页：COUI 的固定小标题栏（18dp Medium），与 demo 的二级页一致。
+                SmallTopAppBar(
                     title = preset?.name ?: "批量预览",
                     scrollBehavior = scrollBehavior,
                     navigationIcon = {
@@ -174,6 +176,8 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // 1. 桌面控制卡：背景一行 + 三个主页化参数行（无图标、默认展开）
+            // 卡片各自带 16dp 边距，标题再补 16dp，文字才和卡片内文对齐（共 32dp）。
+            SectionHeader("桌面外观", Modifier.padding(horizontal = 16.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -313,6 +317,7 @@ val __act2 = LocalContext.current
             }
 
             // 2. 4 风格切换栏（控制卡下方、预览框上方）
+            SectionHeader("预览", Modifier.padding(horizontal = 16.dp))
             TabRowWithContour(
                 tabs = tabTitles,
                 selectedTabIndex = pagerState.currentPage,

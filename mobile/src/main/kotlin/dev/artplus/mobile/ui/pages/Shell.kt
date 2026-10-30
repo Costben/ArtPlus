@@ -19,6 +19,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -56,6 +57,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.basic.PinnedScrollBehavior
 import io.github.suqi8.coui.kmp.basic.ScrollBehavior
+import io.github.suqi8.coui.kmp.basic.Scaffold
+import io.github.suqi8.coui.kmp.utils.COUIPopupUtils
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import io.github.suqi8.coui.kmp.basic.AppBarBlurOverlayDefaults
@@ -156,18 +159,6 @@ internal fun MainActivity.ArtPlusScreen() {
             val p = paramsSnapshot
             PreviewEffectKey(
                 selections = PreviewSelections.fromNames(p.previewNormalLight, p.previewNormalDark, p.previewMonochromeLight, p.previewMonochromeDark),
-                liquidGlassEnabled = p.liquidGlassEnabled,
-                liquidGlassBackgroundMistAlpha = p.liquidGlassBackgroundMistAlpha,
-                liquidGlassTopAlpha = p.liquidGlassTopAlpha,
-                liquidGlassBottomAlpha = p.liquidGlassBottomAlpha,
-                liquidGlassBottomDarkAlpha = p.liquidGlassBottomDarkAlpha,
-                liquidGlassOuterWidth = p.liquidGlassOuterWidth,
-                liquidGlassRadius = p.liquidGlassRadius,
-                liquidGlassSubjectScalePercent = p.liquidGlassSubjectScalePercent,
-                liquidGlassSubjectShadowAlpha = p.liquidGlassSubjectShadowAlpha,
-                liquidGlassSubjectOutlineWidth = p.liquidGlassSubjectOutlineWidth,
-                liquidGlassSubjectInnerOutlineWidth = p.liquidGlassSubjectInnerOutlineWidth,
-                liquidGlassSubjectOpacityPercent = p.liquidGlassSubjectOpacityPercent,
                 foregroundShadowLevel = p.foregroundShadowLevel,
                 monochromeThemeScale = p.monochromeThemeScale,
                 nightSubjectLightBackgroundEnabled = p.nightSubjectLightBackgroundEnabled,
@@ -261,869 +252,799 @@ internal fun MainActivity.ArtPlusScreen() {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        val overlayPage = shellState.currentPage.takeIf { it != AppPage.Home }
-        val dimReveal = if (previewSessionState.skipNextHomeReturnAnimation || isCompletingBackGesture || backProgress > 0f) {
-            backProgress.coerceIn(0f, 1f)
-        } else {
-            0f
-        }
-        val overlayDimTarget = ((1f - childEnterProgress.value) * (1f - dimReveal)).coerceIn(0f, 1f)
-        // 返回主页时平滑回弹（修主页抖动）；进入动画与返回手势跟手时保持实时
-        val overlayDimSpec: FiniteAnimationSpec<Float> =
-            if (overlayPage == null || (backProgress == 0f && !isCompletingBackGesture && childEnterProgress.value == 0f)) {
-                tween(durationMillis = 280)
-            } else {
-                snap()
+    // 对话框统一由这里的 COUIPopupHost 渲染（与 COUI demo 的 Coui17Root 同构）：宿主是录制层的兄弟节点，
+    // 采样的是用户看到的整屏（页面 + 顶栏底栏 + 二级页），对话框面板因此是 ColorOS 17 的模糊玻璃，
+    // 而不是独立窗口里拿不到页面内容、只能退回的实心白底。主页融合球的菜单也在这里渲染。
+    val screenBackdrop = rememberLayerBackdrop {
+        drawRect(pageBackground)
+        drawContent()
+    }
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        containerColor = pageBackground,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        popupHost = {
+            CompositionLocalProvider(LocalBackdrop provides screenBackdrop) {
+                COUIPopupUtils.COUIPopupHost()
             }
-        val overlayDim by animateFloatAsState(
-            targetValue = overlayDimTarget,
-            animationSpec = overlayDimSpec,
-            label = "OverlayDim",
-        )
-        val overlayShadowPx = with(LocalDensity.current) { 24.dp.toPx() }
+        },
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer {
-                    val homeScale = 1f - 0.04f * overlayDim
-                    scaleX = homeScale
-                    scaleY = homeScale
-                },
+                .layerBackdrop(screenBackdrop),
         ) {
-            HomePage(
-                pageBackground = pageBackground,
-                selectedApp = selectedApp,
-                launcherCount = launcherCount,
-                totalCount = apps.size,
-                generatedCount = generatedCount,
-            )
-        }
-        if (overlayPage != null && overlayDim > 0.01f) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        COUITheme.colorScheme.windowDimming.let { it.copy(alpha = it.alpha * overlayDim) },
-                    ),
-            )
-        }
-
-        if (overlayPage != null) {
-            val isCompletingBack = previewSessionState.skipNextHomeReturnAnimation || isCompletingBackGesture
-            val reveal = if (isCompletingBack || backProgress > 0f) {
+            val overlayPage = shellState.currentPage.takeIf { it != AppPage.Home }
+            val dimReveal = if (previewSessionState.skipNextHomeReturnAnimation || isCompletingBackGesture || backProgress > 0f) {
                 backProgress.coerceIn(0f, 1f)
             } else {
                 0f
             }
-            val overlayCover = ((1f - childEnterProgress.value) * (1f - reveal)).coerceIn(0f, 1f)
-            val overlayCorner = (40f * overlayCover).dp
-            val overlayShape = RoundedCornerShape(topStart = overlayCorner, bottomStart = overlayCorner)
+            val overlayDimTarget = ((1f - childEnterProgress.value) * (1f - dimReveal)).coerceIn(0f, 1f)
+            // 返回主页时平滑回弹（修主页抖动）；进入动画与返回手势跟手时保持实时
+            val overlayDimSpec: FiniteAnimationSpec<Float> =
+                if (overlayPage == null || (backProgress == 0f && !isCompletingBackGesture && childEnterProgress.value == 0f)) {
+                    tween(durationMillis = 280)
+                } else {
+                    snap()
+                }
+            val overlayDim by animateFloatAsState(
+                targetValue = overlayDimTarget,
+                animationSpec = overlayDimSpec,
+                label = "OverlayDim",
+            )
+            val overlayShadowPx = with(LocalDensity.current) { 24.dp.toPx() }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        val enteringOffset = size.width * childEnterProgress.value
-                        val leavingOffset = size.width * reveal * BACK_GESTURE_PAGE_TRANSLATION_RATIO
-                        translationX = enteringOffset + leavingOffset
-                        shadowElevation = overlayShadowPx * overlayCover
-                        shape = overlayShape
-                        clip = true
-                    }
-                    // 二级页自己的底色：脱离 pager 后没有 pager 背景兜底，必须自己铺色，否则整页透明。
-                    .background(pageBackground),
+                        val homeScale = 1f - 0.04f * overlayDim
+                        scaleX = homeScale
+                        scaleY = homeScale
+                    },
             ) {
-                when (overlayPage) {
-                    AppPage.AppPicker -> {
-                        // 热修复：经已订阅 pickerState 推导（原 remember{derivedStateOf{...picker.value...}}
-                        // 对 StateFlow 不可观察，query/过滤/系统开关永不重算）。
-                        val scopedApps = remember(apps.toList(), pickerState.showSystemApps) {
-                            apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, pickerState.showSystemApps, packageName) }
+                HomePage(
+                    pageBackground = pageBackground,
+                    selectedApp = selectedApp,
+                    launcherCount = launcherCount,
+                    totalCount = apps.size,
+                    generatedCount = generatedCount,
+                )
+            }
+            if (overlayPage != null && overlayDim > 0.01f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            COUITheme.colorScheme.windowDimming.let { it.copy(alpha = it.alpha * overlayDim) },
+                        ),
+                )
+            }
+
+            if (overlayPage != null) {
+                val isCompletingBack = previewSessionState.skipNextHomeReturnAnimation || isCompletingBackGesture
+                val reveal = if (isCompletingBack || backProgress > 0f) {
+                    backProgress.coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+                val overlayCover = ((1f - childEnterProgress.value) * (1f - reveal)).coerceIn(0f, 1f)
+                val overlayCorner = (40f * overlayCover).dp
+                val overlayShape = RoundedCornerShape(topStart = overlayCorner, bottomStart = overlayCorner)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val enteringOffset = size.width * childEnterProgress.value
+                            val leavingOffset = size.width * reveal * BACK_GESTURE_PAGE_TRANSLATION_RATIO
+                            translationX = enteringOffset + leavingOffset
+                            shadowElevation = overlayShadowPx * overlayCover
+                            shape = overlayShape
+                            clip = true
                         }
-                        val ungeneratedCount = scopedApps.size - generatedCount
-                        val filteredApps = remember(scopedApps, pickerState.queryText, pickerState.generatedFilter, pickerState.generatedPackageNames) {
-                            val query = pickerState.queryText.trim().lowercase(Locale.ROOT)
-                            val stateScopedApps = when (pickerState.generatedFilter) {
-                                GeneratedFilter.All -> scopedApps
-                                GeneratedFilter.Generated -> scopedApps.filter { it.packageName in pickerState.generatedPackageNames }
-                                GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in pickerState.generatedPackageNames }
+                        // 二级页自己的底色：脱离 pager 后没有 pager 背景兜底，必须自己铺色，否则整页透明。
+                        .background(pageBackground),
+                ) {
+                    when (overlayPage) {
+                        AppPage.AppPicker -> {
+                            // 热修复：经已订阅 pickerState 推导（原 remember{derivedStateOf{...picker.value...}}
+                            // 对 StateFlow 不可观察，query/过滤/系统开关永不重算）。
+                            val scopedApps = remember(apps.toList(), pickerState.showSystemApps) {
+                                apps.filter { entry -> AppVisibility.shouldShowInPicker(entry.applicationInfo, entry.launchable, pickerState.showSystemApps, packageName) }
                             }
-                            if (query.isEmpty()) {
-                                stateScopedApps
-                            } else {
-                                stateScopedApps.filter { entry ->
-                                    entry.label.lowercase(Locale.ROOT).contains(query) ||
-                                        entry.packageName.lowercase(Locale.ROOT).contains(query)
+                            val filteredApps = remember(scopedApps, pickerState.queryText, pickerState.generatedFilter, pickerState.generatedPackageNames) {
+                                val query = pickerState.queryText.trim().lowercase(Locale.ROOT)
+                                val stateScopedApps = when (pickerState.generatedFilter) {
+                                    GeneratedFilter.All -> scopedApps
+                                    GeneratedFilter.Generated -> scopedApps.filter { it.packageName in pickerState.generatedPackageNames }
+                                    GeneratedFilter.Ungenerated -> scopedApps.filter { it.packageName !in pickerState.generatedPackageNames }
+                                }
+                                if (query.isEmpty()) {
+                                    stateScopedApps
+                                } else {
+                                    stateScopedApps.filter { entry ->
+                                        entry.label.lowercase(Locale.ROOT).contains(query) ||
+                                            entry.packageName.lowercase(Locale.ROOT).contains(query)
+                                    }
                                 }
                             }
+                            AppPickerPage(
+                                pageBackground = pageBackground,
+                                filteredApps = filteredApps,
+                                scopedApps = scopedApps,
+                            )
                         }
-                        val scopeCount = when (pickerState.generatedFilter) {
-                            GeneratedFilter.All -> scopedApps.size
-                            GeneratedFilter.Generated -> generatedCount
-                            GeneratedFilter.Ungenerated -> ungeneratedCount
-                        }
-                        AppPickerPage(
+
+                        AppPage.About -> AboutPage(pageBackground = pageBackground)
+
+                        AppPage.BatchPreview -> BatchPreviewPage(pageBackground = pageBackground)
+
+                        AppPage.Settings -> SettingsTabPage(
                             pageBackground = pageBackground,
-                            filteredApps = filteredApps,
-                            scopeCount = scopeCount,
+                            selectedApp = selectedApp,
+                            launcherCount = launcherCount,
+                            totalCount = apps.size,
                             generatedCount = generatedCount,
-                            ungeneratedCount = ungeneratedCount,
                         )
+
+                        AppPage.Home -> Unit
                     }
+                }
+            }
 
-                    AppPage.About -> AboutPage(pageBackground = pageBackground)
+            mainViewModel.transfer.value.batchApplyProgress?.let { progress ->
+                BatchApplyProgressDialog(progress)
+            }
+            if (mainViewModel.transfer.value.singleExportSheetVisible && mainViewModel.transfer.value.exportProgress != null) {
+                val p = mainViewModel.transfer.value.exportProgress!!
+                BackupProgressBottomSheet(
+                    progress = p,
+                    onStop = { run {
 
-                    AppPage.BatchPreview -> BatchPreviewPage(pageBackground = pageBackground)
-
-                    AppPage.Settings -> SettingsTabPage(
-                        pageBackground = pageBackground,
-                        selectedApp = selectedApp,
-                        launcherCount = launcherCount,
-                        totalCount = apps.size,
-                        generatedCount = generatedCount,
+                val state = SingleExportCancelState(
+                    singleExportJob = singleExportJob,
+                    sheetVisible = mainViewModel.transfer.value.singleExportSheetVisible,
+                    progress = mainViewModel.transfer.value.exportProgress,
+                )
+                cancelSingleExport(state, { __a0: String ->
+            pickerToastStatus(
+                        message = __a0,
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
+                        showToast = { text ->
+                            runOnUiThread {
+                                Toast.makeText(__actCancel, text, Toast.LENGTH_SHORT).show()
+                            }
+                        },
                     )
-
-                    AppPage.Home -> Unit
-                }
-            }
-        }
-
-        mainViewModel.transfer.value.batchApplyProgress?.let { progress ->
-            BatchApplyProgressDialog(progress)
-        }
-        if (mainViewModel.transfer.value.singleExportSheetVisible && mainViewModel.transfer.value.exportProgress != null) {
-            val p = mainViewModel.transfer.value.exportProgress!!
-            BackupProgressBottomSheet(
-                progress = p,
-                onStop = { run {
-
-            val state = SingleExportCancelState(
-                singleExportJob = singleExportJob,
-                sheetVisible = mainViewModel.transfer.value.singleExportSheetVisible,
-                progress = mainViewModel.transfer.value.exportProgress,
-            )
-            cancelSingleExport(state, { __a0: String ->
-        pickerToastStatus(
-                    message = __a0,
-                    postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                    showToast = { text ->
-                        runOnUiThread {
-                            Toast.makeText(__actCancel, text, Toast.LENGTH_SHORT).show()
-                        }
+         })
+                singleExportJob = state.singleExportJob
+                mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (state.sheetVisible)) }
+                mainViewModel.updateTransfer { it -> it.copy(exportProgress = (state.progress)) }
+    } },
+                    onBackground = {
+                        // 单包导出后台：仅隐藏弹窗，任务继续（不显示设置页动效）
+                        mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (false)) }
                     },
                 )
-     })
-            singleExportJob = state.singleExportJob
-            mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (state.sheetVisible)) }
-            mainViewModel.updateTransfer { it -> it.copy(exportProgress = (state.progress)) }
-} },
-                onBackground = {
-                    // 单包导出后台：仅隐藏弹窗，任务继续（不显示设置页动效）
-                    mainViewModel.updateTransfer { it -> it.copy(singleExportSheetVisible = (false)) }
-                },
-            )
-        }
-        if (mainViewModel.transfer.value.backupSheetVisible && mainViewModel.transfer.value.backupProgress != null) {
-            val p = mainViewModel.transfer.value.backupProgress!!
-            BackupProgressBottomSheet(
-                progress = p,
-                onStop = { run {
-
-            val state = BackupCancelState(
-                backupJob = backupJob,
-                backupDotJob = backupDotJob,
-                sheetVisible = mainViewModel.transfer.value.backupSheetVisible,
-                inBackground = mainViewModel.transfer.value.backupInBackground,
-                progress = mainViewModel.transfer.value.backupProgress,
-                isBusy = mainViewModel.shell.value.isBusy,
-            )
-            cancelBackup(state, { __a0: String ->
-        pickerToastStatus(
-                    message = __a0,
-                    postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                    showToast = { text ->
-                        runOnUiThread {
-                            Toast.makeText(__actCancel, text, Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                )
-     })
-            backupJob = state.backupJob
-            backupDotJob = state.backupDotJob
-            mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (state.sheetVisible)) }
-            mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (state.inBackground)) }
-            mainViewModel.updateTransfer { it -> it.copy(backupProgress = (state.progress)) }
-            mainViewModel.updateShell { it -> it.copy(isBusy = (state.isBusy)) }
-} },
-                onBackground = {
-                    mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
-                    mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (true)) }
-            backupDotJob?.cancel()
-            backupDotJob = mainScope.launch {
-                while (isActive) {
-                    delay(500)
-                    mainViewModel.updateTransfer { it -> it.copy(backupBackgroundDots = (if (mainViewModel.transfer.value.backupBackgroundDots >= 3) 1 else mainViewModel.transfer.value.backupBackgroundDots + 1)) }
-                }
             }
-                },
-            )
-        } else if (!mainViewModel.transfer.value.backupSheetVisible && mainViewModel.transfer.value.backupInBackground && mainViewModel.transfer.value.backupProgress != null) {
-            // 后台态不显示底部弹窗，但保留状态供设置页“备份中...”展示
-        }
+            if (mainViewModel.transfer.value.backupSheetVisible && mainViewModel.transfer.value.backupProgress != null) {
+                val p = mainViewModel.transfer.value.backupProgress!!
+                BackupProgressBottomSheet(
+                    progress = p,
+                    onStop = { run {
 
-        confirmState.pendingServiceConfirm?.let { request ->
-            ServiceConfirmDialog(
-                request = request,
-                onConfirm = { run {
-
-            val request = mainViewModel.confirm.value.pendingServiceConfirm ?: return@run
-            mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (null)) }
-            if ((true)) {
-                request.onConfirm()
-            }
-} },
-                onDismiss = { run {
-
-            val request = mainViewModel.confirm.value.pendingServiceConfirm ?: return@run
-            mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (null)) }
-            if ((false)) {
-                request.onConfirm()
-            }
-} },
-            )
-        }
-    RootWriteConfirmDialog(
-                request = confirmState.pendingRootWriteConfirm,
-                rememberSkip = confirmState.rootWriteConfirmRememberSkip,
-                onDismiss = { mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) } },
-                onToggleSkip = { mainViewModel.updateConfirm { it -> it.copy(rootWriteConfirmRememberSkip = (!mainViewModel.confirm.value.rootWriteConfirmRememberSkip)) } },
-                onConfirm = { request, shouldSkip ->
-                    val onConfirm = request.onConfirm
-                    mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) }
-                    if (shouldSkip) {
-                        mainViewModel.updateConfirm { it -> it.copy(autoConfirmRootWrite = (true)) }
-                        persistUiState()
-                    }
-                    onConfirm()
-                },
-            )
-            // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
-            // Phase 5：confirmState 已提升至 ArtPlusScreen 顶层，此处复用（删重复订阅）。
-            RefreshConfirmDialog(
-                visible = confirmState.refreshConfirmVisible,
-                rememberAuto = confirmState.refreshConfirmRememberAuto,
-                onDismiss = { mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (false)) } },
-                onToggleRemember = { mainViewModel.updateConfirm { it -> it.copy(refreshConfirmRememberAuto = (!mainViewModel.confirm.value.refreshConfirmRememberAuto)) } },
-                onConfirm = { shouldAuto ->
-                    mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (false)) }
-                    if (shouldAuto) {
-                        mainViewModel.updateConfirm { it -> it.copy(autoConfirmRefresh = (true)) }
-                        persistUiState()
-                    }
-                    run {
-        mainViewModel.refreshArtPlusIconsAsync(
-                    contentResolver = contentResolver,
-                    apkPath = applicationInfo.sourceDir,
-                )
-    }
-                },
-            )
-        run {
-    PresetPageDialogs(
-                saveDialogVisible = presetUiState.presetSaveDialogVisible,
-                saveInitialName = presetUiState.presetSaveName,
-                onSaveConfirm = { name ->
-                    mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
-        saveCurrentAsPreset(
-                    rawName = (name),
-                    store = presetStore,
-                    current = mainViewModel.params.value,
-                    viewModel = mainViewModel,
-                    onSaved = { preset, msg ->
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (preset.id)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (preset.params)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
-                        setStatus((msg))
-                    },
-                    onStatus = { setStatus((it)) },
-                )
-    
-                },
-                onSaveDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) } },
-                renameTarget = presetUiState.presetRenameTarget,
-                onRenameConfirm = { id, name ->
-                    mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) }
-        renamePreset(
-                    id = (id),
-                    rawName = (name),
-                    store = presetStore,
-                    viewModel = mainViewModel,
-                    onRenamed = { _, msg ->
-                        mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
-                        setStatus((msg))
-                    },
-                    onStatus = { setStatus((it)) },
-                )
-    
-                },
-                onRenameDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) } },
-                actionMenuTarget = presetUiState.presetActionMenuTarget,
-                actionMenuBusy = mainViewModel.shell.value.isBusy,
-                onActionMenuDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetActionMenuTarget = (null)) } },
-                onActionApply = { run {
-        applyPreset(
-                    preset = (it),
+                val state = BackupCancelState(
+                    backupJob = backupJob,
+                    backupDotJob = backupDotJob,
+                    sheetVisible = mainViewModel.transfer.value.backupSheetVisible,
+                    inBackground = mainViewModel.transfer.value.backupInBackground,
+                    progress = mainViewModel.transfer.value.backupProgress,
                     isBusy = mainViewModel.shell.value.isBusy,
-                    isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
-                    isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
-                    before = mainViewModel.params.value,
-                    viewModel = mainViewModel,
-                    onApplied = { p, merged, msg ->
-            paramsApplyTuningParams(
-                        params = (merged),
-                        rebuildCandidates = (true),
-                        persist = (true),
-                        captureUndo = (true),
-                        refreshPreview = (true),
-                        getBefore = { mainViewModel.params.value },
-                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
-                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
-                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
-                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
-                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
-                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
-                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
-                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
-                        setDraftEdgePolishText = { draftEdgePolishText = it },
-                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
-                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
-                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
-                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
-                        setDraftJsonParamsText = { draftJsonParamsText = it },
-                        onSaveLocalSeparation = { run {
-                paramsSaveLocalSeparationSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveImageTuning = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveLiquidGlass = { tuningActions.save() },
-                        onSaveGpt = { run {
-                paramsSaveGptSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
-                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
-                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
-                        )
-            } },
-                        onSaveUi = { persistUiState() },
-                        isBusy = { mainViewModel.shell.value.isBusy },
-                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
-                        onRefresh = tuningActions.refresh,
+                )
+                cancelBackup(state, { __a0: String ->
+            pickerToastStatus(
+                        message = __a0,
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
+                        showToast = { text ->
+                            runOnUiThread {
+                                Toast.makeText(__actCancel, text, Toast.LENGTH_SHORT).show()
+                            }
+                        },
                     )
-        
-                        presetStore.activePresetId = p.id
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (p.params)) }
-                        setStatus((msg))
-                    },
-                    onStatus = { setStatus((it)) },
-                )
+         })
+                backupJob = state.backupJob
+                backupDotJob = state.backupDotJob
+                mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (state.sheetVisible)) }
+                mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (state.inBackground)) }
+                mainViewModel.updateTransfer { it -> it.copy(backupProgress = (state.progress)) }
+                mainViewModel.updateShell { it -> it.copy(isBusy = (state.isBusy)) }
     } },
-                onActionPreview = { mainViewModel.openBatchPreviewForPreset(preset = (it), filesDir = filesDir) },
-                onActionOverwrite = { run {
-        overwritePreset(
-                    preset = (it),
-                    store = presetStore,
-                    current = mainViewModel.params.value,
-                    viewModel = mainViewModel,
-                    onOverwritten = { p, cur, msg ->
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (cur)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
-                        setStatus((msg))
-                    },
-                    onStatus = { setStatus((it)) },
-                )
-    } },
-                onActionRename = { mainViewModel.updatePresetUi { v -> v.copy(presetRenameTarget = (it)) } },
-                onActionExportSingle = { run {
-        exportSinglePresetToClipboard(
-                    preset = (it),
-                    store = presetStore,
-                    clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
-                    onStatus = { setStatus((it)) },
-                )
-    } },
-                onActionDelete = { mainViewModel.updatePresetUi { v -> v.copy(presetDeleteConfirmTarget = (it)) } },
-                deleteConfirmTarget = presetUiState.presetDeleteConfirmTarget,
-                onDeleteDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetDeleteConfirmTarget = (null)) } },
-                onDeleteConfirm = { run {
-        deletePreset(
-                    id = (it),
-                    filesDir = filesDir,
-                    store = presetStore,
-                    viewModel = mainViewModel,
-                    activeBatchPreviewPresetId = mainViewModel.presetUi.value.activeBatchPreviewPreset?.id,
-                    batchPreviewResultPresetId = mainViewModel.presetUi.value.batchPreviewResult?.preset?.id,
-                    currentPage = mainViewModel.shell.value.currentPage,
-                    activePresetId = mainViewModel.presetUi.value.activePresetId,
-                    onBatchPreviewReset = {
-                        mainViewModel.updatePresetUi { it -> it.copy(activeBatchPreviewPreset = (null)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(batchPreviewResult = (null)) }
-                    },
-                    onNavigateHome = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
-                    onActiveCleared = {
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (null)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (null)) }
-                    },
-                    onBumpVersion = { mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) } },
-                    onStatus = { setStatus((it)) },
-                )
-    } },
-                importDialogVisible = presetUiState.presetImportDialogVisible,
-                onImportConfirm = { text ->
-        importPresetsFromText(
-                    text = (text),
-                    store = presetStore,
-                    onApplied = { msg ->
-                        mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) }
-                        mainViewModel.updatePresetUi { it -> it.copy(presetImportText = ("")) }
-                        mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
-                        setStatus((msg))
-                    },
-                )
-     },
-                onImportDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) } },
-                batchPreviewConfirmTarget = presetUiState.presetBatchPreviewConfirmTarget,
-                onBatchPreviewConfirm = {
-                    mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) }
-                    run {
-        mainViewModel.startBatchPreview(
-                    preset = (it),
-                    apps = apps.toList(),
-                    selfPackageName = packageName,
-                    batchPreviewCount = batchConfigState.batchPreviewCount,
-                    generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
-                    originalParams = mainViewModel.params.value,
-                    cacheDir = cacheDir,
-                    loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
-                    defaultChoiceForMode = { mode, auto ->
-            when ((mode)) {
-                        LocalSeparationMode.Original -> PreviewChoice.Original
-                        LocalSeparationMode.Plate -> PreviewChoice.Full
-                        LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
-                        LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
-                        LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
-                        LocalSeparationMode.Auto -> (auto)
-                        LocalSeparationMode.Full -> PreviewChoice.Full
+                    onBackground = {
+                        mainViewModel.updateTransfer { it -> it.copy(backupSheetVisible = (false)) }
+                        mainViewModel.updateTransfer { it -> it.copy(backupInBackground = (true)) }
+                backupDotJob?.cancel()
+                backupDotJob = mainScope.launch {
+                    while (isActive) {
+                        delay(500)
+                        mainViewModel.updateTransfer { it -> it.copy(backupBackgroundDots = (if (mainViewModel.transfer.value.backupBackgroundDots >= 3) 1 else mainViewModel.transfer.value.backupBackgroundDots + 1)) }
                     }
-         },
-                    composeAssets = { session, selections -> run {
-
-                    val params = mainViewModel.params.value
-                    return@run previewAssetsForSelections(
-                        session = (session),
-                        selections = (selections),
-                        edgePolishPercent = params.edgePolishPercent,
-                        foregroundSubjectPercent = params.foregroundSubjectPercent,
-                        rmbgTunedForeground = { __a0: IconCandidate -> run {
-
-                        val params = mainViewModel.params.value
-                        return@run rmbgTunedForegroundRaw(
-                            candidate = __a0,
-                            rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
-                            rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
-                            rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
-                            rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
-                        )
-            } },
-                        liquidGlassEnabled = params.liquidGlassEnabled,
-                        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                        liquidGlassRadius = params.liquidGlassRadius,
-                        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
-                        foregroundShadowLevel = params.foregroundShadowLevel,
-                        nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
-                    )
-        } },
-                    onApplyMerged = { merged ->
-            paramsApplyTuningParams(
-                        params = (merged),
-                        rebuildCandidates = (false),
-                        persist = (false),
-                        captureUndo = (false),
-                        refreshPreview = (false),
-                        getBefore = { mainViewModel.params.value },
-                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
-                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
-                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
-                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
-                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
-                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
-                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
-                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
-                        setDraftEdgePolishText = { draftEdgePolishText = it },
-                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
-                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
-                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
-                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
-                        setDraftJsonParamsText = { draftJsonParamsText = it },
-                        onSaveLocalSeparation = { run {
-                paramsSaveLocalSeparationSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveImageTuning = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveLiquidGlass = { tuningActions.save() },
-                        onSaveGpt = { run {
-                paramsSaveGptSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
-                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
-                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
-                        )
-            } },
-                        onSaveUi = { persistUiState() },
-                        isBusy = { mainViewModel.shell.value.isBusy },
-                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
-                        onRefresh = tuningActions.refresh,
-                    )
-        
+                }
                     },
-                    onRestoreOriginal = { original ->
-            paramsApplyTuningParams(
-                        params = (original),
-                        rebuildCandidates = (true),
-                        persist = (false),
-                        captureUndo = (false),
-                        refreshPreview = (true),
-                        getBefore = { mainViewModel.params.value },
-                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
-                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
-                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
-                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
-                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
-                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
-                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
-                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
-                        setDraftEdgePolishText = { draftEdgePolishText = it },
-                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
-                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
-                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
-                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
-                        setDraftJsonParamsText = { draftJsonParamsText = it },
-                        onSaveLocalSeparation = { run {
-                paramsSaveLocalSeparationSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveImageTuning = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveLiquidGlass = { tuningActions.save() },
-                        onSaveGpt = { run {
-                paramsSaveGptSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
-                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
-                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
-                        )
-            } },
-                        onSaveUi = { persistUiState() },
-                        isBusy = { mainViewModel.shell.value.isBusy },
-                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
-                        onRefresh = tuningActions.refresh,
-                    )
-        
-                    },
-                    onSaveSnapshot = { p, dataList -> BatchPreviewStore.saveSnapshot(filesDir, p, dataList) },
                 )
-    }
-                },
-                onBatchPreviewConfirmDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) } },
-                batchPreviewProgress = presetUiState.batchPreviewProgress,
-                onCancelBatchPreview = { mainViewModel.updatePresetUi { it -> it.copy(batchPreviewCancelled = (true)) } },
-                showRefreshConfirm = presetUiState.showBatchPreviewRefreshConfirm,
-                refreshConfirmPreset = presetUiState.activeBatchPreviewPreset ?: presetUiState.batchPreviewResult?.preset,
-                batchPreviewCount = batchConfigState.batchPreviewCount,
-                onRefreshConfirm = {
-                    mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) }
-                    run {
-        mainViewModel.startBatchPreview(
-                    preset = (it),
-                    apps = apps.toList(),
-                    selfPackageName = packageName,
-                    batchPreviewCount = batchConfigState.batchPreviewCount,
-                    generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
-                    originalParams = mainViewModel.params.value,
-                    cacheDir = cacheDir,
-                    loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
-                    defaultChoiceForMode = { mode, auto ->
-            when ((mode)) {
-                        LocalSeparationMode.Original -> PreviewChoice.Original
-                        LocalSeparationMode.Plate -> PreviewChoice.Full
-                        LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
-                        LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
-                        LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
-                        LocalSeparationMode.Auto -> (auto)
-                        LocalSeparationMode.Full -> PreviewChoice.Full
-                    }
-         },
-                    composeAssets = { session, selections -> run {
+            } else if (!mainViewModel.transfer.value.backupSheetVisible && mainViewModel.transfer.value.backupInBackground && mainViewModel.transfer.value.backupProgress != null) {
+                // 后台态不显示底部弹窗，但保留状态供设置页“备份中...”展示
+            }
 
-                    val params = mainViewModel.params.value
-                    return@run previewAssetsForSelections(
-                        session = (session),
-                        selections = (selections),
-                        edgePolishPercent = params.edgePolishPercent,
-                        foregroundSubjectPercent = params.foregroundSubjectPercent,
-                        rmbgTunedForeground = { __a0: IconCandidate -> run {
+            confirmState.pendingServiceConfirm?.let { request ->
+                ServiceConfirmDialog(
+                    request = request,
+                    onConfirm = { run {
 
-                        val params = mainViewModel.params.value
-                        return@run rmbgTunedForegroundRaw(
-                            candidate = __a0,
-                            rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
-                            rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
-                            rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
-                            rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
-                        )
-            } },
-                        liquidGlassEnabled = params.liquidGlassEnabled,
-                        liquidGlassBackgroundMistAlpha = params.liquidGlassBackgroundMistAlpha,
-                        liquidGlassTopAlpha = params.liquidGlassTopAlpha,
-                        liquidGlassBottomAlpha = params.liquidGlassBottomAlpha,
-                        liquidGlassBottomDarkAlpha = params.liquidGlassBottomDarkAlpha,
-                        liquidGlassOuterWidth = params.liquidGlassOuterWidth,
-                        liquidGlassRadius = params.liquidGlassRadius,
-                        liquidGlassSubjectScalePercent = params.liquidGlassSubjectScalePercent,
-                        liquidGlassSubjectShadowAlpha = params.liquidGlassSubjectShadowAlpha,
-                        liquidGlassSubjectOutlineWidth = params.liquidGlassSubjectOutlineWidth,
-                        liquidGlassSubjectInnerOutlineWidth = params.liquidGlassSubjectInnerOutlineWidth,
-                        liquidGlassSubjectOpacityPercent = params.liquidGlassSubjectOpacityPercent,
-                        foregroundShadowLevel = params.foregroundShadowLevel,
-                        nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
-                    )
-        } },
-                    onApplyMerged = { merged ->
-            paramsApplyTuningParams(
-                        params = (merged),
-                        rebuildCandidates = (false),
-                        persist = (false),
-                        captureUndo = (false),
-                        refreshPreview = (false),
-                        getBefore = { mainViewModel.params.value },
-                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
-                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
-                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
-                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
-                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
-                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
-                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
-                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
-                        setDraftEdgePolishText = { draftEdgePolishText = it },
-                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
-                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
-                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
-                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
-                        setDraftJsonParamsText = { draftJsonParamsText = it },
-                        onSaveLocalSeparation = { run {
-                paramsSaveLocalSeparationSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveImageTuning = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveLiquidGlass = { tuningActions.save() },
-                        onSaveGpt = { run {
-                paramsSaveGptSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
-                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
-                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
-                        )
-            } },
-                        onSaveUi = { persistUiState() },
-                        isBusy = { mainViewModel.shell.value.isBusy },
-                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
-                        onRefresh = tuningActions.refresh,
-                    )
-        
-                    },
-                    onRestoreOriginal = { original ->
-            paramsApplyTuningParams(
-                        params = (original),
-                        rebuildCandidates = (true),
-                        persist = (false),
-                        captureUndo = (false),
-                        refreshPreview = (true),
-                        getBefore = { mainViewModel.params.value },
-                        onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
-                        onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
-                        setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
-                        setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
-                        setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
-                        setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
-                        setDraftPlateRemovalText = { draftPlateRemovalText = it },
-                        setDraftShadowRemovalText = { draftShadowRemovalText = it },
-                        setDraftEdgePolishText = { draftEdgePolishText = it },
-                        setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
-                        setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
-                        setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
-                        setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                        setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                        setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                        setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                        setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                        setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                        setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                        setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                        setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                        setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                        setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
-                        setDraftJsonParamsText = { draftJsonParamsText = it },
-                        onSaveLocalSeparation = { run {
-                paramsSaveLocalSeparationSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveImageTuning = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onSaveLiquidGlass = { tuningActions.save() },
-                        onSaveGpt = { run {
-                paramsSaveGptSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                            getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
-                            getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
-                            getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
-                        )
-            } },
-                        onSaveUi = { persistUiState() },
-                        isBusy = { mainViewModel.shell.value.isBusy },
-                        getSession = { mainViewModel.previewSession.value.activeGenerationSession },
-                        onRefresh = tuningActions.refresh,
-                    )
-        
-                    },
-                    onSaveSnapshot = { p, dataList -> BatchPreviewStore.saveSnapshot(filesDir, p, dataList) },
+                val request = mainViewModel.confirm.value.pendingServiceConfirm ?: return@run
+                mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (null)) }
+                if ((true)) {
+                    request.onConfirm()
+                }
+    } },
+                    onDismiss = { run {
+
+                val request = mainViewModel.confirm.value.pendingServiceConfirm ?: return@run
+                mainViewModel.updateConfirm { it -> it.copy(pendingServiceConfirm = (null)) }
+                if ((false)) {
+                    request.onConfirm()
+                }
+    } },
                 )
-    }
-                },
-                onRefreshDismiss = { mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) } },
-            )
-}
-val __act1 = LocalContext.current
-
-            // 热修复：shellState 已提升至 ArtPlusScreen 顶层，此处复用（删重复订阅）。
-            // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
-            OnboardingDialog(
-                visible = shellState.onboardingVisible,
-                isBusy = shellState.isBusy,
-                onSkip = {
-                    // 允许通过外部点击关闭视为跳过
-                    getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
-                        .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
-                    mainViewModel.updateShell { it -> it.copy(onboardingVisible = (false)) }
-                    run {
-        pickerToastStatus(
-                    message = ("已跳过，可在设置-导出引导中重新进入"),
-                    postOnUi = { text -> runOnUiThread { setStatus((text)) } },
-                    showToast = { text ->
-                        runOnUiThread {
-                            Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
+            }
+        RootWriteConfirmDialog(
+                    request = confirmState.pendingRootWriteConfirm,
+                    rememberSkip = confirmState.rootWriteConfirmRememberSkip,
+                    onDismiss = { mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) } },
+                    onToggleSkip = { mainViewModel.updateConfirm { it -> it.copy(rootWriteConfirmRememberSkip = (!mainViewModel.confirm.value.rootWriteConfirmRememberSkip)) } },
+                    onConfirm = { request, shouldSkip ->
+                        val onConfirm = request.onConfirm
+                        mainViewModel.updateConfirm { it -> it.copy(pendingRootWriteConfirm = (null)) }
+                        if (shouldSkip) {
+                            mainViewModel.updateConfirm { it -> it.copy(autoConfirmRootWrite = (true)) }
+                            persistUiState()
                         }
+                        onConfirm()
                     },
                 )
+                // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
+                // Phase 5：confirmState 已提升至 ArtPlusScreen 顶层，此处复用（删重复订阅）。
+                RefreshConfirmDialog(
+                    visible = confirmState.refreshConfirmVisible,
+                    rememberAuto = confirmState.refreshConfirmRememberAuto,
+                    onDismiss = { mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (false)) } },
+                    onToggleRemember = { mainViewModel.updateConfirm { it -> it.copy(refreshConfirmRememberAuto = (!mainViewModel.confirm.value.refreshConfirmRememberAuto)) } },
+                    onConfirm = { shouldAuto ->
+                        mainViewModel.updateConfirm { it -> it.copy(refreshConfirmVisible = (false)) }
+                        if (shouldAuto) {
+                            mainViewModel.updateConfirm { it -> it.copy(autoConfirmRefresh = (true)) }
+                            persistUiState()
+                        }
+                        run {
+            mainViewModel.refreshArtPlusIconsAsync(
+                        contentResolver = contentResolver,
+                        apkPath = applicationInfo.sourceDir,
+                    )
+        }
+                    },
+                )
+            run {
+        PresetPageDialogs(
+                    saveDialogVisible = presetUiState.presetSaveDialogVisible,
+                    saveInitialName = presetUiState.presetSaveName,
+                    onSaveConfirm = { name ->
+                        mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
+            saveCurrentAsPreset(
+                        rawName = (name),
+                        store = presetStore,
+                        current = mainViewModel.params.value,
+                        viewModel = mainViewModel,
+                        onSaved = { preset, msg ->
+                            mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (preset.id)) }
+                            mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (preset.params)) }
+                            mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                            mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) }
+                            setStatus((msg))
+                        },
+                        onStatus = { setStatus((it)) },
+                    )
+    
+                    },
+                    onSaveDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetSaveDialogVisible = (false)) } },
+                    renameTarget = presetUiState.presetRenameTarget,
+                    onRenameConfirm = { id, name ->
+                        mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) }
+            renamePreset(
+                        id = (id),
+                        rawName = (name),
+                        store = presetStore,
+                        viewModel = mainViewModel,
+                        onRenamed = { _, msg ->
+                            mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                            setStatus((msg))
+                        },
+                        onStatus = { setStatus((it)) },
+                    )
+    
+                    },
+                    onRenameDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetRenameTarget = (null)) } },
+                    actionMenuTarget = presetUiState.presetActionMenuTarget,
+                    actionMenuBusy = mainViewModel.shell.value.isBusy,
+                    onActionMenuDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetActionMenuTarget = (null)) } },
+                    onActionApply = { run {
+            applyPreset(
+                        preset = (it),
+                        isBusy = mainViewModel.shell.value.isBusy,
+                        isGeneratingGptCandidate = mainViewModel.previewSession.value.isGeneratingGptCandidate,
+                        isGeneratingRmbgCandidate = mainViewModel.previewSession.value.isGeneratingRmbgCandidate,
+                        before = mainViewModel.params.value,
+                        viewModel = mainViewModel,
+                        onApplied = { p, merged, msg ->
+                paramsApplyTuningParams(
+                            params = (merged),
+                            rebuildCandidates = (true),
+                            persist = (true),
+                            captureUndo = (true),
+                            refreshPreview = (true),
+                            getBefore = { mainViewModel.params.value },
+                            onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                            onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                            setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                            setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                            setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                            setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                            setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                            setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                            setDraftEdgePolishText = { draftEdgePolishText = it },
+                            setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                            setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                            setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                            setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                            setDraftJsonParamsText = { draftJsonParamsText = it },
+                            onSaveLocalSeparation = { run {
+                    paramsSaveLocalSeparationSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveImageTuning = { run {
+                    paramsSaveImageTuningSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveGpt = { run {
+                    paramsSaveGptSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                                getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                                getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                                getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                            )
+                } },
+                            onSaveUi = { persistUiState() },
+                            isBusy = { mainViewModel.shell.value.isBusy },
+                            getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                            onRefresh = tuningActions.refresh,
+                        )
+        
+                            presetStore.activePresetId = p.id
+                            mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
+                            mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (p.params)) }
+                            setStatus((msg))
+                        },
+                        onStatus = { setStatus((it)) },
+                    )
+        } },
+                    onActionPreview = { mainViewModel.openBatchPreviewForPreset(preset = (it), filesDir = filesDir) },
+                    onActionOverwrite = { run {
+            overwritePreset(
+                        preset = (it),
+                        store = presetStore,
+                        current = mainViewModel.params.value,
+                        viewModel = mainViewModel,
+                        onOverwritten = { p, cur, msg ->
+                            mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (p.id)) }
+                            mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (cur)) }
+                            mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                            setStatus((msg))
+                        },
+                        onStatus = { setStatus((it)) },
+                    )
+        } },
+                    onActionRename = { mainViewModel.updatePresetUi { v -> v.copy(presetRenameTarget = (it)) } },
+                    onActionExportSingle = { run {
+            exportSinglePresetToClipboard(
+                        preset = (it),
+                        store = presetStore,
+                        clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager,
+                        onStatus = { setStatus((it)) },
+                    )
+        } },
+                    onActionDelete = { mainViewModel.updatePresetUi { v -> v.copy(presetDeleteConfirmTarget = (it)) } },
+                    deleteConfirmTarget = presetUiState.presetDeleteConfirmTarget,
+                    onDeleteDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetDeleteConfirmTarget = (null)) } },
+                    onDeleteConfirm = { run {
+            deletePreset(
+                        id = (it),
+                        filesDir = filesDir,
+                        store = presetStore,
+                        viewModel = mainViewModel,
+                        activeBatchPreviewPresetId = mainViewModel.presetUi.value.activeBatchPreviewPreset?.id,
+                        batchPreviewResultPresetId = mainViewModel.presetUi.value.batchPreviewResult?.preset?.id,
+                        currentPage = mainViewModel.shell.value.currentPage,
+                        activePresetId = mainViewModel.presetUi.value.activePresetId,
+                        onBatchPreviewReset = {
+                            mainViewModel.updatePresetUi { it -> it.copy(activeBatchPreviewPreset = (null)) }
+                            mainViewModel.updatePresetUi { it -> it.copy(batchPreviewResult = (null)) }
+                        },
+                        onNavigateHome = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
+                        onActiveCleared = {
+                            mainViewModel.updatePresetUi { it -> it.copy(activePresetId = (null)) }
+                            mainViewModel.updatePresetUi { it -> it.copy(activePresetBaseParams = (null)) }
+                        },
+                        onBumpVersion = { mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) } },
+                        onStatus = { setStatus((it)) },
+                    )
+        } },
+                    importDialogVisible = presetUiState.presetImportDialogVisible,
+                    onImportConfirm = { text ->
+            importPresetsFromText(
+                        text = (text),
+                        store = presetStore,
+                        onApplied = { msg ->
+                            mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) }
+                            mainViewModel.updatePresetUi { it -> it.copy(presetImportText = ("")) }
+                            mainViewModel.updatePresetUi { it -> it.copy(presetListVersion = it.presetListVersion + (1)) }
+                            setStatus((msg))
+                        },
+                    )
+         },
+                    onImportDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetImportDialogVisible = (false)) } },
+                    batchPreviewConfirmTarget = presetUiState.presetBatchPreviewConfirmTarget,
+                    onBatchPreviewConfirm = {
+                        mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) }
+                        run {
+            mainViewModel.startBatchPreview(
+                        preset = (it),
+                        apps = apps.toList(),
+                        selfPackageName = packageName,
+                        batchPreviewCount = batchConfigState.batchPreviewCount,
+                        generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
+                        originalParams = mainViewModel.params.value,
+                        cacheDir = cacheDir,
+                        loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
+                        defaultChoiceForMode = { mode, auto ->
+                when ((mode)) {
+                            LocalSeparationMode.Original -> PreviewChoice.Original
+                            LocalSeparationMode.Plate -> PreviewChoice.Full
+                            LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
+                            LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+                            LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
+                            LocalSeparationMode.Auto -> (auto)
+                            LocalSeparationMode.Full -> PreviewChoice.Full
+                        }
+             },
+                        composeAssets = { session, selections -> run {
+
+                        val params = mainViewModel.params.value
+                        return@run previewAssetsForSelections(
+                            session = (session),
+                            selections = (selections),
+                            edgePolishPercent = params.edgePolishPercent,
+                            foregroundSubjectPercent = params.foregroundSubjectPercent,
+                            rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                            val params = mainViewModel.params.value
+                            return@run rmbgTunedForegroundRaw(
+                                candidate = __a0,
+                                rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                                rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                                rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                                rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                            )
+                } },
+                            foregroundShadowLevel = params.foregroundShadowLevel,
+                            nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+                        )
+            } },
+                        onApplyMerged = { merged ->
+                paramsApplyTuningParams(
+                            params = (merged),
+                            rebuildCandidates = (false),
+                            persist = (false),
+                            captureUndo = (false),
+                            refreshPreview = (false),
+                            getBefore = { mainViewModel.params.value },
+                            onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                            onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                            setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                            setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                            setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                            setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                            setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                            setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                            setDraftEdgePolishText = { draftEdgePolishText = it },
+                            setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                            setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                            setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                            setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                            setDraftJsonParamsText = { draftJsonParamsText = it },
+                            onSaveLocalSeparation = { run {
+                    paramsSaveLocalSeparationSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveImageTuning = { run {
+                    paramsSaveImageTuningSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveGpt = { run {
+                    paramsSaveGptSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                                getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                                getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                                getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                            )
+                } },
+                            onSaveUi = { persistUiState() },
+                            isBusy = { mainViewModel.shell.value.isBusy },
+                            getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                            onRefresh = tuningActions.refresh,
+                        )
+        
+                        },
+                        onRestoreOriginal = { original ->
+                paramsApplyTuningParams(
+                            params = (original),
+                            rebuildCandidates = (true),
+                            persist = (false),
+                            captureUndo = (false),
+                            refreshPreview = (true),
+                            getBefore = { mainViewModel.params.value },
+                            onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                            onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                            setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                            setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                            setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                            setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                            setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                            setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                            setDraftEdgePolishText = { draftEdgePolishText = it },
+                            setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                            setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                            setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                            setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                            setDraftJsonParamsText = { draftJsonParamsText = it },
+                            onSaveLocalSeparation = { run {
+                    paramsSaveLocalSeparationSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveImageTuning = { run {
+                    paramsSaveImageTuningSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveGpt = { run {
+                    paramsSaveGptSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                                getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                                getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                                getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                            )
+                } },
+                            onSaveUi = { persistUiState() },
+                            isBusy = { mainViewModel.shell.value.isBusy },
+                            getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                            onRefresh = tuningActions.refresh,
+                        )
+        
+                        },
+                        onSaveSnapshot = { p, dataList -> BatchPreviewStore.saveSnapshot(filesDir, p, dataList) },
+                    )
+        }
+                    },
+                    onBatchPreviewConfirmDismiss = { mainViewModel.updatePresetUi { it -> it.copy(presetBatchPreviewConfirmTarget = (null)) } },
+                    batchPreviewProgress = presetUiState.batchPreviewProgress,
+                    onCancelBatchPreview = { mainViewModel.updatePresetUi { it -> it.copy(batchPreviewCancelled = (true)) } },
+                    showRefreshConfirm = presetUiState.showBatchPreviewRefreshConfirm,
+                    refreshConfirmPreset = presetUiState.activeBatchPreviewPreset ?: presetUiState.batchPreviewResult?.preset,
+                    batchPreviewCount = batchConfigState.batchPreviewCount,
+                    onRefreshConfirm = {
+                        mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) }
+                        run {
+            mainViewModel.startBatchPreview(
+                        preset = (it),
+                        apps = apps.toList(),
+                        selfPackageName = packageName,
+                        batchPreviewCount = batchConfigState.batchPreviewCount,
+                        generatedPackageNames = mainViewModel.picker.value.generatedPackageNames,
+                        originalParams = mainViewModel.params.value,
+                        cacheDir = cacheDir,
+                        loadIcon = { app -> app.applicationInfo.loadIcon(packageManager) },
+                        defaultChoiceForMode = { mode, auto ->
+                when ((mode)) {
+                            LocalSeparationMode.Original -> PreviewChoice.Original
+                            LocalSeparationMode.Plate -> PreviewChoice.Full
+                            LocalSeparationMode.ComposedBackground -> PreviewChoice.ComposedBackground
+                            LocalSeparationMode.ComponentSubject -> PreviewChoice.ComponentSubject
+                            LocalSeparationMode.ComponentBackground -> PreviewChoice.ComponentBackground
+                            LocalSeparationMode.Auto -> (auto)
+                            LocalSeparationMode.Full -> PreviewChoice.Full
+                        }
+             },
+                        composeAssets = { session, selections -> run {
+
+                        val params = mainViewModel.params.value
+                        return@run previewAssetsForSelections(
+                            session = (session),
+                            selections = (selections),
+                            edgePolishPercent = params.edgePolishPercent,
+                            foregroundSubjectPercent = params.foregroundSubjectPercent,
+                            rmbgTunedForeground = { __a0: IconCandidate -> run {
+
+                            val params = mainViewModel.params.value
+                            return@run rmbgTunedForegroundRaw(
+                                candidate = __a0,
+                                rmbgAlphaStrengthPercent = params.rmbgAlphaStrengthPercent,
+                                rmbgEdgeAdjustPercent = params.rmbgEdgeAdjustPercent,
+                                rmbgEdgeFeatherPercent = params.rmbgEdgeFeatherPercent,
+                                rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
+                            )
+                } },
+                            foregroundShadowLevel = params.foregroundShadowLevel,
+                            nightSubjectLightBackgroundEnabled = params.nightSubjectLightBackgroundEnabled,
+                        )
+            } },
+                        onApplyMerged = { merged ->
+                paramsApplyTuningParams(
+                            params = (merged),
+                            rebuildCandidates = (false),
+                            persist = (false),
+                            captureUndo = (false),
+                            refreshPreview = (false),
+                            getBefore = { mainViewModel.params.value },
+                            onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                            onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                            setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                            setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                            setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                            setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                            setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                            setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                            setDraftEdgePolishText = { draftEdgePolishText = it },
+                            setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                            setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                            setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                            setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                            setDraftJsonParamsText = { draftJsonParamsText = it },
+                            onSaveLocalSeparation = { run {
+                    paramsSaveLocalSeparationSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveImageTuning = { run {
+                    paramsSaveImageTuningSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveGpt = { run {
+                    paramsSaveGptSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                                getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                                getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                                getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                            )
+                } },
+                            onSaveUi = { persistUiState() },
+                            isBusy = { mainViewModel.shell.value.isBusy },
+                            getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                            onRefresh = tuningActions.refresh,
+                        )
+        
+                        },
+                        onRestoreOriginal = { original ->
+                paramsApplyTuningParams(
+                            params = (original),
+                            rebuildCandidates = (true),
+                            persist = (false),
+                            captureUndo = (false),
+                            refreshPreview = (true),
+                            getBefore = { mainViewModel.params.value },
+                            onCaptureUndo = { mainViewModel.updatePreviewSession { v -> v.copy(lastParamsSnapshot = (it)) } },
+                            onParamsApplied = { before, applied, capture -> mainViewModel.onParamsApplied(before = before, applied = applied, captureUndo = capture) },
+                            setDraftForegroundSubjectPercentText = { draftForegroundSubjectPercentText = it },
+                            setDraftForegroundShadowLevelText = { draftForegroundShadowLevelText = it },
+                            setDraftMonochromeThemeScaleText = { draftMonochromeThemeScaleText = it },
+                            setDraftBackgroundSeparationText = { draftBackgroundSeparationText = it },
+                            setDraftPlateRemovalText = { draftPlateRemovalText = it },
+                            setDraftShadowRemovalText = { draftShadowRemovalText = it },
+                            setDraftEdgePolishText = { draftEdgePolishText = it },
+                            setDraftRmbgAlphaStrengthText = { draftRmbgAlphaStrengthText = it },
+                            setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
+                            setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
+                            setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
+                            setDraftJsonParamsText = { draftJsonParamsText = it },
+                            onSaveLocalSeparation = { run {
+                    paramsSaveLocalSeparationSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveImageTuning = { run {
+                    paramsSaveImageTuningSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                            )
+                } },
+                            onSaveGpt = { run {
+                    paramsSaveGptSettings(
+                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                getParams = { mainViewModel.params.value },
+                                getGptApiKey = { mainViewModel.gptRmbgSettings.value.gptApiKey },
+                                getGptModelId = { mainViewModel.gptRmbgSettings.value.gptModelId },
+                                getGptBaseUrl = { mainViewModel.gptRmbgSettings.value.gptBaseUrl },
+                            )
+                } },
+                            onSaveUi = { persistUiState() },
+                            isBusy = { mainViewModel.shell.value.isBusy },
+                            getSession = { mainViewModel.previewSession.value.activeGenerationSession },
+                            onRefresh = tuningActions.refresh,
+                        )
+        
+                        },
+                        onSaveSnapshot = { p, dataList -> BatchPreviewStore.saveSnapshot(filesDir, p, dataList) },
+                    )
+        }
+                    },
+                    onRefreshDismiss = { mainViewModel.updatePresetUi { it -> it.copy(showBatchPreviewRefreshConfirm = (false)) } },
+                )
     }
-                },
-                onChooseDir = {
-                    // 不在此关闭，等待 chooseTreeLauncher 回调中关闭
-                    chooseTreeLauncher.launch(null)
-                },
-            )
+    val __act1 = LocalContext.current
+
+                // 热修复：shellState 已提升至 ArtPlusScreen 顶层，此处复用（删重复订阅）。
+                // Slice 3.1: Activity侧collect读VM单源；写经薄wrapper（重构期间保留）。
+                OnboardingDialog(
+                    visible = shellState.onboardingVisible,
+                    isBusy = shellState.isBusy,
+                    onSkip = {
+                        // 允许通过外部点击关闭视为跳过
+                        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                            .putBoolean(PREF_HAS_COMPLETED_ONBOARDING, true).apply()
+                        mainViewModel.updateShell { it -> it.copy(onboardingVisible = (false)) }
+                        run {
+            pickerToastStatus(
+                        message = ("已跳过，可在设置-导出引导中重新进入"),
+                        postOnUi = { text -> runOnUiThread { setStatus((text)) } },
+                        showToast = { text ->
+                            runOnUiThread {
+                                Toast.makeText(__act1, text, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    )
+        }
+                    },
+                    onChooseDir = {
+                        // 不在此关闭，等待 chooseTreeLauncher 回调中关闭
+                        chooseTreeLauncher.launch(null)
+                    },
+                )
+        }
     }
 }
 

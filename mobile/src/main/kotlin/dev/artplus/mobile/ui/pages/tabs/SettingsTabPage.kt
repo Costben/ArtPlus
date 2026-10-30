@@ -84,7 +84,6 @@ PagerShellPage(
                     getParams = { mainViewModel.params.value },
                 )
     } },
-                saveLiquidGlass = { tuningActions.save() },
                 saveUi = { persistUiState() },
                 setGptSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(gptSettingsSaveStatus = (it)) } },
                 setRmbgSaveStatus = { mainViewModel.updateGptRmbgSettings { v -> v.copy(rmbgComponentSaveStatus = (it)) } },

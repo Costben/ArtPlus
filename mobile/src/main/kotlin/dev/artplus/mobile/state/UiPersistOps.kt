@@ -5,6 +5,7 @@ import dev.artplus.mobile.MainActivity
 import dev.artplus.mobile.PREFS_NAME
 import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_CATEGORY
 import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_TAB
+import dev.artplus.mobile.PREF_ADVANCED_SETTINGS_TAB_CHOSEN
 import dev.artplus.mobile.PREF_AUTO_CONFIRM_REFRESH
 import dev.artplus.mobile.PREF_AUTO_CONFIRM_ROOT_WRITE
 import dev.artplus.mobile.PREF_BATCH_PREVIEW_COLUMNS
@@ -62,6 +63,7 @@ internal fun MainActivity.persistUiState() {
         .putString(PREF_QUERY_TEXT, picker.queryText)
         .putString(PREF_ADVANCED_SETTINGS_CATEGORY, shell.advancedSettingsCategory.name)
         .putString(PREF_ADVANCED_SETTINGS_TAB, shell.advancedSettingsTab.name)
+        .putBoolean(PREF_ADVANCED_SETTINGS_TAB_CHOSEN, shell.advancedSettingsTabChosen)
         .putString(PREF_PREVIEW_PACKAGE_NAME, preview.previewPackageName)
         .putString(PREF_PREVIEW_DIR_PATH, preview.previewDirPath)
         .putBoolean(PREF_PREVIEW_STRIP_ENABLED, preview.previewStripEnabled)

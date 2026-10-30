@@ -30,7 +30,7 @@ import dev.artplus.mobile.ui.cards.PreviewSelections
  * ForegroundShadowParams）与既有 imaging 纯函数（monochromeAlpha /
  * hasForegroundTonalRange / isUsableNativeMonochrome / cleanNativeMonochrome /
  * trimMonochromeEdge / polishForegroundEdges / normalDarkForeground /
- * scaleBitmapAroundAlphaCenter / normalizeForegroundSubjectSize / liquidGlassBackgroundForSize /
+ * scaleBitmapAroundAlphaCenter / normalizeForegroundSubjectSize /
  * foregroundForSize / alphaBounds / meaningfulAlphaBounds / meaningfulAlphaCentroid /
  * alphaCoverage / meaningfulAlphaCoverage / hasAutoCropRisk / luma）及 TuningParams.kt 常量。
  *
@@ -43,6 +43,20 @@ import dev.artplus.mobile.ui.cards.PreviewSelections
  * 以 `rmbgTunedForeground: (IconCandidate) -> Bitmap?` lambda 注入，wrapper 侧传
  * `::rmbgTunedForegroundRaw`，行为等价。
  */
+
+/** 输出尺寸的背景：只做缩放，不做任何玻璃化处理。 */
+internal fun iconBackgroundForSize(source: Bitmap, width: Int, height: Int): Bitmap =
+    if (source.width == width && source.height == height) source else resizeBitmap(source, width, height)
+
+/** 输出尺寸的前景：居中后按档位加投影，不做玻璃前景描边/透明度/缩放。 */
+internal fun iconForegroundForSize(source: Bitmap, width: Int, height: Int, shadowLevel: Int): Bitmap {
+    val sized = if (source.width == width && source.height == height) {
+        source
+    } else {
+        centerOnCanvas(source, width, height)
+    }
+    return applyForegroundShadow(sized, shadowLevel)
+}
 
 internal fun candidateOrFallback(
     session: GenerationSession,
@@ -425,36 +439,13 @@ internal fun renderCandidateForeground(
     edgePolishPercent: Int,
     foregroundSubjectPercent: Int,
     rmbgTunedForeground: (IconCandidate) -> Bitmap?,
-    liquidGlassEnabled: Boolean,
-    liquidGlassSubjectScalePercent: Int,
-    liquidGlassSubjectShadowAlpha: Int,
-    liquidGlassSubjectOutlineWidth: Int,
-    liquidGlassSubjectInnerOutlineWidth: Int,
-    liquidGlassSubjectOpacityPercent: Int,
-    liquidGlassTopAlpha: Int,
-    liquidGlassBottomAlpha: Int,
-    liquidGlassBottomDarkAlpha: Int,
-    liquidGlassOuterWidth: Int,
-    liquidGlassRadius: Int,
     foregroundShadowLevel: Int,
 ): Bitmap =
-    foregroundForSize(
+    iconForegroundForSize(
         source = renderCandidateForegroundBase(candidate, edgePolishPercent, foregroundSubjectPercent, rmbgTunedForeground),
         width = SIZE_1X1,
         height = SIZE_1X1,
-        liquidGlassEnabled = liquidGlassEnabled,
-        liquidGlassSubjectScalePercent = liquidGlassSubjectScalePercent,
-        liquidGlassSubjectShadowAlpha = liquidGlassSubjectShadowAlpha,
-        liquidGlassSubjectOutlineWidth = liquidGlassSubjectOutlineWidth,
-        liquidGlassSubjectInnerOutlineWidth = liquidGlassSubjectInnerOutlineWidth,
-        liquidGlassSubjectOpacityPercent = liquidGlassSubjectOpacityPercent,
-        liquidGlassTopAlpha = liquidGlassTopAlpha,
-        liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-        liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-        liquidGlassOuterWidth = liquidGlassOuterWidth,
-        liquidGlassRadius = liquidGlassRadius,
-        applyShadow = { bitmap -> applyForegroundShadow(bitmap, foregroundShadowLevel) },
-        renderSubjectShadow = ::subjectShadowBitmap,
+        shadowLevel = foregroundShadowLevel,
     )
 
 internal fun previewAssetsForSelections(
@@ -463,18 +454,6 @@ internal fun previewAssetsForSelections(
     edgePolishPercent: Int,
     foregroundSubjectPercent: Int,
     rmbgTunedForeground: (IconCandidate) -> Bitmap?,
-    liquidGlassEnabled: Boolean,
-    liquidGlassBackgroundMistAlpha: Int,
-    liquidGlassTopAlpha: Int,
-    liquidGlassBottomAlpha: Int,
-    liquidGlassBottomDarkAlpha: Int,
-    liquidGlassOuterWidth: Int,
-    liquidGlassRadius: Int,
-    liquidGlassSubjectScalePercent: Int,
-    liquidGlassSubjectShadowAlpha: Int,
-    liquidGlassSubjectOutlineWidth: Int,
-    liquidGlassSubjectInnerOutlineWidth: Int,
-    liquidGlassSubjectOpacityPercent: Int,
     foregroundShadowLevel: Int,
     nightSubjectLightBackgroundEnabled: Boolean,
 ): PreviewAssets {
@@ -484,31 +463,9 @@ internal fun previewAssetsForSelections(
         edgePolishPercent = edgePolishPercent,
         foregroundSubjectPercent = foregroundSubjectPercent,
         rmbgTunedForeground = rmbgTunedForeground,
-        liquidGlassEnabled = liquidGlassEnabled,
-        liquidGlassSubjectScalePercent = liquidGlassSubjectScalePercent,
-        liquidGlassSubjectShadowAlpha = liquidGlassSubjectShadowAlpha,
-        liquidGlassSubjectOutlineWidth = liquidGlassSubjectOutlineWidth,
-        liquidGlassSubjectInnerOutlineWidth = liquidGlassSubjectInnerOutlineWidth,
-        liquidGlassSubjectOpacityPercent = liquidGlassSubjectOpacityPercent,
-        liquidGlassTopAlpha = liquidGlassTopAlpha,
-        liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-        liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-        liquidGlassOuterWidth = liquidGlassOuterWidth,
-        liquidGlassRadius = liquidGlassRadius,
         foregroundShadowLevel = foregroundShadowLevel,
     )
-    val lightRecbg = liquidGlassBackgroundForSize(
-        source = light.recbg,
-        width = SIZE_1X1,
-        height = SIZE_1X1,
-        liquidGlassEnabled = liquidGlassEnabled,
-        liquidGlassBackgroundMistAlpha = liquidGlassBackgroundMistAlpha,
-        liquidGlassTopAlpha = liquidGlassTopAlpha,
-        liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-        liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-        liquidGlassOuterWidth = liquidGlassOuterWidth,
-        liquidGlassRadius = liquidGlassRadius,
-    )
+    val lightRecbg = iconBackgroundForSize(light.recbg, SIZE_1X1, SIZE_1X1)
 
     val night = candidateWithCustomOverrides(session, PreviewMode.NormalDark, selections.normalDark)
     val nightPreview = run {
@@ -517,31 +474,9 @@ internal fun previewAssetsForSelections(
             edgePolishPercent = edgePolishPercent,
             foregroundSubjectPercent = foregroundSubjectPercent,
             rmbgTunedForeground = rmbgTunedForeground,
-            liquidGlassEnabled = liquidGlassEnabled,
-            liquidGlassSubjectScalePercent = liquidGlassSubjectScalePercent,
-            liquidGlassSubjectShadowAlpha = liquidGlassSubjectShadowAlpha,
-            liquidGlassSubjectOutlineWidth = liquidGlassSubjectOutlineWidth,
-            liquidGlassSubjectInnerOutlineWidth = liquidGlassSubjectInnerOutlineWidth,
-            liquidGlassSubjectOpacityPercent = liquidGlassSubjectOpacityPercent,
-            liquidGlassTopAlpha = liquidGlassTopAlpha,
-            liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-            liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-            liquidGlassOuterWidth = liquidGlassOuterWidth,
-            liquidGlassRadius = liquidGlassRadius,
             foregroundShadowLevel = foregroundShadowLevel,
         )
-        val nightRecbg = liquidGlassBackgroundForSize(
-            source = night.recbg,
-            width = SIZE_1X1,
-            height = SIZE_1X1,
-            liquidGlassEnabled = liquidGlassEnabled,
-            liquidGlassBackgroundMistAlpha = liquidGlassBackgroundMistAlpha,
-            liquidGlassTopAlpha = liquidGlassTopAlpha,
-            liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-            liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-            liquidGlassOuterWidth = liquidGlassOuterWidth,
-            liquidGlassRadius = liquidGlassRadius,
-        )
+        val nightRecbg = iconBackgroundForSize(night.recbg, SIZE_1X1, SIZE_1X1)
         normalDarkForeground(nightRecfg, nightRecbg, nightSubjectLightBackgroundEnabled)
     }
 
@@ -575,18 +510,6 @@ internal fun previewAssetsForCandidate(
     edgePolishPercent: Int,
     foregroundSubjectPercent: Int,
     rmbgTunedForeground: (IconCandidate) -> Bitmap?,
-    liquidGlassEnabled: Boolean,
-    liquidGlassBackgroundMistAlpha: Int,
-    liquidGlassTopAlpha: Int,
-    liquidGlassBottomAlpha: Int,
-    liquidGlassBottomDarkAlpha: Int,
-    liquidGlassOuterWidth: Int,
-    liquidGlassRadius: Int,
-    liquidGlassSubjectScalePercent: Int,
-    liquidGlassSubjectShadowAlpha: Int,
-    liquidGlassSubjectOutlineWidth: Int,
-    liquidGlassSubjectInnerOutlineWidth: Int,
-    liquidGlassSubjectOpacityPercent: Int,
     foregroundShadowLevel: Int,
     nightSubjectLightBackgroundEnabled: Boolean,
 ): PreviewAssets {
@@ -636,31 +559,9 @@ internal fun previewAssetsForCandidate(
         edgePolishPercent = edgePolishPercent,
         foregroundSubjectPercent = foregroundSubjectPercent,
         rmbgTunedForeground = rmbgTunedForeground,
-        liquidGlassEnabled = liquidGlassEnabled,
-        liquidGlassSubjectScalePercent = liquidGlassSubjectScalePercent,
-        liquidGlassSubjectShadowAlpha = liquidGlassSubjectShadowAlpha,
-        liquidGlassSubjectOutlineWidth = liquidGlassSubjectOutlineWidth,
-        liquidGlassSubjectInnerOutlineWidth = liquidGlassSubjectInnerOutlineWidth,
-        liquidGlassSubjectOpacityPercent = liquidGlassSubjectOpacityPercent,
-        liquidGlassTopAlpha = liquidGlassTopAlpha,
-        liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-        liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-        liquidGlassOuterWidth = liquidGlassOuterWidth,
-        liquidGlassRadius = liquidGlassRadius,
         foregroundShadowLevel = foregroundShadowLevel,
     )
-    val recbg = liquidGlassBackgroundForSize(
-        source = candidate.recbg,
-        width = SIZE_1X1,
-        height = SIZE_1X1,
-        liquidGlassEnabled = liquidGlassEnabled,
-        liquidGlassBackgroundMistAlpha = liquidGlassBackgroundMistAlpha,
-        liquidGlassTopAlpha = liquidGlassTopAlpha,
-        liquidGlassBottomAlpha = liquidGlassBottomAlpha,
-        liquidGlassBottomDarkAlpha = liquidGlassBottomDarkAlpha,
-        liquidGlassOuterWidth = liquidGlassOuterWidth,
-        liquidGlassRadius = liquidGlassRadius,
-    )
+    val recbg = iconBackgroundForSize(candidate.recbg, SIZE_1X1, SIZE_1X1)
     return PreviewAssets(
         recbg = recbg,
         recfg = recfg,

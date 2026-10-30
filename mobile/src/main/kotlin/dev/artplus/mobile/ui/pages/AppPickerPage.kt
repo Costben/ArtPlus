@@ -4,6 +4,12 @@ import android.app.AppOpsManager
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Process
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,11 +27,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -33,10 +41,17 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import java.io.File
 import io.github.suqi8.coui.kmp.basic.Scaffold
-import io.github.suqi8.coui.kmp.basic.TopAppBar
 import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
+import androidx.compose.runtime.mutableStateOf
+import io.github.suqi8.coui.kmp.basic.SmallTopAppBar
+import io.github.suqi8.coui.kmp.icon.extended.Delete
+import io.github.suqi8.coui.kmp.icon.extended.Refresh
+import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.utils.COUIPopupUtils
+import dev.artplus.mobile.ui.pages.picker.PickerAppListHeader
+import dev.artplus.mobile.ui.pages.picker.PickerMoreBall
 import dev.artplus.mobile.AppVisibility
 import dev.artplus.mobile.ICON_CACHE_SIZE
 import dev.artplus.mobile.MainActivity
@@ -44,7 +59,6 @@ import dev.artplus.mobile.PREFS_NAME
 import dev.artplus.mobile.PRELOAD_ICON_COUNT
 import dev.artplus.mobile.data.AppEntry
 import dev.artplus.mobile.data.getCachedAppIcon
-import dev.artplus.mobile.data.markPackageGenerated
 import dev.artplus.mobile.data.updateGeneratedPackageCache
 import dev.artplus.mobile.imaging.IconCandidate
 import dev.artplus.mobile.imaging.LocalSeparationMode
@@ -55,8 +69,9 @@ import dev.artplus.mobile.state.executeApplyCurrentBatch
 import dev.artplus.mobile.state.executeApplyPresetToSelectedApps
 import dev.artplus.mobile.state.launchUiFriendly
 import dev.artplus.mobile.state.loadCachedAppIconOp
+import dev.artplus.mobile.state.markPackageWritten
 import dev.artplus.mobile.state.persistUiState
-import dev.artplus.mobile.state.refreshGeneratedPackagesAsync
+import dev.artplus.mobile.state.refreshArtPlusModifiedPackagesAsync
 import dev.artplus.mobile.state.requestAppLoad
 import dev.artplus.mobile.state.setStatus
 import dev.artplus.mobile.state.toggleMultiSelectedPackage
@@ -77,7 +92,6 @@ import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveLocalSeparationSettings
 import dev.artplus.mobile.ui.pages.picker.AppIcon
-import dev.artplus.mobile.ui.pages.picker.AppMultiSelectActions
 import dev.artplus.mobile.ui.pages.picker.AppPickerControlsCard
 import dev.artplus.mobile.ui.pages.picker.AppRow
 import dev.artplus.mobile.ui.pages.picker.pickerAllFilteredSelected
@@ -90,9 +104,8 @@ import dev.artplus.mobile.ui.pages.picker.pickerRefreshPermissionState
 internal fun MainActivity.AppPickerPage(
     pageBackground: Color,
     filteredApps: List<AppEntry>,
-    scopeCount: Int,
-    generatedCount: Int,
-    ungeneratedCount: Int,
+    // 「显示系统应用」收口后的全量：概览计数用它，不受搜索词与分段筛选影响。
+    scopedApps: List<AppEntry>,
 ) {
     // 热修复：选择器渲染位订阅 picker/shell（StateFlow .value 裸读不触发重组，
     // 行高亮 AppRow selected/multi/generated/isBusy 全部 stale，点行写成功但不变色）。
@@ -101,72 +114,32 @@ internal fun MainActivity.AppPickerPage(
     val shellState by mainViewModel.shell.collectAsState()
     val scrollBehavior = rememberLinkedTopAppBarScrollBehavior()
 
+    // 进入选择器时静默对齐 AM 标记（一次 su），徽标不依赖冷启动后的手动刷新
+    LaunchedEffect(Unit) {
+        mainViewModel.refreshArtPlusModifiedPackagesAsync()
+    }
+
     // Backdrop for the ColorOS app bar material: the list only, never the bar itself.
     val appBarBackdrop = rememberLayerBackdrop {
         drawRect(pageBackground)
         drawContent()
     }
     val contentTopInset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
-        TopAppBarDefaults.ExpandedHeight
-    Scaffold(
-        // 内容从顶栏底下滚过（顶部留白在 contentPadding 里），COUI 才会给顶栏画玻璃材质。
-        edgeToEdge = true,
-        containerColor = pageBackground,
-        topBar = {
-            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
-                TopAppBar(
-                    title = "选择 APK",
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        TitleBarIconButton(
-                            icon = COUIIcons.ChevronBackward,
-                            contentDescription = "返回",
-                            enabled = !shellState.isBusy,
-                            onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
-                        )
-                    },
-                    gradientGlass = true,
-                    showDivider = false,
-                )
-            }
-        },
+        TopAppBarDefaults.SmallTopAppBarCenterHeight
 
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .layerBackdrop(appBarBackdrop)
-                .background(pageBackground)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .imePadding()
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(top = contentTopInset + 16.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item {
-                run {
-    AppPickerControlsCard(
-                filteredCount = ((filteredApps).size),
-                totalCount = (scopeCount),
-                generatedCount = (generatedCount),
-                ungeneratedCount = (ungeneratedCount),
-                multiCount = pickerState.multiSelectedPackageNames.size,
-                isScanning = pickerState.isScanningGeneratedPackages,
-                scanFailed = pickerState.generatedScanFailed,
-                isBusy = shellState.isBusy,
-                hasApps = apps.isNotEmpty(),
-                showSystemApps = pickerState.showSystemApps,
-                generatedFilter = pickerState.generatedFilter,
-                queryText = pickerState.queryText,
-                onRefreshGenerated = { run {
-        mainViewModel.refreshGeneratedPackagesAsync(
-                    entries = (apps.toList()),
-                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                )
-    } },
-                onReloadApps = { run {
+    // 批量动作从卡片里挪到顶栏和右下角的悬浮球：这里先备好回调。
+    val filteredPackageNames = remember(filteredApps) { filteredApps.map { it.packageName }.toSet() }
+    // 概览计数：和列表同一份口径（先按「显示系统应用」收口），只是不看搜索词和分段筛选。
+    val generatedCount = remember(scopedApps, pickerState.generatedPackageNames) {
+        scopedApps.count { it.packageName in pickerState.generatedPackageNames }
+    }
+    val amMarkedCount = remember(scopedApps, pickerState.artPlusModifiedPackageNames) {
+        scopedApps.count { it.packageName in pickerState.artPlusModifiedPackageNames }
+    }
+    var showMoreMenu by remember { mutableStateOf(false) }
+    val refreshApps: () -> Unit = { run {
         mainViewModel.requestAppLoad(
-                    refreshGenerated = (false),
+                    refreshGenerated = (true),
                     pm = packageManager,
                     iconCache = MainActivity.appIconCache,
                     cacheSize = ICON_CACHE_SIZE,
@@ -196,42 +169,16 @@ internal fun MainActivity.AppPickerPage(
                         }
                     },
                 )
-    } },
-                onToggleSystemApps = {
-                    mainViewModel.updatePicker { it -> it.copy(showSystemApps = !it.showSystemApps) }
-                    persistUiState()
-                },
-                onFilterSelected = {
-                    mainViewModel.updatePicker { v -> v.copy(generatedFilter = (it)) }
-                    mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
-                    persistUiState()
-                },
-                onQueryChange = {
-                    mainViewModel.updatePicker { v -> v.copy(queryText = (it)) }
-                    persistUiState()
-                },
-                onClearQuery = {
-                    mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
-                    persistUiState()
-                },
-                multiSelectContent = { run {
-
-                val filteredPackageNames = remember(((filteredApps))) { ((filteredApps)).map { it.packageName }.toSet() }
-                AppMultiSelectActions(
-                    selectedCount = pickerState.multiSelectedPackageNames.size,
-                    hasFiltered = filteredPackageNames.isNotEmpty(),
-                    allFilteredSelected = pickerAllFilteredSelected(filteredPackageNames, pickerState.multiSelectedPackageNames),
-                    isBusy = shellState.isBusy,
-                    onToggleFiltered = {
+    } }
+    val selectCurrent: () -> Unit = {
                         val allSelected = pickerAllFilteredSelected(filteredPackageNames, mainViewModel.picker.value.multiSelectedPackageNames)
                         mainViewModel.updatePicker { it -> it.copy(multiSelectedPackageNames = (if (allSelected) {
                             mainViewModel.picker.value.multiSelectedPackageNames - filteredPackageNames
                         } else {
                             mainViewModel.picker.value.multiSelectedPackageNames + filteredPackageNames
                         })) }
-                    },
-                    onClear = { mainViewModel.updatePicker { it -> it.copy(multiSelectedPackageNames = (emptySet())) } },
-                    onApplyPreset = { run {
+                    }
+    val applyCurrentPreset: () -> Unit = { run {
             mainViewModel.applyCurrentPresetBatch(
                         store = presetStore,
                         onRequestConfirm = { title, message, confirmLabel, onConfirm ->
@@ -272,17 +219,6 @@ internal fun MainActivity.AppPickerPage(
                                 setDraftRmbgEdgeFeatherText = { draftRmbgEdgeFeatherText = it },
                                 setDraftRmbgEdgeAdjustText = { draftRmbgEdgeAdjustText = it },
                                 setDraftRmbgWeakAlphaKeepText = { draftRmbgWeakAlphaKeepText = it },
-                                setDraftLiquidGlassRadiusText = { draftLiquidGlassRadiusText = it },
-                                setDraftLiquidGlassOuterWidthText = { draftLiquidGlassOuterWidthText = it },
-                                setDraftLiquidGlassTopAlphaText = { draftLiquidGlassTopAlphaText = it },
-                                setDraftLiquidGlassBottomAlphaText = { draftLiquidGlassBottomAlphaText = it },
-                                setDraftLiquidGlassBackgroundMistAlphaText = { draftLiquidGlassBackgroundMistAlphaText = it },
-                                setDraftLiquidGlassBottomDarkAlphaText = { draftLiquidGlassBottomDarkAlphaText = it },
-                                setDraftLiquidGlassSubjectScaleText = { draftLiquidGlassSubjectScaleText = it },
-                                setDraftLiquidGlassSubjectOutlineWidthText = { draftLiquidGlassSubjectOutlineWidthText = it },
-                                setDraftLiquidGlassSubjectInnerOutlineWidthText = { draftLiquidGlassSubjectInnerOutlineWidthText = it },
-                                setDraftLiquidGlassSubjectShadowAlphaText = { draftLiquidGlassSubjectShadowAlphaText = it },
-                                setDraftLiquidGlassSubjectOpacityText = { draftLiquidGlassSubjectOpacityText = it },
                                 setDraftJsonParamsText = { draftJsonParamsText = it },
                                 onSaveLocalSeparation = { run {
                         paramsSaveLocalSeparationSettings(
@@ -296,7 +232,6 @@ internal fun MainActivity.AppPickerPage(
                                     getParams = { mainViewModel.params.value },
                                 )
                     } },
-                                onSaveLiquidGlass = { tuningActions.save() },
                                 onSaveGpt = { run {
                         paramsSaveGptSettings(
                                     prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
@@ -410,11 +345,135 @@ internal fun MainActivity.AppPickerPage(
                         )
             } },
                     )
-        } },
+        } }
+
+    Scaffold(
+        // 内容从顶栏底下滚过（顶部留白在 contentPadding 里），COUI 才会给顶栏画玻璃材质。
+        edgeToEdge = true,
+        containerColor = pageBackground,
+        // 浮层要画玻璃，得在它声明处拿到页面内容录制的 backdrop。
+        popupHost = {
+            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
+                COUIPopupUtils.COUIPopupHost()
+            }
+        },
+        floatingActionButton = {
+            PickerMoreBall(
+                show = showMoreMenu,
+                canApplyPreset = !shellState.isBusy && pickerState.multiSelectedPackageNames.isNotEmpty(),
+                canSelectCurrent = !shellState.isBusy && filteredPackageNames.isNotEmpty(),
+                generatedCount = generatedCount,
+                ungeneratedCount = scopedApps.size - generatedCount,
+                amMarkedCount = amMarkedCount,
+                onShow = { showMoreMenu = true },
+                onDismissRequest = { showMoreMenu = false },
+                onApplyPreset = {
+                    showMoreMenu = false
+                    applyCurrentPreset()
+                },
+                onSelectCurrent = {
+                    showMoreMenu = false
+                    selectCurrent()
+                },
+            )
+        },
+        topBar = {
+            CompositionLocalProvider(LocalBackdrop provides appBarBackdrop) {
+                SmallTopAppBar(
+                    title = "选择 APK",
+                    scrollBehavior = scrollBehavior,
+                    navigationIcon = {
+                        TitleBarIconButton(
+                            icon = COUIIcons.ChevronBackward,
+                            contentDescription = "返回",
+                            enabled = !shellState.isBusy,
+                            onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.Home)) } },
+                        )
+                    },
+                    actions = {
+                        // 清空键排在刷新左边：顶栏 actions 是整排右对齐的，插在刷新后面会把它顶向屏幕中间。
+                        // 出现/消失走横向展开收起，而不是直接闪现。
+                        AnimatedVisibility(
+                            visible = pickerState.multiSelectedPackageNames.isNotEmpty(),
+                            enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                                expandHorizontally(
+                                    animationSpec = tween(durationMillis = 180),
+                                    expandFrom = Alignment.End,
+                                ),
+                            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                                shrinkHorizontally(
+                                    animationSpec = tween(durationMillis = 160),
+                                    shrinkTowards = Alignment.End,
+                                ),
+                        ) {
+                            // 用错误色标出这是破坏性操作。
+                            TitleBarIconButton(
+                                icon = COUIIcons.Delete,
+                                contentDescription = "清空多选",
+                                enabled = !shellState.isBusy,
+                                tint = COUITheme.colorScheme.error,
+                                onClick = {
+                                    mainViewModel.updatePicker { it -> it.copy(multiSelectedPackageNames = (emptySet())) }
+                                },
+                            )
+                        }
+                        // 刷新：列表与已生成扫描一起重来，原先拆成两个按钮。
+                        TitleBarIconButton(
+                            icon = COUIIcons.Refresh,
+                            contentDescription = "刷新",
+                            enabled = !shellState.isBusy,
+                            onClick = refreshApps,
+                        )
+                    },
+                    gradientGlass = true,
+                    showDivider = false,
                 )
-    } },
+            }
+        },
+
+    ) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .layerBackdrop(appBarBackdrop)
+                .background(pageBackground)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .imePadding()
+                .padding(horizontal = 16.dp),
+            // 底部留出悬浮球的净空：球 56dp + 16dp 边距 + 16dp 间隔，最后一列才不会被球压住。
+            contentPadding = PaddingValues(top = contentTopInset + 16.dp, bottom = 88.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                run {
+    AppPickerControlsCard(
+                showSystemApps = pickerState.showSystemApps,
+                generatedFilter = pickerState.generatedFilter,
+                queryText = pickerState.queryText,
+                onToggleSystemApps = {
+                    mainViewModel.updatePicker { it -> it.copy(showSystemApps = !it.showSystemApps) }
+                    persistUiState()
+                },
+                onFilterSelected = {
+                    mainViewModel.updatePicker { v -> v.copy(generatedFilter = (it)) }
+                    mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
+                    persistUiState()
+                },
+                onQueryChange = {
+                    mainViewModel.updatePicker { v -> v.copy(queryText = (it)) }
+                    persistUiState()
+                },
+                onClearQuery = {
+                    mainViewModel.updatePicker { it -> it.copy(queryText = ("")) }
+                    persistUiState()
+                },
+                
             )
 }
+            }
+            // 应用行自成一组，说明下面这一串是可比对选择的应用。
+            item(key = "apps_header") {
+                PickerAppListHeader(pickerState.multiSelectedPackageNames.size)
             }
             if (filteredApps.isEmpty()) {
                 item {
@@ -429,39 +488,7 @@ internal fun MainActivity.AppPickerPage(
                     mainViewModel.updatePicker { it -> it.copy(showSystemApps = (true)) }
                     persistUiState()
                 },
-                onRefresh = { run {
-        mainViewModel.requestAppLoad(
-                    refreshGenerated = (false),
-                    pm = packageManager,
-                    iconCache = MainActivity.appIconCache,
-                    cacheSize = ICON_CACHE_SIZE,
-                    preloadCount = PRELOAD_ICON_COUNT,
-                    prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                    markLoad = { didRequestAppLoad = true },
-                    onRefreshPermissions = { run {
-            pickerRefreshPermissionState(
-                        checkQueryPermission = { pickerCheckQueryPermission(packageManager, packageName) },
-                        hasUsage = {  ->
-                pickerHasUsageAccess(
-                            appOps = getSystemService(AppOpsManager::class.java),
-                            uid = Process.myUid(),
-                            packageName = packageName,
-                        )
-             },
-                        onResult = { queryGranted, usageGranted ->
-                            mainViewModel.updatePicker { it -> it.copy(packageListPermissionGranted = (queryGranted)) }
-                            mainViewModel.updatePicker { it -> it.copy(usageAccessGranted = (usageGranted)) }
-                        },
-                    )
-        } },
-                    applyEntries = { loaded ->
-                        androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
-                            apps.clear()
-                            apps.addAll(loaded)
-                        }
-                    },
-                )
-    } },
+                onRefresh = refreshApps,
             )
                 }
             } else {
@@ -476,6 +503,7 @@ internal fun MainActivity.AppPickerPage(
                 selected = (entry.packageName == pickerState.selectedPackageName),
                 multiSelected = (entry.packageName in pickerState.multiSelectedPackageNames),
                 generated = (entry.packageName in pickerState.generatedPackageNames),
+                amMarked = (entry.packageName in pickerState.artPlusModifiedPackageNames),
                 isBusy = shellState.isBusy,
                 onClick = ({
                                 run {
@@ -523,7 +551,7 @@ internal fun MainActivity.AppPickerPage(
                     )
         } },
                     onUi = { block -> runOnUiThread(block) },
-                    onMarkGenerated = { pkg -> mainViewModel.updatePicker { it -> it.copy(generatedPackageNames = (markPackageGenerated(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), mainViewModel.picker.value.generatedPackageNames, pkg))) } },
+                    onMarkGenerated = { pkg -> mainViewModel.markPackageWritten(getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), pkg) },
                     onBuildSession = { pkg, dir -> buildGeneratedPackageSession(pkg, dir) },
                     onCommitSession = { session, dir, e ->
                         mainViewModel.updatePreviewSession { it -> it.copy(activeGenerationSession = (session)) }

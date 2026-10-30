@@ -72,39 +72,6 @@ const val MAX_RMBG_EDGE_ADJUST_PERCENT = 100
 const val DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT = 100
 const val MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT = 0
 const val MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT = 100
-const val DEFAULT_LIQUID_GLASS_RADIUS = 95
-const val MIN_LIQUID_GLASS_RADIUS = 0
-const val MAX_LIQUID_GLASS_RADIUS = 240
-const val DEFAULT_LIQUID_GLASS_OUTER_WIDTH = 2
-const val MIN_LIQUID_GLASS_OUTER_WIDTH = 0
-const val MAX_LIQUID_GLASS_OUTER_WIDTH = 70
-const val DEFAULT_LIQUID_GLASS_TOP_ALPHA = 175
-const val DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA = 122
-const val MIN_LIQUID_GLASS_ALPHA = 0
-const val MAX_LIQUID_GLASS_ALPHA = 255
-const val DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA = 0
-const val MIN_LIQUID_GLASS_MIST_ALPHA = 0
-const val MAX_LIQUID_GLASS_MIST_ALPHA = 160
-const val DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA = 24
-const val MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA = 0
-const val MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA = 50
-const val DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT = 100
-const val MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT = 45
-const val MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT = 180
-const val DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH = 0
-const val DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH = 0
-const val MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH = 0
-const val MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH = 36
-const val DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA = 0
-const val MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA = 0
-const val MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA = 180
-const val DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = 100
-const val MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = 0
-const val MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = 100
-const val LIQUID_GLASS_SUBJECT_ALPHA_NORMALIZE_PERCENTILE = 0.96
-const val LIQUID_GLASS_SUBJECT_ALPHA_BODY_PERCENTILE = 0.90
-const val LIQUID_GLASS_SUBJECT_ALPHA_OUTLIER_CAP = 1.25
-const val LIQUID_GLASS_SUBJECT_SOLID_ALPHA_RATIO = 0.48f
 const val LEGACY_BACKGROUND_SEPARATION_MIN = 12.0
 const val LEGACY_BACKGROUND_SEPARATION_MAX = 420.0
 const val LEGACY_PLATE_REMOVAL_MIN = 0.0
@@ -499,18 +466,6 @@ data class TuningParams(
     val rmbgEdgeFeatherPercent: Int = DEFAULT_RMBG_EDGE_FEATHER_PERCENT,
     val rmbgEdgeAdjustPercent: Int = DEFAULT_RMBG_EDGE_ADJUST_PERCENT,
     val rmbgWeakAlphaKeepPercent: Int = DEFAULT_RMBG_WEAK_ALPHA_KEEP_PERCENT,
-    val liquidGlassEnabled: Boolean = false,
-    val liquidGlassRadius: Int = DEFAULT_LIQUID_GLASS_RADIUS,
-    val liquidGlassOuterWidth: Int = DEFAULT_LIQUID_GLASS_OUTER_WIDTH,
-    val liquidGlassTopAlpha: Int = DEFAULT_LIQUID_GLASS_TOP_ALPHA,
-    val liquidGlassBottomAlpha: Int = DEFAULT_LIQUID_GLASS_BOTTOM_ALPHA,
-    val liquidGlassBackgroundMistAlpha: Int = DEFAULT_LIQUID_GLASS_BACKGROUND_MIST_ALPHA,
-    val liquidGlassBottomDarkAlpha: Int = DEFAULT_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-    val liquidGlassSubjectScalePercent: Int = DEFAULT_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-    val liquidGlassSubjectOutlineWidth: Int = DEFAULT_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-    val liquidGlassSubjectInnerOutlineWidth: Int = DEFAULT_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH,
-    val liquidGlassSubjectShadowAlpha: Int = DEFAULT_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-    val liquidGlassSubjectOpacityPercent: Int = DEFAULT_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
     val adaptiveForegroundMode: String = "auto",
     val adaptiveDirectMaxCoveragePercent: Int = DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT,
     val adaptiveDirectMaxCoverageIncreasePercent: Int = DEFAULT_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT,
@@ -562,18 +517,6 @@ data class TuningParams(
         map["rmbg_edge_feather_percent"] = rmbgEdgeFeatherPercent.toString()
         map["rmbg_edge_adjust_percent"] = rmbgEdgeAdjustPercent.toString()
         map["rmbg_weak_alpha_keep_percent"] = rmbgWeakAlphaKeepPercent.toString()
-        map["liquid_glass_enabled"] = liquidGlassEnabled.toString()
-        map["liquid_glass_radius"] = liquidGlassRadius.toString()
-        map["liquid_glass_outer_width"] = liquidGlassOuterWidth.toString()
-        map["liquid_glass_top_alpha"] = liquidGlassTopAlpha.toString()
-        map["liquid_glass_bottom_alpha"] = liquidGlassBottomAlpha.toString()
-        map["liquid_glass_background_mist_alpha"] = liquidGlassBackgroundMistAlpha.toString()
-        map["liquid_glass_bottom_dark_alpha"] = liquidGlassBottomDarkAlpha.toString()
-        map["liquid_glass_subject_scale_percent"] = liquidGlassSubjectScalePercent.toString()
-        map["liquid_glass_subject_outline_width"] = liquidGlassSubjectOutlineWidth.toString()
-        map["liquid_glass_subject_inner_outline_width"] = liquidGlassSubjectInnerOutlineWidth.toString()
-        map["liquid_glass_subject_shadow_alpha"] = liquidGlassSubjectShadowAlpha.toString()
-        map["liquid_glass_subject_opacity_percent"] = liquidGlassSubjectOpacityPercent.toString()
         map["adaptive_foreground_mode"] = adaptiveForegroundMode
         map["adaptive_direct_max_coverage_percent"] = adaptiveDirectMaxCoveragePercent.toString()
         map["adaptive_direct_max_coverage_increase_percent"] = adaptiveDirectMaxCoverageIncreasePercent.toString()
@@ -721,73 +664,6 @@ data class TuningParams(
                     MIN_RMBG_WEAK_ALPHA_KEEP_PERCENT,
                     MAX_RMBG_WEAK_ALPHA_KEEP_PERCENT,
                     defaults.rmbgWeakAlphaKeepPercent,
-                ),
-                liquidGlassEnabled = boolParam("liquid_glass_enabled", defaults.liquidGlassEnabled),
-                liquidGlassRadius = intParam(
-                    "liquid_glass_radius",
-                    MIN_LIQUID_GLASS_RADIUS,
-                    MAX_LIQUID_GLASS_RADIUS,
-                    defaults.liquidGlassRadius,
-                ),
-                liquidGlassOuterWidth = intParam(
-                    "liquid_glass_outer_width",
-                    MIN_LIQUID_GLASS_OUTER_WIDTH,
-                    MAX_LIQUID_GLASS_OUTER_WIDTH,
-                    defaults.liquidGlassOuterWidth,
-                ),
-                liquidGlassTopAlpha = intParam(
-                    "liquid_glass_top_alpha",
-                    MIN_LIQUID_GLASS_ALPHA,
-                    MAX_LIQUID_GLASS_ALPHA,
-                    defaults.liquidGlassTopAlpha,
-                ),
-                liquidGlassBottomAlpha = intParam(
-                    "liquid_glass_bottom_alpha",
-                    MIN_LIQUID_GLASS_ALPHA,
-                    MAX_LIQUID_GLASS_ALPHA,
-                    defaults.liquidGlassBottomAlpha,
-                ),
-                liquidGlassBackgroundMistAlpha = intParam(
-                    "liquid_glass_background_mist_alpha",
-                    MIN_LIQUID_GLASS_MIST_ALPHA,
-                    MAX_LIQUID_GLASS_MIST_ALPHA,
-                    defaults.liquidGlassBackgroundMistAlpha,
-                ),
-                liquidGlassBottomDarkAlpha = intParam(
-                    "liquid_glass_bottom_dark_alpha",
-                    MIN_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-                    MAX_LIQUID_GLASS_BOTTOM_DARK_ALPHA,
-                    defaults.liquidGlassBottomDarkAlpha,
-                ),
-                liquidGlassSubjectScalePercent = intParam(
-                    "liquid_glass_subject_scale_percent",
-                    MIN_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-                    MAX_LIQUID_GLASS_SUBJECT_SCALE_PERCENT,
-                    defaults.liquidGlassSubjectScalePercent,
-                ),
-                liquidGlassSubjectOutlineWidth = intParam(
-                    "liquid_glass_subject_outline_width",
-                    MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                    MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                    defaults.liquidGlassSubjectOutlineWidth,
-                ),
-                liquidGlassSubjectInnerOutlineWidth = intParam(
-                    "liquid_glass_subject_inner_outline_width",
-                    MIN_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                    MAX_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH,
-                    defaults.liquidGlassSubjectInnerOutlineWidth,
-                ),
-                liquidGlassSubjectShadowAlpha = intParam(
-                    "liquid_glass_subject_shadow_alpha",
-                    MIN_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-                    MAX_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA,
-                    defaults.liquidGlassSubjectShadowAlpha,
-                ),
-                liquidGlassSubjectOpacityPercent = intParam(
-                    "liquid_glass_subject_opacity_percent",
-                    MIN_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
-                    MAX_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT,
-                    defaults.liquidGlassSubjectOpacityPercent,
                 ),
                 adaptiveForegroundMode = strParam("adaptive_foreground_mode", defaults.adaptiveForegroundMode),
                 adaptiveDirectMaxCoveragePercent = intParam(
@@ -944,18 +820,6 @@ data class TuningParams(
             "rmbg_edge_feather_percent" to "int",
             "rmbg_edge_adjust_percent" to "int",
             "rmbg_weak_alpha_keep_percent" to "int",
-            "liquid_glass_enabled" to "bool",
-            "liquid_glass_radius" to "int",
-            "liquid_glass_outer_width" to "int",
-            "liquid_glass_top_alpha" to "int",
-            "liquid_glass_bottom_alpha" to "int",
-            "liquid_glass_background_mist_alpha" to "int",
-            "liquid_glass_bottom_dark_alpha" to "int",
-            "liquid_glass_subject_scale_percent" to "int",
-            "liquid_glass_subject_outline_width" to "int",
-            "liquid_glass_subject_inner_outline_width" to "int",
-            "liquid_glass_subject_shadow_alpha" to "int",
-            "liquid_glass_subject_opacity_percent" to "int",
             "adaptive_foreground_mode" to "string",
             "adaptive_direct_max_coverage_percent" to "int",
             "adaptive_direct_max_coverage_increase_percent" to "int",
@@ -1113,20 +977,6 @@ const val PREF_RMBG_ALPHA_STRENGTH_PERCENT = "rmbg_alpha_strength_percent"
 const val PREF_RMBG_EDGE_FEATHER_PERCENT = "rmbg_edge_feather_percent"
 const val PREF_RMBG_EDGE_ADJUST_PERCENT = "rmbg_edge_adjust_percent"
 const val PREF_RMBG_WEAK_ALPHA_KEEP_PERCENT = "rmbg_weak_alpha_keep_percent"
-const val PREF_LIQUID_GLASS_ENABLED = "liquid_glass_enabled"
-const val PREF_LIQUID_GLASS_LAYERED_MIGRATED = "liquid_glass_layered_migrated"
-const val PREF_LIQUID_GLASS_RADIUS = "liquid_glass_radius"
-const val PREF_LIQUID_GLASS_OUTER_WIDTH = "liquid_glass_outer_width"
-const val PREF_LIQUID_GLASS_TOP_ALPHA = "liquid_glass_top_alpha"
-const val PREF_LIQUID_GLASS_BOTTOM_ALPHA = "liquid_glass_bottom_alpha"
-const val PREF_LIQUID_GLASS_BACKGROUND_MIST_ALPHA = "liquid_glass_background_mist_alpha"
-const val PREF_LIQUID_GLASS_BOTTOM_DARK_ALPHA = "liquid_glass_bottom_dark_alpha"
-const val PREF_LIQUID_GLASS_SUBJECT_SCALE_PERCENT = "liquid_glass_subject_scale_percent"
-const val PREF_LIQUID_GLASS_SUBJECT_OUTLINE_WIDTH = "liquid_glass_subject_outline_width"
-const val PREF_LIQUID_GLASS_SUBJECT_INNER_OUTLINE_WIDTH = "liquid_glass_subject_inner_outline_width"
-const val PREF_LIQUID_GLASS_SUBJECT_SHADOW_ALPHA = "liquid_glass_subject_shadow_alpha"
-const val PREF_LIQUID_GLASS_SUBJECT_OPACITY_PERCENT = "liquid_glass_subject_opacity_percent"
-const val PREF_LIQUID_GLASS_BACKGROUND_LEVEL_LEGACY = "liquid_glass_background_level"
 const val PREF_ADAPTIVE_FOREGROUND_MODE = "adaptive_foreground_mode"
 const val PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_PERCENT = "adaptive_direct_max_coverage_percent"
 const val PREF_ADAPTIVE_DIRECT_MAX_COVERAGE_INCREASE_PERCENT = "adaptive_direct_max_coverage_increase_percent"
@@ -1177,6 +1027,7 @@ const val PREF_GENERATED_FILTER = "generated_filter"
 const val PREF_QUERY_TEXT = "query_text"
 const val PREF_ADVANCED_SETTINGS_CATEGORY = "advanced_settings_category"
 const val PREF_ADVANCED_SETTINGS_TAB = "advanced_settings_tab"
+const val PREF_ADVANCED_SETTINGS_TAB_CHOSEN = "advanced_settings_tab_chosen"
 const val PREF_PREVIEW_PACKAGE_NAME = "preview_package_name"
 const val PREF_PREVIEW_DIR_PATH = "preview_dir_path"
 const val PREF_PREVIEW_STRIP_ENABLED = "preview_strip_enabled"

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,6 +38,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
+import io.github.suqi8.coui.kmp.basic.CircularProgressIndicator
+import io.github.suqi8.coui.kmp.basic.ProgressIndicatorDefaults
 import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.DEFAULT_PREVIEW_CORNER_RADIUS_DP
@@ -269,6 +272,8 @@ internal fun PreviewTile(
     desktopBackground: PreviewDesktopBackground,
     iconSizeDp: Int,
     loading: Boolean,
+    // 模型正在跑这个变体：标题后面挂一枚和文字同高的小圆环，转着表示还没出结果
+    labelLoading: Boolean = false,
     choiceEnabled: Boolean,
     cornerRadiusDp: Int,
     wallpaperInitial: Bitmap?,
@@ -293,13 +298,30 @@ internal fun PreviewTile(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = label,
-            style = COUITheme.textStyles.footnote1,
-            color = COUITheme.colorScheme.onSurfaceVariantSummary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = label,
+                style = COUITheme.textStyles.footnote1,
+                color = COUITheme.colorScheme.onSurfaceVariantSummary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (labelLoading) {
+                // 12dp 与 footnote1 行高齐平；底色淡染一圈，转动的是主色弧
+                CircularProgressIndicator(
+                    progress = null,
+                    size = 12.dp,
+                    strokeWidth = 1.5.dp,
+                    colors = ProgressIndicatorDefaults.circularProgressIndicatorColors(
+                        foregroundColor = COUITheme.colorScheme.primary,
+                        backgroundColor = COUITheme.colorScheme.primary.copy(alpha = 0.2f),
+                    ),
+                )
+            }
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
