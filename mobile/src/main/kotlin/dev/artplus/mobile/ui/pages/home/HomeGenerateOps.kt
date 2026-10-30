@@ -4,13 +4,16 @@ import android.app.WallpaperManager
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,6 +28,11 @@ import androidx.compose.ui.unit.dp
 import java.lang.reflect.InvocationTargetException
 import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.GlassContainer
+import io.github.suqi8.coui.kmp.basic.couiGlassSurface
+import io.github.suqi8.coui.kmp.basic.rememberGlassHighlight
+import io.github.suqi8.coui.kmp.blur.LocalBackdrop
+import io.github.suqi8.coui.kmp.theme.COUITheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.artplus.mobile.MainActivity
@@ -84,15 +92,26 @@ internal fun MainActivity.HomePreviewStrip(
     val stripBatchConfig by mainViewModel.batchPreviewConfig.collectAsState()
     val assets = stripPreviewState.sharedPreviewAssets
     val loading = stripPreviewState.isPreviewAssetsRefreshing || stripPreviewState.isPreviewOutputRefreshing || stripPreviewState.isGptPreviewLoading
-    Card(
+    val shape = RoundedCornerShape(20.dp)
+    val backdrop = LocalBackdrop.current
+    val highlight = rememberGlassHighlight(GlassContainer.Medium)
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 0.dp)
             .onGloballyPositioned { coords ->
                 val h = with(density) { coords.size.height.toDp() }
                 if (h > 0.dp) onHeightMeasured(h)
-            },
-        insideMargin = PaddingValues(start = 6.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            }
+            .couiGlassSurface(
+                backdrop = backdrop,
+                shape = shape,
+                containerColor = COUITheme.colorScheme.bar,
+                fallback = Modifier.background(COUITheme.colorScheme.bar, shape),
+                containerAlpha = 0.8f,
+                highlight = highlight,
+            )
+            .padding(6.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

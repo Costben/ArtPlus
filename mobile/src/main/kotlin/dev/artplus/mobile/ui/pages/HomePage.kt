@@ -1,8 +1,15 @@
 package dev.artplus.mobile.ui.pages
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -21,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
@@ -28,6 +37,7 @@ import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import dev.artplus.mobile.ui.pages.home.HomePreviewStrip
 import dev.artplus.mobile.MainActivity
 import dev.artplus.mobile.data.AppEntry
 import dev.artplus.mobile.pipeline.findRmbgComponent
@@ -183,6 +193,8 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
 
         // 顶栏/底栏的玻璃材质都采样 barBackdrop（页面内容），自身不在录制范围内。
         // 弹层不在这里渲染：根部 Scaffold 的 COUIPopupHost 压在整屏之上，采样整屏快照。
+        val previewSessionState by mainViewModel.previewSession.collectAsState()
+        val contentTop = rememberShellContentTop()
         CompositionLocalProvider(LocalBackdrop provides barBackdrop) {
             Box(Modifier.fillMaxSize()) {
                 PagerShellFadeTopBars(
@@ -190,6 +202,19 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                     pagerState = pagerState,
                     pageFade = pageFade,
                 )
+                AnimatedVisibility(
+                    visible = previewSessionState.previewStripEnabled,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                        expandVertically(animationSpec = tween(durationMillis = 180)),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                        shrinkVertically(animationSpec = tween(durationMillis = 160)),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = contentTop)
+                        .zIndex(2f),
+                ) {
+                    HomePreviewStrip()
+                }
                 PagerShellBottomBar(
                     pagerState = pagerState,
                     targetPage = tappedPage ?: pagerState.targetPage,
