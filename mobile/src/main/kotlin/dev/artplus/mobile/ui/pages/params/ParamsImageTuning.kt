@@ -132,11 +132,10 @@ internal fun paramsLoadImageSettings(
         PREF_FOREGROUND_SUBJECT_PERCENT,
         DEFAULT_FOREGROUND_SUBJECT_PERCENT,
     )
-    updateLive { p -> p.copy(foregroundSubjectPercent = if (storedValue == LEGACY_FOREGROUND_SUBJECT_PERCENT) {
-        DEFAULT_FOREGROUND_SUBJECT_PERCENT
-    } else {
-        storedValue.coerceIn(MIN_FOREGROUND_SUBJECT_PERCENT, MAX_FOREGROUND_SUBJECT_PERCENT)
-    }) }
+    updateLive { p -> p.copy(foregroundSubjectPercent = storedValue.coerceIn(
+        MIN_FOREGROUND_SUBJECT_PERCENT,
+        MAX_FOREGROUND_SUBJECT_PERCENT,
+    )) }
     setDraftForegroundSubjectPercentText(getParams().foregroundSubjectPercent.toString())
     updateLive { p -> p.copy(foregroundShadowLevel = prefs.getInt(
         PREF_FOREGROUND_SHADOW_LEVEL,
