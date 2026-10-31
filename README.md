@@ -9,7 +9,7 @@
 [![Android](https://img.shields.io/badge/Android-12%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![UI Framework](https://img.shields.io/badge/UI-MIUIX%20Compose-FF6900?style=flat-square)](https://github.com)
+[![UI Framework](https://img.shields.io/badge/UI-COUI%20Compose-00C06D?style=flat-square)](https://github.com)
 [![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)](LICENSE)
 
 <p><b>English</b> | <a href="README.zh-CN.md">简体中文</a></p>
@@ -26,7 +26,7 @@ ColorOS ART+ (OPPO / OnePlus / realme) ships a distinctive layered icon style, b
 2. Split and rebuild it into foreground / background / night / monochrome layers with tunable algorithms,
 3. Live-preview all variants, then write the result straight into the system ART+ directory (root) or export it as a shareable preset.
 
-Designed for ColorOS 15+ theming workflows, built with Kotlin + Jetpack Compose (MIUIX Compose).
+Designed for ColorOS 15+ theming workflows, built with Kotlin + Jetpack Compose (COUI Compose).
 
 ---
 
@@ -38,17 +38,17 @@ Designed for ColorOS 15+ theming workflows, built with Kotlin + Jetpack Compose 
     <td align="center" width="33%">
       <img src="docs/assets/preview_home.png" width="260" alt="Home and polymorphic preview" /><br />
       <b>Home & Polymorphic Preview</b><br />
-      <sub>Standard light/dark and monochrome light/dark</sub>
+      <sub>Floating 1×4 preview strip & polymorphic cards</sub>
     </td>
     <td align="center" width="33%">
       <img src="docs/assets/preview_params.png" width="260" alt="Tuning parameters" /><br />
       <b>Tuning Parameters</b><br />
-      <sub>Stable rule-based tuning with top preview strip</sub>
+      <sub>Segmented algorithm tuning with sticky preview strip</sub>
     </td>
     <td align="center" width="33%">
       <img src="docs/assets/preview_preset.png" width="260" alt="Preset snapshot management" /><br />
       <b>Preset Snapshots</b><br />
-      <sub>Feature tags with import/export</sub>
+      <sub>Card-style preset library with batch preview</sub>
     </td>
   </tr>
 </table>
@@ -92,10 +92,10 @@ ArtPlus deconstructs a regular app icon and rebuilds it into a ColorOS ART+ comp
 
 ## Key Features
 
-- **App discovery**: scan installed apps, separate launcher apps from background components, jump to the target app in one tap.
+- **App discovery**: scan installed apps, filter AM-modified packages, separate launcher apps from background components, jump to the target app in one tap.
 - **Smart layer separation**: on-device pipeline with background cleanup, foreground edge refinement, wordmark preservation, and monochrome generation.
-- **Live full-state preview**: render standard light/dark, monochrome light/dark, and the 1×4 top strip in real time.
-- **Preset snapshot library**: feature tags, tuning snapshots, per-item copy, and one-tap clipboard export/import.
+- **Live full-state preview**: render standard light/dark, monochrome light/dark across full-size cards and sticky 1×4 floating liquid-glass strip in real time.
+- **Preset snapshot library**: notification-style preset cards, active indicator, tuning snapshots, batch preview testing, and one-tap clipboard export/import.
 - **Root fast write**: one-tap write into the system ART+ directory (`/data/oplus/uxicons/`), guarded by a double-confirm dialog with automatic launcher refresh.
 - **Optional AI extension**: plug in an online image API to explore future-style icon candidates.
 

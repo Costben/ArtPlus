@@ -9,7 +9,7 @@
 [![Android](https://img.shields.io/badge/Android-12%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![UI Framework](https://img.shields.io/badge/UI-MIUIX%20Compose-FF6900?style=flat-square)](https://github.com)
+[![UI Framework](https://img.shields.io/badge/UI-COUI%20Compose-00C06D?style=flat-square)](https://github.com)
 [![License](https://img.shields.io/badge/License-GPLv3-blue?style=flat-square)](LICENSE)
 
 <p><a href="README.md">English</a> | <b>简体中文</b></p>
@@ -26,17 +26,17 @@
     <td align="center" width="33%">
       <img src="docs/assets/preview_home.png" width="260" alt="主页与多态预览" /><br />
       <b>主页与多态预览</b><br />
-      <sub>标准亮色/暗色与单色亮色/暗色</sub>
+      <sub>独立毛玻璃 1×4 预览条与多态卡片</sub>
     </td>
     <td align="center" width="33%">
       <img src="docs/assets/preview_params.png" width="260" alt="生成参数调节" /><br />
       <b>生成参数调节</b><br />
-      <sub>稳定规则调参与顶部预览条</sub>
+      <sub>规则/算法分段调参与常驻预览浮层</sub>
     </td>
     <td align="center" width="33%">
       <img src="docs/assets/preview_preset.png" width="260" alt="预设快照管理" /><br />
       <b>预设快照管理</b><br />
-      <sub>特性标签与导入导出生态</sub>
+      <sub>通知式卡片预设与批量预览测试</sub>
     </td>
   </tr>
 </table>
@@ -80,10 +80,10 @@ ArtPlus 自动将第三方应用普通图标解构并标准化生成 ColorOS ART
 
 ## ✨ 主要功能
 
-- **📲 应用检索与读取**：快速读取已安装应用列表，区分启动器应用与后台组件，支持一键定位目标 App。
+- **📲 应用检索与读取**：快速读取已安装应用列表，区分启动器应用与后台组件，支持 AM 专属图标筛选与一键定位目标 App。
 - **🧩 智能图层分离**：支持本地分层算法，具备智能背景清理、前景修整边缘平滑、字标保全与单色图标生成。
-- **👁️ 全态实时预览**：在手机端无缝实时渲染标准亮色、标准暗色、单色亮色、单色暗色以及 1×4 顶部条状态。
-- **🧪 预设快照库**：支持预设特征标签、调参快照保存、单条配置复制与系统剪贴板一键导出/导入。
+- **👁️ 全态实时预览**：独立毛玻璃 1×4 顶部条与大卡片联动，实时无缝渲染标准亮色、标准暗色、单色亮色与单色暗色多态效果。
+- **🧪 预设快照库**：通知式卡片预设管理，直观展示套用状态，支持批量预览测试与系统剪贴板一键导出/导入。
 - **⚡ Root 极速写入**：支持一键直写系统 ART+ 目录（`/data/oplus/uxicons/`），配备防误触二次确认与自动刷新桌面机制。
 - **🤖 可选 AI 扩展**：支持接入在线图像生成与处理接口，探索未来感图标候选设计。
 
