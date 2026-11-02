@@ -170,6 +170,10 @@ const val PLATE_MIN_REMOVED_RATIO = 0.05
 const val PLATE_MIN_SAFE_REMAINING_COVERAGE = 0.01
 const val PLATE_MIN_SAFE_KEEP_RATIO = 0.18
 const val PLATE_MIN_SAFE_BOUNDS_RATIO = 0.28
+/** 边缘环几乎被铺满：整块铺底的底板，不必再和背景比色。 */
+const val PLATE_UNIFORM_BORDER_COVERAGE = 0.88
+/** 底板与背景的同色上限：边缘环上可见像素到同位置背景色的距离中位数。 */
+const val PLATE_BACKGROUND_MATCH_DISTANCE = 96.0
 const val SIZE_1X1 = 240
 const val LOCAL_ICON_RENDER_SCALE = 3
 const val MONOCHROME_MIN_COVERAGE = 0.004

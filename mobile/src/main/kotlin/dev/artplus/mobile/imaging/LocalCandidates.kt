@@ -55,6 +55,7 @@ internal fun buildLocalCandidates(
     } else {
         prepareOriginalForeground(
             localSource.recfg,
+            localSource.recbg,
             pipeline,
             originalForegroundCleanupMode,
             plateRemovalPercent,

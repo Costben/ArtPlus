@@ -21,11 +21,13 @@ import dev.artplus.mobile.ORIGINAL_CLEANUP_MIN_REMAINING_COVERAGE
 import dev.artplus.mobile.PLAIN_ICON_BACKGROUND_ALPHA_THRESHOLD
 import dev.artplus.mobile.PLAIN_ICON_EDGE_BAND_RATIO
 import dev.artplus.mobile.PLAIN_ICON_MIN_BACKGROUND_SAMPLES
+import dev.artplus.mobile.PLATE_BACKGROUND_MATCH_DISTANCE
 import dev.artplus.mobile.PLATE_BORDER_COVERAGE_THRESHOLD
 import dev.artplus.mobile.PLATE_MIN_REMOVED_RATIO
 import dev.artplus.mobile.PLATE_MIN_SAFE_BOUNDS_RATIO
 import dev.artplus.mobile.PLATE_MIN_SAFE_KEEP_RATIO
 import dev.artplus.mobile.PLATE_MIN_SAFE_REMAINING_COVERAGE
+import dev.artplus.mobile.PLATE_UNIFORM_BORDER_COVERAGE
 import dev.artplus.mobile.RESIDUE_BACKGROUND_MIN_SATURATION
 import dev.artplus.mobile.RESIDUE_CONNECTED_MAX_ALPHA
 import dev.artplus.mobile.RESIDUE_CONNECTED_TRANSPARENT_RADIUS
@@ -167,7 +169,6 @@ internal fun subtractBackground(
             sized.getPixels(pixels, 0, width, 0, 0, width, height)
         }
     }
-    val transparentDistance = ADAPTIVE_SUBTRACT_TRANSPARENT_DISTANCE
     val opaqueDistance = effectiveBackgroundSeparationDistance(backgroundSeparationPercent)
 
     for (i in composedPixels.indices) {
@@ -176,15 +177,15 @@ internal fun subtractBackground(
             outPixels[i] = AndroidColor.TRANSPARENT
             continue
         }
+        // 这里的底色是同一个 AdaptiveIconDrawable 画出来的，前景层没画到的地方距离严格为 0，
+        // 所以不需要留「死区」去压掉噪声。留了反而会把前景层自带的柔和阴影截断：阴影的
+        // 渐变尾巴一旦落到死区边缘，透明度会从个位数直接跳到 0，成品上就是一条笔直的硬边。
         val distance = colorDistance(composedPixels[i], backgroundPixels[i])
-        if (distance <= transparentDistance) {
-            outPixels[i] = AndroidColor.TRANSPARENT
-            continue
-        }
-        val alpha = ((distance - transparentDistance) / (opaqueDistance - transparentDistance))
-            .coerceIn(0.0, 1.0)
+        val alpha = (distance / opaqueDistance).coerceIn(0.0, 1.0)
         val outAlpha = (composedAlpha * alpha).toInt().coerceIn(0, 255)
-        if (outAlpha <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+        // 不再把 <= 8 的像素直接抹零：那会在阴影渐变尾巴上留一道硬边。
+        // 这些像素本来就看不出（1–3% 不透明度），留着反而让渐变连续。
+        if (outAlpha <= 0) {
             outPixels[i] = AndroidColor.TRANSPARENT
             continue
         }
@@ -235,6 +236,7 @@ internal fun removeForegroundPlate(
     source: Bitmap,
     pipeline: LocalPipelineConfig,
     plateRemovalPercent: Int,
+    background: Bitmap? = null,
 ): ForegroundCleanupResult {
     val width = source.width
     val height = source.height
@@ -247,6 +249,16 @@ internal fun removeForegroundPlate(
     val colorDistanceThreshold = effectivePlateRemovalDistance(plateRemovalPercent)
     val minRemovedRatio = PLATE_MIN_REMOVED_RATIO
     if (edge.coverage < borderCoverageThreshold) {
+        return ForegroundCleanupResult(source, changed = false, removedRatio = 0.0, repairedRatio = 0.0)
+    }
+    // 这里的「边缘环」是主体自己包围盒的边缘，不是画布边缘。主体贴着自身包围盒时（盾牌、
+    // 圆角方块都是这样），边缘色就是主体自己的颜色，按它洪水填充会把主体整块当成底板删掉。
+    // 底板之所以叫底板，是因为它复刻了一份背景：边缘环和背景对不上，就不是底板。
+    if (
+        background != null &&
+        edge.coverage < PLATE_UNIFORM_BORDER_COVERAGE &&
+        edgeRingBackgroundDistance(pixels, background, width, height, bounds) > PLATE_BACKGROUND_MATCH_DISTANCE
+    ) {
         return ForegroundCleanupResult(source, changed = false, removedRatio = 0.0, repairedRatio = 0.0)
     }
 
@@ -301,6 +313,46 @@ internal fun removeForegroundPlate(
         removedRatio = removedRatio,
         repairedRatio = repaired.toDouble() / visible.toDouble(),
     )
+}
+
+/**
+ * 边缘环上可见像素与同位置背景色的距离中位数。
+ *
+ * 底板是前景层自带的一份背景，覆盖到的地方应当与背景几乎同色；主体自己的轮廓则和背景
+ * 有明显色差。用它来判断「这条边缘到底是底板边，还是主体自己的边」。
+ */
+internal fun edgeRingBackgroundDistance(
+    pixels: IntArray,
+    background: Bitmap,
+    width: Int,
+    height: Int,
+    bounds: Bounds,
+): Double {
+    val sized = if (background.width == width && background.height == height) {
+        background
+    } else {
+        resizeBitmap(background, width, height)
+    }
+    val backgroundPixels = IntArray(width * height)
+    sized.getPixels(backgroundPixels, 0, width, 0, 0, width, height)
+    val band = maxOf(2, (minOf(bounds.width(), bounds.height()) * EDGE_BAND_RATIO + 0.5f).toInt())
+    val distances = mutableListOf<Int>()
+    for (y in bounds.top until bounds.bottom) {
+        for (x in bounds.left until bounds.right) {
+            if (!isInEdgeBand(x, y, bounds, band)) {
+                continue
+            }
+            val index = y * width + x
+            if (AndroidColor.alpha(pixels[index]) <= LOCAL_ALPHA_VISIBLE_THRESHOLD) {
+                continue
+            }
+            distances += colorDistance(pixels[index], backgroundPixels[index]).toInt()
+        }
+    }
+    if (distances.isEmpty()) {
+        return Double.MAX_VALUE
+    }
+    return median(distances).toDouble()
 }
 
 internal fun isUnsafePlateRemoval(source: Bitmap, cleaned: Bitmap): Boolean {
@@ -678,7 +730,7 @@ internal fun separateLocalForeground(
         mode == LocalSeparationMode.ComposedBackground
     ) {
         val plate = if (pipeline.plateCleanupEnabled) {
-            removeForegroundPlate(current, pipeline, plateRemovalPercent)
+            removeForegroundPlate(current, pipeline, plateRemovalPercent, background)
         } else {
             ForegroundCleanupResult(current, changed = false, removedRatio = 0.0, repairedRatio = 0.0)
         }
@@ -733,6 +785,7 @@ internal fun separateLocalForeground(
 
 internal fun prepareOriginalForeground(
     source: Bitmap,
+    background: Bitmap?,
     pipeline: LocalPipelineConfig,
     originalForegroundCleanupMode: OriginalForegroundCleanupMode,
     plateRemovalPercent: Int,
@@ -742,12 +795,12 @@ internal fun prepareOriginalForeground(
     }
     return when (originalForegroundCleanupMode) {
         OriginalForegroundCleanupMode.Off -> source
-        OriginalForegroundCleanupMode.Plate -> removeForegroundPlate(source, pipeline, plateRemovalPercent).bitmap
+        OriginalForegroundCleanupMode.Plate -> removeForegroundPlate(source, pipeline, plateRemovalPercent, background).bitmap
         OriginalForegroundCleanupMode.Auto -> {
             if (hasLayeredLightForegroundPlate(source)) {
                 source
             } else {
-                val cleaned = removeForegroundPlate(source, pipeline, plateRemovalPercent)
+                val cleaned = removeForegroundPlate(source, pipeline, plateRemovalPercent, background)
                 if (cleaned.changed && shouldUseOriginalSafetyCleanup(source, cleaned.bitmap)) {
                     cleaned.bitmap
                 } else {
