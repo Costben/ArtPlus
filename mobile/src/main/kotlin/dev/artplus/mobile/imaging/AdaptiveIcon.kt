@@ -56,27 +56,34 @@ internal fun buildLocalIconLayers(
         )
         val directForeground = drawAdaptiveLayer(icon.foreground, renderSize)
         val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
-        val foreground = if (pipeline.backgroundSeparationEnabled) {
-            subtractBackground(composed, background, pipeline = pipeline, backgroundSeparationPercent = backgroundSeparationPercent)
+        // 背景层自带画面时，这个图标本身就是一套画好的图层：直接把前景层和背景层
+        // 原样取出来就是成品，减背景、清边角、重新摆位置全都不该跑。
+        val keepLayerStack = keepsAdaptiveLayerStack(background, directForeground)
+        val foregroundSelection = if (keepLayerStack) {
+            AdaptiveForegroundSelection(directForeground, preserveGeometry = true)
         } else {
-            composed
+            val foreground = if (pipeline.backgroundSeparationEnabled) {
+                subtractBackground(composed, background, pipeline = pipeline, backgroundSeparationPercent = backgroundSeparationPercent)
+            } else {
+                composed
+            }
+            chooseBetterAdaptiveForeground(
+                foreground,
+                directForeground,
+                background,
+                pipeline,
+                adaptiveForegroundMode,
+                adaptiveDirectMaxCoveragePercent,
+                adaptiveDirectMaxCoverageIncreasePercent,
+                adaptiveMaskEdgeCoveragePercent,
+                adaptiveMaskMinCoveragePercent,
+                adaptiveCenterEpsilonPercent,
+            )
         }
         val recbg = resizeBitmap(background, SIZE_1X1, SIZE_1X1)
-        val foregroundSelection = chooseBetterAdaptiveForeground(
-            foreground,
-            directForeground,
-            background,
-            pipeline,
-            adaptiveForegroundMode,
-            adaptiveDirectMaxCoveragePercent,
-            adaptiveDirectMaxCoverageIncreasePercent,
-            adaptiveMaskEdgeCoveragePercent,
-            adaptiveMaskMinCoveragePercent,
-            adaptiveCenterEpsilonPercent,
-        )
         val monochrome = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             icon.monochrome?.let {
-                resizeBitmap(drawDrawable(it, renderSize, renderSize, transparent = true), SIZE_1X1, SIZE_1X1)
+                resizeBitmap(drawAdaptiveLayer(it, renderSize), SIZE_1X1, SIZE_1X1)
             }
         } else {
             null
@@ -86,7 +93,7 @@ internal fun buildLocalIconLayers(
             SIZE_1X1,
             SIZE_1X1,
         )
-        val recfg = if (pipeline.cornerMaskCleanupEnabled) {
+        val recfg = if (pipeline.cornerMaskCleanupEnabled && !keepLayerStack) {
             removeCornerMaskResidue(selectedForeground, recbg, pipeline = pipeline)
         } else {
             selectedForeground
@@ -121,6 +128,7 @@ internal fun buildLocalIconLayers(
             monochrome = monochrome,
             monochromeIsNative = monochrome != null,
             preserveGeometry = foregroundSelection.preserveGeometry,
+            keepLayerStack = keepLayerStack,
             textSafe = textSafeRecfg?.let { textSafeForeground ->
                 IconCandidate(
                     recfgRaw = textSafeForeground,
@@ -156,6 +164,7 @@ internal fun buildLocalIconLayers(
         monochrome = null,
         monochromeIsNative = false,
         preserveGeometry = false,
+        keepLayerStack = false,
         textSafe = null,
         componentSubject = null,
         componentBackground = null,

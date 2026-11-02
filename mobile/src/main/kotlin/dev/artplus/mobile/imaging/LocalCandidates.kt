@@ -49,12 +49,17 @@ internal fun buildLocalCandidates(
     shadowRemovalPercent: Int,
     backgroundSeparationPercent: Int,
 ): LocalCandidateSet {
-    val originalForeground = prepareOriginalForeground(
-        localSource.recfg,
-        pipeline,
-        originalForegroundCleanupMode,
-        plateRemovalPercent,
-    )
+    // 图层栈本身成套时，「原始」就是系统给的那两层，不再过任何清理。
+    val originalForeground = if (localSource.keepLayerStack) {
+        localSource.recfg
+    } else {
+        prepareOriginalForeground(
+            localSource.recfg,
+            pipeline,
+            originalForegroundCleanupMode,
+            plateRemovalPercent,
+        )
+    }
     val original = IconCandidate(
         recfgRaw = originalForeground,
         recbg = localSource.recbg,
@@ -132,10 +137,8 @@ internal fun buildLocalCandidates(
         candidates[PreviewChoice.TwoLayer] = twoLayerResult.candidate
     }
     val autoChoice = when {
-        // 背景层自带画面时整个图层栈就是成图本身，「清理」只能靠猜，
-        // 原样叠加的那一份才和原图标一致。自动选择开没开都一样。
-        localSource.preserveGeometry && candidates.containsKey(PreviewChoice.ComponentBackground) ->
-            PreviewChoice.ComponentBackground
+        // 图层栈本身成套：直接给「原始」，它就是系统那两层，没有别的处理。
+        localSource.keepLayerStack -> PreviewChoice.Original
         pipeline.autoSelectionEnabled ->
             chooseAutoLocalChoice(
                 original = originalForeground,

@@ -128,6 +128,7 @@ internal data class LocalIconLayers(
     val monochrome: Bitmap?,
     val monochromeIsNative: Boolean,
     val preserveGeometry: Boolean,
+    val keepLayerStack: Boolean,
     val textSafe: IconCandidate?,
     val componentSubject: IconCandidate?,
     val componentBackground: IconCandidate?,
