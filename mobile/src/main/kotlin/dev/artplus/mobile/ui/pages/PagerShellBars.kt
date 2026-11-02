@@ -32,11 +32,13 @@ import androidx.compose.ui.graphics.vector.PathNode
 import androidx.compose.ui.graphics.vector.VectorGroup
 import androidx.compose.ui.graphics.vector.VectorPath
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.anim.folmeSpring
 import io.github.suqi8.coui.kmp.basic.BottomFloatingAccessoryNavigationBar
@@ -168,7 +170,9 @@ internal val PageFadeOutSpec = folmeSpring<Float>(damping = 1f, response = 0.15f
 internal val PageFadeInSpec = folmeSpring<Float>(damping = 1f, response = 0.2f, visibilityThreshold = 0.075f)
 
 /**
- * 顶栏淡出淡入：切换时原地 crossfade，不进行左右位移。
+ * 顶栏：
+ * - 点击底栏切页时（[pageFade] != null）：原地交叉淡出淡入，不进行左右位移；
+ * - 手势滑动页面时（[pageFade] == null）：横向偏移跟随 pager，每页的顶栏随该页内容左右平移。
  */
 @Composable
 internal fun BoxScope.PagerShellFadeTopBars(
@@ -176,7 +180,6 @@ internal fun BoxScope.PagerShellFadeTopBars(
     pagerState: PagerState,
     pageFade: PagerShellPageFade?,
 ) {
-    val currentPage = pagerState.currentPage
     val fade = pageFade
     if (fade != null) {
         for (page in listOf(fade.from, fade.to)) {
@@ -194,14 +197,24 @@ internal fun BoxScope.PagerShellFadeTopBars(
             )
         }
     } else {
-        val spec = host.specs[currentPage]
-        if (spec != null) {
+        val currentPage = pagerState.currentPage
+        val pageCount = pagerState.pageCount
+        val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+        val dir = if (isRtl) -1f else 1f
+        for (page in (currentPage - 1)..(currentPage + 1)) {
+            if (page < 0 || page >= pageCount) continue
+            val spec = host.specs[page] ?: continue
             PagerShellTopAppBar(
                 title = spec.title,
                 navigationIcon = spec.navigationIcon,
                 actions = spec.actions,
                 scrollBehavior = spec.scrollBehavior,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .graphicsLayer {
+                        val delta = page - pagerState.currentPage - pagerState.currentPageOffsetFraction
+                        translationX = dir * delta * size.width
+                    },
             )
         }
     }

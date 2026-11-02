@@ -151,8 +151,8 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
         ) {
             HorizontalPager(
                 state = pagerState,
-                beyondViewportPageCount = if (pageFade != null) 2 else 0,
-                userScrollEnabled = false,
+                beyondViewportPageCount = 2,
+                userScrollEnabled = pageFade == null,
                 modifier = Modifier.fillMaxSize(),
             ) { page ->
                 val layoutDirection = LocalLayoutDirection.current
