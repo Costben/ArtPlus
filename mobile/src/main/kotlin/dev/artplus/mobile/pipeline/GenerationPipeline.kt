@@ -125,6 +125,7 @@ internal fun buildLocalSessionForPreview(
         monochromeRaw = localSource.monochrome,
         candidates = localCandidateSet.candidates,
         autoLocalChoice = localCandidateSet.autoChoice,
+        iconLayers = localSource.layers,
     )
 }
 
@@ -148,6 +149,7 @@ internal fun rebuildLocalSession(
         tuning.adaptiveMaskEdgeCoveragePercent,
         tuning.adaptiveMaskMinCoveragePercent,
         tuning.adaptiveCenterEpsilonPercent,
+        layerRoles = session.layerRoles,
     )
     val localCandidateSet = buildLocalCandidates(
         localSource,
@@ -173,6 +175,7 @@ internal fun rebuildLocalSession(
         customForegrounds = session.customForegrounds,
         customBackgrounds = session.customBackgrounds,
         autoLocalChoice = localCandidateSet.autoChoice,
+        iconLayers = localSource.layers,
     )
 }
 

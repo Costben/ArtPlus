@@ -123,6 +123,30 @@ internal data class IconCandidate(
     val applyLocalEdgePolish: Boolean = true,
 )
 
+/** 自适应图标拆出来的一层，坐标与尺寸都已经和图标画布对齐。 */
+internal data class IconLayer(
+    val key: String,
+    val label: String,
+    val bitmap: Bitmap,
+)
+
+internal const val ICON_LAYER_BACKGROUND = "background"
+internal const val ICON_LAYER_FOREGROUND = "foreground"
+
+/** 图层在成品里的位置。 */
+internal enum class IconLayerRole(val label: String) {
+    Subject("主体"),
+    Background("背景"),
+    Ignore("忽略"),
+}
+
+/** 没手动分过层时，背景层当背景、前景层当主体——就是系统自己那两层。 */
+internal fun defaultIconLayerRole(key: String): IconLayerRole =
+    if (key == ICON_LAYER_FOREGROUND) IconLayerRole.Subject else IconLayerRole.Background
+
+internal fun effectiveIconLayerRole(roles: Map<String, IconLayerRole>, key: String): IconLayerRole =
+    roles[key] ?: defaultIconLayerRole(key)
+
 internal data class LocalIconLayers(
     val recfg: Bitmap,
     val recbg: Bitmap,
@@ -130,6 +154,7 @@ internal data class LocalIconLayers(
     val monochromeIsNative: Boolean,
     val preserveGeometry: Boolean,
     val keepLayerStack: Boolean,
+    val layers: List<IconLayer>,
     val textSafe: IconCandidate?,
     val componentSubject: IconCandidate?,
     val componentBackground: IconCandidate?,

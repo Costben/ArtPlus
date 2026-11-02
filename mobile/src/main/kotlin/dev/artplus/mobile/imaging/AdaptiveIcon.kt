@@ -1,6 +1,7 @@
 package dev.artplus.mobile.imaging
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color as AndroidColor
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.ColorDrawable
@@ -46,6 +47,7 @@ internal fun buildLocalIconLayers(
     adaptiveMaskEdgeCoveragePercent: Int,
     adaptiveMaskMinCoveragePercent: Int,
     adaptiveCenterEpsilonPercent: Int,
+    layerRoles: Map<String, IconLayerRole> = emptyMap(),
 ): LocalIconLayers {
     val renderSize = SIZE_1X1 * LOCAL_ICON_RENDER_SCALE
     if (icon is AdaptiveIconDrawable) {
@@ -56,6 +58,35 @@ internal fun buildLocalIconLayers(
         )
         val directForeground = drawAdaptiveLayer(icon.foreground, renderSize)
         val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
+        val monochrome = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            icon.monochrome?.let {
+                resizeBitmap(drawAdaptiveLayer(it, renderSize), SIZE_1X1, SIZE_1X1)
+            }
+        } else {
+            null
+        }?.takeIf { alphaCoverage(it) >= MONOCHROME_MIN_COVERAGE }
+        val layers = listOf(
+            IconLayer(ICON_LAYER_BACKGROUND, "背景层", resizeBitmap(background, SIZE_1X1, SIZE_1X1)),
+            IconLayer(ICON_LAYER_FOREGROUND, "前景层", resizeBitmap(directForeground, SIZE_1X1, SIZE_1X1)),
+        )
+        // 用户手动分过层：按他给的角色直接拼，减背景、清边角、重新摆位置这些规则一律不跑。
+        if (layerRoles.isNotEmpty()) {
+            // 没点过的层按默认角色算（背景层当背景、前景层当主体），否则只写了一个角色
+            // 就会把另一层整个丢掉。
+            val effectiveRoles = layers.associate { it.key to effectiveIconLayerRole(layerRoles, it.key) }
+            return LocalIconLayers(
+                recfg = composeIconLayers(layers, effectiveRoles, IconLayerRole.Subject),
+                recbg = composeIconLayers(layers, effectiveRoles, IconLayerRole.Background),
+                monochrome = monochrome,
+                monochromeIsNative = monochrome != null,
+                preserveGeometry = true,
+                keepLayerStack = true,
+                layers = layers,
+                textSafe = null,
+                componentSubject = null,
+                componentBackground = null,
+            )
+        }
         // 背景层自带画面时，这个图标本身就是一套画好的图层：直接把前景层和背景层
         // 原样取出来就是成品，减背景、清边角、重新摆位置全都不该跑。
         val keepLayerStack = keepsAdaptiveLayerStack(background, directForeground)
@@ -81,13 +112,6 @@ internal fun buildLocalIconLayers(
             )
         }
         val recbg = resizeBitmap(background, SIZE_1X1, SIZE_1X1)
-        val monochrome = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            icon.monochrome?.let {
-                resizeBitmap(drawAdaptiveLayer(it, renderSize), SIZE_1X1, SIZE_1X1)
-            }
-        } else {
-            null
-        }?.takeIf { alphaCoverage(it) >= MONOCHROME_MIN_COVERAGE }
         val selectedForeground = resizeBitmap(
             foregroundSelection.bitmap,
             SIZE_1X1,
@@ -129,6 +153,7 @@ internal fun buildLocalIconLayers(
             monochromeIsNative = monochrome != null,
             preserveGeometry = foregroundSelection.preserveGeometry,
             keepLayerStack = keepLayerStack,
+            layers = layers,
             textSafe = textSafeRecfg?.let { textSafeForeground ->
                 IconCandidate(
                     recfgRaw = textSafeForeground,
@@ -166,10 +191,26 @@ internal fun buildLocalIconLayers(
         monochromeIsNative = false,
         preserveGeometry = false,
         keepLayerStack = false,
+        layers = emptyList(),
         textSafe = null,
         componentSubject = null,
         componentBackground = null,
     )
+}
+
+/** 按角色把图层叠起来；没有一层命中时返回全透明，调用方自己决定要不要补底。 */
+internal fun composeIconLayers(
+    layers: List<IconLayer>,
+    roles: Map<String, IconLayerRole>,
+    role: IconLayerRole,
+): Bitmap {
+    val out = Bitmap.createBitmap(SIZE_1X1, SIZE_1X1, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(out)
+    for (layer in layers) {
+        if (roles[layer.key] != role) continue
+        canvas.drawBitmap(layer.bitmap, 0f, 0f, null)
+    }
+    return out
 }
 
 internal fun buildAdaptiveComponentCandidates(

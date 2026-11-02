@@ -31,6 +31,7 @@ import io.github.suqi8.coui.kmp.icon.extended.Layers
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.data.AppEntry
 import dev.artplus.mobile.ui.components.BrandMark
+import dev.artplus.mobile.ui.components.SectionDivider
 /**
  * Slice 2.2：主页状态卡片（原 MainActivity 残留本体原样搬迁）。
  * Composable 只收 state + onEvent；Activity 状态经参数/回调注入，行为与 UI 100% 等价。
@@ -44,6 +45,7 @@ internal fun StatusCard(
     statusText: String,
     onOpenPicker: () -> Unit,
     appIcon: @Composable (AppEntry) -> Unit,
+    layerStrip: (@Composable () -> Unit)? = null,
 ) {
     val enabled = !isBusy && hasApps
 
@@ -93,6 +95,11 @@ internal fun StatusCard(
                 contentDescription = null,
                 colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantActions),
             )
+        }
+        if (layerStrip != null) {
+            SectionDivider()
+            Spacer(modifier = Modifier.height(12.dp))
+            layerStrip()
         }
     }
 }

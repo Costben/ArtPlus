@@ -42,6 +42,7 @@ import dev.artplus.mobile.PREVIEW_OUTPUT_DEBOUNCE_MS
 import dev.artplus.mobile.SIZE_1X1
 import dev.artplus.mobile.data.updateGeneratedPackageCache
 import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.IconLayerRole
 import dev.artplus.mobile.imaging.LocalSeparationMode
 import dev.artplus.mobile.imaging.PreviewChoice
 import dev.artplus.mobile.imaging.RmbgInferenceBackend
@@ -359,6 +360,7 @@ internal fun MainActivity.applyPreviewChoiceToAll(choice: PreviewChoice): Unit {
                                     rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                                 )
                     } },
+                                layerRoles = layerRolesFor((a).packageName),
                             )
                 } },
                             onBuildRmbg = { src -> (run {
@@ -941,6 +943,15 @@ internal fun MainActivity.applyRmbgCandidateForMode(mode: PreviewMode, confirmed
     }
 }
 
+/**
+ * 重新生成同一个应用时沿用上一次的图层分配；换了应用就是默认的那两层。
+ */
+internal fun MainActivity.layerRolesFor(packageName: String): Map<String, IconLayerRole> =
+    mainViewModel.previewSession.value.activeGenerationSession
+        ?.takeIf { it.packageName == packageName }
+        ?.layerRoles
+        ?: emptyMap()
+
 internal fun MainActivity.generateSelectedApp(installWithRoot: Boolean, useGpt: Boolean, rootWriteMode: RootWriteMode = RootWriteMode.All, confirmed: Boolean = false, rmbgAfter: Boolean = false): Unit {
     val __actF12 = this
     return homeGenerateSelected(
@@ -1014,6 +1025,7 @@ internal fun MainActivity.generateSelectedApp(installWithRoot: Boolean, useGpt: 
                             rmbgWeakAlphaKeepPercent = params.rmbgWeakAlphaKeepPercent,
                         )
             } },
+                        layerRoles = layerRolesFor((e).packageName),
                     )
         } },
                     onPostGenerate = { result, e ->

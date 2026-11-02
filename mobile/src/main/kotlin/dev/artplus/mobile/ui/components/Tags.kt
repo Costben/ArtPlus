@@ -120,7 +120,12 @@ internal fun MetricPill(label: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun LayerDebugTile(label: String, bitmap: ImageBitmap?, modifier: Modifier = Modifier) {
+internal fun LayerDebugTile(
+    label: String,
+    bitmap: ImageBitmap?,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -158,6 +163,15 @@ internal fun LayerDebugTile(label: String, bitmap: ImageBitmap?, modifier: Modif
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        if (subtitle != null) {
+            Text(
+                text = subtitle,
+                style = COUITheme.textStyles.footnote1,
+                color = COUITheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

@@ -1,16 +1,22 @@
 package dev.artplus.mobile.ui.pages.home
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,11 +24,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.preference.SwitchPreference
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.Text
@@ -37,8 +47,13 @@ import dev.artplus.mobile.MIN_PREVIEW_ICON_SIZE_DP
 import dev.artplus.mobile.TuningParams
 import dev.artplus.mobile.imaging.CustomImageKind
 import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.IconLayer
+import dev.artplus.mobile.imaging.IconLayerRole
 import dev.artplus.mobile.imaging.PreviewChoice
 import dev.artplus.mobile.imaging.candidateForChoice
+import dev.artplus.mobile.imaging.composeIconLayers
+import dev.artplus.mobile.imaging.compositeBitmaps
+import dev.artplus.mobile.imaging.effectiveIconLayerRole
 import dev.artplus.mobile.pipeline.GenerationSession
 import dev.artplus.mobile.pipeline.PreviewAssets
 import dev.artplus.mobile.pipeline.PreviewMode
@@ -46,6 +61,8 @@ import dev.artplus.mobile.ui.cards.AiIconLoadingPreview
 import dev.artplus.mobile.ui.cards.NumberParameterControl
 import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
 import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.components.ArtDialog
+import dev.artplus.mobile.ui.components.CompactCardCornerRadius
 import dev.artplus.mobile.ui.components.LayerDebugTile
 import dev.artplus.mobile.ui.components.LibrarySettingRow
 import dev.artplus.mobile.ui.components.SectionCard
@@ -255,52 +272,168 @@ internal fun GeneratedPreviewCard(
     }
 }
 
-/** 调试图层卡片：前景 / 背景 / alpha 蒙版小图。 */
+/**
+ * 「当前应用」卡片里的图层条：只有能拆层的图标（自适应图标）才出现。
+ * 点任意一层打开 [IconLayerDialog]，在那里决定每一层是主体还是背景。
+ */
 @Composable
-internal fun LayerDebugCard(
-    dirPath: String?,
-    packageName: String?,
-    session: GenerationSession?,
-    assets: PreviewAssets?,
-    tuningState: TuningParams,
+internal fun IconLayerStrip(
+    layers: List<IconLayer>,
+    foregroundMask: ImageBitmap?,
+    roles: Map<String, IconLayerRole>,
+    onOpenLayers: () -> Unit,
 ) {
-    if (dirPath == null) return
-    if (packageName == null) return
-    if (session == null) return
-    if (assets == null) return
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        layers.forEach { layer ->
+            LayerDebugTile(
+                label = layer.label,
+                subtitle = effectiveIconLayerRole(roles, layer.key).label,
+                bitmap = layer.bitmap.asImageBitmap(),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onOpenLayers),
+            )
+        }
+        LayerDebugTile(label = "蒙版", bitmap = foregroundMask, modifier = Modifier.weight(1f))
+    }
+}
 
-    val choice = PreviewSelections.fromNames(tuningState.previewNormalLight, tuningState.previewNormalDark, tuningState.previewMonochromeLight, tuningState.previewMonochromeDark).normalLight
-    val candidate = candidateForChoice(session, choice)
-    val alphaMask = remember(candidate) {
-        candidate?.recfgRaw?.let { bitmap ->
-            val width = bitmap.width
-            val height = bitmap.height
-            if (width <= 0 || height <= 0) {
-                null
-            } else {
-                val pixels = IntArray(width * height)
-                bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-                val outPixels = IntArray(pixels.size)
-                for (i in pixels.indices) {
-                    val alpha = AndroidColor.alpha(pixels[i])
-                    outPixels[i] = AndroidColor.rgb(alpha, alpha, alpha)
+/** 图层分配面板：每一层一行，选主体 / 背景 / 忽略，上方是合成后的样子。 */
+@Composable
+internal fun IconLayerDialog(
+    show: Boolean,
+    layers: List<IconLayer>,
+    roles: Map<String, IconLayerRole>,
+    onRoleChange: (String, IconLayerRole) -> Unit,
+    onReset: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (layers.isEmpty()) return
+    val effective = layers.associate { it.key to effectiveIconLayerRole(roles, it.key) }
+    val composed = remember(layers, effective) {
+        compositeBitmaps(
+            composeIconLayers(layers, effective, IconLayerRole.Background),
+            composeIconLayers(layers, effective, IconLayerRole.Subject),
+        )
+    }
+    ArtDialog(
+        show = show,
+        title = "图层",
+        summary = "这个图标不是一整张图，而是几层叠出来的。指定每一层在成品里的位置。",
+        onDismissRequest = onDismiss,
+        negative = DialogButtonBarAction(text = "重置", onClick = onReset),
+        positive = DialogButtonBarAction(text = "完成", onClick = onDismiss, recommended = true),
+        content = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(132.dp)
+                        .clip(RoundedCornerShape(CompactCardCornerRadius))
+                        .background(COUITheme.colorScheme.secondaryVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        bitmap = composed.asImageBitmap(),
+                        // decorative：合成预览，说明由标题与每层标签承载
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                    )
                 }
-                Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { out ->
-                    out.setPixels(outPixels, 0, width, 0, 0, width, height)
+                layers.forEach { layer ->
+                    LayerRoleRow(
+                        layer = layer,
+                        role = effective.getValue(layer.key),
+                        onRoleChange = { onRoleChange(layer.key, it) },
+                    )
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun LayerRoleRow(
+    layer: IconLayer,
+    role: IconLayerRole,
+    onRoleChange: (IconLayerRole) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Image(
+            bitmap = layer.bitmap.asImageBitmap(),
+            // decorative：层缩略图，语义由右侧名称与角色承载
+            contentDescription = null,
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(COUITheme.colorScheme.secondaryVariant),
+            contentScale = ContentScale.Fit,
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = layer.label,
+                style = COUITheme.textStyles.footnote1,
+                color = COUITheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                IconLayerRole.entries.forEach { option ->
+                    LayerRolePill(
+                        role = option,
+                        selected = option == role,
+                        onClick = { onRoleChange(option) },
+                    )
                 }
             }
         }
     }
+}
 
-    SectionCard {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            LayerDebugTile(label = "前景", bitmap = assets.recfg?.asImageBitmap(), modifier = Modifier.weight(1f))
-            LayerDebugTile(label = "背景", bitmap = assets.recbg?.asImageBitmap(), modifier = Modifier.weight(1f))
-            LayerDebugTile(label = "蒙版", bitmap = alphaMask?.asImageBitmap(), modifier = Modifier.weight(1f))
-        }
+@Composable
+private fun LayerRolePill(role: IconLayerRole, selected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(
+                if (selected) COUITheme.colorScheme.primary else COUITheme.colorScheme.secondaryVariant,
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = role.label,
+            style = COUITheme.textStyles.footnote1,
+            color = if (selected) COUITheme.colorScheme.onPrimary else COUITheme.colorScheme.onSurfaceVariantSummary,
+            maxLines = 1,
+        )
+    }
+}
+
+/** alpha 通道画成灰度图，一眼看出主体轮廓。 */
+internal fun alphaMaskBitmap(source: Bitmap?): Bitmap? {
+    if (source == null) return null
+    val width = source.width
+    val height = source.height
+    if (width <= 0 || height <= 0) return null
+    val pixels = IntArray(width * height)
+    source.getPixels(pixels, 0, width, 0, 0, width, height)
+    val outPixels = IntArray(pixels.size)
+    for (i in pixels.indices) {
+        val alpha = AndroidColor.alpha(pixels[i])
+        outPixels[i] = AndroidColor.rgb(alpha, alpha, alpha)
+    }
+    return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { out ->
+        out.setPixels(outPixels, 0, width, 0, 0, width, height)
     }
 }
 

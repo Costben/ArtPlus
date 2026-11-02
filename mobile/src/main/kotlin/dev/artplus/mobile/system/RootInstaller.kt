@@ -17,6 +17,7 @@ import dev.artplus.mobile.TuningParams
 import dev.artplus.mobile.data.AppEntry
 import dev.artplus.mobile.imaging.AdaptiveForegroundMode
 import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.IconLayerRole
 import dev.artplus.mobile.imaging.LocalSeparationMode
 import dev.artplus.mobile.imaging.OriginalForegroundCleanupMode
 import dev.artplus.mobile.imaging.PreviewChoice
@@ -482,6 +483,7 @@ internal fun generateArtPlusPackage(
     onStatus: (String) -> Unit,
     defaultChoiceForMode: (LocalSeparationMode, PreviewChoice) -> PreviewChoice,
     rmbgTunedForeground: (IconCandidate) -> Bitmap?,
+    layerRoles: Map<String, IconLayerRole> = emptyMap(),
 ): GenerationResult {
     val base = externalArtPlusDir ?: File(filesDir, "ArtPlus")
     val outDir = File(base, app.packageName)
@@ -490,7 +492,7 @@ internal fun generateArtPlusPackage(
     val localSourceIcon = drawLocalCandidateSourceIcon(icon, SIZE_1X1, SIZE_1X1)
     val gptSourceIcon = drawDrawable(icon, GPT_SOURCE_SIZE, GPT_SOURCE_SIZE, transparent = false)
     val localPipeline = LocalPipelineConfig.from(params)
-    val localSource = buildLocalIconLayers(icon, localPipeline, params.backgroundSeparationPercent, AdaptiveForegroundMode.fromValue(params.adaptiveForegroundMode), params.adaptiveDirectMaxCoveragePercent, params.adaptiveDirectMaxCoverageIncreasePercent, params.adaptiveMaskEdgeCoveragePercent, params.adaptiveMaskMinCoveragePercent, params.adaptiveCenterEpsilonPercent)
+    val localSource = buildLocalIconLayers(icon, localPipeline, params.backgroundSeparationPercent, AdaptiveForegroundMode.fromValue(params.adaptiveForegroundMode), params.adaptiveDirectMaxCoveragePercent, params.adaptiveDirectMaxCoverageIncreasePercent, params.adaptiveMaskEdgeCoveragePercent, params.adaptiveMaskMinCoveragePercent, params.adaptiveCenterEpsilonPercent, layerRoles)
     val localCandidateSet = buildLocalCandidates(localSource, localSourceIcon, localPipeline, OriginalForegroundCleanupMode.fromValue(params.originalForegroundCleanupMode), params.plateRemovalPercent, params.shadowRemovalPercent, params.backgroundSeparationPercent)
     val localCandidates = localCandidateSet.candidates
     val candidates = if (useGpt) {
@@ -519,6 +521,8 @@ internal fun generateArtPlusPackage(
         monochromeRaw = localSource.monochrome,
         candidates = candidates,
         autoLocalChoice = localCandidateSet.autoChoice,
+        iconLayers = localSource.layers,
+        layerRoles = layerRoles,
     )
     writePackageOutputs(
         session = session,

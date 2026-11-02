@@ -25,6 +25,8 @@ import dev.artplus.mobile.GPT_RESPONSE_MODEL
 import dev.artplus.mobile.SIZE_1X1
 import dev.artplus.mobile.imaging.CustomImageKind
 import dev.artplus.mobile.imaging.IconCandidate
+import dev.artplus.mobile.imaging.IconLayer
+import dev.artplus.mobile.imaging.IconLayerRole
 import dev.artplus.mobile.imaging.PreviewChoice
 import dev.artplus.mobile.imaging.solidBitmap
 
@@ -113,6 +115,8 @@ internal data class GenerationSession(
     val customBackgrounds: Map<PreviewMode, Bitmap> = emptyMap(),
     val autoLocalChoice: PreviewChoice,
     val canRebuildLocalCandidates: Boolean = true,
+    val iconLayers: List<IconLayer> = emptyList(),
+    val layerRoles: Map<String, IconLayerRole> = emptyMap(),
 )
 
 internal enum class PreviewMode(val label: String) {

@@ -5,6 +5,7 @@ import android.app.WallpaperManager
 import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
@@ -14,9 +15,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalContext
@@ -49,9 +53,11 @@ import dev.artplus.mobile.ui.components.TitleBarIconButton
 import dev.artplus.mobile.ui.pages.PagerShellPage
 import dev.artplus.mobile.ui.pages.home.GeneratedPreviewCard
 import dev.artplus.mobile.ui.pages.home.ForegroundSubjectCard
-import dev.artplus.mobile.ui.pages.home.LayerDebugCard
+import dev.artplus.mobile.ui.pages.home.IconLayerDialog
+import dev.artplus.mobile.ui.pages.home.IconLayerStrip
 import dev.artplus.mobile.ui.pages.home.PreviewControlCard
 import dev.artplus.mobile.ui.pages.home.StatusCard
+import dev.artplus.mobile.ui.pages.home.alphaMaskBitmap
 import dev.artplus.mobile.ui.pages.home.applyPreviewChoiceToAll
 import dev.artplus.mobile.ui.pages.home.applyRmbgCandidateForMode
 import dev.artplus.mobile.ui.pages.home.generateGptCandidateForMode
@@ -94,6 +100,23 @@ internal fun MainActivity.HomeTabPage(
     val batchConfigState by mainViewModel.batchPreviewConfig.collectAsState()
     val paramsState by mainViewModel.params.collectAsState()
     val gptSettingsState by mainViewModel.gptRmbgSettings.collectAsState()
+    // 图层分配面板：只在「当前应用」卡片里点图层时打开。
+    var showLayerDialog by remember { mutableStateOf(false) }
+    // 能拆层的图标（自适应图标）才在「当前应用」下面挂图层条。
+    val layerStripSlot: (@Composable () -> Unit)? = previewSessionState.activeGenerationSession
+        ?.takeIf { it.iconLayers.isNotEmpty() && it.canRebuildLocalCandidates }
+        ?.let { layerSession ->
+            {
+                IconLayerStrip(
+                    layers = layerSession.iconLayers,
+                    foregroundMask = remember(layerSession.baseRecfg) {
+                        alphaMaskBitmap(layerSession.baseRecfg)?.asImageBitmap()
+                    },
+                    roles = layerSession.layerRoles,
+                    onOpenLayers = { showLayerDialog = true },
+                )
+            }
+        }
 PagerShellPage(
                     title = "ArtPlus",
                     actions = {
@@ -123,6 +146,7 @@ PagerShellPage(
                     },
                     showPreviewStrip = previewSessionState.previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
+                    Box(modifier = Modifier.fillMaxSize()) {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -183,6 +207,7 @@ PagerShellPage(
         } },
                 )
      },
+                layerStrip = layerStripSlot,
             )
                         }
                         // 热修复2：预览卡渲染位经已订阅 previewSessionState 读取（裸读 .value 不触发重组，
@@ -478,25 +503,30 @@ val __act3 = LocalContext.current
                                 } },
                             )
                         }
-                        // 卡片自己在素材不全时什么都不画，这里同条件挡住小标题，免得只剩一个标题。
-                        if (
-                            previewSessionState.previewDirPath != null &&
-                            previewSessionState.activeGenerationSession != null &&
-                            previewSessionState.sharedPreviewAssets != null
-                        ) {
-                            sectionItem(key = "layer_debug", title = "图层调试") {
-    LayerDebugCard(
-                // 热修复2：调试卡渲染位经已订阅 previewSessionState 读取。
-                dirPath = previewSessionState.previewDirPath,
-                packageName = previewSessionState.previewPackageName,
-                session = previewSessionState.activeGenerationSession?.takeIf {
-                    it.packageName == previewSessionState.previewPackageName && it.outDir.absolutePath == previewSessionState.previewDirPath
-                },
-                assets = previewSessionState.sharedPreviewAssets,
-                tuningState = paramsState,
-            )
-                            }
-                        }
+                    }
+                    val dialogSession = previewSessionState.activeGenerationSession
+                    if (showLayerDialog && dialogSession != null && dialogSession.iconLayers.isNotEmpty()) {
+                        IconLayerDialog(
+                            show = true,
+                            layers = dialogSession.iconLayers,
+                            roles = dialogSession.layerRoles,
+                            onRoleChange = { key, role ->
+                                mainViewModel.updatePreviewSession { v ->
+                                    val current = v.activeGenerationSession ?: return@updatePreviewSession v
+                                    v.copy(activeGenerationSession = current.copy(layerRoles = current.layerRoles + (key to role)))
+                                }
+                                tuningActions.refresh(true)
+                            },
+                            onReset = {
+                                mainViewModel.updatePreviewSession { v ->
+                                    val current = v.activeGenerationSession ?: return@updatePreviewSession v
+                                    v.copy(activeGenerationSession = current.copy(layerRoles = emptyMap()))
+                                }
+                                tuningActions.refresh(true)
+                            },
+                            onDismiss = { showLayerDialog = false },
+                        )
+                    }
                     }
                 }
 }
