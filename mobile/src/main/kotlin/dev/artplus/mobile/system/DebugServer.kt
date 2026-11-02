@@ -518,16 +518,15 @@ internal class DebugHttpServer(private val port: Int, private val hooks: DebugSe
     private fun startTcpServer() {
         thread = Thread({
             runCatching {
-                ServerSocket().use { server ->
-                    server.reuseAddress = true
-                    server.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), port))
-                    serverSocket = server
-                    while (running) {
-                        val socket = runCatching { server.accept() }.getOrNull() ?: break
-                        Thread({ handle(socket) }, "ArtPlusDebugHttpClient").also {
-                            it.isDaemon = true
-                            it.start()
-                        }
+                val server = ServerSocket()
+                server.reuseAddress = true
+                server.bind(InetSocketAddress(InetAddress.getLoopbackAddress(), port))
+                serverSocket = server
+                while (running) {
+                    val socket = runCatching { server.accept() }.getOrNull() ?: break
+                    Thread({ handle(socket) }, "ArtPlusDebugHttpClient").also {
+                        it.isDaemon = true
+                        it.start()
                     }
                 }
             }.onFailure {
@@ -545,7 +544,7 @@ internal class DebugHttpServer(private val port: Int, private val hooks: DebugSe
         localThread = Thread({
             var server: LocalServerSocket? = null
             try {
-                server = LocalServerSocket(DEBUG_HTTP_ABSTRACT_NAME)
+                val server = LocalServerSocket(DEBUG_HTTP_ABSTRACT_NAME)
                 localServerSocket = server
                 while (running) {
                     val socket = runCatching { server.accept() }.getOrNull() ?: break
@@ -558,8 +557,6 @@ internal class DebugHttpServer(private val port: Int, private val hooks: DebugSe
                 if (running) {
                     hooks.onStatus("Debug local HTTP 启动失败: ${error.message ?: error.javaClass.simpleName}")
                 }
-            } finally {
-                runCatching { server?.close() }
             }
         }, "ArtPlusDebugLocalHttp").also {
             it.isDaemon = true
