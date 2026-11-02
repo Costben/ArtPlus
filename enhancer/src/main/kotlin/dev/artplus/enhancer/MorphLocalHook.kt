@@ -112,25 +112,10 @@ object MorphLocalHook {
                 }
             }
 
-            // 1x1 图标锁定：即使应用动态切换别名、或向 PackageManager 取新图，
-            // 只要被 ArtPlus 托管，直接在 applyCacheEntry 核心入口处以 ArtPlus 本地素材覆盖。
-            val specificHook = module.hookTarget(cls, "getSpecificIcon", ComponentName::class.java) { chain ->
-                val cn = chain.args.getOrNull(0) as? ComponentName
-                val pkg = cn?.packageName
-                if (pkg != null && isManaged(pkg)) {
-                    val custom = ArtPlusAssets.loadBitmap(pkg)
-                    if (custom != null) {
-                        val p = runCatching { custom.getPixel(custom.width / 2, custom.height / 2) }.getOrDefault(0)
-                        module.log(
-                            Log.INFO, MainModule.TAG,
-                            "$TAG $pkg locked to ArtPlus icon size=${custom.width}x${custom.height} centerPixel=#${Integer.toHexString(p)} (bypassed alias icon)",
-                        )
-                        return@hookTarget custom
-                    }
-                }
-                chain.proceed()
-            }
-            if (specificHook) hooked++
+            // 1x1 图标不在这里接管。launcher 自己会读 uxicons 里的 recbg / recfg 并合成，
+            // 走的是系统遮罩和「灵感 / 单色」主题取色；一旦在这里返回一张合成图，
+            // 就等于把整条系统渲染链路短路掉，图标会停在直角、彩色、不跟随主题的状态。
+            // 需要锁定的只有下面那几张 fancy / morph 缓存入口。
         }.also {
             if (it == null) {
                 module.log(Log.WARN, MainModule.TAG, "$TAG $ICON_CACHE_EXT not found in launcher")

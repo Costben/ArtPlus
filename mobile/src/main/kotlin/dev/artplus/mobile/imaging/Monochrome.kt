@@ -3,6 +3,7 @@ package dev.artplus.mobile.imaging
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import dev.artplus.mobile.FOREGROUND_EDGE_POLISH_RADIUS
 import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
 import dev.artplus.mobile.MONO_ALPHA_GAMMA
@@ -239,6 +240,61 @@ internal fun sharpenMonochromeAlpha(source: Bitmap, nativeSource: Boolean = fals
     val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     out.setPixels(outPixels, 0, width, 0, 0, width, height)
     return out
+}
+
+/**
+ * 把蒙版主体拉到接近满不透明。
+ *
+ * 前景本身带半透明时（玻璃质感、柔光边、半透明描边），`alpha × 亮度` 算出来的
+ * 蒙版整片停在六到七成，系统主题着色后对比度不到 2.5:1，桌面上看就是一张空卡片。
+ * 形状信息没有丢，只是整体压低了。
+ *
+ * 参照取 90 分位而不是最大值：有些图标的高 alpha 只出现在一圈极细的描边上，
+ * 按最大值缩放会把主体的提升量吃掉，图案还是灰的。
+ */
+internal fun normalizeMonochromeAlpha(source: Bitmap): Bitmap {
+    val width = source.width
+    val height = source.height
+    val pixels = IntArray(width * height)
+    source.getPixels(pixels, 0, width, 0, 0, width, height)
+
+    val buckets = IntArray(256)
+    var visible = 0
+    for (pixel in pixels) {
+        val alpha = AndroidColor.alpha(pixel)
+        if (alpha > 0) {
+            buckets[alpha]++
+            visible++
+        }
+    }
+    if (visible == 0) return source
+
+    val target = (visible * 0.9).toInt().coerceAtLeast(1)
+    var accumulated = 0
+    var reference = 255
+    for (alpha in 1..255) {
+        accumulated += buckets[alpha]
+        if (accumulated >= target) {
+            reference = alpha
+            break
+        }
+    }
+    if (reference >= 255) return source
+
+    val scale = 255.0 / reference
+    val out = IntArray(pixels.size)
+    for (i in pixels.indices) {
+        val alpha = AndroidColor.alpha(pixels[i])
+        if (alpha == 0) {
+            out[i] = AndroidColor.TRANSPARENT
+        } else {
+            val scaled = (alpha * scale).roundToInt().coerceIn(0, 255)
+            out[i] = (scaled shl 24) or (pixels[i] and 0x00ffffff)
+        }
+    }
+    val result = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    result.setPixels(out, 0, width, 0, 0, width, height)
+    return result
 }
 
 internal fun trimMonochromeEdge(source: Bitmap): Bitmap {

@@ -431,7 +431,7 @@ internal fun monochromeForCandidate(
             monochromeAlpha(foreground, invertLuma = invertLuma)
         }
     }
-    return trimMonochromeEdge(monochrome)
+    return normalizeMonochromeAlpha(trimMonochromeEdge(monochrome))
 }
 
 internal fun renderCandidateForeground(

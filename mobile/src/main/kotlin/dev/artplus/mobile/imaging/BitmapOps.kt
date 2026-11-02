@@ -117,3 +117,11 @@ internal fun ensureFreshDir(dir: File) {
         error("无法创建目录: $dir")
     }
 }
+
+internal fun compositeBitmaps(background: Bitmap, foreground: Bitmap): Bitmap {
+    val out = Bitmap.createBitmap(background.width, background.height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(out)
+    canvas.drawBitmap(background, 0f, 0f, null)
+    canvas.drawBitmap(foreground, (background.width - foreground.width) / 2f, (background.height - foreground.height) / 2f, null)
+    return out
+}

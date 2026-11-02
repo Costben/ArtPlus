@@ -379,8 +379,8 @@ private fun EnhancerScreen() {
                         )
                         HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                         Text(
-                            text = "判定依据：/data/oplus/uxicons/<包名>/ 内存在 monochrome_light.png 或 " +
-                                "monochrome_dark.png 即自动接管。系统图标引擎将被绕过，2x2 与 1x1 均稳定回落到 ArtPlus 本地素材路径。",
+                            text = "判定依据：/data/oplus/uxicons/<包名>/ 内存在 ArtPlus 写入时留下的 " +
+                                ".artplusmodified 标记。系统图标引擎将被绕过，2x2 与 1x1 均稳定回落到 ArtPlus 本地素材路径。",
                             style = COUITheme.textStyles.body2,
                             color = COUITheme.colorScheme.onSurfaceSecondary,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),

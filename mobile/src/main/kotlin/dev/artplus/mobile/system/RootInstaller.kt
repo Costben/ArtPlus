@@ -25,6 +25,7 @@ import dev.artplus.mobile.imaging.buildLocalCandidates
 import dev.artplus.mobile.imaging.buildLocalIconLayers
 import dev.artplus.mobile.imaging.candidateWithCustomOverrides
 import dev.artplus.mobile.imaging.centerOnCanvas
+import dev.artplus.mobile.imaging.compositeBitmaps
 import dev.artplus.mobile.imaging.drawDrawable
 import dev.artplus.mobile.imaging.drawLocalCandidateSourceIcon
 import dev.artplus.mobile.imaging.ensureCleanDir
@@ -109,39 +110,58 @@ private fun pristineBackupCommand(target: String): String {
 internal fun installWithRoot(packageDir: File, packageName: String, mode: RootWriteMode) {
     val target = "$ROOT_UXICONS_DIR/$packageName"
     val source = packageDir.absolutePath
+    // day.png 会被 launcher 当成成品图标原样绘制（不套圆角、不参与主题取色），
+    // monochrome_light / monochrome_dark 会被当成无底板蒙版直接铺在壁纸上。
+    // 这三个名字都不是 ColorOS 的 uxicon 契约，旧版本写过就留在设备上，
+    // 每次写入先清掉，免得它们继续短路系统合成。
+    val staleCommand = """
+        find ${shQuote(target)} -maxdepth 1 -type f \( -name 'day.png' -o -name 'monochrome_light*.png' -o -name 'monochrome_dark*.png' \) -delete
+    """.trimIndent()
     val copyCommand = when (mode) {
         RootWriteMode.All -> """
-            find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' -exec cp -f {} ${shQuote(target)}/ \;
+            find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' \
+                ! -name 'day.png' ! -name 'monochrome_light*.png' ! -name 'monochrome_dark*.png' \
+                -exec cp -f {} ${shQuote(target)}/ \;
         """.trimIndent()
         RootWriteMode.StandardOnly -> """
             find ${shQuote(target)} -maxdepth 1 -type f -name 'monochrome*.png' -delete
-            find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' ! -name 'monochrome*.png' -exec cp -f {} ${shQuote(target)}/ \;
+            find ${shQuote(source)} -maxdepth 1 -type f -name '*.png' ! -name 'monochrome*.png' \
+                ! -name 'day.png' \
+                -exec cp -f {} ${shQuote(target)}/ \;
         """.trimIndent()
         RootWriteMode.MonochromeOnly -> """
-            find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome*.png' -exec cp -f {} ${shQuote(target)}/ \;
+            find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome*.png' \
+                ! -name 'monochrome_light*.png' ! -name 'monochrome_dark*.png' \
+                -exec cp -f {} ${shQuote(target)}/ \;
         """.trimIndent()
         // 细分档只覆盖对应那几套文件，不删除目标目录里其他档位的图标：
         // 「应用亮色」不该把用户已经写好的暗色/单色一起抹掉。
-        // day/nsd/mat/peb 是亮色前景的调色衍生（ColorOS 主题取色用），跟亮色一起走。
         RootWriteMode.LightOnly -> """
-            find ${shQuote(source)} -maxdepth 1 -type f \( -name 'recbg*.png' -o -name 'recfg*.png' -o -name 'day.png' -o -name 'nsd.png' -o -name 'mat.png' -o -name 'peb.png' \) -exec cp -f {} ${shQuote(target)}/ \;
+            find ${shQuote(source)} -maxdepth 1 -type f \( -name 'recbg*.png' -o -name 'recfg*.png' -o -name 'nsd.png' -o -name 'mat.png' -o -name 'peb.png' \) -exec cp -f {} ${shQuote(target)}/ \;
         """.trimIndent()
         RootWriteMode.DarkOnly -> """
             find ${shQuote(source)} -maxdepth 1 -type f -name 'rec_night*.png' -exec cp -f {} ${shQuote(target)}/ \;
         """.trimIndent()
+        // 单色亮/暗两档最终都落到系统认的 monochrome.png：
+        // 亮色那份改名后覆盖，暗色那份本身就是 monochrome 的内容。
         RootWriteMode.MonochromeLightOnly -> """
-            find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome_light*.png' -exec cp -f {} ${shQuote(target)}/ \;
+            find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome_light*.png' | while IFS= read -r f; do
+                name=${'$'}{f##*/}
+                dst=${'$'}(printf '%s' "${'$'}name" | sed 's/^monochrome_light/monochrome/')
+                cp -f "${'$'}f" ${shQuote(target)}/"${'$'}dst"
+            done
         """.trimIndent()
-        // 单色暗色 = monochrome.png（旧别名）+ monochrome_dark.png + monochrome_<尺寸>.png 的
-        // morph 变体（后三者都由单色暗色派生），排除单色亮色那份。
         RootWriteMode.MonochromeDarkOnly -> """
-            find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome*.png' ! -name 'monochrome_light*.png' -exec cp -f {} ${shQuote(target)}/ \;
+            find ${shQuote(source)} -maxdepth 1 -type f -name 'monochrome*.png' \
+                ! -name 'monochrome_light*.png' ! -name 'monochrome_dark*.png' \
+                -exec cp -f {} ${shQuote(target)}/ \;
         """.trimIndent()
     }
     val command = """
         set -e
         mkdir -p ${shQuote(target)}
         ${pristineBackupCommand(target)}
+        $staleCommand
         $copyCommand
         find ${shQuote(target)} -maxdepth 1 -type f -name '*.png' -exec chmod 0644 {} +
         restorecon -RF ${shQuote(target)} 2>/dev/null || true
@@ -435,10 +455,14 @@ internal fun writePackageOutputs(
     savePng(centerOnCanvas(rawMonochromeDark, SIZE_2X1[0], SIZE_2X1[1]), File(session.outDir, "monochrome_2x1.png"))
     savePng(centerOnCanvas(rawMonochromeDark, SIZE_2X2, SIZE_2X2), File(session.outDir, "monochrome_2x2.png"))
 
-    savePng(adjustColor(lightRecfg, 1.3f, 1.0f), File(session.outDir, "day.png"))
-    savePng(adjustColor(lightRecfg, 0.9f, 0.9f), File(session.outDir, "nsd.png"))
-    savePng(adjustColor(lightRecfg, 0.9f, 1.05f), File(session.outDir, "mat.png"))
-    savePng(adjustColor(lightRecfg, 0.7f, 0.95f), File(session.outDir, "peb.png"))
+    // day.png 不写。launcher 把它当成品图标原样绘制：既不套圆角遮罩，也不交给
+    // 「灵感 / 单色」主题取色，包内一旦存在它，整包的主题化就被短路成一张矩形方板。
+    // 系统自己的 uxicon 目录里也有 day.png，但那是「彩昼」档的导出物，桌面 1x1 不走它。
+    // nsd / peb / mat 对应「夜影 / 鹅卵石 / 材料」，系统为这三档存的是完整图标，
+    // 所以这里同样贴合成图，而不是只有前景层。
+    savePng(compositeBitmaps(adjustColor(lightRecbg, 0.9f, 0.9f), adjustColor(lightRecfg, 0.9f, 0.9f)), File(session.outDir, "nsd.png"))
+    savePng(compositeBitmaps(adjustColor(lightRecbg, 0.9f, 1.05f), adjustColor(lightRecfg, 0.9f, 1.05f)), File(session.outDir, "mat.png"))
+    savePng(compositeBitmaps(adjustColor(lightRecbg, 0.7f, 0.95f), adjustColor(lightRecfg, 0.7f, 0.95f)), File(session.outDir, "peb.png"))
 }
 
 internal fun generateArtPlusPackage(
