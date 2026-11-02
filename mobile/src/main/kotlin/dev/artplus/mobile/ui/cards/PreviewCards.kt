@@ -9,9 +9,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -131,11 +131,12 @@ internal fun PreviewChoiceActions(
     ) {
         if (showApplyAll) {
             CompactActionButton(
-                text = "应用",
+                text = "全部应用",
                 onClick = onApplyAll,
                 enabled = applyEnabled,
                 modifier = Modifier.fillMaxWidth(),
-                height = 56.dp,
+                // 88dp 装得下四个汉字，只需收窄默认的左右内边距，避免折成两行
+                insideMargin = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
             )
         }
     }

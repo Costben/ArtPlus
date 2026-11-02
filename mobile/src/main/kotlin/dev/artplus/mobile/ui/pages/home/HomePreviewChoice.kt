@@ -103,14 +103,14 @@ internal fun MoreRulesGroupRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 78.dp)
+            .heightIn(min = 68.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(background)
             .clickable(
                 enabled = !isBusy && !isGeneratingGptCandidate && !isGeneratingRmbgCandidate,
                 onClick = onToggle,
             )
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -298,13 +298,13 @@ internal fun PreviewChoiceRow(
                     onApply(mode, effectiveChoice)
                 }
             }
-            .padding(10.dp),
+            .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(
             modifier = Modifier
-                .size(58.dp)
+                .size(52.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(COUITheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
@@ -469,19 +469,18 @@ internal fun PreviewChoiceBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .imePadding()
-                .verticalScroll(scrollState)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+                .verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
-                text = "每个槽位单独选择",
+                text = "每个槽位单独选择，直接点击所在行应用",
                 style = COUITheme.textStyles.footnote1,
                 color = COUITheme.colorScheme.onSurfaceVariantSummary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 4.dp),
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
 
@@ -507,7 +506,7 @@ internal fun PreviewChoiceBottomSheet(
                 showIcon = false,
                 icon = null,
                 standaloneCard = true,
-                cardHeight = 78.dp,
+                cardHeight = 68.dp,
                 inputBackgroundColor = COUITheme.colorScheme.secondaryContainer,
             )
 
