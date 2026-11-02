@@ -35,8 +35,10 @@ import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_PACKAGE
 import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_ROOT_WRITE_MODE
 import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_TOKEN
 import dev.artplus.mobile.EXTRA_DEBUG_GENERATE_USE_GPT
+import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
 import dev.artplus.mobile.LOCAL_ICON_RENDER_SCALE
 import dev.artplus.mobile.LocalPipelineConfig
+import dev.artplus.mobile.NORMALIZE_ALPHA_BOUNDS_THRESHOLD
 import dev.artplus.mobile.SIZE_1X1
 import dev.artplus.mobile.TuningParams
 import dev.artplus.mobile.data.AppEntry
@@ -46,19 +48,26 @@ import dev.artplus.mobile.imaging.IconCandidate
 import dev.artplus.mobile.imaging.LocalSeparationMode
 import dev.artplus.mobile.imaging.OriginalForegroundCleanupMode
 import dev.artplus.mobile.imaging.RmbgInferenceReport
+import dev.artplus.mobile.imaging.alphaBounds
 import dev.artplus.mobile.imaging.alphaCoverage
 import dev.artplus.mobile.imaging.bitmapStatsJson
+import dev.artplus.mobile.imaging.boundsJson
 import dev.artplus.mobile.imaging.buildLocalCandidates
 import dev.artplus.mobile.imaging.buildLocalIconLayers
 import dev.artplus.mobile.imaging.chooseBetterAdaptiveForeground
+import dev.artplus.mobile.imaging.drawAdaptiveLayer
 import dev.artplus.mobile.imaging.drawDrawable
 import dev.artplus.mobile.imaging.drawLocalCandidateSourceIcon
 import dev.artplus.mobile.imaging.ensureFreshDir
 import dev.artplus.mobile.imaging.hasAdaptiveMaskArtifact
+import dev.artplus.mobile.imaging.hasDetailedAdaptiveBackground
+import dev.artplus.mobile.imaging.hasLayeredAdaptiveForegroundPlate
 import dev.artplus.mobile.imaging.isUsableDirectAdaptiveForeground
+import dev.artplus.mobile.imaging.medianVisibleColor
 import dev.artplus.mobile.imaging.nightForeground
 import dev.artplus.mobile.imaging.resizeBitmap
 import dev.artplus.mobile.imaging.savePng
+import dev.artplus.mobile.imaging.shouldPreferDirectAdaptiveForeground
 import dev.artplus.mobile.imaging.subtractBackground
 import dev.artplus.mobile.pipeline.GenerationSession
 import dev.artplus.mobile.pipeline.PreviewMode
@@ -383,13 +392,12 @@ internal fun debugInspectPackage(
 
     if (icon is AdaptiveIconDrawable) {
         val renderSize = SIZE_1X1 * LOCAL_ICON_RENDER_SCALE
-        val background = drawDrawable(
+        val background = drawAdaptiveLayer(
             icon.background ?: ColorDrawable(AndroidColor.WHITE),
-            renderSize,
             renderSize,
             transparent = false,
         )
-        val direct = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
+        val direct = drawAdaptiveLayer(icon.foreground, renderSize)
         val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
         val subtracted = if (localPipeline.backgroundSeparationEnabled) {
             subtractBackground(composed, background, pipeline = localPipeline, backgroundSeparationPercent = tuning.backgroundSeparationPercent)
@@ -410,6 +418,16 @@ internal fun debugInspectPackage(
             .put("subtracted_coverage", alphaCoverage(subtracted))
             .put("direct_coverage", alphaCoverage(direct))
             .put("chosen_preserve_geometry", selection.preserveGeometry)
+            .put(
+                "diagnostics",
+                JSONObject()
+                    .put("detailed_background", hasDetailedAdaptiveBackground(background))
+                    .put("layered_plate", hasLayeredAdaptiveForegroundPlate(direct, medianVisibleColor(background)))
+                    .put("prefer_direct", shouldPreferDirectAdaptiveForeground(subtracted, direct, background))
+                    .put("direct_bounds_visible", boundsJson(alphaBounds(direct, LOCAL_ALPHA_VISIBLE_THRESHOLD)))
+                    .put("direct_bounds_content", boundsJson(alphaBounds(direct, NORMALIZE_ALPHA_BOUNDS_THRESHOLD)))
+                    .put("composed_bounds_visible", boundsJson(alphaBounds(subtracted, LOCAL_ALPHA_VISIBLE_THRESHOLD))),
+            )
         metadata.put("adaptive", adaptiveJson)
     }
 

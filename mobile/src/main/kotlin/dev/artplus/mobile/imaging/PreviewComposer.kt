@@ -364,8 +364,19 @@ internal fun effectiveChoiceForPreviewRow(
 internal fun scaleMonochromeForTheme(source: Bitmap, monochromeThemeScale: Float): Bitmap =
     scaleBitmapAroundAlphaCenter(source, monochromeThemeScale)
 
-internal fun renderCandidateBitmap(bitmap: Bitmap, foregroundSubjectPercent: Int): Bitmap =
-    normalizeForegroundSubjectSize(bitmap, foregroundSubjectPercent)
+/**
+ * 候选图层的最终几何处理。
+ *
+ * [preserveGeometry] 为 true 时原样返回：这一类候选的前景就是图标自身的
+ * 前景层（自适应图标的 foreground、或自定义 drawable 的叠层），位置和大小
+ * 都已经对好，再按包围盒缩放一次只会把元素挪位。
+ */
+internal fun renderCandidateBitmap(
+    bitmap: Bitmap,
+    foregroundSubjectPercent: Int,
+    preserveGeometry: Boolean = false,
+): Bitmap =
+    if (preserveGeometry) bitmap else normalizeForegroundSubjectSize(bitmap, foregroundSubjectPercent)
 
 internal fun applyForegroundShadow(source: Bitmap, foregroundShadowLevel: Int): Bitmap {
     val level = foregroundShadowLevel.coerceIn(MIN_FOREGROUND_SHADOW_LEVEL, MAX_FOREGROUND_SHADOW_LEVEL)
@@ -389,7 +400,11 @@ internal fun renderCandidateForegroundBase(
     foregroundSubjectPercent: Int,
     rmbgTunedForeground: (IconCandidate) -> Bitmap?,
 ): Bitmap =
-    renderCandidateBitmap(rmbgTunedForeground(candidate) ?: candidate.recfgRaw, foregroundSubjectPercent).let { bitmap ->
+    renderCandidateBitmap(
+        rmbgTunedForeground(candidate) ?: candidate.recfgRaw,
+        foregroundSubjectPercent,
+        candidate.preserveGeometry,
+    ).let { bitmap ->
         if (candidate.isLocal && !candidate.applyLocalEdgePolish) bitmap else polishForegroundEdges(bitmap, edgePolishPercent)
     }
 
@@ -402,13 +417,15 @@ internal fun monochromeForCandidate(
 ): Bitmap {
     if (candidate.monochromeFromDefaultSubject) {
         return simpleMonochromeAlphaFromDefaultSubject(
-            renderCandidateBitmap(candidate.recfgRaw, foregroundSubjectPercent),
+            renderCandidateBitmap(candidate.recfgRaw, foregroundSubjectPercent, candidate.preserveGeometry),
             invertLuma = invertLuma,
         )
     }
     val foreground = renderCandidateForegroundBase(candidate, edgePolishPercent, foregroundSubjectPercent, rmbgTunedForeground)
-    val rmbgSource = rmbgTunedForeground(candidate)?.let { renderCandidateBitmap(it, foregroundSubjectPercent) }
-    val nativeSource = candidate.monochromeRaw?.let { renderCandidateBitmap(it, foregroundSubjectPercent) }
+    val rmbgSource = rmbgTunedForeground(candidate)
+        ?.let { renderCandidateBitmap(it, foregroundSubjectPercent, candidate.preserveGeometry) }
+    val nativeSource = candidate.monochromeRaw
+        ?.let { renderCandidateBitmap(it, foregroundSubjectPercent, candidate.preserveGeometry) }
     val monochrome = when {
         rmbgSource != null -> {
             monochromeAlpha(rmbgSource, invertLuma = invertLuma)

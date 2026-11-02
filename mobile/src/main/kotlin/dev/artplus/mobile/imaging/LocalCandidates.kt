@@ -131,15 +131,19 @@ internal fun buildLocalCandidates(
     if (twoLayerResult?.candidate != null) {
         candidates[PreviewChoice.TwoLayer] = twoLayerResult.candidate
     }
-    val autoChoice = if (pipeline.autoSelectionEnabled) {
-        chooseAutoLocalChoice(
-            original = originalForeground,
-            cleanup = cleanupResult.bitmap,
-            twoLayer = twoLayerResult,
-            rmbg = null,
-        ).takeIf { candidates.containsKey(it) } ?: PreviewChoice.Original
-    } else {
-        defaultLocalChoiceFromAvailable(candidates)
+    val autoChoice = when {
+        // 背景层自带画面时整个图层栈就是成图本身，「清理」只能靠猜，
+        // 原样叠加的那一份才和原图标一致。自动选择开没开都一样。
+        localSource.preserveGeometry && candidates.containsKey(PreviewChoice.ComponentBackground) ->
+            PreviewChoice.ComponentBackground
+        pipeline.autoSelectionEnabled ->
+            chooseAutoLocalChoice(
+                original = originalForeground,
+                cleanup = cleanupResult.bitmap,
+                twoLayer = twoLayerResult,
+                rmbg = null,
+            ).takeIf { candidates.containsKey(it) } ?: PreviewChoice.Original
+        else -> defaultLocalChoiceFromAvailable(candidates)
     }
     return LocalCandidateSet(candidates = candidates, autoChoice = autoChoice)
 }

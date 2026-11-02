@@ -25,6 +25,7 @@ import dev.artplus.mobile.LOCAL_ALPHA_VISIBLE_THRESHOLD
 import dev.artplus.mobile.LOCAL_ICON_RENDER_SCALE
 import dev.artplus.mobile.LocalPipelineConfig
 import dev.artplus.mobile.MONOCHROME_MIN_COVERAGE
+import dev.artplus.mobile.NORMALIZE_ALPHA_BOUNDS_THRESHOLD
 import dev.artplus.mobile.SIZE_1X1
 
 /**
@@ -48,13 +49,12 @@ internal fun buildLocalIconLayers(
 ): LocalIconLayers {
     val renderSize = SIZE_1X1 * LOCAL_ICON_RENDER_SCALE
     if (icon is AdaptiveIconDrawable) {
-        val background = drawDrawable(
+        val background = drawAdaptiveLayer(
             icon.background ?: ColorDrawable(AndroidColor.WHITE),
-            renderSize,
             renderSize,
             transparent = false,
         )
-        val directForeground = drawDrawable(icon.foreground, renderSize, renderSize, transparent = true)
+        val directForeground = drawAdaptiveLayer(icon.foreground, renderSize)
         val composed = drawDrawable(icon, renderSize, renderSize, transparent = true)
         val foreground = if (pipeline.backgroundSeparationEnabled) {
             subtractBackground(composed, background, pipeline = pipeline, backgroundSeparationPercent = backgroundSeparationPercent)
@@ -111,8 +111,6 @@ internal fun buildLocalIconLayers(
                 monochrome = monochrome,
                 pipeline = pipeline,
                 backgroundSeparationPercent = backgroundSeparationPercent,
-                adaptiveDirectMaxCoveragePercent = adaptiveDirectMaxCoveragePercent,
-                adaptiveDirectMaxCoverageIncreasePercent = adaptiveDirectMaxCoverageIncreasePercent,
             )
         } else {
             ComponentCandidates(subject = null, background = null)
@@ -171,24 +169,8 @@ internal fun buildAdaptiveComponentCandidates(
     monochrome: Bitmap?,
     pipeline: LocalPipelineConfig,
     backgroundSeparationPercent: Int,
-    adaptiveDirectMaxCoveragePercent: Int,
-    adaptiveDirectMaxCoverageIncreasePercent: Int,
 ): ComponentCandidates {
-    if (
-        !hasDetailedAdaptiveBackground(background) ||
-        !isUsableDirectAdaptiveForeground(
-            source = directForeground,
-            composedCoverage = alphaCoverage(
-                if (pipeline.backgroundSeparationEnabled) {
-                    subtractBackground(composed, background, pipeline = pipeline, backgroundSeparationPercent = backgroundSeparationPercent)
-                } else {
-                    composed
-                },
-            ),
-            adaptiveDirectMaxCoveragePercent = adaptiveDirectMaxCoveragePercent,
-            adaptiveDirectMaxCoverageIncreasePercent = adaptiveDirectMaxCoverageIncreasePercent,
-        )
-    ) {
+    if (!keepsAdaptiveLayerStack(background, directForeground)) {
         return ComponentCandidates(subject = null, background = null)
     }
     val cleanBackground = estimateAdaptiveCleanBackground(background)
@@ -244,15 +226,7 @@ internal fun chooseBetterAdaptiveForeground(
     if (adaptiveForegroundMode == AdaptiveForegroundMode.Direct) {
         return AdaptiveForegroundSelection(repairLocalTransparentEdgeColors(directForeground, pipeline), preserveGeometry = true)
     }
-    if (
-        hasDetailedAdaptiveBackground(background) &&
-        isUsableDirectAdaptiveForeground(
-            source = directForeground,
-            composedCoverage = alphaCoverage(fromComposed),
-            adaptiveDirectMaxCoveragePercent = adaptiveDirectMaxCoveragePercent,
-            adaptiveDirectMaxCoverageIncreasePercent = adaptiveDirectMaxCoverageIncreasePercent,
-        )
-    ) {
+    if (keepsAdaptiveLayerStack(background, directForeground)) {
         return AdaptiveForegroundSelection(repairLocalTransparentEdgeColors(directForeground, pipeline), preserveGeometry = true)
     }
     if (shouldPreferDirectAdaptiveForeground(fromComposed, directForeground, background)) {
@@ -284,6 +258,16 @@ internal fun chooseBetterAdaptiveForeground(
         AdaptiveForegroundSelection(repairLocalTransparentEdgeColors(directForeground, pipeline), preserveGeometry = true)
     }
 }
+
+/**
+ * 背景层自带画面（渐变、纹理、插画）时，图标的层次结构本身就是成图的一部分：
+ * 底板、底板上的高光、前景的叠加关系全都参与构图。这种图标一旦走「减背景 + 按包围盒
+ * 重新摆主体」的路子，元素位置就会整体挪动（Shizuku 这类含光晕的多层图标最明显）。
+ * 这类图标直接保留原始图层栈，不缩放、不重排。
+ */
+internal fun keepsAdaptiveLayerStack(background: Bitmap, directForeground: Bitmap): Boolean =
+    hasDetailedAdaptiveBackground(background) &&
+        alphaCoverage(directForeground) >= ADAPTIVE_DIRECT_MIN_COVERAGE
 
 internal fun hasDetailedAdaptiveBackground(background: Bitmap): Boolean {
     val width = background.width
@@ -439,7 +423,10 @@ internal fun isUsableDirectAdaptiveForeground(
     if (coverage > composedCoverage + ratioPercent(adaptiveDirectMaxCoverageIncreasePercent)) {
         return false
     }
-    val bounds = alphaBounds(source, LOCAL_ALPHA_VISIBLE_THRESHOLD) ?: return false
+    // 只有实体内容被裁掉才算风险。自适应图标的背景板常带一圈很淡的外发光，
+    // 用可见阈值（8）量到的包围盒会一路贴到画布边缘，把「底座当背景」这条路整块否掉
+    // （Shizuku 那种带光晕的图标就是），改用内容阈值。
+    val bounds = alphaBounds(source, NORMALIZE_ALPHA_BOUNDS_THRESHOLD) ?: return false
     return !hasAutoCropRisk(bounds, source.width, source.height)
 }
 
