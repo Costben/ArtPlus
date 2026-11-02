@@ -115,6 +115,7 @@ internal data class IconCandidate(
     val monochromeIsNative: Boolean = false,
     val monochromeFromDefaultSubject: Boolean = false,
     val preserveGeometry: Boolean = false,
+    val keepLayerStack: Boolean = false,
     val customFinalBitmap: Bitmap? = null,
     val rmbgSourceRaw: Bitmap? = null,
     val rmbgAlphaRaw: IntArray? = null,

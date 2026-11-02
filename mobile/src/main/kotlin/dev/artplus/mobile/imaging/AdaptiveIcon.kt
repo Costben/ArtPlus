@@ -136,6 +136,7 @@ internal fun buildLocalIconLayers(
                     monochromeRaw = monochrome,
                     monochromeIsNative = monochrome != null,
                     preserveGeometry = foregroundSelection.preserveGeometry,
+                    keepLayerStack = keepLayerStack,
                     applyLocalEdgePolish = pipeline.edgePolishEnabled,
                 )
             },
@@ -193,6 +194,7 @@ internal fun buildAdaptiveComponentCandidates(
         recbg = resizeBitmap(cleanBackground, SIZE_1X1, SIZE_1X1),
         monochromeRaw = null,
         preserveGeometry = true,
+        keepLayerStack = true,
         applyLocalEdgePolish = pipeline.edgePolishEnabled,
     )
     val backgroundCandidate = IconCandidate(
@@ -201,6 +203,7 @@ internal fun buildAdaptiveComponentCandidates(
         monochromeRaw = monochrome,
         monochromeIsNative = monochrome != null,
         preserveGeometry = true,
+        keepLayerStack = true,
         applyLocalEdgePolish = pipeline.edgePolishEnabled,
     )
     return ComponentCandidates(subject = subjectCandidate, background = backgroundCandidate)

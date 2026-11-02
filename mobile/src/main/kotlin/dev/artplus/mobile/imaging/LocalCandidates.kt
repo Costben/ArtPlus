@@ -66,6 +66,7 @@ internal fun buildLocalCandidates(
         monochromeRaw = localSource.monochrome,
         monochromeIsNative = localSource.monochromeIsNative,
         preserveGeometry = localSource.preserveGeometry,
+        keepLayerStack = localSource.keepLayerStack,
         applyLocalEdgePolish = pipeline.edgePolishEnabled,
     )
     val fullResult = separateLocalForeground(
@@ -99,6 +100,7 @@ internal fun buildLocalCandidates(
         monochromeRaw = localSource.monochrome,
         monochromeIsNative = localSource.monochromeIsNative,
         preserveGeometry = localSource.preserveGeometry,
+        keepLayerStack = localSource.keepLayerStack,
         applyLocalEdgePolish = pipeline.edgePolishEnabled,
     )
     val composedBackground = if (

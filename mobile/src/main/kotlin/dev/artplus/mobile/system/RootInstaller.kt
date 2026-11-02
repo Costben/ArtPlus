@@ -33,7 +33,7 @@ import dev.artplus.mobile.imaging.ensureFreshDir
 import dev.artplus.mobile.imaging.iconBackgroundForSize
 import dev.artplus.mobile.imaging.iconForegroundForSize
 import dev.artplus.mobile.imaging.monochromeForCandidate
-import dev.artplus.mobile.imaging.normalDarkForeground
+import dev.artplus.mobile.imaging.nightForegroundForCandidate
 import dev.artplus.mobile.imaging.renderCandidateForegroundBase
 import dev.artplus.mobile.imaging.resizeBitmap
 import dev.artplus.mobile.imaging.savePng
@@ -418,17 +418,19 @@ internal fun writePackageOutputs(
     val nightRecbg1x2 = backgroundForOutputs(nightBaseRecbg, SIZE_1X2[0], SIZE_1X2[1])
     val nightRecbg2x1 = backgroundForOutputs(nightBaseRecbg, SIZE_2X1[0], SIZE_2X1[1])
     val nightRecbg2x2 = backgroundForOutputs(nightBaseRecbg, SIZE_2X2, SIZE_2X2)
-    savePng(normalDarkForeground(nightRecfg, nightRecbg, nightSubjectLightBackgroundEnabled), File(session.outDir, "rec_night.png"))
+    fun nightForOutputs(recfg: Bitmap, recbg: Bitmap): Bitmap =
+        nightForegroundForCandidate(night, recfg, recbg, nightSubjectLightBackgroundEnabled)
+    savePng(nightForOutputs(nightRecfg, nightRecbg), File(session.outDir, "rec_night.png"))
     savePng(
-        normalDarkForeground(nightRecfg1x2, nightRecbg1x2, nightSubjectLightBackgroundEnabled),
+        nightForOutputs(nightRecfg1x2, nightRecbg1x2),
         File(session.outDir, "rec_night_1x2.png"),
     )
     savePng(
-        normalDarkForeground(nightRecfg2x1, nightRecbg2x1, nightSubjectLightBackgroundEnabled),
+        nightForOutputs(nightRecfg2x1, nightRecbg2x1),
         File(session.outDir, "rec_night_2x1.png"),
     )
     savePng(
-        normalDarkForeground(nightRecfg2x2, nightRecbg2x2, nightSubjectLightBackgroundEnabled),
+        nightForOutputs(nightRecfg2x2, nightRecbg2x2),
         File(session.outDir, "rec_night_2x2.png"),
     )
 

@@ -193,7 +193,14 @@ internal fun monochromeAlphaFromMask(source: Bitmap): Bitmap {
     return out
 }
 
-internal fun cleanNativeMonochrome(source: Bitmap): Bitmap {
+/**
+ * 原生单色层转成白底剪影。
+ *
+ * [clampAlpha] 为 true 时把 alpha 压到 [MONO_ALPHA_MAX]，用于「半信半疑」地借用
+ * 系统单色层的场合；图层栈直接来自系统时要传 false，否则整块剪影会比系统里淡
+ * 一档（255 → 230），看起来像蒙了层灰。
+ */
+internal fun cleanNativeMonochrome(source: Bitmap, clampAlpha: Boolean = true): Bitmap {
     val width = source.width
     val height = source.height
     val sourcePixels = IntArray(width * height)
@@ -204,7 +211,7 @@ internal fun cleanNativeMonochrome(source: Bitmap): Bitmap {
         outPixels[i] = if (alpha <= MONO_EDGE_ALPHA_DROP_THRESHOLD) {
             AndroidColor.TRANSPARENT
         } else {
-            (alpha.coerceIn(0, MONO_ALPHA_MAX) shl 24) or 0x00ffffff
+            ((if (clampAlpha) alpha.coerceIn(0, MONO_ALPHA_MAX) else alpha) shl 24) or 0x00ffffff
         }
     }
     val out = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)

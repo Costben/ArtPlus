@@ -143,6 +143,7 @@ internal fun candidateWithCustomOverrides(
             else -> base.monochromeRaw
         },
         preserveGeometry = if (customForeground != null) true else base.preserveGeometry,
+        keepLayerStack = base.keepLayerStack && customForeground == null,
         customFinalBitmap = null,
         rmbgSourceRaw = if (customForeground != null) null else base.rmbgSourceRaw,
         rmbgAlphaRaw = if (customForeground != null) null else base.rmbgAlphaRaw,
@@ -408,6 +409,21 @@ internal fun renderCandidateForegroundBase(
         if (candidate.isLocal && !candidate.applyLocalEdgePolish) bitmap else polishForegroundEdges(bitmap, edgePolishPercent)
     }
 
+/**
+ * 夜间前景。
+ *
+ * 图层栈直接来自系统（[IconCandidate.keepLayerStack]）的图标不再过提亮管线：
+ * 它的前景层本身就是成品，再按 luma 重算一次会把整层洗成一片灰，
+ * 暗色下背景层的画面全被盖住。
+ */
+internal fun nightForegroundForCandidate(
+    candidate: IconCandidate,
+    recfg: Bitmap,
+    recbg: Bitmap,
+    nightSubjectLightBackgroundEnabled: Boolean,
+): Bitmap =
+    if (candidate.keepLayerStack) recfg else normalDarkForeground(recfg, recbg, nightSubjectLightBackgroundEnabled)
+
 internal fun monochromeForCandidate(
     candidate: IconCandidate,
     invertLuma: Boolean = false,
@@ -421,10 +437,15 @@ internal fun monochromeForCandidate(
             invertLuma = invertLuma,
         )
     }
+    val nativeSource = candidate.monochromeRaw
+        ?.let { renderCandidateBitmap(it, foregroundSubjectPercent, candidate.preserveGeometry) }
+    // 图层栈直接来自系统时，单色层也用图标自带的 <monochrome>：它已经是设计好的
+    // 剪影，按 luma 重算只会把眼睛、耳朵这类细节抹掉并留下灰边。
+    if (candidate.keepLayerStack && candidate.monochromeIsNative && nativeSource != null) {
+        return cleanNativeMonochrome(nativeSource, clampAlpha = false)
+    }
     val foreground = renderCandidateForegroundBase(candidate, edgePolishPercent, foregroundSubjectPercent, rmbgTunedForeground)
     val rmbgSource = rmbgTunedForeground(candidate)
-        ?.let { renderCandidateBitmap(it, foregroundSubjectPercent, candidate.preserveGeometry) }
-    val nativeSource = candidate.monochromeRaw
         ?.let { renderCandidateBitmap(it, foregroundSubjectPercent, candidate.preserveGeometry) }
     val monochrome = when {
         rmbgSource != null -> {
@@ -494,7 +515,7 @@ internal fun previewAssetsForSelections(
             foregroundShadowLevel = foregroundShadowLevel,
         )
         val nightRecbg = iconBackgroundForSize(night.recbg, SIZE_1X1, SIZE_1X1)
-        normalDarkForeground(nightRecfg, nightRecbg, nightSubjectLightBackgroundEnabled)
+        nightForegroundForCandidate(night, nightRecfg, nightRecbg, nightSubjectLightBackgroundEnabled)
     }
 
     val monochromeLight = monochromeForCandidate(
@@ -582,7 +603,7 @@ internal fun previewAssetsForCandidate(
     return PreviewAssets(
         recbg = recbg,
         recfg = recfg,
-        recNight = normalDarkForeground(recfg, recbg, nightSubjectLightBackgroundEnabled),
+        recNight = nightForegroundForCandidate(candidate, recfg, recbg, nightSubjectLightBackgroundEnabled),
         monochromeLight = monochromeForCandidate(
             candidate = candidate,
             invertLuma = true,

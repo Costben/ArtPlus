@@ -65,6 +65,7 @@ import dev.artplus.mobile.imaging.hasLayeredAdaptiveForegroundPlate
 import dev.artplus.mobile.imaging.isUsableDirectAdaptiveForeground
 import dev.artplus.mobile.imaging.medianVisibleColor
 import dev.artplus.mobile.imaging.nightForeground
+import dev.artplus.mobile.imaging.nightForegroundForCandidate
 import dev.artplus.mobile.imaging.resizeBitmap
 import dev.artplus.mobile.imaging.savePng
 import dev.artplus.mobile.imaging.shouldPreferDirectAdaptiveForeground
@@ -335,8 +336,8 @@ internal fun saveLayer(outDir: File, name: String, bitmap: Bitmap, metrics: JSON
  * - 纯 helper（drawDrawable/drawLocalCandidateSourceIcon/subtractBackground/
  *   chooseBetterAdaptiveForeground/hasAdaptiveMaskArtifact/isUsableDirectAdaptiveForeground/
  *   alphaCoverage/buildLocalIconLayers/buildLocalCandidates/renderCandidateForeground/
- *   nightForeground/monochromeForCandidate/savePng/bitmapStatsJson/resizeBitmap/
- *   ensureFreshDir）系同包既有符号，直接调用（不重复定义）。
+ *   nightForeground/nightForegroundForCandidate/monochromeForCandidate/savePng/
+ *   bitmapStatsJson/resizeBitmap/ensureFreshDir）系同包既有符号，直接调用（不重复定义）。
  * - buildRmbg/describeFailure 经显式回调（Activity wrapper 负责 lock/runtime/文案），
  *   RMBG 上报仍经 runOnMainSync，线程模型不变。
  * - 前景渲染/单色经显式回调（Activity wrapper 负责快照 params/rmbgTunedForeground，
@@ -446,10 +447,16 @@ internal fun debugInspectPackage(
         val candidateJson = JSONObject()
             .put("label", choice.label)
             .put("preserve_geometry", candidate.preserveGeometry)
+            .put("keep_layer_stack", candidate.keepLayerStack)
         saveLayer(outDir, "candidate_${key}_raw", candidate.recfgRaw, candidateJson)
         val rendered = renderForeground(candidate)
         saveLayer(outDir, "candidate_${key}_rendered", rendered, candidateJson)
-        saveLayer(outDir, "candidate_${key}_night", nightForeground(rendered, candidate.recbg), candidateJson)
+        saveLayer(
+            outDir,
+            "candidate_${key}_night",
+            nightForegroundForCandidate(candidate, rendered, candidate.recbg, tuning.nightSubjectLightBackgroundEnabled),
+            candidateJson,
+        )
         saveLayer(outDir, "candidate_${key}_monochrome_light", monochromeFor(candidate, true), candidateJson)
         saveLayer(outDir, "candidate_${key}_monochrome_dark", monochromeFor(candidate, false), candidateJson)
         candidatesJson.put(key, candidateJson)
