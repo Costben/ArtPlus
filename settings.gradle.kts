@@ -11,13 +11,26 @@ dependencyResolutionManagement {
     repositories {
         // COUI17 不在 Maven Central，解析顺序：
         //   1. -PcouiRepo=<dir> 显式指定的本地发布目录
-        //   2. 兄弟目录 ../coui 的本地发布：滚动坐标 couiVersion，那边每次提交都会重新发布
-        //   3. 仓库内 vendored 的 lean 产物（CI 走这条）：钉住的坐标 couiVendoredVersion
+        //   2. 兄弟目录 ../coui/build/repository/local（未指定 -Pcoui.useRemote=true 时优先）
+        //   3. 远端 Costben/coui17 的 maven-repo 孤儿分支（CI 与外部克隆自动走这里）
+        val forceRemoteCoui = providers.gradleProperty("coui.useRemote").orNull.equals("true", ignoreCase = true)
         val couiRepo = providers.gradleProperty("couiRepo").orNull?.let(settingsDir::resolve)
-            ?: settingsDir.resolve("../coui/build/repository/local").takeIf { it.isDirectory }
-        gradle.extra["couiVendored"] = couiRepo == null || couiRepo == settingsDir.resolve("third_party/coui-repo")
-        maven(uri(couiRepo ?: settingsDir.resolve("third_party/coui-repo"))) {
-            content { includeGroup("io.github.suqi8.coui.kmp") }
+            ?: settingsDir.resolve("../coui/build/repository/local").takeIf { it.isDirectory && !forceRemoteCoui }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    if (couiRepo != null) {
+                        name = "localCouiRepo"
+                        url = uri(couiRepo)
+                    } else {
+                        name = "coui17MavenRepo"
+                        url = uri("https://raw.githubusercontent.com/Costben/coui17/maven-repo/coui-repo")
+                    }
+                }
+            }
+            filter {
+                includeGroup("io.github.suqi8.coui.kmp")
+            }
         }
         google()
         mavenCentral()

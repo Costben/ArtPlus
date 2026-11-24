@@ -99,8 +99,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.13.0")
 
     // COUI17：仓库来源与坐标见根 settings.gradle.kts。
-    val couiVersionKey = if (gradle.extra["couiVendored"] == true) "couiVendoredVersion" else "couiVersion"
-    val couiVersion = providers.gradleProperty(couiVersionKey).get()
+    val couiVersion = providers.gradleProperty("couiVersion").get()
     implementation("io.github.suqi8.coui.kmp:coui-ui:$couiVersion")
     implementation("io.github.suqi8.coui.kmp:coui-preference:$couiVersion")
     implementation("io.github.suqi8.coui.kmp:coui-icons:$couiVersion")
