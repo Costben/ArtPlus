@@ -37,8 +37,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import io.github.suqi8.coui.kmp.basic.ExpandArrow
 import io.github.suqi8.coui.kmp.basic.Text
-import io.github.suqi8.coui.kmp.window.WindowBottomSheet
+import io.github.suqi8.coui.kmp.overlay.OverlayBottomSheet
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import com.caverock.androidsvg.SVG
 import dev.artplus.mobile.MAX_FOREGROUND_SUBJECT_PERCENT
@@ -134,7 +135,7 @@ internal fun MoreRulesGroupRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        MetricPill(label = if (expanded) "收起" else "展开")
+        ExpandArrow(expanded = expanded)
     }
 }
 
@@ -459,7 +460,7 @@ internal fun PreviewChoiceBottomSheet(
         }
     }
 
-    WindowBottomSheet(
+    OverlayBottomSheet(
         show = show,
         title = "${mode.label} 来源",
         onDismissRequest = onDismissRequest,

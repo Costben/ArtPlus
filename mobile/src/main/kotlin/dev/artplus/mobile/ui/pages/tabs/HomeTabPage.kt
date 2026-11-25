@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,9 +27,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import io.github.suqi8.coui.kmp.basic.BindScrollToTop
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.Settings
 import io.github.suqi8.coui.kmp.icon.extended.Refresh
+import io.github.suqi8.coui.kmp.utils.overScrollVertical
+import io.github.suqi8.coui.kmp.utils.scrollEndHaptic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.artplus.mobile.CUSTOM_WALLPAPER_FILE
@@ -147,10 +151,15 @@ PagerShellPage(
                     showPreviewStrip = previewSessionState.previewStripEnabled,
                 ) { innerPadding, scrollBehavior ->
                     Box(modifier = Modifier.fillMaxSize()) {
+                    val listState = rememberLazyListState()
+                    BindScrollToTop(listState)
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier
                             .fillMaxSize()
                             .nestedScroll(scrollBehavior.nestedScrollConnection)
+                            .scrollEndHaptic()
+                            .overScrollVertical()
                             .imePadding()
                             .padding(horizontal = 16.dp),
                         contentPadding = PaddingValues(

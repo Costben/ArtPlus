@@ -41,13 +41,12 @@ import io.github.suqi8.coui.kmp.icon.extended.Settings
 import io.github.suqi8.coui.kmp.icon.extended.Tune
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import io.github.suqi8.coui.kmp.basic.BasicComponent
+import io.github.suqi8.coui.kmp.basic.CardListPosition
 import io.github.suqi8.coui.kmp.basic.TextFieldMode
-import io.github.suqi8.coui.kmp.layout.DialogButtonBar
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.preference.ArrowPreference
+import io.github.suqi8.coui.kmp.preference.OverlayDropdownPreference
 import io.github.suqi8.coui.kmp.preference.SwitchPreference
-import io.github.suqi8.coui.kmp.preference.WindowDropdownPreference
-import io.github.suqi8.coui.kmp.overlay.OverlayDialog
 import io.github.suqi8.coui.kmp.icon.extended.*
 
 /** 行右侧的值文本：ColorOS 右对齐次级文本。 */
@@ -85,6 +84,8 @@ internal fun LibrarySettingRow(
     enabled: Boolean = true,
     showIcon: Boolean = icon != null,
     summarySingleLine: Boolean = false,
+    cardListPosition: CardListPosition = CardListPosition.None,
+    showDivider: Boolean = true,
     onCheckedChange: ((Boolean) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
@@ -111,6 +112,7 @@ internal fun LibrarySettingRow(
             endActions = {
                 if (hasValue) RowValueText(value = value.orEmpty(), enabled = enabled)
             },
+            cardListPosition = cardListPosition,
             enabled = enabled,
         )
         showArrowRight -> ArrowPreference(
@@ -120,6 +122,7 @@ internal fun LibrarySettingRow(
             endActions = {
                 if (hasValue) RowValueText(value = value.orEmpty(), enabled = enabled)
             },
+            cardListPosition = cardListPosition,
             onClick = rowClick,
             enabled = enabled,
         )
@@ -155,6 +158,8 @@ internal fun LibrarySettingRow(
             } else {
                 null
             },
+            cardListPosition = cardListPosition,
+            showDivider = showDivider,
             onClick = rowClick,
             enabled = enabled,
         ) {
@@ -208,13 +213,15 @@ internal fun LibrarySettingRow(
             } else {
                 null
             },
+            cardListPosition = cardListPosition,
+            showDivider = showDivider,
             onClick = rowClick,
             enabled = enabled,
         )
     }
 }
 
-/** 标准选择行：WindowDropdownPreference 自带触觉、值文本、箭头与手指定位；窗口级弹窗保证层级在底栏之上。 */
+/** 标准选择行：OverlayDropdownPreference 经根部 COUIPopupHost 渲染，采样整屏玻璃并自带触觉、值文本与手指定位。 */
 @Composable
 internal fun LibraryChoiceRow(
     title: String,
@@ -224,12 +231,13 @@ internal fun LibraryChoiceRow(
     entry: DropdownEntry,
     enabled: Boolean,
     summaryBelow: Boolean = false,
+    cardListPosition: CardListPosition = CardListPosition.None,
 ) {
     val summaryText = summary?.takeIf { it.isNotBlank() }
-    // value 由 entry 中被选中项的文本决定（WindowDropdownPreference 自行展示），参数仅为保持调用兼容。
+    // value 由 entry 中被选中项的文本决定（OverlayDropdownPreference 自行展示），参数仅为保持调用兼容。
     // summaryBelow：摘要较长（如文件名 · 大小 · 标签）时放进 bottomAction，占满整行宽度，
     // 不再与右侧值文本抢中间列宽度而被挤成多行、从文件名中间断开；左侧按图标宽度 18dp + 间距 8dp 对齐标题。
-    WindowDropdownPreference(
+    OverlayDropdownPreference(
         entry = entry,
         title = title,
         summary = if (summaryBelow) null else summaryText,
@@ -250,8 +258,10 @@ internal fun LibraryChoiceRow(
             null
         },
         startAction = { SettingsLineIcon(kind = icon) },
+        cardListPosition = cardListPosition,
         enabled = enabled,
         showValue = true,
+        renderInRootScaffold = true,
     )
 }
 
@@ -264,6 +274,7 @@ internal fun SettingsTextInputRow(
     icon: SettingsIconKind,
     obscure: Boolean = false,
     enabled: Boolean,
+    cardListPosition: CardListPosition = CardListPosition.None,
     onValueChange: (String) -> Unit,
 ) {
     var dialogVisible by remember { mutableStateOf(false) }
@@ -282,48 +293,39 @@ internal fun SettingsTextInputRow(
         showValue = false,
         showArrowRight = true,
         enabled = enabled,
+        cardListPosition = cardListPosition,
         onClick = {
             draft = value
             dialogVisible = true
         },
     )
-    // 对话框不给内容加内边距：输入框自带 24dp 水平边距，按钮栏贴边铺满。
-    // Overlay 变体由根部 COUIPopupHost 渲染，面板才是采样整屏的玻璃（见 ArtDialog）。
-    OverlayDialog(
+    ArtDialog(
         show = dialogVisible,
         title = title,
         onDismissRequest = { dialogVisible = false },
-        onDismissFinished = { },
+        negative = DialogButtonBarAction(
+            text = "取消",
+            onClick = { dialogVisible = false },
+        ),
+        positive = DialogButtonBarAction(
+            text = "确定",
+            recommended = true,
+            onClick = {
+                onValueChange(draft)
+                dialogVisible = false
+            },
+        ),
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            TextField(
-                value = draft,
-                onValueChange = { draft = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                backgroundMode = TextFieldMode.Line,
-                label = inputHint,
-                singleLine = true,
-                showClearButton = true,
-                showPasswordToggle = obscure,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            DialogButtonBar(
-                negative = DialogButtonBarAction(
-                    text = "取消",
-                    onClick = { dialogVisible = false },
-                ),
-                positive = DialogButtonBarAction(
-                    text = "确定",
-                    recommended = true,
-                    onClick = {
-                        onValueChange(draft)
-                        dialogVisible = false
-                    },
-                ),
-            )
-        }
+        TextField(
+            value = draft,
+            onValueChange = { draft = it },
+            modifier = Modifier.fillMaxWidth(),
+            backgroundMode = TextFieldMode.Line,
+            label = inputHint,
+            singleLine = true,
+            showClearButton = true,
+            showPasswordToggle = obscure,
+        )
     }
 }
 
@@ -335,6 +337,8 @@ internal fun SettingsInfoRow(
     value: String?,
     icon: SettingsIconKind,
     summarySingleLine: Boolean = false,
+    cardListPosition: CardListPosition = CardListPosition.None,
+    showDivider: Boolean = true,
 ) {
     LibrarySettingRow(
         title = title,
@@ -343,6 +347,8 @@ internal fun SettingsInfoRow(
         icon = icon,
         enabled = true,
         summarySingleLine = summarySingleLine,
+        cardListPosition = cardListPosition,
+        showDivider = showDivider,
     )
 }
 
@@ -353,6 +359,8 @@ internal fun SettingLine(
     value: String = "",
     showIcon: Boolean = true,
     enabled: Boolean = true,
+    cardListPosition: CardListPosition = CardListPosition.None,
+    showDivider: Boolean = true,
     onClick: (() -> Unit)? = null,
 ) {
     BasicComponent(
@@ -368,6 +376,8 @@ internal fun SettingLine(
         } else {
             null
         },
+        cardListPosition = cardListPosition,
+        showDivider = showDivider,
         onClick = onClick,
         enabled = enabled,
     )

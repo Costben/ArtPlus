@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -25,9 +26,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.basic.BindScrollToTop
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.Download
 import io.github.suqi8.coui.kmp.icon.extended.Share
+import io.github.suqi8.coui.kmp.utils.overScrollVertical
+import io.github.suqi8.coui.kmp.utils.scrollEndHaptic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.artplus.mobile.MainActivity
@@ -110,10 +114,15 @@ PagerShellPage(
                         val topPadding = innerPadding.calculateTopPadding()
                         val bottomPadding = innerPadding.calculateBottomPadding()
                         val minContentHeight = (maxHeight - topPadding - bottomPadding - 16.dp - BarClearance + 1.dp).coerceAtLeast(0.dp)
+                        val listState = rememberLazyListState()
+                        BindScrollToTop(listState)
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .nestedScroll(scrollBehavior.nestedScrollConnection)
+                                .scrollEndHaptic()
+                                .overScrollVertical()
                                 .imePadding()
                                 .padding(horizontal = 16.dp),
                             contentPadding = PaddingValues(

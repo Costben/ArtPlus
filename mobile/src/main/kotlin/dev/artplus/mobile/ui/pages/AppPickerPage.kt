@@ -25,6 +25,7 @@ import io.github.suqi8.coui.kmp.blur.layerBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.basic.BindScrollToTop
 import io.github.suqi8.coui.kmp.basic.Scaffold
 import io.github.suqi8.coui.kmp.basic.TopAppBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
@@ -48,6 +50,8 @@ import io.github.suqi8.coui.kmp.basic.SmallTopAppBar
 import io.github.suqi8.coui.kmp.icon.extended.Delete
 import io.github.suqi8.coui.kmp.icon.extended.Refresh
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.utils.overScrollVertical
+import io.github.suqi8.coui.kmp.utils.scrollEndHaptic
 import dev.artplus.mobile.ui.pages.picker.PickerAppListHeader
 import dev.artplus.mobile.ui.pages.picker.PickerMoreBall
 import dev.artplus.mobile.AppVisibility
@@ -438,12 +442,17 @@ internal fun MainActivity.AppPickerPage(
         },
 
     ) { innerPadding ->
+        val listState = rememberLazyListState()
+        BindScrollToTop(listState)
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .layerBackdrop(appBarBackdrop)
                 .background(pageBackground)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .scrollEndHaptic()
+                .overScrollVertical()
                 .imePadding()
                 .padding(horizontal = 16.dp),
             // 底部留出悬浮球的净空：球 56dp + 16dp 边距 + 16dp 间隔，最后一列才不会被球压住。

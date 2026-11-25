@@ -24,6 +24,7 @@ import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
@@ -41,7 +42,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.basic.BindScrollToTop
 import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.basic.CardListPosition
 import io.github.suqi8.coui.kmp.basic.Scaffold
 import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.SmallTopAppBar
@@ -50,6 +54,8 @@ import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.utils.overScrollVertical
+import io.github.suqi8.coui.kmp.utils.scrollEndHaptic
 import dev.artplus.mobile.GITHUB_LICENSE_URL
 import dev.artplus.mobile.GITHUB_REPO_URL
 import dev.artplus.mobile.GPL_LICENSE_ASSET_PATH
@@ -127,18 +133,26 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
             }
         },
     ) { innerPadding ->
+        val listState = rememberLazyListState()
+        BindScrollToTop(listState)
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .layerBackdrop(appBarBackdrop)
                 .background(pageBackground)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .scrollEndHaptic()
+                .overScrollVertical()
                 .padding(horizontal = 16.dp),
             contentPadding = PaddingValues(top = contentTopInset + 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             sectionItem(key = "about_app", title = "应用信息") {
-                Card {
+                Card(
+                    cornerRadius = CardDefaults.GroupCornerRadius,
+                    weight = CardDefaults.GroupWeight,
+                ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -180,6 +194,7 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                         icon = SettingsIconKind.Link,
                         showArrowRight = true,
                         enabled = !shell.isBusy,
+                        cardListPosition = CardListPosition.Head,
                         onClick = {
                             pickerOpenExternalLink(
                                 start = ::startActivity,
@@ -194,22 +209,22 @@ internal fun MainActivity.AboutPage(pageBackground: Color) {
                             )
                         },
                     )
-                    SectionDivider()
                     LibrarySettingRow(
                         title = "开源协议",
                         summary = "GPL-3.0-or-later",
                         icon = SettingsIconKind.Shield,
                         showArrowRight = true,
                         enabled = !shell.isBusy,
+                        cardListPosition = CardListPosition.Middle,
                         onClick = { mainViewModel.updateUpdateUi { it -> it.copy(gplLicenseDialogVisible = (true)) } },
                     )
-                    SectionDivider()
                     LibrarySettingRow(
                         title = "检查更新",
                         summary = if (updateUi.isCheckingUpdate) "检查中..." else "当前 $versionName",
                         icon = SettingsIconKind.Grid,
                         showArrowRight = !updateUi.isCheckingUpdate,
                         enabled = !shell.isBusy && !updateUi.isCheckingUpdate,
+                        cardListPosition = CardListPosition.Tail,
                         onClick = {
                             pickerCheckForUpdate(
                                 isChecking = updateUi.isCheckingUpdate,

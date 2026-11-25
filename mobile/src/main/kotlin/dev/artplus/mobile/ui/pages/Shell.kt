@@ -61,6 +61,9 @@ import io.github.suqi8.coui.kmp.utils.COUIPopupUtils
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import io.github.suqi8.coui.kmp.basic.AppBarBlurOverlayDefaults
+import io.github.suqi8.coui.kmp.basic.LocalPlatformAppBarMaterialEnabled
+import io.github.suqi8.coui.kmp.basic.LocalPlatformBottomBarMaterialEnabled
+import io.github.suqi8.coui.kmp.basic.ScrollToTopPage
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.AppVisibility
 import dev.artplus.mobile.BACK_GESTURE_COMMIT_PROGRESS
@@ -258,6 +261,13 @@ internal fun MainActivity.ArtPlusScreen() {
         drawRect(pageBackground)
         drawContent()
     }
+    CompositionLocalProvider(
+        // 整屏由 screenBackdrop 录制供根部 COUIPopupHost 的玻璃菜单/弹窗采样（且内部存在 graphicsLayer 缩放层），
+        // 必须关闭顶栏与底栏的平台原生窗口模糊 AndroidView，改走 COUI Compose 玻璃引擎采样页面 backdrop，
+        // 避免展开/收起融合球菜单或弹窗时底栏/顶栏闪一下，以及二级页转场圆角溢出。
+        LocalPlatformAppBarMaterialEnabled provides false,
+        LocalPlatformBottomBarMaterialEnabled provides false,
+    ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = pageBackground,
@@ -302,13 +312,15 @@ internal fun MainActivity.ArtPlusScreen() {
                         scaleY = homeScale
                     },
             ) {
-                HomePage(
-                    pageBackground = pageBackground,
-                    selectedApp = selectedApp,
-                    launcherCount = launcherCount,
-                    totalCount = apps.size,
-                    generatedCount = generatedCount,
-                )
+                ScrollToTopPage(active = overlayPage == null) {
+                    HomePage(
+                        pageBackground = pageBackground,
+                        selectedApp = selectedApp,
+                        launcherCount = launcherCount,
+                        totalCount = apps.size,
+                        generatedCount = generatedCount,
+                    )
+                }
             }
             if (overlayPage != null && overlayDim > 0.01f) {
                 Box(
@@ -1061,6 +1073,7 @@ internal fun MainActivity.ArtPlusScreen() {
                 )
         }
     }
+    }
 }
 
 /**
@@ -1119,26 +1132,23 @@ internal fun MainActivity.PagerShellPage(
     }
 }
 
-/** 页面内容 + 预览条。顶栏固定不折叠，内容起点是常量，不需要跟顶栏联动位移。 */
+/** 页面内容 + 预览条留白。列表始终占满整屏（从顶栏后方滚过，保证顶栏渐进模糊能采到真实内容），仅经 contentPadding 为顶栏与预览条让位。 */
 @Composable
 private fun MainActivity.PagerShellPageBody(
     scrollBehavior: ScrollBehavior,
     showPreviewStrip: Boolean,
     content: @Composable (PaddingValues, ScrollBehavior) -> Unit,
 ) {
-    val targetExtra = if (showPreviewStrip) 84.dp else 0.dp
+    val host = LocalPagerShellHost.current
+    val targetExtra = if (showPreviewStrip) (host?.previewStripHeight ?: 84.dp) else 0.dp
     val animatedExtra by animateDpAsState(
         targetValue = targetExtra,
         animationSpec = tween(durationMillis = 180),
         label = "previewStripExtra",
     )
     val contentTop = rememberShellContentTop()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = animatedExtra),
-    ) {
-        content(PaddingValues(top = contentTop), scrollBehavior)
+    Box(modifier = Modifier.fillMaxSize()) {
+        content(PaddingValues(top = contentTop + animatedExtra), scrollBehavior)
     }
 }
 

@@ -36,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import io.github.suqi8.coui.kmp.basic.CardListPosition
 import io.github.suqi8.coui.kmp.basic.Checkbox
 import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextButton
@@ -146,12 +147,14 @@ internal fun PermissionCard(
             title = "应用列表",
             summary = if (packageListGranted) "已声明并可读取已安装应用" else "需要允许读取应用列表",
             value = if (packageListGranted) "已允许" else "待授权",
+            cardListPosition = CardListPosition.Head,
         )
-        SectionDivider()
         SettingLine(
             title = "使用情况访问",
             summary = if (usageGranted) "已允许任务/使用情况访问" else "Android 只能在系统设置中授权",
             value = if (usageGranted) "已允许" else "待授权",
+            cardListPosition = CardListPosition.Middle,
+            showDivider = false,
         )
         Row(
             modifier = Modifier

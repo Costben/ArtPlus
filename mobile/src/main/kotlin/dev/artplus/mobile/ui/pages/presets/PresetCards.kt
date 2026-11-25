@@ -29,12 +29,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.CardDefaults
 import io.github.suqi8.coui.kmp.basic.Icon
+import io.github.suqi8.coui.kmp.basic.InputField
+import io.github.suqi8.coui.kmp.basic.SearchBarDefaults
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.Delete
 import io.github.suqi8.coui.kmp.icon.extended.Folder
 import io.github.suqi8.coui.kmp.icon.extended.More
-import io.github.suqi8.coui.kmp.icon.extended.Search
 import io.github.suqi8.coui.kmp.icon.extended.Show
 import io.github.suqi8.coui.kmp.basic.EmptyState
 import io.github.suqi8.coui.kmp.basic.NotificationSwipeAction
@@ -74,7 +76,7 @@ internal fun PresetStatusCard(
     onResetToDefaults: () -> Unit,
 ) {
     val activePreset = presets.firstOrNull { it.id == activePresetId }
-    val isPresetModified = activePreset != null && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: activePreset.params))
+    val isPresetModified = activePreset != null && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams))
 
     SectionCard(title = "活动预设") {
         Column(
@@ -266,36 +268,27 @@ internal fun PresetLibraryCard(
         SectionHeader("预设列表")
 
         if (presets.size >= 8) {
-            // 搜索框：surface 圆角底 + COUI TextField（无自带底，带清除按钮）
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(COUITheme.colorScheme.surface),
-            ) {
-                TextField(
-                    value = searchQuery,
-                    onValueChange = { onSearchChange(it) },
-                    modifier = Modifier.fillMaxWidth(),
-                    backgroundMode = TextFieldMode.None,
-                    label = "搜索预设名称...",
-                    showClearButton = true,
-                    singleLine = true,
-                    leadingIcon = {
-                        Icon(
-                            imageVector = COUIIcons.Search,
-                            contentDescription = "搜索预设",
-                            modifier = Modifier.size(16.dp),
-                            tint = COUITheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    },
-                )
-            }
+            // 与 PickerSearchRow 统一：采用 COUI17 标准搜索胶囊（InputField）
+            InputField(
+                query = searchQuery,
+                onQueryChange = onSearchChange,
+                onSearch = {},
+                expanded = false,
+                onExpandedChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                label = "搜索预设名称...",
+                colors = SearchBarDefaults.searchBarColors(
+                    backgroundColor = COUITheme.colorScheme.secondaryVariant,
+                ),
+                glowColor = null,
+            )
         }
 
         if (presets.isEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
+                cornerRadius = CardDefaults.GroupCornerRadius,
+                weight = CardDefaults.GroupWeight,
                 insideMargin = PaddingValues(vertical = 24.dp, horizontal = 16.dp),
             ) {
                 EmptyState(
@@ -328,7 +321,7 @@ internal fun PresetLibraryCard(
         } else {
             displayList.forEach { preset ->
                 val isActive = preset.id == activePresetId
-                val isModified = isActive && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams ?: preset.params))
+                val isModified = isActive && (activePresetBaseParams == null || !currentParams.sameAs(activePresetBaseParams))
                 NotificationPresetCard(
                     preset = preset,
                     isActive = isActive,

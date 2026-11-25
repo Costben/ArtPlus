@@ -34,6 +34,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import io.github.suqi8.coui.kmp.basic.ScrollToTopPage
 import io.github.suqi8.coui.kmp.blur.LocalBackdrop
 import io.github.suqi8.coui.kmp.blur.layerBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
@@ -171,20 +172,22 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                             }
                         },
                 ) {
-                    CompositionLocalProvider(
-                        LocalPagerShellHost provides host,
-                        LocalPagerShellPageIndex provides page,
-                    ) {
-                        when (page) {
-                            0 -> HomeTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
-                            1 -> ParamsTabPage(
-                                pageBackground = pageBackground,
-                                selectedApp = selectedApp,
-                                launcherCount = launcherCount,
-                                totalCount = totalCount,
-                                generatedCount = generatedCount,
-                            )
-                            2 -> PresetTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+                    ScrollToTopPage(active = pagerState.currentPage == page) {
+                        CompositionLocalProvider(
+                            LocalPagerShellHost provides host,
+                            LocalPagerShellPageIndex provides page,
+                        ) {
+                            when (page) {
+                                0 -> HomeTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+                                1 -> ParamsTabPage(
+                                    pageBackground = pageBackground,
+                                    selectedApp = selectedApp,
+                                    launcherCount = launcherCount,
+                                    totalCount = totalCount,
+                                    generatedCount = generatedCount,
+                                )
+                                2 -> PresetTabPage(pageBackground, selectedApp, launcherCount, totalCount, generatedCount)
+                            }
                         }
                     }
                 }
@@ -213,7 +216,11 @@ internal fun MainActivity.HomePage(pageBackground: Color, selectedApp: AppEntry?
                         .padding(top = contentTop)
                         .zIndex(2f),
                 ) {
-                    HomePreviewStrip()
+                    HomePreviewStrip(
+                        onHeightMeasured = { measured ->
+                            if (measured > 0.dp) host.previewStripHeight = measured
+                        },
+                    )
                 }
                 PagerShellBottomBar(
                     pagerState = pagerState,

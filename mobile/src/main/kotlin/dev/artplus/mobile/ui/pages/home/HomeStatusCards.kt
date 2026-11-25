@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.EmptyState
 import io.github.suqi8.coui.kmp.utils.PressFeedbackType
 import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.CardDefaults
 import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.icon.COUIIcons
@@ -52,6 +53,8 @@ internal fun StatusCard(
     // COUI 可点击卡片：Tint 按压反馈由 Card 提供；不可用时不挂 onClick
     Card(
         modifier = Modifier.fillMaxWidth(),
+        cornerRadius = CardDefaults.GroupCornerRadius,
+        weight = CardDefaults.GroupWeight,
         insideMargin = PaddingValues(16.dp),
         pressFeedbackType = PressFeedbackType.Tint,
         onClick = if (enabled) onOpenPicker else null,
@@ -127,6 +130,8 @@ internal fun EmptyAppListCard(
         modifier = Modifier.fillMaxWidth().semantics {
             contentDescription = "空应用列表提示"
         },
+        cornerRadius = CardDefaults.GroupCornerRadius,
+        weight = CardDefaults.GroupWeight,
         insideMargin = PaddingValues(16.dp),
     ) {
         // COUI EmptyState 承载插画 + 标题 + 说明；两个操作保持 TextButton 以保留 enabled 语义

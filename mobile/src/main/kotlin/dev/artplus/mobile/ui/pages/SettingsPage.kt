@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,8 +28,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import io.github.suqi8.coui.kmp.basic.BindScrollToTop
+import io.github.suqi8.coui.kmp.basic.CardListPosition
 import io.github.suqi8.coui.kmp.basic.ScrollBehavior
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
+import io.github.suqi8.coui.kmp.utils.overScrollVertical
+import io.github.suqi8.coui.kmp.utils.scrollEndHaptic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.artplus.mobile.MainActivity
@@ -96,10 +101,15 @@ internal fun MainActivity.SettingsPage(
     LaunchedEffect(Unit) {
         mainViewModel.refreshArtPlusModifiedPackagesAsync()
     }
+    val listState = rememberLazyListState()
+    BindScrollToTop(listState)
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection)
+            .scrollEndHaptic()
+            .overScrollVertical()
             .imePadding()
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(
@@ -617,6 +627,7 @@ val __act1 = LocalContext.current
                     showValue = false,
                     showArrowRight = true,
                     enabled = !shell.isBusy,
+                    cardListPosition = CardListPosition.Full,
                     onClick = { mainViewModel.updatePreviewSession { it -> it.copy(resetDefaultsDialogVisible = (true)) } },
                 )
                 if (previewSession.resetDefaultsDialogVisible) {
@@ -718,15 +729,16 @@ paramsApplyTuningParams(
                     icon = settingsIconForTitle("导出引导"),
                     showArrowRight = true,
                     enabled = !shell.isBusy,
+                    cardListPosition = CardListPosition.Head,
                     onClick = { mainViewModel.updateShell { it -> it.copy(onboardingVisible = (true)) } },
                 )
-                SectionDivider()
                 LibrarySettingRow(
                     title = "关于",
                     summary = "源码、开源协议与更新",
                     icon = SettingsIconKind.Link,
                     showArrowRight = true,
                     enabled = !shell.isBusy,
+                    cardListPosition = CardListPosition.Tail,
                     onClick = { mainViewModel.updateShell { it -> it.copy(currentPage = (AppPage.About)) } },
                 )
             }

@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.basic.CardListPosition
 import io.github.suqi8.coui.kmp.basic.DropdownEntry
 import io.github.suqi8.coui.kmp.basic.DropdownItem
 import io.github.suqi8.coui.kmp.basic.Text
@@ -73,6 +74,7 @@ internal fun WallpaperSettingsCard(
             showValue = false,
             showArrowRight = true,
             enabled = !isBusy,
+            cardListPosition = if (hasCustom) CardListPosition.Head else CardListPosition.Full,
             onClick = onPickWallpaper,
         )
         if (hasCustom) {
@@ -83,6 +85,7 @@ internal fun WallpaperSettingsCard(
                 showValue = false,
                 showArrowRight = true,
                 enabled = !isBusy,
+                cardListPosition = CardListPosition.Tail,
                 onClick = onClearWallpaper,
             )
         }
@@ -110,6 +113,7 @@ internal fun BatchPreviewSettingsCard(
             onDraftChange = onDraftChange,
             onSave = onSave,
             icon = SettingsIconKind.Grid,
+            cardListPosition = CardListPosition.Full,
         )
     }
 }
@@ -136,6 +140,7 @@ internal fun GptSettingsCard(
             value = GptImageMode.fromValue(tuningState.gptImageMode).label,
             icon = SettingsIconKind.Spark,
             enabled = !isBusy,
+            cardListPosition = CardListPosition.Head,
             entry = remember(GptImageMode.fromValue(tuningState.gptImageMode)) {
                 DropdownEntry(
                     items = GptImageMode.entries.map { mode ->
@@ -148,13 +153,13 @@ internal fun GptSettingsCard(
                 )
             },
         )
-        SectionDivider()
         LibraryChoiceRow(
             title = "AI 提示词",
             summary = GptPromptPreset.fromValue(tuningState.gptPromptPreset).summary,
             value = GptPromptPreset.fromValue(tuningState.gptPromptPreset).label,
             icon = SettingsIconKind.Prompt,
             enabled = !isBusy,
+            cardListPosition = CardListPosition.Middle,
             entry = remember(GptPromptPreset.fromValue(tuningState.gptPromptPreset)) {
                 DropdownEntry(
                     items = GptPromptPreset.entries.map { preset ->
@@ -176,7 +181,6 @@ internal fun GptSettingsCard(
                 shrinkVertically(animationSpec = tween(durationMillis = 160)),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
-                SectionDivider()
                 SettingsTextInputRow(
                     title = "自定义前景提示词",
                     value = tuningState.gptCustomPrompt,
@@ -184,11 +188,11 @@ internal fun GptSettingsCard(
                     inputHint = "请填写自定义前景提示词",
                     icon = SettingsIconKind.Prompt,
                     enabled = !isBusy,
+                    cardListPosition = CardListPosition.Middle,
                     onValueChange = onGptCustomPromptChange,
                 )
             }
         }
-        SectionDivider()
         SettingsTextInputRow(
             title = "模型 ID",
             value = gptModelId,
@@ -196,9 +200,9 @@ internal fun GptSettingsCard(
             inputHint = "请填写模型 ID",
             icon = SettingsIconKind.Layers,
             enabled = !isBusy,
+            cardListPosition = CardListPosition.Middle,
             onValueChange = onGptModelIdChange,
         )
-        SectionDivider()
         SettingsTextInputRow(
             title = "Base URL",
             value = gptBaseUrl,
@@ -206,9 +210,9 @@ internal fun GptSettingsCard(
             inputHint = "请填写 Base URL",
             icon = SettingsIconKind.Link,
             enabled = !isBusy,
+            cardListPosition = CardListPosition.Middle,
             onValueChange = onGptBaseUrlChange,
         )
-        SectionDivider()
         SettingsTextInputRow(
             title = "API key",
             value = gptApiKey,
@@ -217,14 +221,15 @@ internal fun GptSettingsCard(
             icon = SettingsIconKind.Key,
             obscure = true,
             enabled = !isBusy,
+            cardListPosition = CardListPosition.Middle,
             onValueChange = onGptApiKeyChange,
         )
-        SectionDivider()
         SettingsInfoRow(
             title = "累计调用",
             summary = "已累计调用 AI 云端接口的次数",
             value = "$gptRunCount 次",
             icon = settingsIconForTitle("累计调用"),
+            cardListPosition = CardListPosition.Tail,
         )
     }
 }
@@ -256,15 +261,15 @@ internal fun RmbgComponentCard(
             summary = component?.let { "ABI ${it.abi}" } ?: "未安装",
             value = if (component == null) "未安装" else "已安装",
             icon = settingsIconForTitle("RMBG 状态"),
+            cardListPosition = CardListPosition.Head,
         )
-        SectionDivider()
         SettingsInfoRow(
             title = "累计调用",
             summary = "已累计运行 RMBG 模型抠图的次数",
             value = "$rmbgRunCount 次",
             icon = settingsIconForTitle("累计调用"),
+            cardListPosition = CardListPosition.Middle,
         )
-        SectionDivider()
         LibraryChoiceRow(
             title = "模型版本",
             summary = currentPreset.summary,
@@ -272,6 +277,7 @@ internal fun RmbgComponentCard(
             icon = SettingsIconKind.Layers,
             enabled = !isBusy && !isGenerating && !isInstalling,
             summaryBelow = true,
+            cardListPosition = CardListPosition.Middle,
             entry = remember(currentPreset, allPresets) {
                 val preset = currentPreset
                 DropdownEntry(
@@ -296,7 +302,6 @@ internal fun RmbgComponentCard(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        SectionDivider()
         LibrarySettingRow(
             title = "模型或组件 ZIP 地址",
             summary = if (componentUrl.isBlank()) "粘贴 ZIP 地址或从本地选择 · 未设置" else componentUrl,
@@ -304,6 +309,7 @@ internal fun RmbgComponentCard(
             showValue = false,
             showArrowRight = true,
             enabled = !isBusy && !isGenerating && !isInstalling,
+            cardListPosition = CardListPosition.Tail,
             onClick = { onDialogVisibleChange(true) },
         )
         if (isInstalling || installStage.isNotBlank()) {
@@ -390,8 +396,8 @@ internal fun OutputCard(
             value = null,
             icon = settingsIconForTitle("Root 目标"),
             summarySingleLine = true,
+            cardListPosition = CardListPosition.Head,
         )
-        SectionDivider()
         LibrarySettingRow(
             title = "自动确认写入",
             summary = if (autoConfirmRootWrite) "点击写入时直接写入 Root 目标" else "点击写入时会弹出二次确认提示",
@@ -399,9 +405,9 @@ internal fun OutputCard(
             showSwitch = true,
             checked = autoConfirmRootWrite,
             enabled = !isBusy,
+            cardListPosition = CardListPosition.Middle,
             onCheckedChange = onAutoConfirmRootWriteChange,
         )
-        SectionDivider()
         LibrarySettingRow(
             title = "自动确认刷新",
             summary = if (autoConfirmRefresh) "点击刷新按钮时直接执行刷新" else "点击刷新按钮时会弹出二次确认提示",
@@ -409,9 +415,9 @@ internal fun OutputCard(
             showSwitch = true,
             checked = autoConfirmRefresh,
             enabled = !isBusy,
+            cardListPosition = CardListPosition.Middle,
             onCheckedChange = onAutoConfirmRefreshChange,
         )
-        SectionDivider()
         val outputTreeDisplay = remember(outputTreeUri) { treeDisplay }
         val isBackupActive = backupActive
         val isBackupInBg = backupInBackground && isBackupActive
@@ -433,6 +439,7 @@ internal fun OutputCard(
             showValue = false,
             showArrowRight = true,
             enabled = !isBusy || isBackupInBg,
+            cardListPosition = CardListPosition.Tail,
             onClick = onBackupRowClick,
         )
     }
@@ -500,6 +507,7 @@ internal fun PreviewStripSettingsCard(
             showSwitch = true,
             checked = enabled,
             enabled = !isBusy,
+            cardListPosition = CardListPosition.Full,
             onCheckedChange = onCheckedChange,
         )
     }
@@ -520,22 +528,22 @@ internal fun InputSettingsCard(
             summary = "启动器 $launcherCount 个 / 全部 $totalCount 个",
             value = "启动器",
             icon = settingsIconForTitle("应用范围"),
+            cardListPosition = CardListPosition.Head,
         )
-        SectionDivider()
         SettingsInfoRow(
             title = "已生成",
             summary = null,
             value = "$generatedCount",
             icon = settingsIconForTitle("已生成"),
+            cardListPosition = CardListPosition.Middle,
         )
-        SectionDivider()
         SettingsInfoRow(
             title = "AM 标记",
             summary = null,
             value = "$amCount",
             icon = SettingsIconKind.CheckBadge,
+            cardListPosition = CardListPosition.Middle,
         )
-        SectionDivider()
         LibrarySettingRow(
             title = "一键还原 AM 图标",
             summary = if (amCount > 0) {
@@ -547,6 +555,7 @@ internal fun InputSettingsCard(
             showValue = false,
             showArrowRight = true,
             enabled = restoreEnabled,
+            cardListPosition = CardListPosition.Tail,
             onClick = onRestoreClick,
         )
     }

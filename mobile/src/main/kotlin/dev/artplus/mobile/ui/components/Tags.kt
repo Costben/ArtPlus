@@ -32,10 +32,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.basic.ExpandArrow
 import io.github.suqi8.coui.kmp.basic.LinearProgressIndicator
 import io.github.suqi8.coui.kmp.basic.Text
-import io.github.suqi8.coui.kmp.icon.COUIIcons
-import io.github.suqi8.coui.kmp.icon.basic.ArrowRight
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import io.github.suqi8.coui.kmp.basic.TagView
 import io.github.suqi8.coui.kmp.basic.TagViewDefaults
@@ -60,25 +59,9 @@ internal fun AppStatusTag(tag: AppListTag) {
 
 @Composable
 internal fun KernelStyleArrow(modifier: Modifier = Modifier, expanded: Boolean = false) {
-    val layoutDirection = LocalLayoutDirection.current
-    val rotation by animateFloatAsState(
-        targetValue = if (expanded) 90f else 0f,
-        animationSpec = tween(durationMillis = 180),
-        label = "kernel-style-arrow-rotation",
-    )
-
-    Image(
-        modifier = modifier
-            .graphicsLayer {
-                rotationZ = rotation
-                if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
-            }
-            .padding(start = 8.dp)
-            .size(width = 10.dp, height = 16.dp),
-        imageVector = COUIIcons.Basic.ArrowRight,
-        // decorative：纯装饰（箭头/应用图标），语义由相邻文本承载
-        contentDescription = null,
-        colorFilter = ColorFilter.tint(COUITheme.colorScheme.onSurfaceVariantActions),
+    ExpandArrow(
+        expanded = expanded,
+        modifier = modifier.padding(start = 4.dp),
     )
 }
 
@@ -102,21 +85,15 @@ internal fun BrandMark(size: Dp, text: String) {
 
 @Composable
 internal fun MetricPill(label: String, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(COUITheme.colorScheme.secondaryVariant)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            style = COUITheme.textStyles.footnote1,
-            color = COUITheme.colorScheme.onSurfaceSecondary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+    TagView(
+        text = label,
+        modifier = modifier,
+        cornerRadius = 999.dp,
+        colors = TagViewDefaults.tagViewColors(
+            containerColor = COUITheme.colorScheme.secondaryVariant,
+            contentColor = COUITheme.colorScheme.onSurfaceSecondary,
+        ),
+    )
 }
 
 @Composable

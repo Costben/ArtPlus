@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.Card
 import io.github.suqi8.coui.kmp.basic.CardDefaults
-import io.github.suqi8.coui.kmp.basic.HorizontalDivider
+import io.github.suqi8.coui.kmp.basic.CardListPosition
 import io.github.suqi8.coui.kmp.basic.MaterialStrokeParams
 import io.github.suqi8.coui.kmp.basic.TextButton
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
@@ -57,60 +57,63 @@ internal fun PresetActionMenuDialog(
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                insideMargin = PaddingValues(vertical = 8.dp),
+                cornerRadius = CardDefaults.GroupCornerRadius,
+                weight = CardDefaults.GroupWeight,
+                insideMargin = PaddingValues(0.dp),
                 colors = CardDefaults.defaultColors(color = COUITheme.colorScheme.secondaryVariant),
             ) {
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "应用此预设",
+                    cardListPosition = CardListPosition.Head,
                     onClick = {
                         onDismiss()
                         onApply(target)
                     },
                 )
-                PresetMenuDivider()
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "批量生成预览",
                     summary = "随机抓取应用，批量生成预览",
+                    cardListPosition = CardListPosition.Middle,
                     onClick = {
                         onDismiss()
                         onPreview(target)
                     },
                 )
-                PresetMenuDivider()
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "覆盖为此预设",
                     summary = "将当前所有调参保存覆盖到「${target.name}」",
+                    cardListPosition = CardListPosition.Middle,
                     onClick = {
                         onDismiss()
                         onOverwrite(target)
                     },
                 )
-                PresetMenuDivider()
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "重命名",
+                    cardListPosition = CardListPosition.Middle,
                     onClick = {
                         onDismiss()
                         onRename(target)
                     },
                 )
-                PresetMenuDivider()
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "复制单条 JSON",
+                    cardListPosition = CardListPosition.Middle,
                     onClick = {
                         onDismiss()
                         onExportSingle(target)
                     },
                 )
-                PresetMenuDivider()
                 PresetMenuItem(
                     enabled = !isBusy,
                     title = "删除预设",
                     isDestructive = true,
+                    cardListPosition = CardListPosition.Tail,
                     onClick = {
                         onDismiss()
                         onDelete(target)
@@ -136,11 +139,6 @@ internal fun PresetActionMenuDialog(
             )
         }
     }
-}
-
-@Composable
-private fun PresetMenuDivider() {
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 }
 
 @Composable

@@ -86,6 +86,7 @@ internal class PagerBarSpec(
 @Stable
 internal class PagerShellHost {
     val specs = mutableStateMapOf<Int, PagerBarSpec>()
+    var previewStripHeight by mutableStateOf(84.dp)
 }
 
 /** 非 null 表示当前页被 [PagerShellHost] 托管：页面不再自己画顶栏。 */

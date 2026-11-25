@@ -32,6 +32,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.basic.CardListPosition
+import io.github.suqi8.coui.kmp.basic.Chip
 import io.github.suqi8.coui.kmp.layout.DialogButtonBarAction
 import io.github.suqi8.coui.kmp.preference.SwitchPreference
 import io.github.suqi8.coui.kmp.basic.Card
@@ -401,22 +403,14 @@ private fun LayerRoleRow(
 
 @Composable
 private fun LayerRolePill(role: IconLayerRole, selected: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
-            .background(
-                if (selected) COUITheme.colorScheme.primary else COUITheme.colorScheme.secondaryVariant,
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 4.dp),
-    ) {
-        Text(
-            text = role.label,
-            style = COUITheme.textStyles.footnote1,
-            color = if (selected) COUITheme.colorScheme.onPrimary else COUITheme.colorScheme.onSurfaceVariantSummary,
-            maxLines = 1,
-        )
-    }
+    Chip(
+        selected = selected,
+        onClick = onClick,
+        label = role.label,
+        minWidth = 44.dp,
+        minHeight = 28.dp,
+        insideMargin = PaddingValues(horizontal = 10.dp),
+    )
 }
 
 /** alpha 通道画成灰度图，一眼看出主体轮廓。 */
@@ -458,6 +452,7 @@ internal fun ForegroundSubjectCard(
             onDraftChange = onDraftForegroundSubjectPercent,
             onSave = onSaveForegroundSubjectPercent,
             icon = SettingsIconKind.Scale,
+            cardListPosition = CardListPosition.Full,
         )
     }
 }
@@ -495,9 +490,9 @@ internal fun PreviewControlCard(
                 showSwitch = true,
                 checked = previewStripEnabled,
                 enabled = !isBusy,
+                cardListPosition = CardListPosition.Head,
                 onCheckedChange = onPreviewStripEnabled,
             )
-            SectionDivider()
             LibrarySettingRow(
                 title = "设置预览桌面壁纸",
                 summary = null,
@@ -505,20 +500,20 @@ internal fun PreviewControlCard(
                 icon = SettingsIconKind.FileUpload,
                 showArrowRight = true,
                 enabled = !isBusy,
+                cardListPosition = CardListPosition.Middle,
                 onClick = onPickWallpaper,
             )
             if (hasCustomWallpaper) {
-                SectionDivider()
                 LibrarySettingRow(
                     title = "清除自定义壁纸",
                     summary = null,
                     icon = SettingsIconKind.Eraser,
                     showArrowRight = false,
                     enabled = !isBusy,
+                    cardListPosition = CardListPosition.Middle,
                     onClick = onClearWallpaper,
                 )
             }
-            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "预览圆角",
@@ -531,8 +526,8 @@ internal fun PreviewControlCard(
                 onDraftChange = onDraftPreviewCornerRadiusDp,
                 onSave = onSavePreviewCornerRadiusDp,
                 icon = SettingsIconKind.Radius,
+                cardListPosition = CardListPosition.Middle,
             )
-            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "预览缩放",
@@ -545,8 +540,8 @@ internal fun PreviewControlCard(
                 onDraftChange = onDraftPreviewIconSizeDp,
                 onSave = onSavePreviewIconSizeDp,
                 icon = SettingsIconKind.Grid,
+                cardListPosition = CardListPosition.Middle,
             )
-            SectionDivider()
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -579,6 +574,8 @@ internal fun PreviewNightFillBackgroundRow(
     // COUI 开关行：整行点击切换，放在中性 secondaryVariant 卡片里（所在底部弹层面板为白色）
     Card(
         modifier = Modifier.fillMaxWidth(),
+        cornerRadius = CardDefaults.GroupCornerRadius,
+        weight = CardDefaults.GroupWeight,
         insideMargin = PaddingValues(0.dp),
         colors = CardDefaults.defaultColors(color = COUITheme.colorScheme.secondaryVariant),
     ) {
@@ -587,6 +584,7 @@ internal fun PreviewNightFillBackgroundRow(
             onCheckedChange = onCheckedChange,
             title = "填充背景色",
             summary = "将暗色背景颜色填补到主体暗部",
+            cardListPosition = CardListPosition.Full,
             enabled = !isBusy,
         )
     }

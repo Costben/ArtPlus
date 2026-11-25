@@ -14,8 +14,9 @@ import io.github.suqi8.coui.kmp.basic.HorizontalDivider
 import dev.artplus.mobile.SECTION_CARD_VERTICAL_PADDING_DP
 
 /**
- * 设置/功能卡片：COUI Card 自带 17dp 圆角裁切，行内按压反馈由 COUI 指示器提供。
- * 卡片内多行之间请用 [SectionDivider] 分隔。
+ * 设置/功能卡片：采用 ColorOS 17 偏好组圆角（[CardDefaults.GroupCornerRadius] 24dp +
+ * [CardDefaults.GroupWeight]），行内按压反馈与标题对齐分割线由 COUI 组件按 `cardListPosition` 自动提供。
+ * 混排非偏好子项时可使用 [SectionDivider] 分隔。
  *
  * [title] 是卡片外左上角的分组小标题，用来在页面上说明这一组是干什么的。
  */
@@ -30,6 +31,8 @@ internal fun SectionCard(
         if (title != null) SectionHeader(title)
         Card(
             modifier = Modifier.fillMaxWidth(),
+            cornerRadius = CardDefaults.GroupCornerRadius,
+            weight = CardDefaults.GroupWeight,
             insideMargin = if (rowsFullBleed) {
                 PaddingValues(
                     horizontal = 0.dp,

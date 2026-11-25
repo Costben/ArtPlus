@@ -51,7 +51,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import io.github.suqi8.coui.kmp.basic.BindScrollToTop
 import io.github.suqi8.coui.kmp.basic.Card
+import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.basic.CardListPosition
 import io.github.suqi8.coui.kmp.basic.Scaffold
 import io.github.suqi8.coui.kmp.basic.TabRowWithContour
 import io.github.suqi8.coui.kmp.basic.Text
@@ -61,6 +64,8 @@ import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.ChevronBackward
 import io.github.suqi8.coui.kmp.icon.extended.Refresh
 import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.utils.overScrollVertical
+import io.github.suqi8.coui.kmp.utils.scrollEndHaptic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import dev.artplus.mobile.CHOICE_ROW_HORIZONTAL_BLEED_DP
@@ -164,14 +169,18 @@ internal fun MainActivity.BatchPreviewPage(pageBackground: Color) {
         val previewRowHeight = batchConfig.batchPreviewIconSizeDp.dp + 6.dp + PREVIEW_LABEL_HEIGHT_DP.dp
         val previewFrameHeight = 18.dp + previewRowHeight * previewDisplayRows +
             18.dp * (previewDisplayRows - 1) + 18.dp
+        val scrollState = rememberScrollState()
+        BindScrollToTop(scrollState)
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .layerBackdrop(appBarBackdrop)
                 .background(pageBackground)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .scrollEndHaptic()
+                .overScrollVertical()
                 .imePadding()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(top = contentTopInset + 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -266,6 +275,7 @@ val __act2 = LocalContext.current
 } },
                         showIcon = false,
                         initiallyExpanded = false,
+                        cardListPosition = CardListPosition.Middle,
                     )
 
                     NumberParameterControl(
@@ -288,6 +298,7 @@ val __act2 = LocalContext.current
 } },
                         showIcon = false,
                         initiallyExpanded = false,
+                        cardListPosition = CardListPosition.Middle,
                     )
 
                     NumberParameterControl(
@@ -310,6 +321,7 @@ val __act2 = LocalContext.current
 } },
                         showIcon = false,
                         initiallyExpanded = false,
+                        cardListPosition = CardListPosition.Tail,
                     )
                 }
             }
