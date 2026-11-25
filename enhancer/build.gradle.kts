@@ -101,6 +101,7 @@ dependencies {
     // COUI17：仓库来源与坐标见根 settings.gradle.kts。
     val couiVersion = providers.gradleProperty("couiVersion").get()
     implementation("io.github.suqi8.coui.kmp:coui-ui:$couiVersion")
+    implementation("io.github.suqi8.coui.kmp:coui-blur:$couiVersion")
     implementation("io.github.suqi8.coui.kmp:coui-preference:$couiVersion")
     implementation("io.github.suqi8.coui.kmp:coui-icons:$couiVersion")
 }

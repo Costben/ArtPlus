@@ -7,16 +7,11 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -25,7 +20,7 @@ import io.github.suqi8.coui.kmp.basic.HighlightedIconButton
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.basic.Scaffold
 import io.github.suqi8.coui.kmp.basic.ScrollBehavior
-import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.SmallTitle
 import io.github.suqi8.coui.kmp.basic.TopAppBar
 import io.github.suqi8.coui.kmp.basic.couiTopAppBarActionItem
 import io.github.suqi8.coui.kmp.blur.LocalBackdrop
@@ -33,14 +28,15 @@ import io.github.suqi8.coui.kmp.blur.layerBackdrop
 import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
 import io.github.suqi8.coui.kmp.icon.COUIIcons
 import io.github.suqi8.coui.kmp.icon.extended.Back
-import io.github.suqi8.coui.kmp.theme.COUITheme
+import io.github.suqi8.coui.kmp.utils.COUIPopupUtils
 
 /**
  * ColorOS 17 页面外壳。
  *
- * 采用 ColorOS 17 规范的沉浸式渐变顶栏与统一背景色：
+ * 采用 ColorOS 17 规范的沉浸式渐变顶栏、统一背景色与根部弹层宿主：
  *  - 页面背景使用 [AppBarBlurOverlayDefaults.containerColor]，彻底消除未设底色时窗口黑底与暗文字混在一起的黑底黑字问题；
  *  - 顶栏启用 [gradientGlass] 实时材质模糊；
+ *  - `popupHost` 接入 `LocalBackdrop`，保证 Overlay 下拉菜单 / 对话框采样页面实时玻璃材质；
  *  - 顶栏操作项使用统一材质的 [HighlightedIconButton]。
  */
 @Composable
@@ -57,6 +53,11 @@ fun Coui17Scaffold(
         containerColor = pageColor,
         edgeToEdge = true,
         topBar = { CompositionLocalProvider(LocalBackdrop provides backdrop) { topBar() } },
+        popupHost = {
+            CompositionLocalProvider(LocalBackdrop provides backdrop) {
+                COUIPopupUtils.COUIPopupHost()
+            }
+        },
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().layerBackdrop(backdrop)) {
             content(innerPadding)
@@ -120,7 +121,7 @@ fun BarIconButton(
 }
 
 /**
- * ColorOS 17 设置页分组标题：32dp 高，16sp 中粗 headline2，主文字色。
+ * ColorOS 17 设置页分组标题：直接使用 COUI [SmallTitle]，
  * 文字起始边与卡片内文字严格对齐在同一条基准线上。
  */
 @Composable
@@ -129,49 +130,11 @@ fun GroupTitle(
     modifier: Modifier = Modifier,
     cardInset: Dp = 16.dp,
 ) {
-    Box(
+    SmallTitle(
+        text = text,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = cardInset)
-            .padding(bottom = 3.5.dp)
-            .height(32.dp),
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(start = 16.dp),
-            style = COUITheme.textStyles.headline2,
-            color = COUITheme.colorScheme.onSurface,
-        )
-    }
-}
-
-/** 刷新图标。 */
-object EnhancerIcons {
-    val Refresh: ImageVector by lazy {
-        ImageVector.Builder(
-            name = "Refresh",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
-        ).apply {
-            path(fill = SolidColor(Color.Black)) {
-                moveTo(17.65f, 6.35f)
-                curveTo(16.2f, 4.9f, 14.21f, 4f, 12f, 4f)
-                curveTo(7.58f, 4f, 4.01f, 7.58f, 4.01f, 12f)
-                curveTo(4.01f, 16.42f, 7.58f, 20f, 12f, 20f)
-                curveTo(15.73f, 20f, 18.84f, 17.45f, 19.73f, 14f)
-                horizontalLineTo(17.65f)
-                curveTo(16.83f, 16.33f, 14.61f, 18f, 12f, 18f)
-                curveTo(8.69f, 18f, 6f, 15.31f, 6f, 12f)
-                curveTo(6f, 8.69f, 8.69f, 6f, 12f, 6f)
-                curveTo(13.66f, 6f, 15.14f, 6.69f, 16.22f, 7.78f)
-                lineTo(13f, 11f)
-                horizontalLineTo(20f)
-                verticalLineTo(4f)
-                close()
-            }
-        }.build()
-    }
+            .padding(horizontal = cardInset),
+        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+    )
 }

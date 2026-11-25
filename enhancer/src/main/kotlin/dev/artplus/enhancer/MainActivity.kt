@@ -1,23 +1,27 @@
 package dev.artplus.enhancer
 
 import android.content.Context
+import android.graphics.Color as AndroidColor
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -31,16 +35,28 @@ import androidx.compose.ui.unit.dp
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import io.github.suqi8.coui.kmp.basic.BasicComponent
+import io.github.suqi8.coui.kmp.basic.BindScrollToTop
 import io.github.suqi8.coui.kmp.basic.COUIScrollBehavior
 import io.github.suqi8.coui.kmp.basic.Card
-import io.github.suqi8.coui.kmp.basic.HorizontalDivider
+import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.basic.CardListPosition
+import io.github.suqi8.coui.kmp.basic.DropdownEntry
+import io.github.suqi8.coui.kmp.basic.DropdownItem
+import io.github.suqi8.coui.kmp.basic.SliderDefaults
 import io.github.suqi8.coui.kmp.basic.Text
 import io.github.suqi8.coui.kmp.basic.TextButton
+import io.github.suqi8.coui.kmp.icon.COUIIcons
+import io.github.suqi8.coui.kmp.icon.extended.Refresh
+import io.github.suqi8.coui.kmp.preference.OverlayDropdownPreference
+import io.github.suqi8.coui.kmp.preference.SliderPreference
 import io.github.suqi8.coui.kmp.preference.SwitchPreference
 import io.github.suqi8.coui.kmp.theme.COUITheme
-import io.github.suqi8.coui.kmp.theme.darkColorScheme
-import io.github.suqi8.coui.kmp.theme.lightColorScheme
+import io.github.suqi8.coui.kmp.theme.ColorSchemeMode
+import io.github.suqi8.coui.kmp.theme.ThemeController
+import io.github.suqi8.coui.kmp.utils.overScrollVertical
+import io.github.suqi8.coui.kmp.utils.scrollEndHaptic
 import kotlin.concurrent.thread
+import kotlin.math.roundToInt
 
 /**
  * 桌面侧只认 LSPosed 的远程配置表，所以设置页必须经 `XposedService` 写；
@@ -132,11 +148,28 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         ModulePrefs.setAppContext(applicationContext)
         FrameworkBridge.init()
         setContent {
-            AppTheme {
+            val darkMode = isSystemInDarkTheme()
+            DisposableEffect(darkMode) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(
+                        AndroidColor.TRANSPARENT,
+                        AndroidColor.TRANSPARENT,
+                    ) { darkMode },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        AndroidColor.TRANSPARENT,
+                        AndroidColor.TRANSPARENT,
+                    ) { darkMode },
+                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    window.isNavigationBarContrastEnforced = false
+                }
+                onDispose {}
+            }
+            val themeController = remember { ThemeController(ColorSchemeMode.System) }
+            COUITheme(controller = themeController) {
                 EnhancerScreen()
             }
         }
@@ -144,19 +177,12 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppTheme(content: @Composable () -> Unit) {
-    val colors = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
-    COUITheme(
-        colors = colors,
-        content = content,
-    )
-}
-
-@Composable
 private fun EnhancerScreen() {
     val context = LocalContext.current
     val bridgeVersion = FrameworkBridge.version
     val scrollBehavior = COUIScrollBehavior()
+    val listState = rememberLazyListState()
+    BindScrollToTop(listState)
 
     var dockGlass by remember { mutableStateOf(ModulePrefs.getBoolean(context, ModulePrefs.KEY_DOCK_GLASS, false)) }
     var dockBlur by remember { mutableStateOf(ModulePrefs.getBoolean(context, ModulePrefs.KEY_DOCK_BLUR, true)) }
@@ -186,7 +212,7 @@ private fun EnhancerScreen() {
                 scrollBehavior = scrollBehavior,
                 actions = {
                     BarIconButton(
-                        icon = EnhancerIcons.Refresh,
+                        icon = COUIIcons.Refresh,
                         contentDescription = "强制关闭系统桌面并刷新",
                     ) {
                         restartLauncher(context)
@@ -201,6 +227,11 @@ private fun EnhancerScreen() {
                 .nestedScroll(scrollBehavior.nestedScrollConnection),
         ) {
             LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .scrollEndHaptic()
+                    .overScrollVertical(),
                 contentPadding = innerPadding.listPadding(top = 16.dp, bottom = 48.dp),
             ) {
                 item(key = "title_framework") {
@@ -208,6 +239,8 @@ private fun EnhancerScreen() {
                 }
                 item(key = "card_framework") {
                     Card(
+                        cornerRadius = CardDefaults.GroupCornerRadius,
+                        weight = CardDefaults.GroupWeight,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
@@ -224,6 +257,7 @@ private fun EnhancerScreen() {
                             } else {
                                 "未连上框架服务：开关写在本地，请先在 LSPosed 里启用并勾选系统桌面"
                             },
+                            cardListPosition = if (scopeMessage != null) CardListPosition.Head else CardListPosition.Full,
                             endActions = if (!FrameworkBridge.prefsReady) {
                                 {
                                     TextButton(
@@ -242,7 +276,6 @@ private fun EnhancerScreen() {
                             onClick = null,
                         )
                         scopeMessage?.let {
-                            HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                             Text(
                                 text = it,
                                 style = COUITheme.textStyles.body2,
@@ -257,7 +290,10 @@ private fun EnhancerScreen() {
                     GroupTitle("桌面液态玻璃")
                 }
                 item(key = "card_glass") {
+                    val angleOptions = remember { listOf(90, 0, 270, 180) }
                     Card(
+                        cornerRadius = CardDefaults.GroupCornerRadius,
+                        weight = CardDefaults.GroupWeight,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
@@ -271,8 +307,8 @@ private fun EnhancerScreen() {
                             },
                             title = "Dock 玻璃托盘",
                             summary = "给桌面底部 Dock 行添加圆角毛玻璃托盘",
+                            cardListPosition = CardListPosition.Head,
                         )
-                        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                         SwitchPreference(
                             checked = dockBlur,
                             onCheckedChange = {
@@ -281,9 +317,9 @@ private fun EnhancerScreen() {
                             },
                             title = "托盘模糊",
                             summary = "叠加桌面实时背景模糊；关闭后仅保留自适应半透明底色",
+                            cardListPosition = CardListPosition.Middle,
                             enabled = dockGlass,
                         )
-                        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                         SwitchPreference(
                             checked = iconRim,
                             onCheckedChange = {
@@ -292,8 +328,8 @@ private fun EnhancerScreen() {
                             },
                             title = "图标边缘光",
                             summary = "沿应用图标底板描一圈随光照渐变的高光",
+                            cardListPosition = CardListPosition.Middle,
                         )
-                        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                         SwitchPreference(
                             checked = iconBody,
                             onCheckedChange = {
@@ -302,58 +338,50 @@ private fun EnhancerScreen() {
                             },
                             title = "图标主体高光",
                             summary = "在底板之外为 Logo 本身再描一圈细高光（仿苹果）",
+                            cardListPosition = CardListPosition.Middle,
                             enabled = iconRim,
                         )
-                        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                        BasicComponent(
+                        SliderPreference(
+                            value = rimLevel.coerceIn(ModulePrefs.RIM_LEVEL_MIN, ModulePrefs.RIM_LEVEL_MAX).toFloat(),
+                            onValueChange = { raw ->
+                                val next = ((raw / 5f).roundToInt() * 5).coerceIn(
+                                    ModulePrefs.RIM_LEVEL_MIN,
+                                    ModulePrefs.RIM_LEVEL_MAX,
+                                )
+                                if (next != rimLevel) {
+                                    rimLevel = next
+                                    ModulePrefs.setInt(context, ModulePrefs.KEY_ICON_RIM_LEVEL, next)
+                                }
+                            },
                             title = "边缘光强度",
-                            summary = "点击循环切换强度",
-                            endActions = {
-                                Text(
-                                    text = "$rimLevel%",
-                                    style = COUITheme.textStyles.body2,
-                                    color = if (iconRim) {
-                                        COUITheme.colorScheme.onSurfaceSecondary
-                                    } else {
-                                        COUITheme.colorScheme.disabledOnSecondaryVariant
-                                    },
-                                )
-                            },
-                            onClick = {
-                                rimLevel = when (rimLevel) {
-                                    in 0..69 -> 80
-                                    in 70..89 -> 100
-                                    else -> 60
-                                }
-                                ModulePrefs.setInt(context, ModulePrefs.KEY_ICON_RIM_LEVEL, rimLevel)
-                            },
+                            summary = "拖动调整图标边缘高光强度",
+                            valueText = "$rimLevel%",
+                            valueRange = ModulePrefs.RIM_LEVEL_MIN.toFloat()..ModulePrefs.RIM_LEVEL_MAX.toFloat(),
+                            steps = 19,
+                            hapticEffect = SliderDefaults.SliderHapticEffect.Step,
+                            cardListPosition = CardListPosition.Middle,
                             enabled = iconRim,
                         )
-                        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
-                        BasicComponent(
-                            title = "光源方向",
-                            summary = "点击循环调整光线入射角",
-                            endActions = {
-                                Text(
-                                    text = angleLabel(lightAngle),
-                                    style = COUITheme.textStyles.body2,
-                                    color = if (iconRim) {
-                                        COUITheme.colorScheme.onSurfaceSecondary
-                                    } else {
-                                        COUITheme.colorScheme.disabledOnSecondaryVariant
+                        OverlayDropdownPreference(
+                            entry = remember(lightAngle) {
+                                DropdownEntry(
+                                    items = angleOptions.map { angle ->
+                                        DropdownItem(
+                                            text = angleLabel(angle),
+                                            selected = angle == lightAngle,
+                                            onClick = {
+                                                lightAngle = angle
+                                                ModulePrefs.setInt(context, ModulePrefs.KEY_ICON_LIGHT_ANGLE, angle)
+                                            },
+                                        )
                                     },
                                 )
                             },
-                            onClick = {
-                                lightAngle = when (lightAngle) {
-                                    90 -> 0
-                                    0 -> 270
-                                    270 -> 180
-                                    else -> 90
-                                }
-                                ModulePrefs.setInt(context, ModulePrefs.KEY_ICON_LIGHT_ANGLE, lightAngle)
-                            },
+                            title = "光源方向",
+                            summary = "选择光线入射角",
+                            cardListPosition = CardListPosition.Tail,
                             enabled = iconRim,
+                            renderInRootScaffold = true,
                         )
                     }
                 }
@@ -363,6 +391,8 @@ private fun EnhancerScreen() {
                 }
                 item(key = "card_morph") {
                     Card(
+                        cornerRadius = CardDefaults.GroupCornerRadius,
+                        weight = CardDefaults.GroupWeight,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
@@ -376,8 +406,8 @@ private fun EnhancerScreen() {
                             },
                             title = "使用 ArtPlus 本地图标",
                             summary = "带可变图标特性的应用不再向系统图标引擎取图，改用 ArtPlus 写入的本地素材",
+                            cardListPosition = CardListPosition.Head,
                         )
-                        HorizontalDivider(Modifier.padding(horizontal = 16.dp))
                         Text(
                             text = "判定依据：/data/oplus/uxicons/<包名>/ 内存在 ArtPlus 写入时留下的 " +
                                 ".artplusmodified 标记。系统图标引擎将被绕过，2x2 与 1x1 均稳定回落到 ArtPlus 本地素材路径。",
@@ -393,6 +423,8 @@ private fun EnhancerScreen() {
                 }
                 item(key = "card_actions") {
                     Card(
+                        cornerRadius = CardDefaults.GroupCornerRadius,
+                        weight = CardDefaults.GroupWeight,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
@@ -401,6 +433,7 @@ private fun EnhancerScreen() {
                         BasicComponent(
                             title = "强制关闭系统桌面",
                             summary = "检查 Root 权限并强制关闭桌面以立即刷新（必须在超级用户管理器中为本应用授予 Root 权限）",
+                            cardListPosition = CardListPosition.Full,
                             onClick = { restartLauncher(context) },
                         )
                     }
