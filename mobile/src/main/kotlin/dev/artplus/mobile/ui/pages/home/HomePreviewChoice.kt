@@ -59,6 +59,7 @@ import dev.artplus.mobile.ui.cards.AiIconLoadingPreview
 import dev.artplus.mobile.ui.cards.NumberParameterControl
 import dev.artplus.mobile.ui.cards.PreviewChoiceActions
 import dev.artplus.mobile.ui.cards.PreviewSelections
+import dev.artplus.mobile.ui.components.GroupCardShape
 import dev.artplus.mobile.ui.components.MetricPill
 /**
  * Slice 2.2：预览来源抽屉（原 MainActivity 残留本体原样搬迁）。
@@ -105,7 +106,7 @@ internal fun MoreRulesGroupRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 68.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(GroupCardShape)
             .background(background)
             .clickable(
                 enabled = !isBusy && !isGeneratingGptCandidate && !isGeneratingRmbgCandidate,
@@ -286,7 +287,7 @@ internal fun PreviewChoiceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(GroupCardShape)
             .background(background)
             .clickable(enabled = enabled) {
                 if (gptMissing) {

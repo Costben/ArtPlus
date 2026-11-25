@@ -69,6 +69,7 @@ import dev.artplus.mobile.system.writePackageOutputs
 import dev.artplus.mobile.ui.cards.BatchApplyProgress
 import dev.artplus.mobile.ui.cards.PreviewSelections
 import dev.artplus.mobile.ui.cards.ServiceConfirmRequest
+import dev.artplus.mobile.ui.components.GroupCardShape
 import dev.artplus.mobile.ui.pages.picker.pickerLoadBundledPreviewWallpaperBitmap
 import dev.artplus.mobile.ui.pages.picker.pickerLoadCustomWallpaperBitmap
 import dev.artplus.mobile.ui.pages.picker.pickerLoadPreviewWallpaperBitmap
@@ -93,7 +94,7 @@ internal fun MainActivity.HomePreviewStrip(
     val stripBatchConfig by mainViewModel.batchPreviewConfig.collectAsState()
     val assets = stripPreviewState.sharedPreviewAssets
     val loading = stripPreviewState.isPreviewAssetsRefreshing || stripPreviewState.isPreviewOutputRefreshing || stripPreviewState.isGptPreviewLoading
-    val shape = RoundedCornerShape(20.dp)
+    val shape = GroupCardShape
     val backdrop = LocalBackdrop.current
     val highlight = rememberGlassHighlight(GlassContainer.Medium)
     Box(

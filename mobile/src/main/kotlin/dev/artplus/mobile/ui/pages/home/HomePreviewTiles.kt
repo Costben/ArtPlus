@@ -29,18 +29,26 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
+import io.github.suqi8.coui.kmp.basic.CardDefaults
 import io.github.suqi8.coui.kmp.basic.CircularProgressIndicator
 import io.github.suqi8.coui.kmp.basic.ProgressIndicatorDefaults
 import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.basic.couiGlassSurface
+import io.github.suqi8.coui.kmp.blur.layerBackdrop
+import io.github.suqi8.coui.kmp.blur.rememberLayerBackdrop
+import io.github.suqi8.coui.kmp.squircle.SquircleShape
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.DEFAULT_PREVIEW_CORNER_RADIUS_DP
 import dev.artplus.mobile.DEFAULT_PREVIEW_ICON_SIZE_DP
@@ -48,6 +56,7 @@ import dev.artplus.mobile.pipeline.PreviewAssets
 import dev.artplus.mobile.pipeline.PreviewMode
 import dev.artplus.mobile.ui.cards.AiIconLoadingPreview
 import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
+import dev.artplus.mobile.ui.components.GroupCardShape
 /**
  * Slice 2.2：主页预览基础 Tiles（原 MainActivity 残留本体原样搬迁）。
  * Composable 只收 state + onEvent；Activity 状态经参数/回调注入，行为与 UI 100% 等价。
@@ -289,53 +298,40 @@ internal fun PreviewTile(
         animationSpec = tween(durationMillis = if (loading) 260 else 360),
         label = "PreviewLoadingAlpha",
     )
-    Column(
+    val isDark = COUITheme.colorScheme.background.luminance() < 0.5f
+    val glassContainerColor = if (isDark) Color(0xFF1F1F23) else Color.White
+    val glassAlpha = if (isDark) 0.72f else 0.78f
+    val glassFallbackColor = if (isDark) Color(0xFF202024).copy(alpha = 0.84f) else Color.White.copy(alpha = 0.86f)
+    val glassTopBorder = if (isDark) Color.White.copy(alpha = 0.14f) else Color.White.copy(alpha = 0.45f)
+    val tileBackdrop = rememberLayerBackdrop {
+        drawRect(desktopBackground.fallbackColor)
+        drawContent()
+    }
+
+    Box(
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(COUITheme.colorScheme.surfaceContainerHigh)
-            .clickable(enabled = choiceEnabled, onClick = onClick)
-            .padding(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+            .height(152.dp)
+            .clip(GroupCardShape)
+            .border(0.5.dp, COUITheme.colorScheme.dividerLine, GroupCardShape)
+            .clickable(enabled = choiceEnabled, onClick = onClick),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = label,
-                style = COUITheme.textStyles.footnote1,
-                color = COUITheme.colorScheme.onSurfaceVariantSummary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (labelLoading) {
-                // 12dp 与 footnote1 行高齐平；底色淡染一圈，转动的是主色弧
-                CircularProgressIndicator(
-                    progress = null,
-                    size = 12.dp,
-                    strokeWidth = 1.5.dp,
-                    colors = ProgressIndicatorDefaults.circularProgressIndicatorColors(
-                        foregroundColor = COUITheme.colorScheme.primary,
-                        backgroundColor = COUITheme.colorScheme.primary.copy(alpha = 0.2f),
-                    ),
-                )
-            }
-        }
-        Box(
+        PreviewDesktopBackgroundSurface(
+            option = desktopBackground,
             modifier = Modifier
-                .fillMaxWidth()
-                .height(118.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (missingMessage == null) {
-                DesktopIconPreview(
-                    desktopBackground = desktopBackground,
-                    iconSize = iconSizeDp.dp,
-                    wallpaperInitial = wallpaperInitial,
-                    wallpaperKey = wallpaperKey,
-                    loadWallpaper = loadWallpaper,
-                ) {
+                .fillMaxSize()
+                .layerBackdrop(tileBackdrop),
+            wallpaperInitial = wallpaperInitial,
+            wallpaperKey = wallpaperKey,
+            loadWallpaper = loadWallpaper,
+        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (missingMessage == null) {
                     GeneratedIconPreview(
                         assets = assets,
                         mode = mode,
@@ -343,15 +339,7 @@ internal fun PreviewTile(
                         cornerRadiusDp = cornerRadiusDp,
                         materialColorProvider = materialColorProvider,
                     )
-                }
-            } else {
-                DesktopIconPreview(
-                    desktopBackground = desktopBackground,
-                    iconSize = iconSizeDp.dp,
-                    wallpaperInitial = wallpaperInitial,
-                    wallpaperKey = wallpaperKey,
-                    loadWallpaper = loadWallpaper,
-                ) {
+                } else {
                     MissingIconPreview(
                         modifier = Modifier.size(iconSizeDp.dp),
                         mode = mode,
@@ -359,14 +347,61 @@ internal fun PreviewTile(
                         materialColorProvider = materialColorProvider,
                     )
                 }
+                if (loadingAlpha > 0.01f) {
+                    AiIconLoadingPreview(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .graphicsLayer { alpha = loadingAlpha },
+                        overlay = true,
+                    )
+                }
             }
-            if (loadingAlpha > 0.01f) {
-                AiIconLoadingPreview(
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(32.dp)
+                    .couiGlassSurface(
+                        backdrop = tileBackdrop,
+                        shape = RectangleShape,
+                        containerColor = glassContainerColor,
+                        fallback = Modifier.background(glassFallbackColor),
+                        containerAlpha = glassAlpha,
+                    ),
+            ) {
+                Box(
                     modifier = Modifier
-                        .size(72.dp)
-                        .graphicsLayer { alpha = loadingAlpha },
-                    overlay = true,
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .height(0.5.dp)
+                        .background(glassTopBorder),
                 )
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = label,
+                        style = COUITheme.textStyles.footnote1.copy(fontWeight = FontWeight.Medium),
+                        color = COUITheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (labelLoading) {
+                        // 12dp 与 footnote1 行高齐平；底色淡染一圈，转动的是主色弧
+                        CircularProgressIndicator(
+                            progress = null,
+                            size = 12.dp,
+                            strokeWidth = 1.5.dp,
+                            colors = ProgressIndicatorDefaults.circularProgressIndicatorColors(
+                                foregroundColor = COUITheme.colorScheme.primary,
+                                backgroundColor = COUITheme.colorScheme.primary.copy(alpha = 0.2f),
+                            ),
+                        )
+                    }
+                }
             }
         }
     }
@@ -394,7 +429,7 @@ internal fun TopPreviewStripTile(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(12.dp)),
+            .clip(SquircleShape(18.dp, weight = CardDefaults.GroupWeight)),
         contentAlignment = Alignment.Center,
     ) {
         PreviewDesktopBackgroundSurface(
@@ -477,11 +512,12 @@ internal fun PreviewBackgroundOption(
     } else {
         COUITheme.colorScheme.onSurfaceVariantSummary
     }
+    val optionShape = SquircleShape(14.dp, weight = CardDefaults.GroupWeight)
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(optionShape)
             .background(containerColor)
-            .border(if (selected) 1.5.dp else 1.dp, outlineColor, RoundedCornerShape(12.dp))
+            .border(if (selected) 1.5.dp else 1.dp, outlineColor, optionShape)
             .clickable(enabled = !isBusy && !selected, onClick = onClick)
             .padding(horizontal = 6.dp, vertical = 7.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -491,7 +527,7 @@ internal fun PreviewBackgroundOption(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(22.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(SquircleShape(8.dp, weight = CardDefaults.GroupWeight))
                 .background(outlineColor.copy(alpha = 0.18f))
                 .padding(2.dp),
         ) {
@@ -499,7 +535,7 @@ internal fun PreviewBackgroundOption(
                 option = option,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(6.dp)),
+                    .clip(SquircleShape(6.dp, weight = CardDefaults.GroupWeight)),
                 wallpaperInitial = wallpaperInitial,
                 wallpaperKey = wallpaperKey,
                 loadWallpaper = loadWallpaper,

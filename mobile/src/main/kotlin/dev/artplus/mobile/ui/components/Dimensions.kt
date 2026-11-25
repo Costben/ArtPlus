@@ -1,6 +1,14 @@
 package dev.artplus.mobile.ui.components
 
 import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.squircle.SquircleShape
+
+/** 统一卡片形状：与 [SectionCard] 一致的 ColorOS 17 24dp 连续曲率圆角（Lp 2.5）。 */
+internal val GroupCardShape = SquircleShape(
+    cornerRadius = CardDefaults.GroupCornerRadius,
+    weight = CardDefaults.GroupWeight,
+)
 
 /** Compact card corner radius; COUI's default is 17.dp (CardDefaults.CornerRadius). */
 internal val CompactCardCornerRadius = 14.dp

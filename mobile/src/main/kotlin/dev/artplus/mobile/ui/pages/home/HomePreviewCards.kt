@@ -122,8 +122,8 @@ internal fun GeneratedPreviewCard(
     if (dirPath == null) return
     if (packageName == null) return
 
-    SectionCard {
-        if (displayAssets == null) {
+    if (displayAssets == null) {
+        SectionCard {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -138,9 +138,14 @@ internal fun GeneratedPreviewCard(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            return@SectionCard
         }
+        return
+    }
 
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -180,7 +185,6 @@ internal fun GeneratedPreviewCard(
                 modifier = Modifier.weight(1f),
             )
         }
-        Spacer(modifier = Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -220,57 +224,57 @@ internal fun GeneratedPreviewCard(
                 modifier = Modifier.weight(1f),
             )
         }
-        var activeChooserMode by remember { mutableStateOf<PreviewMode?>(null) }
-        var activeChooserSession by remember { mutableStateOf<GenerationSession?>(null) }
-        if (previewChoiceMode != null && session != null) {
-            activeChooserMode = previewChoiceMode
-            activeChooserSession = session
-        }
-        val currentChooserMode = activeChooserMode
-        val currentChooserSession = activeChooserSession
-        if (currentChooserMode != null && currentChooserSession != null) {
-            // 原 GeneratedPreviewCard 的 activeChooser 保持逻辑：关闭完成后若外部已置空则清理，避免残留。
-            PreviewChoiceBottomSheet(
-                show = previewChoiceMode != null && session != null,
-                mode = currentChooserMode,
-                session = currentChooserSession,
-                tuningState = tuningState,
-                isBusy = isBusy,
-                isGeneratingGptCandidate = isGeneratingGptCandidate,
-                isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
-                draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
-                isDark = isDark,
-                nightSubjectLightBackgroundEnabled = nightSubjectLightBackgroundEnabled,
-                rmbgCandidatePackageName = rmbgCandidatePackageName,
-                rmbgCandidateMode = rmbgCandidateMode,
-                rmbgCandidateFailurePackageName = rmbgCandidateFailurePackageName,
-                rmbgCandidateFailureMode = rmbgCandidateFailureMode,
-                lastRmbgCandidateError = lastRmbgCandidateError,
-                rmbgCandidateStatusText = rmbgCandidateStatusText,
-                gptBaseUrl = gptBaseUrl,
-                gptApiKey = gptApiKey,
-                hasRmbgComponent = hasRmbgComponent,
-                cornerRadiusDp = cornerRadiusDp,
-                materialColorProvider = materialColorProvider,
-                loadCandidateAssets = loadCandidateAssets,
-                onNightFill = onNightFill,
-                onDraftForegroundSubjectPercent = onDraftForegroundSubjectPercent,
-                onSaveForegroundSubjectPercent = onSaveForegroundSubjectPercent,
-                onGenerateGpt = onGenerateGpt,
-                onGenerateRmbg = onGenerateRmbg,
-                onChooseCustom = onChooseCustom,
-                onApply = onApplyPreviewChoice,
-                onApplyAll = onApplyPreviewChoiceToAll,
-                onDismissRequest = onDismissChoice,
-                onDismissFinished = {
-                    if (previewChoiceMode == null) {
-                        activeChooserMode = null
-                        activeChooserSession = null
-                    }
-                    onDismissChoiceFinished()
-                },
-            )
-        }
+    }
+    var activeChooserMode by remember { mutableStateOf<PreviewMode?>(null) }
+    var activeChooserSession by remember { mutableStateOf<GenerationSession?>(null) }
+    if (previewChoiceMode != null && session != null) {
+        activeChooserMode = previewChoiceMode
+        activeChooserSession = session
+    }
+    val currentChooserMode = activeChooserMode
+    val currentChooserSession = activeChooserSession
+    if (currentChooserMode != null && currentChooserSession != null) {
+        // 原 GeneratedPreviewCard 的 activeChooser 保持逻辑：关闭完成后若外部已置空则清理，避免残留。
+        PreviewChoiceBottomSheet(
+            show = previewChoiceMode != null && session != null,
+            mode = currentChooserMode,
+            session = currentChooserSession,
+            tuningState = tuningState,
+            isBusy = isBusy,
+            isGeneratingGptCandidate = isGeneratingGptCandidate,
+            isGeneratingRmbgCandidate = isGeneratingRmbgCandidate,
+            draftForegroundSubjectPercentText = draftForegroundSubjectPercentText,
+            isDark = isDark,
+            nightSubjectLightBackgroundEnabled = nightSubjectLightBackgroundEnabled,
+            rmbgCandidatePackageName = rmbgCandidatePackageName,
+            rmbgCandidateMode = rmbgCandidateMode,
+            rmbgCandidateFailurePackageName = rmbgCandidateFailurePackageName,
+            rmbgCandidateFailureMode = rmbgCandidateFailureMode,
+            lastRmbgCandidateError = lastRmbgCandidateError,
+            rmbgCandidateStatusText = rmbgCandidateStatusText,
+            gptBaseUrl = gptBaseUrl,
+            gptApiKey = gptApiKey,
+            hasRmbgComponent = hasRmbgComponent,
+            cornerRadiusDp = cornerRadiusDp,
+            materialColorProvider = materialColorProvider,
+            loadCandidateAssets = loadCandidateAssets,
+            onNightFill = onNightFill,
+            onDraftForegroundSubjectPercent = onDraftForegroundSubjectPercent,
+            onSaveForegroundSubjectPercent = onSaveForegroundSubjectPercent,
+            onGenerateGpt = onGenerateGpt,
+            onGenerateRmbg = onGenerateRmbg,
+            onChooseCustom = onChooseCustom,
+            onApply = onApplyPreviewChoice,
+            onApplyAll = onApplyPreviewChoiceToAll,
+            onDismissRequest = onDismissChoice,
+            onDismissFinished = {
+                if (previewChoiceMode == null) {
+                    activeChooserMode = null
+                    activeChooserSession = null
+                }
+                onDismissChoiceFinished()
+            },
+        )
     }
 }
 

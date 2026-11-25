@@ -377,7 +377,8 @@ internal fun CompactPresetRow(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        cornerRadius = CompactCardCornerRadius,
+        cornerRadius = CardDefaults.GroupCornerRadius,
+        weight = CardDefaults.GroupWeight,
         insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
         colors = CardDefaults.defaultColors(color = containerColor),
         onClick = if (busy) null else onApply,

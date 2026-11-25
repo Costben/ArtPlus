@@ -56,6 +56,7 @@ import dev.artplus.mobile.TuningPreset
 import dev.artplus.mobile.ui.cards.CompactPresetRow
 import dev.artplus.mobile.ui.cards.formatPresetDate
 import dev.artplus.mobile.ui.components.AppTagCornerRadius
+import dev.artplus.mobile.ui.components.GroupCardShape
 import dev.artplus.mobile.ui.components.SectionCard
 import dev.artplus.mobile.ui.components.SectionHeader
 
@@ -393,7 +394,7 @@ internal fun NotificationPresetCard(
         )
     }
 
-    val cardShape = RoundedCornerShape(NotificationSwipeDefaults.CardCornerRadius)
+    val cardShape = GroupCardShape
 
     NotificationSwipeBox(
         actions = actions,

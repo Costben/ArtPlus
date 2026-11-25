@@ -77,6 +77,7 @@ import dev.artplus.mobile.state.persistUiState
 import dev.artplus.mobile.ui.cards.AppPage
 import dev.artplus.mobile.ui.cards.NumberParameterControl
 import dev.artplus.mobile.ui.cards.PreviewDesktopBackground
+import dev.artplus.mobile.ui.components.GroupCardShape
 import dev.artplus.mobile.ui.components.SectionCard
 import dev.artplus.mobile.ui.components.SectionHeader
 import dev.artplus.mobile.ui.components.TitleBarIconButton
@@ -351,14 +352,15 @@ val __act2 = LocalContext.current
                     .padding(horizontal = 16.dp),
             ) {
                 Card(
-                    cornerRadius = 20.dp,
+                    cornerRadius = CardDefaults.GroupCornerRadius,
+                    weight = CardDefaults.GroupWeight,
                     insideMargin = PaddingValues(0.dp),
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(previewFrameHeight)
-                            .clip(RoundedCornerShape(20.dp)),
+                            .clip(GroupCardShape),
                     ) {
 val __act1 = LocalContext.current
     PreviewDesktopBackgroundSurface(
