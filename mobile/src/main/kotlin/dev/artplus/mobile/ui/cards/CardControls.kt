@@ -43,9 +43,12 @@ import java.util.Locale
 import kotlinx.coroutines.isActive
 import io.github.suqi8.coui.kmp.basic.BasicComponent
 import io.github.suqi8.coui.kmp.basic.BasicComponentDefaults
+import io.github.suqi8.coui.kmp.basic.CardListPosition
+import io.github.suqi8.coui.kmp.basic.ExpandArrow
 import io.github.suqi8.coui.kmp.basic.Icon
 import io.github.suqi8.coui.kmp.basic.IconButton
 import io.github.suqi8.coui.kmp.basic.CardDefaults
+import io.github.suqi8.coui.kmp.basic.Switch
 import io.github.suqi8.coui.kmp.basic.TabRowDefaults
 import io.github.suqi8.coui.kmp.basic.TabRowWithContour
 import io.github.suqi8.coui.kmp.basic.Button
@@ -56,8 +59,8 @@ import io.github.suqi8.coui.kmp.icon.extended.More
 import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.TuningPreset
 import dev.artplus.mobile.ui.components.CompactCardCornerRadius
-import dev.artplus.mobile.ui.components.KernelStyleArrow
 import dev.artplus.mobile.ui.components.NumberInputBox
+import dev.artplus.mobile.ui.components.SectionDivider
 import dev.artplus.mobile.ui.components.SettingsIconKind
 import dev.artplus.mobile.ui.components.SettingsLineIcon
 import dev.artplus.mobile.ui.components.SteppedPercentSlider
@@ -142,11 +145,14 @@ internal fun NumberParameterControl(
     inputBackgroundColor: Color? = null,
     standaloneCard: Boolean = false,
     cardHeight: Dp = 78.dp,
+    cardListPosition: CardListPosition = CardListPosition.None,
 ) {
     val controlEnabled = enabled && !busy
     var expanded by remember { mutableStateOf(initiallyExpanded) }
+    val rowPosition = if (standaloneCard) CardListPosition.Full else cardListPosition
     val body: @Composable ColumnScope.() -> Unit = {
-        // 头部行：COUI BasicComponent，按压反馈由 COUI 指示器提供
+        // 头部行：COUI BasicComponent，按压反馈与头尾边距由 COUI 提供；
+        // 分割线画在整块可展开控件的底部，避免展开滑杆后分割线卡在标题与滑杆之间。
         BasicComponent(
             modifier = (if (standaloneCard) Modifier.heightIn(min = cardHeight) else Modifier)
                 .semantics {
@@ -184,8 +190,13 @@ internal fun NumberParameterControl(
                         backgroundColor = inputBackgroundColor,
                     )
                 }
-                KernelStyleArrow(expanded = expanded)
+                ExpandArrow(
+                    expanded = expanded,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
             },
+            cardListPosition = rowPosition,
+            showDivider = false,
             onClick = { expanded = !expanded },
             role = Role.Button,
             enabled = controlEnabled,
@@ -216,17 +227,133 @@ internal fun NumberParameterControl(
                 )
             }
         }
+        if (!standaloneCard && (cardListPosition == CardListPosition.Head || cardListPosition == CardListPosition.Middle)) {
+            SectionDivider()
+        }
     }
     if (standaloneCard) {
         // 底部弹层内的独立卡片：中性 secondaryVariant 填充，避免与面板同色
         Card(
             modifier = Modifier.fillMaxWidth(),
+            cornerRadius = CardDefaults.GroupCornerRadius,
+            weight = CardDefaults.GroupWeight,
             insideMargin = PaddingValues(0.dp),
             colors = CardDefaults.defaultColors(color = COUITheme.colorScheme.secondaryVariant),
             content = body,
         )
     } else {
         Column(modifier = Modifier.fillMaxWidth(), content = body)
+    }
+}
+
+/**
+ * 开关 + 强度滑杆合体控件：
+ * - 右侧直接放 COUI [Switch] 控制开启/关闭；
+ * - 开启后点整行可展开/收起底部滑杆与数值输入框；关闭时自动收起滑杆并隐藏数值，减少视觉噪音。
+ */
+@Composable
+internal fun ToggleNumberParameterControl(
+    title: String,
+    summary: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    value: Int,
+    draftText: String,
+    min: Int,
+    max: Int,
+    step: Int = 1,
+    onDraftChange: (String) -> Unit,
+    onSave: (Int) -> Unit,
+    busy: Boolean = false,
+    icon: SettingsIconKind? = null,
+    cardListPosition: CardListPosition = CardListPosition.None,
+) {
+    val rowEnabled = !busy
+    var expanded by remember { mutableStateOf(false) }
+    val showSlider = checked && expanded
+    Column(modifier = Modifier.fillMaxWidth()) {
+        BasicComponent(
+            modifier = Modifier.semantics {
+                stateDescription = when {
+                    !checked -> "已关闭"
+                    expanded -> "已开启，强度 $value%，已展开拖动条"
+                    else -> "已开启，强度 $value%，点击展开拖动条"
+                }
+            },
+            title = title,
+            summary = if (checked) "$summary · 当前 $value%" else "$summary（已关闭）",
+            startAction = icon?.let { kind -> { SettingsLineIcon(kind = kind) } },
+            endActions = {
+                if (checked) {
+                    ExpandArrow(
+                        expanded = expanded,
+                        modifier = Modifier.padding(end = 6.dp),
+                    )
+                }
+                Switch(
+                    checked = checked,
+                    onCheckedChange = { next ->
+                        if (!next) expanded = false
+                        onCheckedChange(next)
+                    },
+                    enabled = rowEnabled,
+                )
+            },
+            cardListPosition = cardListPosition,
+            showDivider = false,
+            onClick = {
+                if (checked) {
+                    expanded = !expanded
+                } else {
+                    onCheckedChange(true)
+                    expanded = true
+                }
+            },
+            role = Role.Button,
+            enabled = rowEnabled,
+        )
+        AnimatedVisibility(
+            visible = showSlider,
+            enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                expandVertically(animationSpec = tween(durationMillis = 180)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                shrinkVertically(animationSpec = tween(durationMillis = 160)),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    SteppedPercentSlider(
+                        value = value,
+                        min = min,
+                        max = max,
+                        step = step,
+                        enabled = rowEnabled && checked,
+                        onValueChange = onSave,
+                    )
+                }
+                NumberInputBox(
+                    value = draftText,
+                    fallbackValue = value,
+                    min = min,
+                    max = max,
+                    enabled = rowEnabled && checked,
+                    onValueChange = onDraftChange,
+                    onDone = { submitted ->
+                        submitted.toIntOrNull()
+                            ?.coerceIn(min, max)
+                            ?.let(onSave)
+                    },
+                )
+            }
+        }
+        if (cardListPosition == CardListPosition.Head || cardListPosition == CardListPosition.Middle) {
+            SectionDivider()
+        }
     }
 }
 
@@ -334,17 +461,19 @@ internal fun PresetMenuItem(
     summary: String? = null,
     enabled: Boolean = true,
     isDestructive: Boolean = false,
+    cardListPosition: CardListPosition = CardListPosition.None,
 ) {
     val titleColor = if (isDestructive) {
         BasicComponentDefaults.titleColor(color = COUITheme.colorScheme.error)
     } else {
         BasicComponentDefaults.titleColor()
     }
-    // COUI 行：按压反馈、标题/摘要配色与禁用态均由 BasicComponent 提供
+    // COUI 行：按压反馈、标题/摘要配色、禁用态与行间分割线均由 BasicComponent 提供
     BasicComponent(
         title = title,
         titleColor = titleColor,
         summary = summary,
+        cardListPosition = cardListPosition,
         onClick = onClick,
         enabled = enabled,
     )

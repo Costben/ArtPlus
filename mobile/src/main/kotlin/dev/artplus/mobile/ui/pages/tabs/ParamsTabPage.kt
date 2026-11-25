@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,6 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.basic.BindScrollToTop
+import io.github.suqi8.coui.kmp.utils.overScrollVertical
+import io.github.suqi8.coui.kmp.utils.scrollEndHaptic
 import dev.artplus.mobile.MainActivity
 import dev.artplus.mobile.PREFS_NAME
 import dev.artplus.mobile.data.AppEntry
@@ -27,6 +31,9 @@ import dev.artplus.mobile.ui.cards.AdvancedSettingsTab
 import dev.artplus.mobile.ui.cards.SegmentedControl
 import dev.artplus.mobile.ui.pages.PagerShellPage
 import dev.artplus.mobile.ui.components.sectionItem
+import dev.artplus.mobile.ui.pages.params.LocalTuningGroup
+import dev.artplus.mobile.ui.pages.params.applyLocalTuningGroupToggle
+import dev.artplus.mobile.ui.pages.params.paramsApplyLocalTuningBatch
 import dev.artplus.mobile.ui.pages.params.paramsApplyTuningParams
 import dev.artplus.mobile.ui.pages.params.paramsSaveGptSettings
 import dev.artplus.mobile.ui.pages.params.paramsSaveImageTuningSettings
@@ -42,8 +49,10 @@ import dev.artplus.mobile.ui.pages.params.paramsUpdateRmbgWeakAlphaKeepPercent
 import dev.artplus.mobile.ui.pages.params.paramsUpdateShadowRemovalPercent
 import dev.artplus.mobile.ui.pages.presets.saveJsonParamsFromText
 import dev.artplus.mobile.ui.pages.settings.JsonSettingsEditorCard
-import dev.artplus.mobile.ui.pages.settings.LocalRuleTuningCard
-import dev.artplus.mobile.ui.pages.settings.LocalWorkflowPipelineCard
+import dev.artplus.mobile.ui.pages.settings.LocalAdvancedPipelineCard
+import dev.artplus.mobile.ui.pages.settings.LocalCoreTuningCard
+import dev.artplus.mobile.ui.pages.settings.LocalStrategyCard
+import dev.artplus.mobile.ui.pages.settings.LocalStylePresetsCard
 import dev.artplus.mobile.ui.pages.settings.RmbgTuningCard
 import dev.artplus.mobile.ui.components.BarClearance
 
@@ -72,10 +81,15 @@ PagerShellPage(
                     // 裸读 shell.value 不触发重组（高亮动内容不动）。
                     val genContentShell by mainViewModel.shell.collectAsState()
                     Box(modifier = Modifier.fillMaxSize().imePadding()) {
+                        val listState = rememberLazyListState()
+                        BindScrollToTop(listState)
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .nestedScroll(scrollBehavior.nestedScrollConnection)
+                                .scrollEndHaptic()
+                                .overScrollVertical()
                                 .padding(horizontal = 16.dp),
                             contentPadding = PaddingValues(
                                 top = innerPadding.calculateTopPadding() + 16.dp,
@@ -105,102 +119,148 @@ PagerShellPage(
                             when (genContentShell.advancedSettingsTab) {
                                 AdvancedSettingsTab.Sliders -> when (genContentShell.advancedSettingsCategory) {
                                     AdvancedSettingsCategory.Local -> {
-                                        sectionItem(key = "local_rule", title = "本地分离") { run {
-        LocalRuleTuningCard(
-                    tuningState = paramsState,
-                    isBusy = shellState.isBusy,
-                    draftBackgroundSeparationText = draftBackgroundSeparationText,
-                    onDraftBackgroundSeparationChange = { draftBackgroundSeparationText = it },
-                    onSaveBackgroundSeparation = { run {
-            paramsUpdateBackgroundSeparationPercent(
-                        value = (it),
-                        updateLive = mainViewModel::updateLive,
-                        getParams = { mainViewModel.params.value },
-                        setDraftText = { draftBackgroundSeparationText = it },
-                        onSave = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onRefresh = tuningActions.refresh,
-                    )
-        } },
-                    draftPlateRemovalText = draftPlateRemovalText,
-                    onDraftPlateRemovalChange = { draftPlateRemovalText = it },
-                    onSavePlateRemoval = { run {
-            paramsUpdatePlateRemovalPercent(
-                        value = (it),
-                        updateLive = mainViewModel::updateLive,
-                        getParams = { mainViewModel.params.value },
-                        setDraftText = { draftPlateRemovalText = it },
-                        onSave = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onRefresh = tuningActions.refresh,
-                    )
-        } },
-                    draftShadowRemovalText = draftShadowRemovalText,
-                    onDraftShadowRemovalChange = { draftShadowRemovalText = it },
-                    onSaveShadowRemoval = { run {
-            paramsUpdateShadowRemovalPercent(
-                        value = (it),
-                        updateLive = mainViewModel::updateLive,
-                        getParams = { mainViewModel.params.value },
-                        setDraftText = { draftShadowRemovalText = it },
-                        onSave = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onRefresh = tuningActions.refresh,
-                    )
-        } },
-                    draftEdgePolishText = draftEdgePolishText,
-                    onDraftEdgePolishChange = { draftEdgePolishText = it },
-                    onSaveEdgePolish = { run {
-            paramsUpdateEdgePolishPercent(
-                        value = (it),
-                        updateLive = mainViewModel::updateLive,
-                        getParams = { mainViewModel.params.value },
-                        setDraftText = { draftEdgePolishText = it },
-                        onSave = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        onRefresh = tuningActions.refresh,
-                    )
-        } },
-                )
-    } }
-                                        sectionItem(key = "local_pipeline", title = "处理流程") { run {
-        LocalWorkflowPipelineCard(
-                    tuningState = paramsState,
-                    isBusy = shellState.isBusy,
-                    onToggle = { key, enabled ->
-            paramsUpdateLocalWorkflowToggle(
-                        name = (key),
-                        enabled = (enabled),
-                        getParams = { mainViewModel.params.value },
-                        updateLive = mainViewModel::updateLive,
-                        onSaveImageTuning = { run {
-                paramsSaveImageTuningSettings(
-                            prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
-                            getParams = { mainViewModel.params.value },
-                        )
-            } },
-                        setStatusText = { setStatus((it)) },
-                        onRefresh = tuningActions.refresh,
-                    )
-         },
-                )
-    } }
+                                        val syncLocalDrafts: (dev.artplus.mobile.TuningParams) -> Unit = { updated ->
+                                            draftBackgroundSeparationText = updated.backgroundSeparationPercent.toString()
+                                            draftPlateRemovalText = updated.plateRemovalPercent.toString()
+                                            draftShadowRemovalText = updated.shadowRemovalPercent.toString()
+                                            draftEdgePolishText = updated.edgePolishPercent.toString()
+                                            draftJsonParamsText = updated.toJson().toString(4)
+                                        }
+                                        val saveImageTuning: () -> Unit = {
+                                            paramsSaveImageTuningSettings(
+                                                prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+                                                getParams = { mainViewModel.params.value },
+                                            )
+                                        }
+                                        val applyGroupToggle: (LocalTuningGroup, Boolean) -> Unit = { group, enabled ->
+                                            val groupLabel = when (group) {
+                                                LocalTuningGroup.Background -> "去除背景"
+                                                LocalTuningGroup.Plate -> "清理底板"
+                                                LocalTuningGroup.Shadow -> "清理旧阴影"
+                                                LocalTuningGroup.EdgePolish -> "边缘润色"
+                                                LocalTuningGroup.MultiCandidates -> "生成多套备选方案"
+                                            }
+                                            paramsApplyLocalTuningBatch(
+                                                transform = { applyLocalTuningGroupToggle(it, group, enabled) },
+                                                statusMessage = if (enabled) "已开启$groupLabel" else "已关闭$groupLabel",
+                                                getParams = { mainViewModel.params.value },
+                                                updateLive = mainViewModel::updateLive,
+                                                syncLocalDrafts = syncLocalDrafts,
+                                                onSaveImageTuning = saveImageTuning,
+                                                setStatusText = { setStatus(it) },
+                                                onRefresh = tuningActions.refresh,
+                                            )
+                                        }
+                                        sectionItem(key = "local_style_presets", title = "快捷风格") {
+                                            LocalStylePresetsCard(
+                                                tuningState = paramsState,
+                                                isBusy = shellState.isBusy,
+                                                onSelectStyle = { style ->
+                                                    paramsApplyLocalTuningBatch(
+                                                        transform = style::applyTo,
+                                                        statusMessage = "已套用「${style.label}」风格",
+                                                        getParams = { mainViewModel.params.value },
+                                                        updateLive = mainViewModel::updateLive,
+                                                        syncLocalDrafts = syncLocalDrafts,
+                                                        onSaveImageTuning = saveImageTuning,
+                                                        setStatusText = { setStatus(it) },
+                                                        onRefresh = tuningActions.refresh,
+                                                    )
+                                                },
+                                            )
+                                        }
+                                        sectionItem(key = "local_rule", title = "核心处理") {
+                                            LocalCoreTuningCard(
+                                                tuningState = paramsState,
+                                                isBusy = shellState.isBusy,
+                                                draftBackgroundSeparationText = draftBackgroundSeparationText,
+                                                onDraftBackgroundSeparationChange = { draftBackgroundSeparationText = it },
+                                                onSaveBackgroundSeparation = {
+                                                    paramsUpdateBackgroundSeparationPercent(
+                                                        value = it,
+                                                        updateLive = mainViewModel::updateLive,
+                                                        getParams = { mainViewModel.params.value },
+                                                        setDraftText = { draftBackgroundSeparationText = it },
+                                                        onSave = saveImageTuning,
+                                                        onRefresh = tuningActions.refresh,
+                                                    )
+                                                },
+                                                draftPlateRemovalText = draftPlateRemovalText,
+                                                onDraftPlateRemovalChange = { draftPlateRemovalText = it },
+                                                onSavePlateRemoval = {
+                                                    paramsUpdatePlateRemovalPercent(
+                                                        value = it,
+                                                        updateLive = mainViewModel::updateLive,
+                                                        getParams = { mainViewModel.params.value },
+                                                        setDraftText = { draftPlateRemovalText = it },
+                                                        onSave = saveImageTuning,
+                                                        onRefresh = tuningActions.refresh,
+                                                    )
+                                                },
+                                                draftShadowRemovalText = draftShadowRemovalText,
+                                                onDraftShadowRemovalChange = { draftShadowRemovalText = it },
+                                                onSaveShadowRemoval = {
+                                                    paramsUpdateShadowRemovalPercent(
+                                                        value = it,
+                                                        updateLive = mainViewModel::updateLive,
+                                                        getParams = { mainViewModel.params.value },
+                                                        setDraftText = { draftShadowRemovalText = it },
+                                                        onSave = saveImageTuning,
+                                                        onRefresh = tuningActions.refresh,
+                                                    )
+                                                },
+                                                draftEdgePolishText = draftEdgePolishText,
+                                                onDraftEdgePolishChange = { draftEdgePolishText = it },
+                                                onSaveEdgePolish = {
+                                                    paramsUpdateEdgePolishPercent(
+                                                        value = it,
+                                                        updateLive = mainViewModel::updateLive,
+                                                        getParams = { mainViewModel.params.value },
+                                                        setDraftText = { draftEdgePolishText = it },
+                                                        onSave = saveImageTuning,
+                                                        onRefresh = tuningActions.refresh,
+                                                    )
+                                                },
+                                                onToggleGroup = applyGroupToggle,
+                                            )
+                                        }
+                                        sectionItem(key = "local_strategy", title = "候选策略") {
+                                            LocalStrategyCard(
+                                                tuningState = paramsState,
+                                                isBusy = shellState.isBusy,
+                                                onToggleAutoSelection = { enabled ->
+                                                    paramsUpdateLocalWorkflowToggle(
+                                                        name = "auto",
+                                                        enabled = enabled,
+                                                        getParams = { mainViewModel.params.value },
+                                                        updateLive = mainViewModel::updateLive,
+                                                        onSaveImageTuning = saveImageTuning,
+                                                        setStatusText = { setStatus(it) },
+                                                        onRefresh = tuningActions.refresh,
+                                                    )
+                                                },
+                                                onToggleMultiCandidates = { enabled ->
+                                                    applyGroupToggle(LocalTuningGroup.MultiCandidates, enabled)
+                                                },
+                                            )
+                                        }
+                                        sectionItem(key = "local_pipeline", title = "高级") {
+                                            LocalAdvancedPipelineCard(
+                                                tuningState = paramsState,
+                                                isBusy = shellState.isBusy,
+                                                onToggle = { key, enabled ->
+                                                    paramsUpdateLocalWorkflowToggle(
+                                                        name = key,
+                                                        enabled = enabled,
+                                                        getParams = { mainViewModel.params.value },
+                                                        updateLive = mainViewModel::updateLive,
+                                                        onSaveImageTuning = saveImageTuning,
+                                                        setStatusText = { setStatus(it) },
+                                                        onRefresh = tuningActions.refresh,
+                                                    )
+                                                },
+                                            )
+                                        }
                                     }
                                     AdvancedSettingsCategory.Rmbg -> {
                                         sectionItem(key = "rmbg_tuning", title = "RMBG 抠图") { run {

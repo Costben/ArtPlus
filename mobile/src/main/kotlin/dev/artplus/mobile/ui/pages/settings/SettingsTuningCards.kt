@@ -1,9 +1,35 @@
 package dev.artplus.mobile.ui.pages.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.unit.dp
+import io.github.suqi8.coui.kmp.basic.BasicComponent
+import io.github.suqi8.coui.kmp.basic.CardListPosition
+import io.github.suqi8.coui.kmp.basic.Chip
+import io.github.suqi8.coui.kmp.basic.ExpandArrow
+import io.github.suqi8.coui.kmp.basic.SmallTitle
+import io.github.suqi8.coui.kmp.basic.Text
+import io.github.suqi8.coui.kmp.theme.COUITheme
 import dev.artplus.mobile.MAX_BACKGROUND_SEPARATION_PERCENT
 import dev.artplus.mobile.MAX_EDGE_POLISH_PERCENT
 import dev.artplus.mobile.MAX_PLATE_REMOVAL_PERCENT
@@ -24,16 +50,19 @@ import dev.artplus.mobile.TuningParams
 import dev.artplus.mobile.imaging.LocalSeparationMode
 import dev.artplus.mobile.ui.cards.NumberParameterControl
 import dev.artplus.mobile.ui.cards.SegmentedControl
+import dev.artplus.mobile.ui.cards.ToggleNumberParameterControl
 import dev.artplus.mobile.ui.components.LibrarySettingRow
 import dev.artplus.mobile.ui.components.SectionCard
 import dev.artplus.mobile.ui.components.SectionDivider
 import dev.artplus.mobile.ui.components.SettingsIconKind
+import dev.artplus.mobile.ui.pages.params.LocalTuningGroup
+import dev.artplus.mobile.ui.pages.params.LocalTuningStylePreset
+import dev.artplus.mobile.ui.pages.params.countEnabledLocalWorkflowSteps
+import dev.artplus.mobile.ui.pages.params.matchingLocalStylePreset
 
 /**
- * Slice 2.3：本地管线/规则/RMBG 调参卡片（原 MainActivity 本体原样搬迁）。
- * 只做纯移动：文案/布局/参数范围一律不变。
- * Activity 状态（tuningState/isBusy/draft 文本）经参数注入，调参存取（update*，Slice 2.4）
- * 经 onSave/onToggle 回调注入；MainActivity 留同名薄 wrapper（重构期间保留），调用点零改动。
+ * 本地管线/规则/RMBG 调参卡片。
+ * 稳定规则按「快捷风格 → 核心处理（开关+强度一体）→ 候选策略 → 默认收起的底层细项」四层组织。
  */
 
 @Composable
@@ -59,8 +88,46 @@ internal fun LocalSeparationModeControl(
     )
 }
 
+/** 顶部快捷风格：4 颗 COUI Chip 一键套用常用组合，并展示当前风格的简短说明。 */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun LocalRuleTuningCard(
+internal fun LocalStylePresetsCard(
+    tuningState: TuningParams,
+    isBusy: Boolean,
+    onSelectStyle: (LocalTuningStylePreset) -> Unit,
+) {
+    val activeStyle = remember(tuningState) { matchingLocalStylePreset(tuningState) }
+    SectionCard {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                LocalTuningStylePreset.entries.forEach { preset ->
+                    Chip(
+                        selected = preset == activeStyle,
+                        onClick = { onSelectStyle(preset) },
+                        label = preset.label,
+                        enabled = !isBusy,
+                    )
+                }
+            }
+            Text(
+                text = activeStyle?.summary ?: "当前为自定义参数，点上方风格可一键恢复对应档位",
+                style = COUITheme.textStyles.footnote1,
+                color = COUITheme.colorScheme.onSurfaceVariantSummary,
+            )
+        }
+    }
+}
+
+/** 核心处理：把原来的 4 个滑杆与对应主/子开关合体为 4 个直观调节项。 */
+@Composable
+internal fun LocalCoreTuningCard(
     tuningState: TuningParams,
     isBusy: Boolean,
     draftBackgroundSeparationText: String,
@@ -75,109 +142,192 @@ internal fun LocalRuleTuningCard(
     draftEdgePolishText: String,
     onDraftEdgePolishChange: (String) -> Unit,
     onSaveEdgePolish: (Int) -> Unit,
+    onToggleGroup: (LocalTuningGroup, Boolean) -> Unit,
 ) {
     SectionCard(rowsFullBleed = true) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            NumberParameterControl(
-                busy = isBusy,
-                title = "背景相似度",
-                summary = "越高越容易把相近颜色当背景",
+        Column(modifier = Modifier.fillMaxWidth()) {
+            ToggleNumberParameterControl(
+                title = "去除背景",
+                summary = "把图标周围与背景相近的颜色扣掉",
+                checked = tuningState.localBackgroundSeparationEnabled,
+                onCheckedChange = { onToggleGroup(LocalTuningGroup.Background, it) },
                 value = tuningState.backgroundSeparationPercent,
                 draftText = draftBackgroundSeparationText,
                 min = MIN_BACKGROUND_SEPARATION_PERCENT,
                 max = MAX_BACKGROUND_SEPARATION_PERCENT,
                 onDraftChange = onDraftBackgroundSeparationChange,
                 onSave = onSaveBackgroundSeparation,
-                icon = SettingsIconKind.Cutout,
-            )
-            SectionDivider()
-            NumberParameterControl(
                 busy = isBusy,
-                title = "底板清理",
-                summary = "越高越容易移除纯色底板",
+                icon = SettingsIconKind.Cutout,
+                cardListPosition = CardListPosition.Head,
+            )
+            ToggleNumberParameterControl(
+                title = "清理底板",
+                summary = "移除图标自带的纯色圆角或圆形底板",
+                checked = tuningState.localPlateCleanupEnabled,
+                onCheckedChange = { onToggleGroup(LocalTuningGroup.Plate, it) },
                 value = tuningState.plateRemovalPercent,
                 draftText = draftPlateRemovalText,
                 min = MIN_PLATE_REMOVAL_PERCENT,
                 max = MAX_PLATE_REMOVAL_PERCENT,
                 onDraftChange = onDraftPlateRemovalChange,
                 onSave = onSavePlateRemoval,
-                icon = SettingsIconKind.Plate,
-            )
-            SectionDivider()
-            NumberParameterControl(
                 busy = isBusy,
-                title = "旧阴影清理",
-                summary = "清掉原图里的长阴影，不是新增阴影",
+                icon = SettingsIconKind.Plate,
+                cardListPosition = CardListPosition.Middle,
+            )
+            ToggleNumberParameterControl(
+                title = "清理旧阴影",
+                summary = "清掉原图标自带的长投影，不新增阴影",
+                checked = tuningState.localShadowCleanupEnabled,
+                onCheckedChange = { onToggleGroup(LocalTuningGroup.Shadow, it) },
                 value = tuningState.shadowRemovalPercent,
                 draftText = draftShadowRemovalText,
                 min = MIN_SHADOW_REMOVAL_PERCENT,
                 max = MAX_SHADOW_REMOVAL_PERCENT,
                 onDraftChange = onDraftShadowRemovalChange,
                 onSave = onSaveShadowRemoval,
-                icon = SettingsIconKind.Eraser,
-            )
-            SectionDivider()
-            NumberParameterControl(
                 busy = isBusy,
-                title = "边缘修补",
-                summary = "修补抠图毛刺和半透明边",
+                icon = SettingsIconKind.Eraser,
+                cardListPosition = CardListPosition.Middle,
+            )
+            ToggleNumberParameterControl(
+                title = "边缘润色",
+                summary = "修补抠图毛刺、黑边与透明边残留",
+                checked = tuningState.localEdgePolishEnabled,
+                onCheckedChange = { onToggleGroup(LocalTuningGroup.EdgePolish, it) },
                 value = tuningState.edgePolishPercent,
                 draftText = draftEdgePolishText,
                 min = MIN_EDGE_POLISH_PERCENT,
                 max = MAX_EDGE_POLISH_PERCENT,
                 onDraftChange = onDraftEdgePolishChange,
                 onSave = onSaveEdgePolish,
+                busy = isBusy,
                 icon = SettingsIconKind.Spark,
+                cardListPosition = CardListPosition.Tail,
             )
         }
     }
 }
 
+/** 候选策略：把原来晦涩的 5 个候选/选优开关收口成 2 个直观开关。 */
 @Composable
-internal fun LocalWorkflowPipelineCard(
+internal fun LocalStrategyCard(
+    tuningState: TuningParams,
+    isBusy: Boolean,
+    onToggleAutoSelection: (Boolean) -> Unit,
+    onToggleMultiCandidates: (Boolean) -> Unit,
+) {
+    val multiCandidatesEnabled = tuningState.localComposedBackgroundEnabled ||
+        tuningState.localTwoLayerCandidateEnabled ||
+        tuningState.localComponentCandidatesEnabled ||
+        tuningState.localTextSafeCandidateEnabled
+    SectionCard(rowsFullBleed = true) {
+        LibrarySettingRow(
+            title = "自动挑选最佳方案",
+            summary = "按图标结构自动选用更合适的结果；关闭则固定用完整清理",
+            icon = SettingsIconKind.Spark,
+            showSwitch = true,
+            checked = tuningState.localAutoSelectionEnabled,
+            enabled = !isBusy,
+            cardListPosition = CardListPosition.Head,
+            onCheckedChange = onToggleAutoSelection,
+        )
+        LibrarySettingRow(
+            title = "生成多套备选方案",
+            summary = "开启后在首页点预览图可切换拼合、二层、字标保全等备选",
+            icon = SettingsIconKind.Layers,
+            showSwitch = true,
+            checked = multiCandidatesEnabled,
+            enabled = !isBusy,
+            cardListPosition = CardListPosition.Tail,
+            onCheckedChange = onToggleMultiCandidates,
+        )
+    }
+}
+
+/**
+ * 底层算法细项（默认收起）：完整保留 18 个底层开关并按处理阶段归类，
+ * 平时不打扰主界面，排查单个图标异常时可展开逐项控制。
+ */
+@Composable
+internal fun LocalAdvancedPipelineCard(
     tuningState: TuningParams,
     isBusy: Boolean,
     onToggle: (key: String, enabled: Boolean) -> Unit,
 ) {
+    var expanded by remember { mutableStateOf(false) }
+    val enabledCount = remember(tuningState) { countEnabledLocalWorkflowSteps(tuningState) }
+
     SectionCard(rowsFullBleed = true) {
-        LocalWorkflowToggleRow("背景估计与相减", "普通图标和 Adaptive 图标的背景分离", tuningState.localBackgroundSeparationEnabled, "background", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("Adaptive 自动选层", "在合成前景与直接前景之间自动判断", tuningState.localAdaptiveSelectionEnabled, "adaptive", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("角落蒙版清理", "清理 Adaptive 四角残留", tuningState.localCornerMaskCleanupEnabled, "corner", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("透明边缘补色", "修复本地抠图透明边的颜色残留", tuningState.localAlphaEdgeColorRepairEnabled, "alpha_edge_repair", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("普通背景估计", "关闭后跳过普通背景相减与拼合", tuningState.localPlainBackgroundEstimationEnabled, "plain_background", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("原始前景清理", "应用原始前景的底板清理规则", tuningState.localOriginalCleanupEnabled, "original", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("底板清理", "检测并移除连接到边缘的底板", tuningState.localPlateCleanupEnabled, "plate", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("底板修边", "修复底板移除后的边缘颜色", tuningState.localPlateEdgeRepairEnabled, "plate_edge", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("彩色残留清理", "清除底板颜色在主体边缘的残留", tuningState.localPlateResidueCleanupEnabled, "plate_residue", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("长阴影清理", "移除原图中偏移的长阴影", tuningState.localShadowCleanupEnabled, "shadow", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("阴影边缘修复", "保留阴影交界处的抗锯齿边缘", tuningState.localShadowEdgeRepairEnabled, "shadow_edge", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("前景收边", "执行局部侵蚀和边缘羽化", tuningState.localEdgeTrimEnabled, "edge_trim", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("拼合背景候选", "生成主体与重建背景的组合候选", tuningState.localComposedBackgroundEnabled, "composed", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("二层候选", "运行底板/主体分层候选算法", tuningState.localTwoLayerCandidateEnabled, "two_layer", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("组件候选", "生成底座作为主体或背景的候选", tuningState.localComponentCandidatesEnabled, "component", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("字标保全候选", "保留更完整文字的安全候选", tuningState.localTextSafeCandidateEnabled, "text_safe", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("自动候选选择", "关闭后固定使用完整清理结果", tuningState.localAutoSelectionEnabled, "auto", isBusy, onToggle)
-        SectionDivider()
-        LocalWorkflowToggleRow("本地最终边缘润色", "渲染本地候选时执行最后的边缘处理", tuningState.localEdgePolishEnabled, "edge_polish", isBusy, onToggle)
+        BasicComponent(
+            modifier = Modifier.semantics {
+                stateDescription = if (expanded) "已展开底层算法细项" else "已收起底层算法细项"
+            },
+            title = "底层算法细项",
+            summary = "已开启 $enabledCount / 18 项 · 仅在排查单个图标异常时调整",
+            startAction = {
+                dev.artplus.mobile.ui.components.SettingsLineIcon(kind = SettingsIconKind.Dot)
+            },
+            endActions = {
+                ExpandArrow(expanded = expanded)
+            },
+            cardListPosition = if (expanded) CardListPosition.Head else CardListPosition.Full,
+            showDivider = expanded,
+            onClick = { expanded = !expanded },
+            role = Role.Button,
+            enabled = !isBusy,
+        )
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn(animationSpec = tween(durationMillis = 150)) +
+                expandVertically(animationSpec = tween(durationMillis = 180)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 120)) +
+                shrinkVertically(animationSpec = tween(durationMillis = 160)),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                AdvancedGroupLabel("背景与选层")
+                LocalWorkflowToggleRow("背景估计与相减", "普通图标和 Adaptive 图标的背景分离", tuningState.localBackgroundSeparationEnabled, "background", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("普通背景估计", "关闭后跳过普通背景相减与拼合", tuningState.localPlainBackgroundEstimationEnabled, "plain_background", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("Adaptive 自动选层", "在合成前景与直接前景之间自动判断", tuningState.localAdaptiveSelectionEnabled, "adaptive", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("角落蒙版清理", "清理 Adaptive 四角残留", tuningState.localCornerMaskCleanupEnabled, "corner", isBusy, CardListPosition.None, onToggle)
+                SectionDivider()
+
+                AdvancedGroupLabel("底板清理")
+                LocalWorkflowToggleRow("底板清理", "检测并移除连接到边缘的底板", tuningState.localPlateCleanupEnabled, "plate", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("底板修边", "修复底板移除后的边缘颜色", tuningState.localPlateEdgeRepairEnabled, "plate_edge", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("彩色残留清理", "清除底板颜色在主体边缘的残留", tuningState.localPlateResidueCleanupEnabled, "plate_residue", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("原始前景清理", "应用原始前景的底板清理规则", tuningState.localOriginalCleanupEnabled, "original", isBusy, CardListPosition.None, onToggle)
+                SectionDivider()
+
+                AdvancedGroupLabel("阴影与边缘")
+                LocalWorkflowToggleRow("长阴影清理", "移除原图中偏移的长阴影", tuningState.localShadowCleanupEnabled, "shadow", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("阴影边缘修复", "保留阴影交界处的抗锯齿边缘", tuningState.localShadowEdgeRepairEnabled, "shadow_edge", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("透明边缘补色", "修复本地抠图透明边的颜色残留", tuningState.localAlphaEdgeColorRepairEnabled, "alpha_edge_repair", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("前景收边", "执行局部侵蚀和边缘羽化", tuningState.localEdgeTrimEnabled, "edge_trim", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("本地最终边缘润色", "渲染本地候选时执行最后的边缘处理", tuningState.localEdgePolishEnabled, "edge_polish", isBusy, CardListPosition.None, onToggle)
+                SectionDivider()
+
+                AdvancedGroupLabel("候选与选优")
+                LocalWorkflowToggleRow("自动候选选择", "关闭后固定使用完整清理结果", tuningState.localAutoSelectionEnabled, "auto", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("拼合背景候选", "生成主体与重建背景的组合候选", tuningState.localComposedBackgroundEnabled, "composed", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("二层候选", "运行底板/主体分层候选算法", tuningState.localTwoLayerCandidateEnabled, "two_layer", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("组件候选", "生成底座作为主体或背景的候选", tuningState.localComponentCandidatesEnabled, "component", isBusy, CardListPosition.Middle, onToggle)
+                LocalWorkflowToggleRow("字标保全候选", "保留更完整文字的安全候选", tuningState.localTextSafeCandidateEnabled, "text_safe", isBusy, CardListPosition.Tail, onToggle)
+            }
+        }
     }
+}
+
+@Composable
+private fun AdvancedGroupLabel(text: String) {
+    SmallTitle(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp),
+        insideMargin = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 2.dp),
+    )
 }
 
 @Composable
@@ -187,6 +337,7 @@ internal fun LocalWorkflowToggleRow(
     checked: Boolean,
     key: String,
     isBusy: Boolean,
+    cardListPosition: CardListPosition = CardListPosition.None,
     onCheckedChange: (key: String, enabled: Boolean) -> Unit,
 ) {
     LibrarySettingRow(
@@ -196,6 +347,7 @@ internal fun LocalWorkflowToggleRow(
         showSwitch = true,
         checked = checked,
         enabled = !isBusy,
+        cardListPosition = cardListPosition,
         onCheckedChange = { onCheckedChange(key, it) },
     )
 }
@@ -232,8 +384,8 @@ internal fun RmbgTuningCard(
                 onDraftChange = onDraftAlphaStrengthChange,
                 onSave = onSaveAlphaStrength,
                 icon = SettingsIconKind.Cutout,
+                cardListPosition = CardListPosition.Head,
             )
-            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "边缘柔化",
@@ -245,8 +397,8 @@ internal fun RmbgTuningCard(
                 onDraftChange = onDraftEdgeFeatherChange,
                 onSave = onSaveEdgeFeather,
                 icon = SettingsIconKind.Cutout,
+                cardListPosition = CardListPosition.Middle,
             )
-            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "边缘扩缩",
@@ -258,8 +410,8 @@ internal fun RmbgTuningCard(
                 onDraftChange = onDraftEdgeAdjustChange,
                 onSave = onSaveEdgeAdjust,
                 icon = SettingsIconKind.Scale,
+                cardListPosition = CardListPosition.Middle,
             )
-            SectionDivider()
             NumberParameterControl(
                 busy = isBusy,
                 title = "弱透明保留",
@@ -271,6 +423,7 @@ internal fun RmbgTuningCard(
                 onDraftChange = onDraftWeakAlphaKeepChange,
                 onSave = onSaveWeakAlphaKeep,
                 icon = SettingsIconKind.Cutout,
+                cardListPosition = CardListPosition.Tail,
             )
         }
     }
